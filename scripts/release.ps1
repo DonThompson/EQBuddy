@@ -1,4 +1,7 @@
-# EQBuddy release: publish exe, compile installer, refresh zip, push to OneDrive for family.
+# EQBuddy release: publish exe, compile installer, refresh zip, push to OneDrive for family,
+# and (when -Tag is given) publish a GitHub release with the installer attached.
+# Commit + `git push` your source changes first; this script only ships binaries.
+param([string]$Tag)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $oneDrive = 'C:\Users\david\OneDrive\EQBuddyDownload'
@@ -22,3 +25,10 @@ Compress-Archive -Path "$repo\dist\publish\EQBuddy.exe", "$repo\README.md" `
 New-Item -ItemType Directory -Force $oneDrive | Out-Null
 Copy-Item "$repo\dist\EQBuddySetup.exe", "$repo\dist\EQBuddy-portable.zip" $oneDrive -Force
 Write-Host "Released to $oneDrive"
+
+if ($Tag) {
+    gh release create $Tag "$repo\dist\EQBuddySetup.exe" "$repo\dist\EQBuddy-portable.zip" `
+        --title "EQBuddy $Tag" --generate-notes
+    if ($LASTEXITCODE -ne 0) { throw 'gh release failed' }
+    Write-Host "GitHub release $Tag published"
+}
