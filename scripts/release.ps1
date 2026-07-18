@@ -26,7 +26,10 @@ function Sign-File($path) {
     if (-not $cert) { Write-Warning "No EQBuddy code-signing cert found; skipping signature for $path"; return }
     $r = Set-AuthenticodeSignature -FilePath $path -Certificate $cert `
         -HashAlgorithm SHA256 -TimestampServer 'http://timestamp.digicert.com'
-    Write-Host "Signed $(Split-Path $path -Leaf): $($r.Status)"
+    # Self-signed cert => Status is UnknownError (untrusted root) on machines that
+    # haven't imported dist\EQBuddy-publisher.cer; the signature itself is embedded.
+    $ok = $r.SignerCertificate -ne $null
+    Write-Host "Signed $(Split-Path $path -Leaf): $(if ($ok) { 'signature embedded' } else { $r.Status })"
 }
 Sign-File "$repo\dist\publish\EQBuddy.exe"
 
