@@ -1,0 +1,233 @@
+<Window x:Class="EQBuddy.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="EQBuddy" SizeToContent="WidthAndHeight"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="True" ResizeMode="NoResize">
+
+    <Border Background="{StaticResource BgBrush}" CornerRadius="10"
+            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+            MouseLeftButtonDown="OnDrag">
+        <StackPanel Margin="10">
+
+            <!-- ============ MINI DASHBOARD MODE ============ -->
+            <Grid x:Name="MiniRoot" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Ellipse x:Name="MiniDot" Width="9" Height="9" Fill="{StaticResource BadBrush}"
+                         VerticalAlignment="Center" Margin="2,0,8,0"
+                         ToolTip="Log status"/>
+                <StackPanel x:Name="MiniChips" Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#x2922;"
+                        ToolTip="Expand (or double-click)" Click="OnRestore" Margin="8,0,0,0"/>
+                <Button Grid.Column="3" Style="{StaticResource IconButton}" Content="&#x2715;"
+                        ToolTip="Close" Click="OnClose"/>
+            </Grid>
+
+            <!-- ============ FULL MODE ============ -->
+            <StackPanel x:Name="NormalRoot" Width="320">
+
+            <!-- Title bar -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="StatusDot" Width="9" Height="9" Fill="{StaticResource BadBrush}"
+                             VerticalAlignment="Center" Margin="2,0,7,0"/>
+                    <TextBlock Text="EQBuddy" FontWeight="Bold" FontSize="14"
+                               Foreground="{StaticResource AccentBrush}"/>
+                </StackPanel>
+                <TextBlock x:Name="CharLabel" Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center"
+                           FontSize="12" Foreground="{StaticResource DimBrush}"
+                           TextTrimming="CharacterEllipsis" Text="looking for a character…"
+                           ToolTip="Follows whoever is actively playing (log file growth)"/>
+                <ToggleButton x:Name="PinBtn" Grid.Column="2" Style="{StaticResource IconToggle}"
+                              Content="&#x1F4CC;" ToolTip="Always on top" IsChecked="True"
+                              Checked="OnPinChanged" Unchecked="OnPinChanged"/>
+                <Button Grid.Column="3" Style="{StaticResource IconButton}" Content="&#x21BB;"
+                        ToolTip="Reset session stats" Click="OnReset"/>
+                <Button Grid.Column="4" Style="{StaticResource IconButton}" Content="&#x2013;"
+                        ToolTip="Minimize to dashboard (starred stats only)" Click="OnMinimize"/>
+                <Button Grid.Column="5" Style="{StaticResource IconButton}" Content="&#x2715;"
+                        ToolTip="Close" Click="OnClose"/>
+            </Grid>
+
+            <!-- Logging-off reminder -->
+            <Border x:Name="LogBanner" Background="#33E0A030" CornerRadius="6" Padding="8,6"
+                    Margin="0,8,0,0" Visibility="Collapsed">
+                <TextBlock TextWrapping="Wrap" FontSize="12">
+                    <Run Foreground="{StaticResource WarnBrush}" FontWeight="SemiBold" Text="Logging looks off."/>
+                    <Run Text=" Type "/><Run FontFamily="Consolas" Foreground="{StaticResource AccentBrush}" Text="/log"/>
+                    <Run Text=" in the game's chat window. (EQBuddy enables it automatically for future game launches.)"/>
+                </TextBlock>
+            </Border>
+
+            <!-- Session line -->
+            <Grid Margin="2,8,2,4">
+                <TextBlock x:Name="ZoneText" Style="{StaticResource Dim}" Text="—"/>
+                <TextBlock x:Name="SessionText" Style="{StaticResource Dim}" HorizontalAlignment="Right" Text="session 0:00"/>
+            </Grid>
+
+            <!-- Sections -->
+            <ScrollViewer x:Name="SectionScroll" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+            <Expander x:Name="CombatSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x2694;&#xFE0F; Combat" FontSize="13"/>
+                        <TextBlock x:Name="CombatHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 dps"/>
+                        <ToggleButton x:Name="StarDps" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="dps" Click="OnStarChanged" ToolTip="Show DPS in mini dashboard"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+                    <TextBlock Text="Damage by attack" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
+                    <TextBlock Text="Damage taken from" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Expander>
+
+            <Expander x:Name="KillsSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F480; Kills" FontSize="13"/>
+                        <TextBlock x:Name="KillsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
+                        <ToggleButton x:Name="StarKills" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="kills" Click="OnStarChanged" ToolTip="Show kills in mini dashboard"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock x:Name="KillsSummary" Style="{StaticResource Dim}" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="KillList"/>
+                    <TextBlock x:Name="PartyKillsLabel" Text="Group kills" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"/>
+                    <ItemsControl x:Name="PartyKillList" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Expander>
+
+            <Expander x:Name="LootSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F392; Loot" FontSize="13"/>
+                        <TextBlock x:Name="LootHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 items"/>
+                        <ToggleButton x:Name="StarLoot" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="loot" Click="OnStarChanged" ToolTip="Show loot count in mini dashboard"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <ItemsControl x:Name="LootList"/>
+                    <TextBlock x:Name="CraftedLabel" Text="Created by merging" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="CraftedList" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Expander>
+
+            <Expander x:Name="MoneySection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F4B0; Money" FontSize="13"/>
+                        <TextBlock x:Name="MoneyHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0c"/>
+                        <ToggleButton x:Name="StarMoney" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="money" Click="OnStarChanged" ToolTip="Show money in mini dashboard"/>
+                    </Grid>
+                </Expander.Header>
+                <TextBlock x:Name="MoneySummary" Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+            </Expander>
+
+            <Expander x:Name="ProgressSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F4C8; Progress" FontSize="13"/>
+                        <TextBlock x:Name="ProgressHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0% xp"/>
+                        <ToggleButton x:Name="StarXp" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="xp" Click="OnStarChanged" ToolTip="Show XP in mini dashboard"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock x:Name="ProgressSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+                    <TextBlock Text="Skill-ups" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    <ItemsControl x:Name="SkillList" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Expander>
+
+            <Expander x:Name="FactionSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x2696;&#xFE0F; Faction" FontSize="13"/>
+                        <TextBlock x:Name="FactionHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="—"/>
+                    </Grid>
+                </Expander.Header>
+                <ItemsControl x:Name="FactionList"/>
+            </Expander>
+
+            <Expander x:Name="MiscSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F5FA;&#xFE0F; Travels &amp; Deaths" FontSize="13"/>
+                        <TextBlock x:Name="MiscHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 deaths"/>
+                        <ToggleButton x:Name="StarDeaths" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="deaths" Click="OnStarChanged" ToolTip="Show deaths in mini dashboard"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock Text="Deaths" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BadBrush}"/>
+                    <ItemsControl x:Name="DeathList" Margin="0,2,0,4"/>
+                    <TextBlock Text="Zones visited" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    <ItemsControl x:Name="ZoneList" Margin="0,2,0,0"/>
+                </StackPanel>
+            </Expander>
+            </StackPanel>
+            </ScrollViewer>
+
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>
