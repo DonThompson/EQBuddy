@@ -163,9 +163,12 @@ public partial class MainWindow : Window
                 $"Healing done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "");
             FillList(DamageSourceList, s.DamageBySource.Select(d =>
-                (d.Name, $"{d.Total:N0} ({d.Hits} hits)")));
+                (d.Name, $"{d.Total:N0} · {d.Hits} hit{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));
             FillList(DamageTakenList, s.DamageByAttacker.Select(d =>
-                (d.Name, $"{d.Total:N0} ({d.Hits} hits)")));
+                (d.Name, $"{d.Total:N0} · {d.Hits} hit{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));
+            HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(HealerList, s.HealsByHealer.Select(h =>
+                (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
         }
 
         if (KillsSection.IsExpanded)
@@ -185,14 +188,21 @@ public partial class MainWindow : Window
         }
 
         if (MoneySection.IsExpanded)
+        {
             MoneySummary.Text =
-                $"{s.CoinDrops} coin drops · biggest {StatsSnapshot.FormatCoin(s.BiggestDrop)}\n" +
+                $"Corpses {StatsSnapshot.FormatCoin(s.CorpseCopper)} ({s.CoinDrops} drops, biggest {StatsSnapshot.FormatCoin(s.BiggestDrop)})\n" +
+                $"Merchant sales {StatsSnapshot.FormatCoin(s.VendorCopper)} ({s.SalesCount} sales)\n" +
                 $"{StatsSnapshot.FormatCoin(s.CopperPerHour)} per hour";
+            SoldLabel.Visibility = s.SoldItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(SoldList, s.SoldItems.Select(i =>
+                ($"{i.Item}{(i.Count > 1 ? $" ×{i.Count}" : "")}", StatsSnapshot.FormatCoin(i.Copper))));
+        }
 
         if (ProgressSection.IsExpanded)
         {
             ProgressSummary.Text =
                 $"{s.XpTicks} xp gains · {s.XpPerHour:0.0}%/hr · {s.SkillUpTotal} skill-ups" +
+                (s.HoursToLevel is { } eta ? $"\nNext level in {FormatEta(eta)} at this pace" : "") +
                 (s.Levels.Count > 0
                     ? "\n" + string.Join(", ", s.Levels.Select(l => $"{l.Text} at {l.Time:h:mm tt}"))
                     : "");
@@ -300,7 +310,8 @@ public partial class MainWindow : Window
                 "dps" => s.CurrentDps > 0 ? $"⚔ {s.CurrentDps:0} dps" : $"⚔ {s.SessionDps:0} dps",
                 "loot" => $"\U0001F392 {s.LootTotal}",
                 "money" => $"\U0001F4B0 {StatsSnapshot.FormatCoin(s.Copper)}",
-                "xp" => $"\U0001F4C8 {s.XpPercent:0.0}%",
+                "xp" => $"\U0001F4C8 {s.XpPercent:0.0}%" +
+                        (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : ""),
                 "deaths" => $"☠ {s.Deaths.Count}",
                 _ => "",
             };
@@ -313,6 +324,10 @@ public partial class MainWindow : Window
             });
         }
     }
+
+    private static string FormatEta(double hours) => hours >= 1
+        ? $"~{(int)hours}h {(int)((hours - (int)hours) * 60)}m"
+        : $"~{Math.Max(1, (int)(hours * 60))}m";
 
     private void OnMinimize(object sender, RoutedEventArgs e) => SetMode(true);
     private void OnRestore(object sender, RoutedEventArgs e) => SetMode(false);

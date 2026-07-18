@@ -116,7 +116,10 @@
                     <TextBlock Text="Damage by attack" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
                     <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
                     <TextBlock Text="Damage taken from" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
-                    <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="HealersLabel" Text="Healed by" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource GoodBrush}" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="HealerList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
 
@@ -179,7 +182,12 @@
                                       Tag="money" Click="OnStarChanged" ToolTip="Show money in mini dashboard"/>
                     </Grid>
                 </Expander.Header>
-                <TextBlock x:Name="MoneySummary" Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+                <StackPanel>
+                    <TextBlock x:Name="MoneySummary" Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="SoldLabel" Text="Sold to merchants" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="SoldList" Margin="0,2,0,0"/>
+                </StackPanel>
             </Expander>
 
             <Expander x:Name="ProgressSection" Style="{StaticResource Section}">

@@ -39,14 +39,18 @@ public sealed class SessionStats
 
     private long _healingDone; private int _healCount;
     private long _healingReceived;
+    private readonly Dictionary<string, (int Count, long Total)> _healsByHealer = new(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, (int Count, string LastSource)> _loot = new(StringComparer.OrdinalIgnoreCase);
     private int _lootCount;
     private readonly Dictionary<string, int> _crafted = new(StringComparer.OrdinalIgnoreCase);
 
     private long _copper; private int _coinDrops; private long _biggestDrop;
+    private long _vendorCopper; private int _salesCount;
+    private readonly Dictionary<string, (int Count, long Copper)> _soldItems = new(StringComparer.OrdinalIgnoreCase);
 
     private double _xpPercent; private int _xpTicks;
+    private double _xpSinceLevel;
     private readonly List<(DateTime Time, int Level)> _levels = new();
 
     private readonly Dictionary<string, (int Ups, int Value)> _skills = new(StringComparer.OrdinalIgnoreCase);
@@ -95,6 +99,12 @@ public sealed class SessionStats
                 case ThirdDotEvent td when IsPet(td.Caster):
                     AddPetDamage(td.Time, td.Amount, DamageKind.Spell, td.Target);
                     break;
+                case ThirdSchoolEvent tse when IsPet(tse.Attacker):
+                    AddPetDamage(tse.Time, tse.Amount, DamageKind.Spell, tse.Target);
+                    break;
+                case ThirdSchoolEvent tse2:
+                    TrackCombat(tse2.Time, canStart: false);
+                    break;
                 case ThirdMissEvent tm2 when IsPet(tm2.Attacker):
                     TrackCombat(tm2.Time);
                     break;
@@ -113,8 +123,11 @@ public sealed class SessionStats
                 case DamageDealtEvent dd:
                     _damageDealt += dd.Amount;
                     if (dd.Kind == DamageKind.Melee) _meleeDamage += dd.Amount; else _spellDamage += dd.Amount;
-                    _hitCount++;
-                    if (dd.Critical) _critCount++;
+                    if (!dd.IsAux)
+                    {
+                        _hitCount++;
+                        if (dd.Critical) _critCount++;
+                    }
                     if (dd.Amount > _maxHit) { _maxHit = dd.Amount; _maxHitDesc = $"{dd.Source} on {dd.Target}"; }
                     var src = _damageBySource.TryGetValue(dd.Source, out var s) ? s : (0, 0L);
                     _damageBySource[dd.Source] = (src.Item1 + 1, src.Item2 + dd.Amount);
@@ -139,6 +152,11 @@ public sealed class SessionStats
                     break;
                 case HealEvent h:
                     _healingReceived += h.Amount;
+                    if (h.Healer.Length > 0)
+                    {
+                        var hv = _healsByHealer.TryGetValue(h.Healer, out var hc) ? hc : (0, 0L);
+                        _healsByHealer[h.Healer] = (hv.Item1 + 1, hv.Item2 + h.Amount);
+                    }
                     break;
                 case LootEvent l:
                     var cur = _loot.TryGetValue(l.Item, out var lv) ? lv : (0, l.Source);
@@ -148,15 +166,25 @@ public sealed class SessionStats
                 case CraftEvent c:
                     Bump(_crafted, c.Item);
                     break;
+                case MoneyEvent { Vendor: true } m:
+                    _vendorCopper += m.Copper; _salesCount++;
+                    if (m.Item is { } sold)
+                    {
+                        var sv = _soldItems.TryGetValue(sold, out var sc) ? sc : (0, 0L);
+                        _soldItems[sold] = (sv.Item1 + 1, sv.Item2 + m.Copper);
+                    }
+                    break;
                 case MoneyEvent m:
                     _copper += m.Copper; _coinDrops++;
                     if (m.Copper > _biggestDrop) _biggestDrop = m.Copper;
                     break;
                 case XpEvent x:
                     _xpPercent += x.Percent; _xpTicks++;
+                    _xpSinceLevel += x.Percent;
                     break;
                 case LevelEvent lv2:
                     _levels.Add((lv2.Time, lv2.Level));
+                    _xpSinceLevel = 0;
                     break;
                 case SkillUpEvent su:
                     var sk = _skills.TryGetValue(su.Skill, out var skv) ? skv : (0, 0);
@@ -239,10 +267,11 @@ public sealed class SessionStats
         _hitCount = _critCount = _missCount = 0; _maxHit = 0; _maxHitDesc = "";
         _damageBySource.Clear();
         _damageTaken = 0; _avoidedIncoming = 0; _damageByAttacker.Clear();
-        _healingDone = 0; _healCount = 0; _healingReceived = 0;
+        _healingDone = 0; _healCount = 0; _healingReceived = 0; _healsByHealer.Clear();
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
         _copper = 0; _coinDrops = 0; _biggestDrop = 0;
-        _xpPercent = 0; _xpTicks = 0; _levels.Clear();
+        _vendorCopper = 0; _salesCount = 0; _soldItems.Clear();
+        _xpPercent = 0; _xpTicks = 0; _xpSinceLevel = 0; _levels.Clear();
         _skills.Clear(); _faction.Clear(); _zones.Clear();
         _fizzles = 0; _resists = 0;
         _closedCombatSeconds = 0; _closedCombatDamage = 0;
@@ -309,19 +338,29 @@ public sealed class SessionStats
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total)).ToList(),
                 HealingDone = _healingDone,
                 HealingReceived = _healingReceived,
+                HealsByHealer = _healsByHealer.OrderByDescending(kv => kv.Value.Total)
+                    .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total)).ToList(),
                 LootTotal = _lootCount,
                 Loot = _loot.OrderByDescending(kv => kv.Value.Count)
                     .Select(kv => new LootDetail(kv.Key, kv.Value.Count, kv.Value.LastSource)).ToList(),
                 Crafted = _crafted.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 CraftedTotal = _crafted.Values.Sum(),
-                Copper = _copper,
+                Copper = _copper + _vendorCopper,
+                CorpseCopper = _copper,
+                VendorCopper = _vendorCopper,
+                SalesCount = _salesCount,
+                SoldItems = _soldItems.OrderByDescending(kv => kv.Value.Copper)
+                    .Select(kv => new SoldDetail(kv.Key, kv.Value.Count, kv.Value.Copper)).ToList(),
                 CoinDrops = _coinDrops,
                 BiggestDrop = _biggestDrop,
-                CopperPerHour = (long)(_copper / hours),
+                CopperPerHour = (long)((_copper + _vendorCopper) / hours),
                 XpPercent = _xpPercent,
                 XpTicks = _xpTicks,
                 XpPerHour = _xpPercent / hours,
+                HoursToLevel = _xpPercent / hours > 0.05
+                    ? Math.Max(0, 100 - Math.Min(_xpSinceLevel, 100)) / (_xpPercent / hours)
+                    : null,
                 Levels = _levels.Select(l => new TimedDetail(l.Time, $"Level {l.Level}")).ToList(),
                 SkillUps = _skills.OrderByDescending(kv => kv.Value.Ups)
                     .Select(kv => new SkillDetail(kv.Key, kv.Value.Ups, kv.Value.Value)).ToList(),
@@ -342,6 +381,7 @@ public record TimedDetail(DateTime Time, string Text);
 public record SourceDamage(string Name, int Hits, long Total);
 public record LootDetail(string Item, int Count, string LastSource);
 public record SkillDetail(string Skill, int Ups, int Value);
+public record SoldDetail(string Item, int Count, long Copper);
 public record FactionDetail(string Faction, int Hits, int Net);
 
 public sealed class StatsSnapshot
@@ -373,17 +413,24 @@ public sealed class StatsSnapshot
     public List<SourceDamage> DamageByAttacker { get; init; } = [];
     public long HealingDone { get; init; }
     public long HealingReceived { get; init; }
+    public List<SourceDamage> HealsByHealer { get; init; } = [];
     public int LootTotal { get; init; }
     public List<LootDetail> Loot { get; init; } = [];
     public List<NameCount> Crafted { get; init; } = [];
     public int CraftedTotal { get; init; }
     public long Copper { get; init; }
+    public long CorpseCopper { get; init; }
+    public long VendorCopper { get; init; }
+    public int SalesCount { get; init; }
+    public List<SoldDetail> SoldItems { get; init; } = [];
     public int CoinDrops { get; init; }
     public long BiggestDrop { get; init; }
     public long CopperPerHour { get; init; }
     public double XpPercent { get; init; }
     public int XpTicks { get; init; }
     public double XpPerHour { get; init; }
+    /// <summary>Estimated hours to next level at this session's XP rate; null when the rate is negligible. Exact when a level-up was seen this session, otherwise an upper bound.</summary>
+    public double? HoursToLevel { get; init; }
     public List<TimedDetail> Levels { get; init; } = [];
     public List<SkillDetail> SkillUps { get; init; } = [];
     public int SkillUpTotal { get; init; }

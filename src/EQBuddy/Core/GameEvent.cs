@@ -6,12 +6,14 @@ public abstract record GameEvent(DateTime Time);
 
 public record KillEvent(DateTime Time, string Target, string Killer) : GameEvent(Time);
 public record DeathEvent(DateTime Time, string Killer) : GameEvent(Time);
-public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical) : GameEvent(Time);
+/// <summary>IsAux marks automatic damage (damage shields) excluded from hit/accuracy counters.</summary>
+public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical, bool IsAux = false) : GameEvent(Time);
 public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee) : GameEvent(Time);
 public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
-public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing) : GameEvent(Time);
+public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "") : GameEvent(Time);
 public record LootEvent(DateTime Time, string Item, string Source, string? UpgradeResult) : GameEvent(Time);
-public record MoneyEvent(DateTime Time, long Copper) : GameEvent(Time);
+/// <summary>Vendor=true means a merchant sale (Item = what was sold); otherwise corpse coin or split.</summary>
+public record MoneyEvent(DateTime Time, long Copper, bool Vendor = false, string? Item = null) : GameEvent(Time);
 public record XpEvent(DateTime Time, double Percent, bool Party) : GameEvent(Time);
 public record LevelEvent(DateTime Time, int Level) : GameEvent(Time);
 public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(Time);
@@ -25,6 +27,8 @@ public record PetClaimEvent(DateTime Time, string PetName) : GameEvent(Time);
 public record ThirdMeleeEvent(DateTime Time, string Attacker, string Target, int Amount) : GameEvent(Time);
 /// <summary>Spell/DoT damage from someone other than the player (may be the player's pet).</summary>
 public record ThirdDotEvent(DateTime Time, string Caster, string Target, int Amount, string Spell) : GameEvent(Time);
+/// <summary>Direct spell hit by someone else: "Jibekn hit orc centurion for 11 points of magic damage by Lifespike."</summary>
+public record ThirdSchoolEvent(DateTime Time, string Attacker, string Target, int Amount, string Spell) : GameEvent(Time);
 /// <summary>A missed attack between others (combat-clock signal only).</summary>
 public record ThirdMissEvent(DateTime Time, string Attacker) : GameEvent(Time);
 public record ResistEvent(DateTime Time) : GameEvent(Time);

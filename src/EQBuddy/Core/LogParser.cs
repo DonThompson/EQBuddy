@@ -35,6 +35,26 @@ public static partial class LogParser
     [GeneratedRegex(@"^You hit (?<target>.+?) for (?<dmg>\d+) points? of non-melee damage\.(?<crit> \(Critical\))?$")]
     private static partial Regex NukeOutRx();
 
+    // You hit orc centurion for 13 points of fire damage by Burn.
+    [GeneratedRegex(@"^You hit (?<target>.+?) for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.(?<crit> \(Critical\))?$")]
+    private static partial Regex SchoolNukeOutRx();
+
+    // ice boned skeleton hit you for 20 points of cold damage by Ice Bone Frost Burst.
+    [GeneratedRegex(@"^(?<attacker>.+?) hit you for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.$", RegexOptions.IgnoreCase)]
+    private static partial Regex SchoolHitInRx();
+
+    // You have taken 1 damage from Rabies by Gynok Moltor.
+    [GeneratedRegex(@"^You have taken (?<dmg>\d+) damage from (?<spell>.+?) by (?<attacker>.+?)\.$")]
+    private static partial Regex DotInRx();
+
+    // Orc centurion is burned by YOUR flames for 5 points of non-melee damage.
+    [GeneratedRegex(@"^(?<target>.+?) is \w+ by YOUR .+? for (?<dmg>\d+) points? of non-melee damage\.$")]
+    private static partial Regex DamageShieldRx();
+
+    // Jibekn hit orc centurion for 11 points of magic damage by Lifespike.
+    [GeneratedRegex(@"^(?<attacker>.+?) hit (?<target>.+?) for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.$")]
+    private static partial Regex ThirdSchoolRx();
+
     // Orc centurion hits YOU for 4 points of damage.
     [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|frenzies on) YOU for (?<dmg>\d+) points? of damage\.$")]
     private static partial Regex MeleeInRx();
@@ -66,6 +86,18 @@ public static partial class LogParser
     // You receive 2 silver and 2 copper from the corpse. | ... as your split.
     [GeneratedRegex(@"^You receive (?<coins>.+?) (?:from the corpse|as your split)\.$")]
     private static partial Regex MoneyRx();
+
+    // You receive 7 gold 2 silver 3 copper from Lanadin for the Raw-Hide Sleeves +2(s).
+    [GeneratedRegex(@"^You receive (?<coins>.+?) from .+? for the (?<item>.+?)\(s\)\.$")]
+    private static partial Regex VendorSaleRx();
+
+    // Aamilea healed you for 56 hit points by Light Healing.
+    [GeneratedRegex(@"^(?<healer>.+?) healed you for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
+    private static partial Regex HealInByRx();
+
+    // A willowisp resisted your Denon's Disruptive Discord!
+    [GeneratedRegex(@"^.+? resisted your (?<spell>.+?)!$")]
+    private static partial Regex ResistAltRx();
 
     [GeneratedRegex(@"(?<n>\d+) (?<unit>platinum|gold|silver|copper)")]
     private static partial Regex CoinPartRx();
@@ -154,6 +186,24 @@ public static partial class LogParser
             return new DamageTakenEvent(ts, Normalize(r.Groups["how"].Value),
                 int.Parse(r.Groups["dmg"].Value), Melee: false);
 
+        if ((r = SchoolHitInRx().Match(msg)).Success)
+            return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
+                int.Parse(r.Groups["dmg"].Value), Melee: false);
+
+        if ((r = DotInRx().Match(msg)).Success)
+            return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
+                int.Parse(r.Groups["dmg"].Value), Melee: false);
+
+        if ((r = DamageShieldRx().Match(msg)).Success)
+            return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),
+                int.Parse(r.Groups["dmg"].Value), DamageKind.Spell, "Damage shield",
+                Critical: false, IsAux: true);
+
+        if ((r = SchoolNukeOutRx().Match(msg)).Success)
+            return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),
+                int.Parse(r.Groups["dmg"].Value), DamageKind.Spell, r.Groups["spell"].Value,
+                r.Groups["crit"].Success);
+
         if ((r = NukeOutRx().Match(msg)).Success)
             return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),
                 int.Parse(r.Groups["dmg"].Value), DamageKind.Spell, "Direct spell",
@@ -183,6 +233,11 @@ public static partial class LogParser
         if ((r = HealInRx().Match(msg)).Success)
             return new HealEvent(ts, "You", int.Parse(r.Groups["amount"].Value), "Unknown", Outgoing: false);
 
+        if ((r = HealInByRx().Match(msg)).Success)
+            return new HealEvent(ts, "You", int.Parse(r.Groups["amount"].Value),
+                r.Groups["spell"].Success ? r.Groups["spell"].Value : "Unknown",
+                Outgoing: false, Healer: r.Groups["healer"].Value);
+
         if ((r = LootUpgradeRx().Match(msg)).Success)
             return new LootEvent(ts, r.Groups["item"].Value, Normalize(r.Groups["source"].Value),
                 r.Groups["result"].Value);
@@ -192,19 +247,14 @@ public static partial class LogParser
 
         if ((r = MoneyRx().Match(msg)).Success)
         {
-            long copper = 0;
-            foreach (Match c in CoinPartRx().Matches(r.Groups["coins"].Value))
-            {
-                long n = long.Parse(c.Groups["n"].Value);
-                copper += c.Groups["unit"].Value switch
-                {
-                    "platinum" => n * 1000,
-                    "gold" => n * 100,
-                    "silver" => n * 10,
-                    _ => n,
-                };
-            }
+            var copper = ParseCoins(r.Groups["coins"].Value);
             if (copper > 0) return new MoneyEvent(ts, copper);
+        }
+
+        if ((r = VendorSaleRx().Match(msg)).Success)
+        {
+            var copper = ParseCoins(r.Groups["coins"].Value);
+            if (copper > 0) return new MoneyEvent(ts, copper, Vendor: true, Item: r.Groups["item"].Value);
         }
 
         if ((r = XpRx().Match(msg)).Success)
@@ -230,6 +280,9 @@ public static partial class LogParser
         if ((r = ResistRx().Match(msg)).Success)
             return new ResistEvent(ts);
 
+        if ((r = ResistAltRx().Match(msg)).Success)
+            return new ResistEvent(ts);
+
         // Pet announcement and third-party combat (checked last — specific patterns above win).
         if ((r = PetClaimRx().Match(msg)).Success)
             return new PetClaimEvent(ts, r.Groups["pet"].Value);
@@ -240,6 +293,11 @@ public static partial class LogParser
 
         if ((r = ThirdDotRx().Match(msg)).Success)
             return new ThirdDotEvent(ts, r.Groups["caster"].Value.Trim(),
+                Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
+                r.Groups["spell"].Value);
+
+        if ((r = ThirdSchoolRx().Match(msg)).Success)
+            return new ThirdSchoolEvent(ts, r.Groups["attacker"].Value.Trim(),
                 Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
                 r.Groups["spell"].Value);
 
@@ -256,6 +314,23 @@ public static partial class LogParser
         }
 
         return null;
+    }
+
+    private static long ParseCoins(string coins)
+    {
+        long copper = 0;
+        foreach (Match c in CoinPartRx().Matches(coins))
+        {
+            long n = long.Parse(c.Groups["n"].Value);
+            copper += c.Groups["unit"].Value switch
+            {
+                "platinum" => n * 1000,
+                "gold" => n * 100,
+                "silver" => n * 10,
+                _ => n,
+            };
+        }
+        return copper;
     }
 
     /// <summary>

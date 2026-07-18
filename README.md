@@ -66,11 +66,11 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
 
 | Section | Summary stat | Click-in details |
 |---|---|---|
-| Combat | Session DPS (+ live fight DPS) | Damage by attack/spell, crits, accuracy, biggest hit, time in combat, damage taken per mob, healing, fizzles/resists |
-| Kills | Your kills (+ group kills) | Count per creature type, kills/hour, group-member kill counts |
+| Combat | Session DPS (+ live fight DPS) | Damage per attack/spell/song with totals, hit counts and averages; crits, accuracy, biggest hit, time in combat, damage taken per mob, who healed you, fizzles/resists |
+| Kills | Your kills incl. pet (+ group kills) | Count per creature type, kills/hour, group-member kill counts |
 | Loot | Items looted (+ items made) | Every item with counts, items created by merging |
-| Money | Coin earned (p/g/s/c) | Drop count, biggest drop, money per hour |
-| Progress | XP % gained | XP ticks, %/hour, level-ups with times, skill-ups per skill |
+| Money | Coin earned (p/g/s/c) | Corpse coin vs merchant-sale income, items sold with prices, biggest drop, money per hour |
+| Progress | XP % gained | XP ticks, %/hour, estimated time to next level, level-ups with times, skill-ups per skill |
 | Faction | Factions touched | Net standing change per faction |
 | Travels & Deaths | Death count | Each death (what killed you, when), zones visited with times |
 
