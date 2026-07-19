@@ -62,10 +62,33 @@ public partial class MainWindow : Window
                          ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_MENU") == "1")
+            Loaded += (_, _) =>
+            {
+                if (RootBorder().ContextMenu is not { } m) return;
+                m.StaysOpen = true;
+                m.PlacementTarget = RootBorder();
+                m.Placement = System.Windows.Controls.Primitives.PlacementMode.Left;
+                m.IsOpen = true;
+            };
+
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
     }
+
+    private void OnGear(object sender, RoutedEventArgs e)
+    {
+        if (RootBorder().ContextMenu is { } menu)
+        {
+            menu.PlacementTarget = GearBtn;
+            menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            menu.IsOpen = true;
+        }
+    }
+
+    private System.Windows.Controls.Border RootBorder() =>
+        (System.Windows.Controls.Border)Content;
 
     private void OnChooseLogFolder(object sender, RoutedEventArgs e)
     {
