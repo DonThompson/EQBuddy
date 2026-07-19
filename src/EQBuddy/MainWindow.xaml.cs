@@ -218,6 +218,9 @@ public partial class MainWindow : Window
                 $"Biggest hit: {s.MaxHit:N0} ({s.MaxHitDesc})\n" +
                 $"Taken {s.DamageTaken:N0} · avoided {s.AvoidedIncoming} attacks\n" +
                 $"Healing done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
+                (s.SpecialHits.Count > 0
+                    ? "\n" + string.Join(" · ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}"))
+                    : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "");
             FillList(DamageSourceList, s.DamageBySource.Select(d =>
                 (d.Name, $"{d.Total:N0} · {d.Hits} hit{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));

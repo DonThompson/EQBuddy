@@ -32,6 +32,7 @@ public sealed class SessionStats
     private int _hitCount, _critCount, _missCount;
     private int _maxHit; private string _maxHitDesc = "";
     private readonly Dictionary<string, (int Count, long Total)> _damageBySource = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _specialHits = new(StringComparer.OrdinalIgnoreCase);
 
     private long _damageTaken;
     private int _avoidedIncoming;
@@ -133,6 +134,8 @@ public sealed class SessionStats
                     {
                         _hitCount++;
                         if (dd.Critical) _critCount++;
+                        if (dd.Note is { } note && note is not ("Critical" or "Crippling Blow"))
+                            Bump(_specialHits, note);
                     }
                     if (dd.Amount > _maxHit) { _maxHit = dd.Amount; _maxHitDesc = $"{dd.Source} on {dd.Target}"; }
                     var src = _damageBySource.TryGetValue(dd.Source, out var s) ? s : (0, 0L);
@@ -289,7 +292,7 @@ public sealed class SessionStats
         _yourKills.Clear(); _partyKillsByTarget.Clear(); _partyKillsByKiller.Clear(); _deaths.Clear();
         _damageDealt = _meleeDamage = _spellDamage = 0;
         _hitCount = _critCount = _missCount = 0; _maxHit = 0; _maxHitDesc = "";
-        _damageBySource.Clear();
+        _damageBySource.Clear(); _specialHits.Clear();
         _damageTaken = 0; _avoidedIncoming = 0; _damageByAttacker.Clear();
         _healingDone = 0; _healCount = 0; _healingReceived = 0; _healsByHealer.Clear();
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
@@ -353,6 +356,8 @@ public sealed class SessionStats
                 MaxHitDesc = _maxHitDesc,
                 DamageBySource = _damageBySource.OrderByDescending(kv => kv.Value.Total)
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total)).ToList(),
+                SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
+                    .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 SessionDps = sessionDps,
                 CurrentDps = currentDps,
                 CombatSeconds = combatSeconds,
@@ -429,6 +434,7 @@ public sealed class StatsSnapshot
     public int MaxHit { get; init; }
     public string MaxHitDesc { get; init; } = "";
     public List<SourceDamage> DamageBySource { get; init; } = [];
+    public List<NameCount> SpecialHits { get; init; } = [];
     public double SessionDps { get; init; }
     public double CurrentDps { get; init; }
     public double CombatSeconds { get; init; }

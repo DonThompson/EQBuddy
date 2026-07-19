@@ -6,8 +6,9 @@ public abstract record GameEvent(DateTime Time);
 
 public record KillEvent(DateTime Time, string Target, string Killer) : GameEvent(Time);
 public record DeathEvent(DateTime Time, string Killer) : GameEvent(Time);
-/// <summary>IsAux marks automatic damage (damage shields) excluded from hit/accuracy counters.</summary>
-public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical, bool IsAux = false) : GameEvent(Time);
+/// <summary>IsAux marks automatic damage (damage shields) excluded from hit/accuracy counters.
+/// Note is the raw trailing annotation ("Riposte", "Double Bow Shot", …) when present.</summary>
+public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical, bool IsAux = false, string? Note = null) : GameEvent(Time);
 public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee) : GameEvent(Time);
 public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "") : GameEvent(Time);
