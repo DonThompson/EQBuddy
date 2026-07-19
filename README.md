@@ -10,6 +10,15 @@ EQBuddy checks for new releases itself (at startup, every 6 hours, and via
 right-click → "Check for updates") and shows a banner linking to the latest
 download when one is available.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Compact view](docs/screenshots/widget-compact.png) | ![Mini dashboard](docs/screenshots/widget-mini.png) |
+| The default card — one glanceable line per category | Mini mode — only your starred stats, with time-to-level |
+| ![Expanded details](docs/screenshots/widget-expanded.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
+| Full drill-down: damage per skill/spell/pet with averages, kills, loot, money, progress | Background see-through — watch the game right through the widget |
+
 ## For players (family install guide)
 
 1. Run **EQBuddySetup.exe** and click through the installer (no admin needed).
