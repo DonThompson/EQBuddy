@@ -72,6 +72,9 @@ public partial class MainWindow : Window
                          MoneySection, ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
+            Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
+
         if (Environment.GetEnvironmentVariable("EQBUDDY_MENU") == "1")
             Loaded += (_, _) =>
             {
