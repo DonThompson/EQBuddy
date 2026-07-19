@@ -291,7 +291,7 @@ public partial class MainWindow : Window
 
         if (LootSection.IsExpanded)
         {
-            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")), max: 20);
+            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")));
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
         }
@@ -323,7 +323,7 @@ public partial class MainWindow : Window
 
         if (FactionSection.IsExpanded)
             FillList(FactionList, s.Faction.Select(f =>
-                (f.Faction, $"{(f.Net >= 0 ? "+" : "")}{f.Net}")), max: 15,
+                (f.Faction, $"{(f.Net >= 0 ? "+" : "")}{f.Net}")),
                 valueBrush: f => f.StartsWith('-') ? (Brush)FindResource("BadBrush") : (Brush)FindResource("GoodBrush"));
 
         if (MiscSection.IsExpanded)
@@ -532,11 +532,11 @@ public partial class MainWindow : Window
     }
 
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
-        int max = 12, Func<string, Brush>? valueBrush = null)
+        Func<string, Brush>? valueBrush = null)
     {
         var items = rows.ToList();
         list.Items.Clear();
-        foreach (var (name, value) in items.Take(max))
+        foreach (var (name, value) in items)
         {
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -556,12 +556,6 @@ public partial class MainWindow : Window
             grid.Children.Add(right);
             list.Items.Add(grid);
         }
-        if (items.Count > max)
-            list.Items.Add(new TextBlock
-            {
-                Text = $"…and {items.Count - max} more", FontSize = 11,
-                Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(0, 2, 0, 0),
-            });
     }
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
