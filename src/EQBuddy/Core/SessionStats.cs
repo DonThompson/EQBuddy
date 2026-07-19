@@ -142,6 +142,8 @@ public sealed class SessionStats
                     TrackCombat(m.Time);
                     break;
                 case DamageTakenEvent dt:
+                    // A "pet" attacking us means the charm broke — stop crediting it.
+                    if (IsPet(dt.Attacker)) _petName = null;
                     _damageTaken += dt.Amount;
                     var atk = _damageByAttacker.TryGetValue(dt.Attacker, out var a) ? a : (0, 0L);
                     _damageByAttacker[dt.Attacker] = (atk.Item1 + 1, atk.Item2 + dt.Amount);

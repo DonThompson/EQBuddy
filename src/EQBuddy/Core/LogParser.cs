@@ -20,7 +20,7 @@ public static partial class LogParser
     private static partial Regex YouDiedRx();
 
     // You slash orc pawn for 10 points of damage. (Critical)
-    [GeneratedRegex(@"^You (?<verb>slash|hit|kick|bash|pierce|crush|punch|backstab|bite|claw|maul|gore|sting|strike|slice|cleave|smash|rend|slam|frenzy on|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?<crit> \(Critical\))?$")]
+    [GeneratedRegex(@"^You (?<verb>slash|hit|kick|bash|pierce|crush|punch|backstab|bite|claw|maul|gore|sting|strike|slice|cleave|smash|rend|slam|shoot|frenzy on|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?<crit> \(Critical\))?$")]
     private static partial Regex MeleeOutRx();
 
     // You try to slash orc pawn, but miss! / but orc pawn dodges! etc.
@@ -56,7 +56,7 @@ public static partial class LogParser
     private static partial Regex ThirdSchoolRx();
 
     // Orc centurion hits YOU for 4 points of damage.
-    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|frenzies on) YOU for (?<dmg>\d+) points? of damage\.$")]
+    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|frenzies on) YOU for (?<dmg>\d+) points? of damage\.$")]
     private static partial Regex MeleeInRx();
 
     // Orc centurion tries to hit YOU, but misses! / but YOU dodge!
@@ -128,7 +128,7 @@ public static partial class LogParser
     // Third-party combat (group members, the player's pet, nearby fights):
     // "Orc centurion hits Lizzid for 4 points of damage." / "Lizzid tries to frenzy on orc centurion, but misses!"
     // "Orc centurion has taken 1 damage from Disease Cloud by Lizzid."
-    [GeneratedRegex(@"^(?<attacker>.+?) (?:hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.$")]
+    [GeneratedRegex(@"^(?<attacker>.+?) (?:hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.$")]
     private static partial Regex ThirdMeleeRx();
 
     [GeneratedRegex(@"^(?<attacker>.+?) tries to \w+(?: on)? .+?, but .+!$")]
@@ -138,7 +138,8 @@ public static partial class LogParser
     private static partial Regex ThirdDotRx();
 
     // Jibekn told you, 'Attacking orc centurion Master.'
-    [GeneratedRegex(@"^(?<pet>\S+) (?:tells|told) you, 'Attacking .+ Master\.'$")]
+    // A puma told you, 'Attacking a ghoul Master.'   (charmed creatures have multi-word names)
+    [GeneratedRegex(@"^(?<pet>.+?) (?:tells|told) you, 'Attacking .+ Master\.'$")]
     private static partial Regex PetClaimRx();
 
     [GeneratedRegex(@"^Your target resisted the (?<spell>.+?) spell\.$")]
@@ -357,6 +358,7 @@ public static partial class LogParser
     {
         "frenzy on" or "frenzies on" => "Frenzy",
         "hit" => "Hit",
+        "shoot" => "Archery",
         _ => char.ToUpperInvariant(verb[0]) + verb[1..],
     };
 }
