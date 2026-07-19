@@ -92,7 +92,7 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
 
 | Section | Summary stat | Click-in details |
 |---|---|---|
-| Combat | Session DPS (+ live fight DPS) | Damage per attack/spell/song with totals, hit counts and averages; crits, accuracy, biggest hit, time in combat, damage taken per mob, fizzles/resists |
+| Combat | Session DPS (+ live fight DPS) | Damage per attack/spell/song with totals, hit counts and averages (sortable by total/hits/avg); crit rate, accuracy, melee avoidance %, biggest hit, time in combat, damage taken per mob, fizzles/resists |
 | Healing | HPS (healing ÷ time in combat) | Healing done and received, heals cast per spell with totals/casts/averages, who healed you, hymn/regen tick counts (the log gives no amounts for those) |
 | Kills | Your kills incl. pet (+ group kills) | Count per creature type, kills/hour, group-member kill counts |
 | Loot | Items looted (+ items made) | Every item with counts, items created by merging |

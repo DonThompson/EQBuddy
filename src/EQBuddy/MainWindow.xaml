@@ -120,9 +120,31 @@
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-                    <TextBlock Text="Damage by attack" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    <Grid>
+                        <TextBlock Text="Damage by attack" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="sort:" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,4,0"/>
+                            <TextBlock x:Name="DmgOutSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
+                                       Foreground="{StaticResource AccentBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
+                            <TextBlock x:Name="DmgOutSortHits" Text="hits" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
+                            <TextBlock x:Name="DmgOutSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
+                        </StackPanel>
+                    </Grid>
                     <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
-                    <TextBlock Text="Damage taken from" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                    <Grid>
+                        <TextBlock Text="Damage taken from" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="sort:" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,4,0"/>
+                            <TextBlock x:Name="DmgInSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
+                                       Foreground="{StaticResource AccentBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
+                            <TextBlock x:Name="DmgInSortHits" Text="hits" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
+                            <TextBlock x:Name="DmgInSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
+                        </StackPanel>
+                    </Grid>
                     <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
@@ -143,8 +165,19 @@
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock x:Name="HealingSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="HealSpellsLabel" Text="Heals cast" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{StaticResource GoodBrush}" Visibility="Collapsed"/>
+                    <Grid>
+                        <TextBlock x:Name="HealSpellsLabel" Text="Heals cast" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource GoodBrush}" Visibility="Collapsed"/>
+                        <StackPanel x:Name="HealSortBar" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
+                            <TextBlock Text="sort:" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,4,0"/>
+                            <TextBlock x:Name="HealSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
+                                       Foreground="{StaticResource AccentBrush}" MouseLeftButtonDown="OnSortHeal"/>
+                            <TextBlock x:Name="HealSortHits" Text="casts" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
+                            <TextBlock x:Name="HealSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
+                        </StackPanel>
+                    </Grid>
                     <ItemsControl x:Name="HealSpellList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="HealersLabel" Text="Healed by" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource GoodBrush}" Visibility="Collapsed"/>

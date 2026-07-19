@@ -23,6 +23,11 @@ public partial class MainWindow : Window
 
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "loot", "money", "xp", "deaths"];
 
+    private enum StatSort { Total, Hits, Avg }
+    private StatSort _dmgOutSort = StatSort.Total;
+    private StatSort _dmgInSort = StatSort.Total;
+    private StatSort _healSort = StatSort.Total;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -259,21 +264,23 @@ public partial class MainWindow : Window
         {
             var acc = s.HitCount + s.MissCount > 0
                 ? (double)s.HitCount / (s.HitCount + s.MissCount) * 100 : 0;
+            var critRate = s.HitCount > 0 ? (double)s.CritCount / s.HitCount * 100 : 0;
+            var incomingSwings = s.AvoidedIncoming + s.MeleeHitsTaken;
+            var avoidance = incomingSwings > 0
+                ? (double)s.AvoidedIncoming / incomingSwings * 100 : 0;
             var combatTime = TimeSpan.FromSeconds(s.CombatSeconds);
             CombatSummary.Text =
-                $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell) · " +
-                $"{s.CritCount} crits · {acc:0}% accuracy\n" +
+                $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
+                $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
                 $"In combat {(int)combatTime.TotalMinutes}m {combatTime.Seconds}s this session\n" +
                 $"Biggest hit: {s.MaxHit:N0} ({s.MaxHitDesc})\n" +
-                $"Taken {s.DamageTaken:N0} · avoided {s.AvoidedIncoming} attacks\n" +
+                $"Taken {s.DamageTaken:N0} · avoided {s.AvoidedIncoming} of {incomingSwings} melee attacks ({avoidance:0}%)" +
                 (s.SpecialHits.Count > 0
                     ? "\n" + string.Join(" · ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}"))
                     : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "");
-            FillList(DamageSourceList, s.DamageBySource.Select(d =>
-                (d.Name, $"{d.Total:N0} · {d.Hits} hit{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));
-            FillList(DamageTakenList, s.DamageByAttacker.Select(d =>
-                (d.Name, $"{d.Total:N0} · {d.Hits} hit{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));
+            FillStatList(DamageSourceList, s.DamageBySource, _dmgOutSort, "hit");
+            FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
         }
 
         HealingHeader.Text = s.Hps > 0 ? $"{s.Hps:0.#} hps" : $"{s.HealingDone:N0} healed";
@@ -282,9 +289,10 @@ public partial class MainWindow : Window
             HealingSummary.Text =
                 $"Done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
                 (s.RegenTicks > 0 ? $"\n{s.RegenTicks} regen/hymn ticks (game logs no amounts for these)" : "");
-            HealSpellsLabel.Visibility = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillList(HealSpellList, s.HealsBySpell.Select(h =>
-                (h.Name, $"{h.Total:N0} · {h.Hits} cast{(h.Hits == 1 ? "" : "s")} · avg {(double)h.Total / h.Hits:0.#}")));
+            var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            HealSpellsLabel.Visibility = showSpells;
+            HealSortBar.Visibility = showSpells;
+            FillStatList(HealSpellList, s.HealsBySpell, _healSort, "cast");
             HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(HealerList, s.HealsByHealer.Select(h =>
                 (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
@@ -541,6 +549,54 @@ public partial class MainWindow : Window
                 });
             }
         });
+    }
+
+    /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>
+    private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)
+    {
+        var sorted = sort switch
+        {
+            StatSort.Hits => stats.OrderByDescending(d => d.Hits),
+            StatSort.Avg => stats.OrderByDescending(d => (double)d.Total / d.Hits),
+            _ => stats.OrderByDescending(d => d.Total),
+        };
+        FillList(list, sorted.Select(d =>
+            (d.Name, $"{d.Total:N0} · {d.Hits} {unit}{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));
+    }
+
+    private static StatSort ParseSort(object sender) => (string)((FrameworkElement)sender).Tag switch
+    {
+        "hits" => StatSort.Hits,
+        "avg" => StatSort.Avg,
+        _ => StatSort.Total,
+    };
+
+    private void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg)
+    {
+        total.Foreground = (Brush)FindResource(mode == StatSort.Total ? "AccentBrush" : "DimBrush");
+        hits.Foreground = (Brush)FindResource(mode == StatSort.Hits ? "AccentBrush" : "DimBrush");
+        avg.Foreground = (Brush)FindResource(mode == StatSort.Avg ? "AccentBrush" : "DimBrush");
+    }
+
+    private void OnSortDmgOut(object sender, MouseButtonEventArgs e)
+    {
+        _dmgOutSort = ParseSort(sender);
+        SetSortVisual(_dmgOutSort, DmgOutSortTotal, DmgOutSortHits, DmgOutSortAvg);
+        RefreshUi();
+    }
+
+    private void OnSortDmgIn(object sender, MouseButtonEventArgs e)
+    {
+        _dmgInSort = ParseSort(sender);
+        SetSortVisual(_dmgInSort, DmgInSortTotal, DmgInSortHits, DmgInSortAvg);
+        RefreshUi();
+    }
+
+    private void OnSortHeal(object sender, MouseButtonEventArgs e)
+    {
+        _healSort = ParseSort(sender);
+        SetSortVisual(_healSort, HealSortTotal, HealSortHits, HealSortAvg);
+        RefreshUi();
     }
 
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,

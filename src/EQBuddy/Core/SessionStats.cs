@@ -36,6 +36,7 @@ public sealed class SessionStats
 
     private long _damageTaken;
     private int _avoidedIncoming;
+    private int _meleeHitsTaken;
     private readonly Dictionary<string, (int Count, long Total)> _damageByAttacker = new(StringComparer.OrdinalIgnoreCase);
 
     private long _healingDone; private int _healCount;
@@ -166,6 +167,7 @@ public sealed class SessionStats
                     // A "pet" attacking us means the charm broke — stop crediting it.
                     if (IsPet(dt.Attacker)) _petName = null;
                     _damageTaken += dt.Amount;
+                    if (dt.Melee) _meleeHitsTaken++;
                     var atk = _damageByAttacker.TryGetValue(dt.Attacker, out var a) ? a : (0, 0L);
                     _damageByAttacker[dt.Attacker] = (atk.Item1 + 1, atk.Item2 + dt.Amount);
                     TrackCombat(dt.Time);
@@ -330,7 +332,7 @@ public sealed class SessionStats
         _damageDealt = _meleeDamage = _spellDamage = 0;
         _hitCount = _critCount = _missCount = 0; _maxHit = 0; _maxHitDesc = "";
         _damageBySource.Clear(); _specialHits.Clear();
-        _damageTaken = 0; _avoidedIncoming = 0; _damageByAttacker.Clear();
+        _damageTaken = 0; _avoidedIncoming = 0; _meleeHitsTaken = 0; _damageByAttacker.Clear();
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
@@ -402,6 +404,7 @@ public sealed class SessionStats
                 CombatSeconds = combatSeconds,
                 DamageTaken = _damageTaken,
                 AvoidedIncoming = _avoidedIncoming,
+                MeleeHitsTaken = _meleeHitsTaken,
                 DamageByAttacker = _damageByAttacker.OrderByDescending(kv => kv.Value.Total)
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total)).ToList(),
                 HealingDone = _healingDone,
@@ -486,6 +489,7 @@ public sealed class StatsSnapshot
     public double CombatSeconds { get; init; }
     public long DamageTaken { get; init; }
     public int AvoidedIncoming { get; init; }
+    public int MeleeHitsTaken { get; init; }
     public List<SourceDamage> DamageByAttacker { get; init; } = [];
     public long HealingDone { get; init; }
     public long HealingReceived { get; init; }
