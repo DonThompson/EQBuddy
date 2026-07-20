@@ -34,6 +34,29 @@ public class EqConfigTests : IDisposable
     }
 
     [Fact]
+    public void EnableLoggingIsSectionAware()
+    {
+        // A "Log=" key in another section must NOT be touched; the [Defaults]
+        // section gains Log=1.
+        File.WriteAllLines(IniPath,
+        [
+            "[Video]",
+            "Log=0",
+            "[Defaults]",
+            "SomeSetting=5",
+        ]);
+
+        Assert.True(EqConfig.EnsureLoggingEnabled(LogsDir, ignoreGameCheck: true));
+
+        var lines = File.ReadAllLines(IniPath);
+        Assert.Equal("[Video]", lines[0]);
+        Assert.Equal("Log=0", lines[1]);          // untouched — wrong section
+        Assert.Equal("[Defaults]", lines[2]);
+        Assert.Equal("Log=1", lines[3]);          // inserted in the right section
+        Assert.Contains("SomeSetting=5", lines);
+    }
+
+    [Fact]
     public void EnableLoggingIsIdempotent()
     {
         File.WriteAllLines(IniPath, ["[Defaults]", "Log=1"]);

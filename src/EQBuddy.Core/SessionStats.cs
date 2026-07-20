@@ -83,12 +83,13 @@ public sealed class SessionStats
 
     public void Apply(GameEvent e)
     {
+        var rolled = false;
         lock (_lock)
         {
             if (_lastEventTime is { } last && e.Time - last >= SessionGap)
             {
                 ResetLocked();
-                SessionRolledOver?.Invoke();
+                rolled = true;
             }
             _sessionStart ??= e.Time;
             _lastEventTime = e.Time;
@@ -252,6 +253,8 @@ public sealed class SessionStats
                 case ResistEvent: _resists++; break;
             }
         }
+        // REL-001: never invoke user callbacks while holding the stats lock.
+        if (rolled) SessionRolledOver?.Invoke();
     }
 
     private bool IsPet(string name) =>

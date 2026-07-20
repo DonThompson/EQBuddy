@@ -31,7 +31,10 @@ public sealed class AppSettings
             if (File.Exists(FilePath))
                 return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new();
         }
-        catch { /* corrupted settings — start fresh */ }
+        catch (Exception ex)
+        {
+            CoreLog.Error(ex); // corrupted settings — start fresh, but say so
+        }
         return new AppSettings();
     }
 
@@ -43,6 +46,9 @@ public sealed class AppSettings
             File.WriteAllText(FilePath, JsonSerializer.Serialize(this,
                 new JsonSerializerOptions { WriteIndented = true }));
         }
-        catch { /* non-fatal */ }
+        catch (Exception ex)
+        {
+            CoreLog.Error(ex); // non-fatal, but visible
+        }
     }
 }

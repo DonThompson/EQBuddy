@@ -25,6 +25,7 @@ public sealed class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        EQBuddy.Core.CoreLog.Sink = LogError;
         AppDomain.CurrentDomain.UnhandledException += (_, args) => LogError(args.ExceptionObject);
         TaskScheduler.UnobservedTaskException += (_, args) =>
         {

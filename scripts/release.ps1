@@ -43,12 +43,17 @@ Sign-File "$repo\dist\EQBuddySetup.exe"
 Compress-Archive -Path "$repo\dist\publish\EQBuddy.exe", "$repo\README.md" `
     -DestinationPath "$repo\dist\EQBuddy-portable.zip" -Force
 
+# Publish SHA-256 alongside the installer; the in-app updater refuses a
+# staged installer that doesn't match (UPDATE-003).
+(Get-FileHash "$repo\dist\EQBuddySetup.exe" -Algorithm SHA256).Hash |
+    Set-Content "$repo\dist\EQBuddySetup.exe.sha256" -NoNewline
+
 New-Item -ItemType Directory -Force $oneDrive | Out-Null
-Copy-Item "$repo\dist\EQBuddySetup.exe", "$repo\dist\EQBuddy-portable.zip" $oneDrive -Force
+Copy-Item "$repo\dist\EQBuddySetup.exe", "$repo\dist\EQBuddySetup.exe.sha256", "$repo\dist\EQBuddy-portable.zip" $oneDrive -Force
 Write-Host "Released $version to $oneDrive (family widgets will offer the update within 6 h)"
 
 if ($Tag) {
-    gh release create $Tag "$repo\dist\EQBuddySetup.exe" "$repo\dist\EQBuddy-portable.zip" `
+    gh release create $Tag "$repo\dist\EQBuddySetup.exe" "$repo\dist\EQBuddySetup.exe.sha256" "$repo\dist\EQBuddy-portable.zip" `
         --title "EQBuddy $Tag" --generate-notes
     if ($LASTEXITCODE -ne 0) { throw 'gh release failed' }
     Write-Host "GitHub release $Tag published"

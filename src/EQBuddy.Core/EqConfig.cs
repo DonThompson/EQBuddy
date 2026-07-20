@@ -23,7 +23,10 @@ public static class EqConfig
         return File.Exists(ini) ? ini : null;
     }
 
-    /// <summary>Set Log=1 in [Defaults]. Returns true if the file was changed.</summary>
+    /// <summary>
+    /// Set Log=1 in the [Defaults] section only (REL-002: section-aware — a "Log=" key in
+    /// any other section is left alone, as is every other line). Returns true if changed.
+    /// </summary>
     public static bool EnsureLoggingEnabled(string logFolder, bool ignoreGameCheck = false)
     {
         try
@@ -33,28 +36,46 @@ public static class EqConfig
             if (ini is null) return false;
 
             var lines = File.ReadAllLines(ini).ToList();
-            int idx = lines.FindIndex(l =>
+            int defaultsHeader = -1;
+            int logLine = -1;
+            var inDefaults = false;
+            for (var i = 0; i < lines.Count; i++)
             {
-                var t = l.TrimStart();
-                return t.StartsWith("Log=", StringComparison.OrdinalIgnoreCase);
-            });
-            if (idx >= 0)
+                var t = lines[i].Trim();
+                if (t.StartsWith('[') && t.EndsWith(']'))
+                {
+                    inDefaults = t.Equals("[Defaults]", StringComparison.OrdinalIgnoreCase);
+                    if (inDefaults) defaultsHeader = i;
+                    continue;
+                }
+                if (inDefaults && t.StartsWith("Log=", StringComparison.OrdinalIgnoreCase))
+                {
+                    logLine = i;
+                    break;
+                }
+            }
+
+            if (logLine >= 0)
             {
-                if (lines[idx].Trim().Equals("Log=1", StringComparison.OrdinalIgnoreCase))
+                if (lines[logLine].Trim().Equals("Log=1", StringComparison.OrdinalIgnoreCase))
                     return false;
-                lines[idx] = "Log=1";
+                lines[logLine] = "Log=1";
+            }
+            else if (defaultsHeader >= 0)
+            {
+                lines.Insert(defaultsHeader + 1, "Log=1");
             }
             else
             {
-                int defaults = lines.FindIndex(l => l.Trim().Equals("[Defaults]", StringComparison.OrdinalIgnoreCase));
-                if (defaults >= 0) lines.Insert(defaults + 1, "Log=1");
-                else { lines.Insert(0, "[Defaults]"); lines.Insert(1, "Log=1"); }
+                lines.Insert(0, "[Defaults]");
+                lines.Insert(1, "Log=1");
             }
             File.WriteAllLines(ini, lines);
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            CoreLog.Error(ex);
             return false;
         }
     }

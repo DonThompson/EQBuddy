@@ -22,6 +22,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        Core.CoreLog.Sink = LogError;
         DispatcherUnhandledException += (_, args) =>
         {
             LogError(args.Exception);

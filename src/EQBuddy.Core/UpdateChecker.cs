@@ -52,9 +52,6 @@ public static class UpdateChecker
         if (!string.IsNullOrWhiteSpace(configured) && Directory.Exists(configured))
             return configured;
 
-        var known = @"C:\Users\david\OneDrive\EQBuddyDownload";
-        if (Directory.Exists(known)) return known;
-
         foreach (var env in (string[])["OneDrive", "OneDriveConsumer", "OneDriveCommercial"])
         {
             var root = Environment.GetEnvironmentVariable(env);
@@ -112,6 +109,8 @@ public static class UpdateChecker
     /// <summary>
     /// Copy the setup out of OneDrive into %TEMP% (forces hydration of cloud-only files,
     /// and survives OneDrive sync touching the original), then return the staged path.
+    /// When a sibling "EQBuddySetup.exe.sha256" exists (published by the release script),
+    /// the staged copy must match it — a corrupted or tampered installer is never run.
     /// </summary>
     public static string StageForInstall(UpdateInfo info)
     {
@@ -119,6 +118,17 @@ public static class UpdateChecker
             throw new InvalidOperationException("Web updates are installed via the browser, not staged.");
         var staged = Path.Combine(Path.GetTempPath(), SetupName);
         File.Copy(info.SetupPath, staged, overwrite: true);
+
+        var shaFile = info.SetupPath + ".sha256";
+        if (File.Exists(shaFile))
+        {
+            var expected = File.ReadAllText(shaFile).Trim();
+            using var stream = File.OpenRead(staged);
+            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+            if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(
+                    $"Update installer failed integrity check (expected {expected[..12]}…, got {actual[..12]}…).");
+        }
         return staged;
     }
 }
