@@ -61,6 +61,15 @@ Tracked loot & alerts:
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
+Session history (automatic):
+- Every meaningful session is saved to a local SQLite database
+  (`%AppData%\EQBuddy\history.db`) — no uploads, nothing manual. Sessions end and save
+  when you go quiet for 60+ minutes, switch characters, or close EQBuddy; the active
+  session checkpoints every 5 minutes so a crash loses almost nothing.
+- ⚙ → **Session history…** opens the browser: filter by character, search anything
+  (zone, loot, creature names, notes, tags), view the full per-session breakdown, add
+  notes/tags, copy a shareable summary, export JSON, or delete.
+
 Hotkeys (global, defaults; edit in `%AppData%\EQBuddy\settings.json`):
 - `Ctrl+Shift+H` show/hide the widget · `Ctrl+Shift+T` click-through (game clicks pass
   through the widget; border turns amber) · `Ctrl+Shift+M` mini mode ·

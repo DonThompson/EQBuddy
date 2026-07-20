@@ -14,6 +14,7 @@
                 <MenuItem Header="Check for updates" Click="OnCheckUpdates"/>
                 <MenuItem Header="Options… (size, opacity, tracked loot)" Click="OnOptions"/>
                 <MenuItem Header="Drop camp marker" Click="OnCampMarker"/>
+                <MenuItem Header="Session history…" Click="OnHistory"/>
                 <Separator/>
                 <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>
                 <MenuItem Header="Auto-detect log folder" Click="OnAutoDetectLogFolder"/>

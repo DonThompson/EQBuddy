@@ -54,6 +54,13 @@ public sealed class SessionStats
         set { lock (_lock) _characterName = value; }
     }
 
+    private string? _serverName;
+    public string? ServerName
+    {
+        get { lock (_lock) return _serverName; }
+        set { lock (_lock) _serverName = value; }
+    }
+
     private readonly Dictionary<string, (int Count, string LastSource)> _loot = new(StringComparer.OrdinalIgnoreCase);
     private int _lootCount;
     private readonly Dictionary<string, int> _crafted = new(StringComparer.OrdinalIgnoreCase);
@@ -93,14 +100,19 @@ public sealed class SessionStats
     private bool _petConfirmed;      // false = blink-only (charm suspected, no "Master" tell yet)
 
     public event Action? SessionRolledOver;
+    /// <summary>Raised (outside the lock) with the final snapshot of a session that just
+    /// ended via the inactivity gap — the hook for persisting it to history.</summary>
+    public event Action<StatsSnapshot>? SessionEnding;
 
     public void Apply(GameEvent e)
     {
         var rolled = false;
+        StatsSnapshot? finalSnapshot = null;
         lock (_lock)
         {
             if (_lastEventTime is { } last && e.Time - last >= SessionGap)
             {
+                finalSnapshot = BuildSnapshotLocked(null, null);
                 ResetLocked();
                 rolled = true;
             }
@@ -281,7 +293,11 @@ public sealed class SessionStats
             }
         }
         // REL-001: never invoke user callbacks while holding the stats lock.
-        if (rolled) SessionRolledOver?.Invoke();
+        if (rolled)
+        {
+            if (finalSnapshot is not null) SessionEnding?.Invoke(finalSnapshot);
+            SessionRolledOver?.Invoke();
+        }
     }
 
     private bool IsPet(string name) =>
@@ -397,6 +413,13 @@ public sealed class SessionStats
     public StatsSnapshot Snapshot(TimeSpan? recentWindow, IReadOnlyList<TrackedRule>? rules)
     {
         lock (_lock)
+        {
+            return BuildSnapshotLocked(recentWindow, rules);
+        }
+    }
+
+    private StatsSnapshot BuildSnapshotLocked(TimeSpan? recentWindow, IReadOnlyList<TrackedRule>? rules)
+    {
         {
             double combatSeconds = _closedCombatSeconds;
             long combatDamage = _closedCombatDamage;

@@ -13,6 +13,9 @@ public partial class MainWindow : Window
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly SessionStats _stats = new();
     private readonly LogWatcher _watcher;
+    private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
+    private readonly SessionArchiver _archiver;
+    private DateTime _lastCheckpoint = DateTime.MinValue;
     private readonly DispatcherTimer _uiTimer;
     private DateTime _lastCharScan = DateTime.MinValue;
     private DateTime _lastJanitorRun = DateTime.MinValue;
@@ -32,6 +35,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _watcher = new LogWatcher(_stats);
+        _archiver = new SessionArchiver(_repo);
+        // A 60-minute quiet gap ends a session — persist its final state to history.
+        _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");
 
         MaxHeight = SystemParameters.WorkArea.Height - 20;
         SectionScroll.MaxHeight = SystemParameters.WorkArea.Height - 160;
@@ -74,6 +80,13 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
+
+        if (Environment.GetEnvironmentVariable("EQBUDDY_HISTORY") == "1")
+            Loaded += async (_, _) =>
+            {
+                await Task.Delay(4000); // let initial ingest finish
+                OnHistory(this, new RoutedEventArgs());
+            };
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_MENU") == "1")
             Loaded += (_, _) =>
@@ -242,7 +255,12 @@ public partial class MainWindow : Window
         }
         if (!string.Equals(active.FilePath, _watcher.CurrentPath, StringComparison.OrdinalIgnoreCase))
         {
+            // Character switch: the outgoing character's session goes to history first
+            // (SESSION-004: switches never merge data).
+            if (_watcher.CurrentPath is not null)
+                _archiver.FinalizeActive(_stats.Snapshot(), "CharacterChanged");
             _watcher.Select(active.FilePath);
+            _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
             CharLabel.Text = active.Display;
         }
     }
@@ -297,6 +315,13 @@ public partial class MainWindow : Window
             _settings.TrackedRules);
 
         ProcessTrackedAlerts(s);
+
+        // Every 5 min: checkpoint the active session so a crash loses little (RECOVERY-001).
+        if (DateTime.Now - _lastCheckpoint > TimeSpan.FromMinutes(5))
+        {
+            _lastCheckpoint = DateTime.Now;
+            _archiver.Checkpoint(s);
+        }
 
         if (MiniRoot.Visibility == Visibility.Visible)
             UpdateMiniChips(s);
@@ -554,6 +579,21 @@ public partial class MainWindow : Window
     }
 
     private void OnCampMarker(object sender, RoutedEventArgs e) => DropCampMarker();
+
+    private HistoryWindow? _historyWindow;
+
+    private void OnHistory(object sender, RoutedEventArgs e)
+    {
+        // Flush the live session so it appears in the list as "(in progress)".
+        _archiver.CheckpointSync(_stats.Snapshot());
+        if (_historyWindow is { IsLoaded: true })
+        {
+            _historyWindow.Activate();
+            return;
+        }
+        _historyWindow = new HistoryWindow(_repo);
+        _historyWindow.Show();
+    }
 
     private void DropCampMarker()
     {
@@ -947,7 +987,9 @@ public partial class MainWindow : Window
         _settings.WindowLeft = Left;
         _settings.WindowTop = Top;
         _settings.Save();
+        _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();
+        _repo.Dispose();
         base.OnClosed(e);
         Application.Current.Shutdown();
     }
