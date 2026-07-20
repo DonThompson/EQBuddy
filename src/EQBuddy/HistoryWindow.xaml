@@ -20,6 +20,7 @@
                 <ColumnDefinition Width="180"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <ComboBox x:Name="CharFilter" SelectionChanged="OnFilterChanged" Margin="0,0,8,0"/>
             <TextBox x:Name="SearchBox" Grid.Column="1" FontSize="12" Padding="6,4"
@@ -28,11 +29,15 @@
                      ToolTip="Search character, zone, notes, tags, loot, or creature names"/>
             <TextBlock x:Name="CountText" Grid.Column="2" Style="{StaticResource Dim}"
                        VerticalAlignment="Center" Margin="8,0,0,0"/>
+            <Button Grid.Column="3" Content="Import log…" Style="{StaticResource IconButton}"
+                    FontSize="12" Margin="8,0,0,0" Click="OnImportLog"
+                    ToolTip="Parse an existing eqlog file into session history (Ctrl-click two sessions to compare them)"/>
         </Grid>
 
-        <!-- Session list -->
+        <!-- Session list (Ctrl-click two rows to compare) -->
         <ListBox x:Name="SessionList" Grid.Row="1" Background="#26FFFFFF" BorderThickness="0"
                  Foreground="{StaticResource TextBrush}" SelectionChanged="OnSessionSelected"
+                 SelectionMode="Extended"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
 
         <!-- Detail -->

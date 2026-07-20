@@ -367,9 +367,16 @@ public partial class MainWindow : Window
                 (s.SpecialHits.Count > 0
                     ? "\n" + string.Join(" · ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}"))
                     : "") +
-                (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "");
+                (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
+                (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillStatList(DamageSourceList, s.DamageBySource, _dmgOutSort, "hit");
             FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
+            RecentFightsLabel.Visibility = s.RecentEncounters.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(RecentFightsList, s.RecentEncounters.Select(f =>
+                (f.Name, $"{f.DurationSeconds:0}s · {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " · ?" : "")}")));
+            StanceLabel.Visibility = s.Stances.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(StanceList, s.Stances.Select(x =>
+                (x.Name, $"{x.Damage:N0} dmg · {(int)x.CombatSeconds}s · {x.Dps:0.#} dps")));
         }
 
         HealingHeader.Text = s.Hps > 0 ? $"{s.Hps:0.#} hps" : $"{s.HealingDone:N0} healed";
@@ -395,6 +402,10 @@ public partial class MainWindow : Window
             KillsSummary.Text = $"{s.KillsPerHour:0.0} kills/hr · {s.KillsPerActiveHour:0.0} active" +
                 (s.Recent is { } rk ? $" · last {(int)rk.Window.TotalMinutes}m: {rk.Kills}" : "");
             FillList(KillList, s.YourKills.Select(k => (k.Name, $"×{k.Count}")));
+            var farmed = s.Mobs.Where(m => m.Kills > 0).ToList();
+            FarmingLabel.Visibility = farmed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(FarmingList, farmed.Select(m =>
+                (m.Name, $"avg {m.AvgFightSeconds:0}s · {StatsSnapshot.FormatCoin(m.Copper)} · {m.XpPercent:0.0}% xp")));
             var showParty = s.PartyKillsByKiller.Count > 0;
             PartyKillsLabel.Visibility = showParty ? Visibility.Visible : Visibility.Collapsed;
             FillList(PartyKillList, s.PartyKillsByKiller.Select(k => (k.Name, $"×{k.Count}")));
@@ -429,7 +440,12 @@ public partial class MainWindow : Window
                     : "") +
                 (s.HoursToLevel is { } eta ? $"\nNext level in {FormatEta(eta)} at this pace" : "") +
                 (s.Levels.Count > 0
-                    ? "\n" + string.Join(", ", s.Levels.Select(l => $"{l.Text} at {l.Time:h:mm tt}"))
+                    ? "\n" + string.Join(", ", s.Levels.Select((l, i) =>
+                    {
+                        var from = i == 0 ? s.SessionStart : s.Levels[i - 1].Time;
+                        var mins = from is { } f ? (int)(l.Time - f).TotalMinutes : 0;
+                        return $"{l.Text} at {l.Time:h:mm tt} ({mins}m)";
+                    }))
                     : "");
             FillList(SkillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
         }

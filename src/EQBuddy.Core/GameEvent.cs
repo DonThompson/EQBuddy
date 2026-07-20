@@ -43,3 +43,5 @@ public record ThirdMissEvent(DateTime Time, string Attacker) : GameEvent(Time);
 public record ResistEvent(DateTime Time) : GameEvent(Time);
 /// <summary>A user-dropped camp/segment marker (hotkey or menu), timestamped with wall clock.</summary>
 public record SessionMarkerEvent(DateTime Time, string Label) : GameEvent(Time);
+/// <summary>"You assume a defensive stance." — stance state change (EQL-specific).</summary>
+public record StanceEvent(DateTime Time, string Stance) : GameEvent(Time);

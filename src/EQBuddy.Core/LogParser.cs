@@ -102,6 +102,10 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your wounds begin to heal\.$")]
     private static partial Regex RegenTickRx();
 
+    // You assume a ranged stance. / You assume an offensive stance.
+    [GeneratedRegex(@"^You assume an? (?<stance>.+?) stance\.$")]
+    private static partial Regex StanceRx();
+
     [GeneratedRegex(@"(?<n>\d+) (?<unit>platinum|gold|silver|copper)")]
     private static partial Regex CoinPartRx();
 
@@ -310,6 +314,9 @@ public static partial class LogParser
 
         if ((r = ResistAltRx().Match(msg)).Success)
             return new ResistEvent(ts);
+
+        if ((r = StanceRx().Match(msg)).Success)
+            return new StanceEvent(ts, Normalize(r.Groups["stance"].Value));
 
         // Pet announcement and third-party combat (checked last — specific patterns above win).
         if ((r = PetClaimRx().Match(msg)).Success)

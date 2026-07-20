@@ -91,6 +91,31 @@ public sealed class SessionStats
 
     private readonly List<(DateTime Time, string Label)> _markers = new();
 
+    // ---- encounters + mob farming (Release C) ----
+    private sealed class ActiveFight
+    {
+        public DateTime Start, Last;
+        public long DmgOut, DmgIn;
+    }
+    private sealed class MobAgg
+    {
+        public int Kills, Encounters;
+        public double FightSeconds;
+        public double Xp;
+        public long Copper;
+        public readonly Dictionary<string, int> Loot = new(StringComparer.OrdinalIgnoreCase);
+    }
+    private static readonly TimeSpan EncounterTimeout = TimeSpan.FromSeconds(20);
+    private static readonly TimeSpan RewardWindow = TimeSpan.FromSeconds(3);
+    private readonly Dictionary<string, ActiveFight> _activeFights = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<EncounterInfo> _encounters = new();
+    private readonly Dictionary<string, MobAgg> _mobs = new(StringComparer.OrdinalIgnoreCase);
+    private (string Name, DateTime Time)? _lastKill;
+
+    // ---- stance windows (Release D) ----
+    private string? _currentStance;
+    private readonly Dictionary<string, (double Seconds, long Damage)> _stanceAgg = new(StringComparer.OrdinalIgnoreCase);
+
     // Combat-window tracking for DPS
     private readonly List<(DateTime Start, DateTime End)> _combatSpans = new();
     private double _closedCombatSeconds; private long _closedCombatDamage;
@@ -130,16 +155,24 @@ public sealed class SessionStats
                     or ThirdSchoolEvent or ThirdMissEvent or HealEvent or RegenTickEvent);
             }
 
+            SweepStaleFights(e.Time);
+
             switch (e)
             {
                 case KillEvent k when k.Killer == "You" || IsPet(k.Killer):
                     Bump(_yourKills, k.Target);
                     TrackCombat(k.Time);
+                    FinalizeFight(k.Target, k.Time, "Killed");
+                    Mob(k.Target).Kills++;
+                    _lastKill = (k.Target, k.Time);
                     break;
                 case KillEvent k:
                     Bump(_partyKillsByTarget, k.Target);
                     Bump(_partyKillsByKiller, k.Killer);
                     TrackCombat(k.Time, canStart: false);
+                    // Someone else finished a mob we may have been fighting.
+                    FinalizeFight(k.Target, k.Time, "Killed");
+                    _lastKill = (k.Target, k.Time);
                     break;
                 case PetClaimEvent pc:
                     ConfirmPet(LogParser.Normalize(pc.PetName));
@@ -191,6 +224,12 @@ public sealed class SessionStats
                     var src = _damageBySource.TryGetValue(dd.Source, out var s) ? s : (0, 0L);
                     _damageBySource[dd.Source] = (src.Item1 + 1, src.Item2 + dd.Amount);
                     TrackCombat(dd.Time, dd.Amount);
+                    TouchFight(dd.Target, dd.Time, dmgOut: dd.Amount);
+                    if (_currentStance is { } st1)
+                    {
+                        var sv1 = _stanceAgg.TryGetValue(st1, out var stCur) ? stCur : (0.0, 0L);
+                        _stanceAgg[st1] = (sv1.Item1, sv1.Item2 + dd.Amount);
+                    }
                     break;
                 case MissEvent { Outgoing: true } m:
                     _missCount++;
@@ -205,6 +244,7 @@ public sealed class SessionStats
                     if (IsPet(dt.Attacker)) _petName = null;
                     _damageTaken += dt.Amount;
                     if (dt.Melee) _meleeHitsTaken++;
+                    TouchFight(dt.Attacker, dt.Time, dmgIn: dt.Amount);
                     var atk = _damageByAttacker.TryGetValue(dt.Attacker, out var a) ? a : (0, 0L);
                     _damageByAttacker[dt.Attacker] = (atk.Item1 + 1, atk.Item2 + dt.Amount);
                     TrackCombat(dt.Time);
@@ -238,6 +278,8 @@ public sealed class SessionStats
                     var cur = _loot.TryGetValue(l.Item, out var lv) ? lv : (0, l.Source);
                     _loot[l.Item] = (cur.Item1 + 1, l.Source);
                     _lootCount++;
+                    // Loot lines name the corpse — explicit creature correlation (CORRELATE-005).
+                    Bump(Mob(l.Source).Loot, l.Item);
                     break;
                 case CraftEvent c:
                     Bump(_crafted, c.Item);
@@ -253,10 +295,15 @@ public sealed class SessionStats
                 case MoneyEvent m:
                     _copper += m.Copper; _coinDrops++;
                     if (m.Copper > _biggestDrop) _biggestDrop = m.Copper;
+                    // Corpse coin arriving right after a kill belongs to that creature (timing correlation).
+                    if (_lastKill is { } lk1 && m.Time - lk1.Time <= RewardWindow)
+                        Mob(lk1.Name).Copper += m.Copper;
                     break;
                 case XpEvent x:
                     _xpPercent += x.Percent; _xpTicks++;
                     _xpSinceLevel += x.Percent;
+                    if (_lastKill is { } lk2 && x.Time - lk2.Time <= RewardWindow)
+                        Mob(lk2.Name).Xp += x.Percent;
                     break;
                 case LevelEvent lv2:
                     _levels.Add((lv2.Time, lv2.Level));
@@ -265,10 +312,19 @@ public sealed class SessionStats
                 case AaEvent aa:
                     _aaGained++; _aaTotal = aa.TotalPoints;
                     break;
+                case StanceEvent stc:
+                    // Close the open combat window under the OLD stance before switching,
+                    // so its time is attributed correctly.
+                    CloseCombatLocked();
+                    _currentStance = stc.Stance;
+                    if (!_stanceAgg.ContainsKey(stc.Stance)) _stanceAgg[stc.Stance] = (0, 0);
+                    break;
                 case AutoSellEvent asell:
                     var lcur = _loot.TryGetValue(asell.Item, out var lval) ? lval : (0, asell.Source);
                     _loot[asell.Item] = (lcur.Item1 + asell.Count, asell.Source);
                     _lootCount += asell.Count;
+                    var mobLoot = Mob(asell.Source).Loot;
+                    mobLoot[asell.Item] = mobLoot.TryGetValue(asell.Item, out var mlc) ? mlc + asell.Count : asell.Count;
                     _vendorCopper += asell.Copper; _salesCount++;
                     var scur = _soldItems.TryGetValue(asell.Item, out var sval) ? sval : (0, 0L);
                     _soldItems[asell.Item] = (scur.Item1 + asell.Count, scur.Item2 + asell.Copper);
@@ -329,6 +385,43 @@ public sealed class SessionStats
         var src = _damageBySource.TryGetValue(label, out var s) ? s : (0, 0L);
         _damageBySource[label] = (src.Item1 + 1, src.Item2 + amount);
         TrackCombat(t, amount);
+        TouchFight(target, t, dmgOut: amount);
+    }
+
+    private MobAgg Mob(string name) =>
+        _mobs.TryGetValue(name, out var m) ? m : _mobs[name] = new MobAgg();
+
+    private void TouchFight(string target, DateTime t, long dmgOut = 0, long dmgIn = 0)
+    {
+        if (!_activeFights.TryGetValue(target, out var f))
+            _activeFights[target] = f = new ActiveFight { Start = t };
+        f.Last = t;
+        f.DmgOut += dmgOut;
+        f.DmgIn += dmgIn;
+    }
+
+    private void FinalizeFight(string target, DateTime t, string outcome)
+    {
+        if (!_activeFights.Remove(target, out var f)) return;
+        var dur = Math.Max(1, ((outcome == "Killed" ? t : f.Last) - f.Start).TotalSeconds);
+        _encounters.Add(new EncounterInfo(target, f.Start, dur, f.DmgOut, f.DmgIn,
+            f.DmgOut / dur, outcome));
+        if (_encounters.Count > 300) _encounters.RemoveRange(0, 100);
+        var mob = Mob(target);
+        mob.Encounters++;
+        mob.FightSeconds += dur;
+    }
+
+    private void SweepStaleFights(DateTime now)
+    {
+        if (_activeFights.Count == 0) return;
+        List<string>? stale = null;
+        foreach (var (name, f) in _activeFights)
+            if (now - f.Last > EncounterTimeout)
+                (stale ??= []).Add(name);
+        if (stale is null) return;
+        foreach (var name in stale)
+            FinalizeFight(name, now, "Timeout");   // ENCOUNTER-004: no kill line seen
     }
 
     /// <summary>
@@ -360,10 +453,17 @@ public sealed class SessionStats
     {
         if (_combatStart is { } cs && _combatLast is { } cl)
         {
-            _closedCombatSeconds += Math.Max(1, (cl - cs).TotalSeconds);
+            var span = Math.Max(1, (cl - cs).TotalSeconds);
+            _closedCombatSeconds += span;
             _closedCombatDamage += _combatDamage;
             _combatSpans.Add((cs, cl));
             if (_combatSpans.Count > 2048) _combatSpans.RemoveRange(0, 1024);
+            // Attribute the combat time to whichever stance was active (STANCE-002-lite).
+            if (_currentStance is { } st)
+            {
+                var v = _stanceAgg.TryGetValue(st, out var cur) ? cur : (0.0, 0L);
+                _stanceAgg[st] = (v.Item1 + span, v.Item2);
+            }
         }
         _combatStart = null; _combatLast = null; _combatDamage = 0;
     }
@@ -398,6 +498,8 @@ public sealed class SessionStats
         _lastOwnAction = null; _petName = null; _petConfirmed = false;
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
+        _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
+        _currentStance = null; _stanceAgg.Clear();
     }
 
     private static void Bump(Dictionary<string, int> d, string key) =>
@@ -485,17 +587,26 @@ public sealed class SessionStats
             {
                 foreach (var rule in rules)
                 {
-                    if (!rule.Enabled || rule.Pattern.Length == 0) continue;
+                    if (!rule.Enabled) continue;
+                    if (rule.Pattern.Length == 0 &&
+                        rule.Kind is not (WatchKind.Death or WatchKind.Milestone)) continue;
                     var items = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                     var total = 0;
                     DateTime? first = null, last = null;
                     string? lastItem = null;
                     foreach (var evt in _journal)
                     {
-                        var (item, qty) = evt switch
+                        var (item, qty) = (rule.Kind, evt) switch
                         {
-                            LootEvent l when rule.Matches(l.Item) => (l.Item, 1),
-                            AutoSellEvent a when rule.Matches(a.Item) => (a.Item, a.Count),
+                            (WatchKind.Loot, LootEvent l) when rule.Matches(l.Item) => (l.Item, 1),
+                            (WatchKind.Loot, AutoSellEvent a) when rule.Matches(a.Item) => (a.Item, a.Count),
+                            (WatchKind.Kill, KillEvent k) when (k.Killer == "You" || IsPet(k.Killer))
+                                && rule.Matches(k.Target) => (k.Target, 1),
+                            (WatchKind.SkillUp, SkillUpEvent su) when rule.Matches(su.Skill) => (su.Skill, 1),
+                            (WatchKind.Death, DeathEvent de) when rule.Matches(de.Killer)
+                                => ($"Slain by {de.Killer}", 1),
+                            (WatchKind.Milestone, LevelEvent lev) => ($"Level {lev.Level}", 1),
+                            (WatchKind.Milestone, AaEvent) => ("AA point", 1),
                             _ => (null, 0),
                         };
                         if (item is null) continue;
@@ -600,6 +711,23 @@ public sealed class SessionStats
                 Recent = recent,
                 Tracked = tracked,
                 Markers = _markers.Select(m => new TimedDetail(m.Time, m.Label)).ToList(),
+                RecentEncounters = _encounters.TakeLast(8).Reverse().ToList(),
+                EncounterCount = _encounters.Count,
+                Mobs = _mobs.OrderByDescending(kv => kv.Value.Kills)
+                    .Select(kv => new MobSummary(
+                        kv.Key, kv.Value.Kills, kv.Value.Encounters,
+                        kv.Value.Encounters > 0 ? kv.Value.FightSeconds / kv.Value.Encounters : 0,
+                        kv.Value.Xp, kv.Value.Copper,
+                        kv.Value.Loot.OrderByDescending(l => l.Value)
+                            .Select(l => new MobLoot(l.Key, l.Value,
+                                kv.Value.Kills > 0 ? 100.0 * l.Value / kv.Value.Kills : null))
+                            .ToList()))
+                    .ToList(),
+                CurrentStance = _currentStance ?? "",
+                Stances = _stanceAgg
+                    .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,
+                        kv.Value.Seconds > 0 ? kv.Value.Damage / kv.Value.Seconds : 0))
+                    .OrderByDescending(x => x.CombatSeconds).ToList(),
             };
         }
     }
@@ -694,6 +822,11 @@ public sealed class StatsSnapshot
     public RecentRates? Recent { get; init; }
     public List<TrackedRuleResult> Tracked { get; init; } = [];
     public List<TimedDetail> Markers { get; init; } = [];
+    public List<EncounterInfo> RecentEncounters { get; init; } = [];
+    public int EncounterCount { get; init; }
+    public List<MobSummary> Mobs { get; init; } = [];
+    public string CurrentStance { get; init; } = "";
+    public List<StanceInfo> Stances { get; init; } = [];
 
     /// <summary>Format copper as "3p 2g 4s 7c".</summary>
     public static string FormatCoin(long copper)

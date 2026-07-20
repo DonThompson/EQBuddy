@@ -63,6 +63,19 @@ public partial class HistoryWindow : Window
 
     private void OnSessionSelected(object sender, SelectionChangedEventArgs e)
     {
+        // Two selected sessions → side-by-side comparison (COMPARE-*).
+        if (SessionList.SelectedItems.Count == 2)
+        {
+            var idx = SessionList.SelectedItems.Cast<object>()
+                .Select(item => SessionList.Items.IndexOf(item)).OrderBy(x => x).ToList();
+            if (idx[0] >= 0 && idx[1] < _rows.Count)
+            {
+                _selected = null;
+                DetailText.Text = BuildComparison(_rows[idx[0]], _rows[idx[1]]);
+                return;
+            }
+        }
+
         var i = SessionList.SelectedIndex;
         if (i < 0 || i >= _rows.Count) { _selected = null; return; }
         _selected = _rows[i];
@@ -113,11 +126,108 @@ public partial class HistoryWindow : Window
                 sb.AppendLine($"  {l.Item,-34} ×{l.Count}");
             sb.AppendLine();
         }
+        var farmed = s.Mobs.Where(m => m.Kills > 0).Take(8).ToList();
+        if (farmed.Count > 0)
+        {
+            sb.AppendLine("Mob farming (observed personal rates):");
+            foreach (var m in farmed)
+            {
+                sb.AppendLine($"  {m.Name} — {m.Kills} kills · avg fight {m.AvgFightSeconds:0}s · " +
+                              $"{m.XpPercent:0.0}% xp · {StatsSnapshot.FormatCoin(m.Copper)}");
+                foreach (var l in m.Loot.Take(4))
+                    sb.AppendLine($"      {l.Item,-30} ×{l.Count}" +
+                        (l.DropRatePct is { } pct ? $"  {pct:0.#}% ({l.Count}/{m.Kills})" : ""));
+            }
+            sb.AppendLine();
+        }
+        if (s.Stances.Count > 0)
+            sb.AppendLine("Stances: " + string.Join(" · ",
+                s.Stances.Select(x => $"{x.Name} {x.Damage:N0} dmg over {(int)x.CombatSeconds}s ({x.Dps:0.#} dps)")));
         if (s.Zones.Count > 0)
             sb.AppendLine("Zones: " + string.Join(" → ", s.Zones.Select(z => z.Text)));
         if (s.Markers.Count > 0)
             sb.AppendLine("Markers: " + string.Join(" · ", s.Markers.Select(m => $"{m.Text} ({m.Time:h:mm tt})")));
         return sb.ToString();
+    }
+
+    private string BuildComparison(SessionRow ra, SessionRow rb)
+    {
+        var sa = _repo.LoadSnapshot(ra.Id);
+        var sb2 = _repo.LoadSnapshot(rb.Id);
+        if (sa is null || sb2 is null) return "Could not load one of the sessions.";
+        var b = new StringBuilder();
+        b.AppendLine("SESSION COMPARISON");
+        b.AppendLine($"A: {ra.Character} · {ra.StartLocal:MMM d h:mm tt} · {ra.PrimaryZone}");
+        b.AppendLine($"B: {rb.Character} · {rb.StartLocal:MMM d h:mm tt} · {rb.PrimaryZone}");
+        if (ra.Character != rb.Character || ra.PrimaryZone != rb.PrimaryZone)
+            b.AppendLine("(different character/zone — rates may not compare directly)");
+        b.AppendLine();
+        b.AppendLine($"{"",-16}{"A",14}{"B",14}");
+        void Row(string label, string a2, string b3) => b.AppendLine($"{label,-16}{a2,14}{b3,14}");
+        Row("Duration", $"{ra.ElapsedSeconds / 3600:0.0}h", $"{rb.ElapsedSeconds / 3600:0.0}h");
+        Row("Active", $"{ra.ActiveSeconds / 60:0}m", $"{rb.ActiveSeconds / 60:0}m");
+        Row("XP/hr", $"{sa.XpPerHour:0.0}%", $"{sb2.XpPerHour:0.0}%");
+        Row("Kills/hr", $"{sa.KillsPerHour:0.0}", $"{sb2.KillsPerHour:0.0}");
+        Row("Money/hr", StatsSnapshot.FormatCoin(sa.CopperPerHour), StatsSnapshot.FormatCoin(sb2.CopperPerHour));
+        Row("DPS", $"{sa.SessionDps:0.0}", $"{sb2.SessionDps:0.0}");
+        Row("HPS", $"{sa.Hps:0.0}", $"{sb2.Hps:0.0}");
+        Row("Damage taken", $"{sa.DamageTaken:N0}", $"{sb2.DamageTaken:N0}");
+        Row("Deaths", $"{sa.Deaths.Count}", $"{sb2.Deaths.Count}");
+        Row("Loot items", $"{sa.LootTotal}", $"{sb2.LootTotal}");
+        return b.ToString();
+    }
+
+    private void OnImportLog(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "EverQuest logs (eqlog_*.txt)|*.txt",
+            Title = "Import an existing log into session history",
+        };
+        if (dlg.ShowDialog(this) != true) return;
+        var path = dlg.FileName;
+        var info = CharacterLog.FromPath(path);
+        var character = info?.Character ?? Path.GetFileNameWithoutExtension(path);
+        var server = info?.Server ?? "imported";
+        DetailText.Text = $"Importing {Path.GetFileName(path)}…";
+
+        Task.Run(() =>
+        {
+            var imported = 0;
+            try
+            {
+                // Same parser + session-gap model as live monitoring (IMPORT-009):
+                // each 60-minute-gap rollover persists one reconstructed session.
+                var stats = new SessionStats { CharacterName = character, ServerName = server };
+                stats.SessionEnding += snap =>
+                {
+                    if (SessionRepository.IsMeaningful(snap))
+                    {
+                        _repo.Checkpoint(0, snap, server, character, "ImportedBoundary");
+                        imported++;
+                    }
+                };
+                foreach (var line in File.ReadLines(path))   // streamed (IMPORT-003)
+                {
+                    var evt = LogParser.Parse(line);
+                    if (evt is not null) stats.Apply(evt);
+                }
+                var final = stats.Snapshot();
+                if (SessionRepository.IsMeaningful(final))
+                {
+                    _repo.Checkpoint(0, final, server, character, "ImportedBoundary");
+                    imported++;
+                }
+            }
+            catch (Exception ex) { CoreLog.Error(ex); }
+            Dispatcher.Invoke(() =>
+            {
+                DetailText.Text = $"Imported {imported} session{(imported == 1 ? "" : "s")} from {Path.GetFileName(path)}. " +
+                    "Re-importing the same file will create duplicates — delete the old rows if you re-import.";
+                RefreshFilters();
+                RefreshList();
+            });
+        });
     }
 
     private void OnSaveMeta(object sender, RoutedEventArgs e)

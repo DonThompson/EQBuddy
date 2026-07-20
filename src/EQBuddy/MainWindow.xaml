@@ -151,7 +151,13 @@
                                        Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
                         </StackPanel>
                     </Grid>
-                    <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="RecentFightsLabel" Text="Recent fights" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="RecentFightsList" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="StanceLabel" Text="By stance" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="StanceList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
 
@@ -208,6 +214,9 @@
                 <StackPanel>
                     <TextBlock x:Name="KillsSummary" Style="{StaticResource Dim}" Margin="0,2,0,4"/>
                     <ItemsControl x:Name="KillList"/>
+                    <TextBlock x:Name="FarmingLabel" Text="Farming (per creature)" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="FarmingList" Margin="0,2,0,0"/>
                     <TextBlock x:Name="PartyKillsLabel" Text="Group kills" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentBrush}" Margin="0,6,0,0"/>
                     <ItemsControl x:Name="PartyKillList" Margin="0,2,0,0"/>

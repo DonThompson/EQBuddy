@@ -61,6 +61,18 @@ Tracked loot & alerts:
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
+Encounters, mob farming, and stances:
+- Combat shows your **recent fights** (creature, duration, per-fight DPS) and, when your
+  class uses stances, a **By stance** breakdown of damage, combat time, and DPS with the
+  current stance named in the summary.
+- Kills shows **per-creature farming**: average fight length, coin, and XP per creature.
+  Session history adds **observed personal drop rates** — always with the kill count
+  shown as the denominator (these are your rates, not the game's).
+- Watch rules aren't just loot anymore: a rule can watch **Loot, Kills (creature name),
+  Skill-ups, Deaths, or Milestones** (levels/AA) — same counters, chips, and alerts.
+- History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
+  **Import log…** parses any old eqlog file into your session history.
+
 Session history (automatic):
 - Every meaningful session is saved to a local SQLite database
   (`%AppData%\EQBuddy\history.db`) — no uploads, nothing manual. Sessions end and save

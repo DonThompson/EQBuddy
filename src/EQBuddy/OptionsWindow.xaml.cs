@@ -74,26 +74,40 @@ public partial class OptionsWindow : Window
         foreach (var rule in _main.Settings.TrackedRules)
         {
             var row = new System.Windows.Controls.Grid { Margin = new Thickness(0, 3, 0, 0) };
-            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(72) });
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(58) });
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(60) });
             row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             for (var i = 0; i < 4; i++)
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
 
+            var kind = new System.Windows.Controls.ComboBox { FontSize = 11, ToolTip = "What this rule watches" };
+            foreach (var k in Enum.GetNames<EQBuddy.Core.WatchKind>()) kind.Items.Add(k);
+            kind.SelectedIndex = (int)rule.Kind;
+            kind.SelectionChanged += (_, _) =>
+            {
+                if (!_ready || kind.SelectedIndex < 0) return;
+                rule.Kind = (EQBuddy.Core.WatchKind)kind.SelectedIndex;
+                _main.PersistSettings();
+            };
+            row.Children.Add(kind);
+
             var name = DarkBox(rule.Name, "name");
+            name.Margin = new Thickness(4, 0, 0, 0);
             name.LostFocus += (_, _) => { rule.Name = name.Text.Trim(); _main.PersistSettings(); };
+            System.Windows.Controls.Grid.SetColumn(name, 1);
             row.Children.Add(name);
 
-            var pattern = DarkBox(rule.Pattern, "match text");
+            var pattern = DarkBox(rule.Pattern, "match text (optional for Death/Milestone)");
             pattern.Margin = new Thickness(4, 0, 0, 0);
             pattern.LostFocus += (_, _) => { rule.Pattern = pattern.Text.Trim(); _main.PersistSettings(); };
-            System.Windows.Controls.Grid.SetColumn(pattern, 1);
+            System.Windows.Controls.Grid.SetColumn(pattern, 2);
             row.Children.Add(pattern);
 
-            row.Children.Add(RuleToggle("📌", "Pin to mini dashboard", 2, rule.Pinned,
+            row.Children.Add(RuleToggle("📌", "Pin to mini dashboard", 3, rule.Pinned,
                 v => rule.Pinned = v));
-            row.Children.Add(RuleToggle("🔔", "Banner alert on drop", 3, rule.AlertBanner,
+            row.Children.Add(RuleToggle("🔔", "Banner alert on match", 4, rule.AlertBanner,
                 v => rule.AlertBanner = v));
-            row.Children.Add(RuleToggle("🔊", "Sound alert on drop", 4, rule.AlertSound,
+            row.Children.Add(RuleToggle("🔊", "Sound alert on match", 5, rule.AlertSound,
                 v => rule.AlertSound = v));
 
             var del = new System.Windows.Controls.Button
@@ -106,7 +120,7 @@ public partial class OptionsWindow : Window
                 _main.PersistSettings();
                 BuildRulesEditor();
             };
-            System.Windows.Controls.Grid.SetColumn(del, 5);
+            System.Windows.Controls.Grid.SetColumn(del, 6);
             row.Children.Add(del);
 
             RulesPanel.Children.Add(row);
