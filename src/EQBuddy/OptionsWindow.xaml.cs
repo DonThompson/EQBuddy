@@ -97,7 +97,7 @@ public partial class OptionsWindow : Window
             System.Windows.Controls.Grid.SetColumn(name, 1);
             row.Children.Add(name);
 
-            var pattern = DarkBox(rule.Pattern, "match text (optional for Death/Milestone)");
+            var pattern = DarkBox(rule.Pattern, "match text (uses the name if left empty; optional for Death/Milestone)");
             pattern.Margin = new Thickness(4, 0, 0, 0);
             pattern.LostFocus += (_, _) => { rule.Pattern = pattern.Text.Trim(); _main.PersistSettings(); };
             System.Windows.Controls.Grid.SetColumn(pattern, 2);

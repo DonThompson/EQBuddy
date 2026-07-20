@@ -22,6 +22,9 @@ public record XpEvent(DateTime Time, double Percent, bool Party) : GameEvent(Tim
 public record AaEvent(DateTime Time, int TotalPoints) : GameEvent(Time);
 /// <summary>Loot auto-sold on pickup: counts as loot AND vendor income.</summary>
 public record AutoSellEvent(DateTime Time, string Item, int Count, string Source, long Copper) : GameEvent(Time);
+/// <summary>"You successfully destroyed N X." — the advanced loot window's sell/destroy
+/// action; when a "received … from that item" money line follows, this names the item.</summary>
+public record ItemDestroyedEvent(DateTime Time, string Item, int Count) : GameEvent(Time);
 public record LevelEvent(DateTime Time, int Level) : GameEvent(Time);
 public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(Time);
 public record FactionEvent(DateTime Time, string Faction, int Delta) : GameEvent(Time);

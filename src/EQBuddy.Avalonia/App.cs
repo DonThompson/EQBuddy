@@ -7,9 +7,7 @@ namespace EQBuddy.Avalonia;
 
 public sealed class App : Application
 {
-    private static readonly string ErrorLog = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "EQBuddy", "error.log");
+    private static readonly string ErrorLog = Core.AppPaths.File("error.log");
 
     public static void LogError(object? ex)
     {

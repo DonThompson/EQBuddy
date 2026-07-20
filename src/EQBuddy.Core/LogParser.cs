@@ -122,6 +122,14 @@ public static partial class LogParser
     [GeneratedRegex(@"^You looted (?:(?<n>\d+)|an?) (?<item>.+?) from (?<source>.+?)'s corpse and sold it for (?<coins>.+?)\.$")]
     private static partial Regex AutoSellRx();
 
+    // You successfully destroyed 1 Spider Venom Sac.
+    [GeneratedRegex(@"^You successfully destroyed (?<n>\d+) (?<item>.+?)\.$")]
+    private static partial Regex DestroyedRx();
+
+    // You received 3 gold, 5 silver and 7 copper from that item.  (advanced loot window sale)
+    [GeneratedRegex(@"^You received (?<coins>.+?) from that item\.$")]
+    private static partial Regex LootWindowSaleRx();
+
     [GeneratedRegex(@"^You have gained a level! Welcome to level (?<level>\d+)!$")]
     private static partial Regex LevelRx();
 
@@ -284,6 +292,15 @@ public static partial class LogParser
         {
             var copper = ParseCoins(r.Groups["coins"].Value);
             if (copper > 0) return new MoneyEvent(ts, copper, Vendor: true, Item: r.Groups["item"].Value);
+        }
+
+        if ((r = DestroyedRx().Match(msg)).Success)
+            return new ItemDestroyedEvent(ts, r.Groups["item"].Value, int.Parse(r.Groups["n"].Value));
+
+        if ((r = LootWindowSaleRx().Match(msg)).Success)
+        {
+            var copper = ParseCoins(r.Groups["coins"].Value);
+            if (copper > 0) return new MoneyEvent(ts, copper, Vendor: true, Item: null);
         }
 
         if ((r = XpRx().Match(msg)).Success)

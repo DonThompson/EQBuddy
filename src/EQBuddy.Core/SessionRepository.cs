@@ -29,9 +29,7 @@ public sealed class SessionRepository : IDisposable
     private readonly SqliteConnection _db;
     private readonly object _lock = new();
 
-    public static string DefaultDbPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "EQBuddy", "history.db");
+    public static string DefaultDbPath => AppPaths.File("history.db");
 
     public SessionRepository(string dbPath)
     {
@@ -67,6 +65,23 @@ public sealed class SessionRepository : IDisposable
     {
         lock (_lock)
         {
+            var start = (s.SessionStart ?? DateTime.Now).ToUniversalTime();
+            if (id == 0)
+            {
+                // Re-ingesting a log that still contains old sessions (auto-empty off,
+                // restarts, re-imports) must not duplicate them: the same
+                // (server, character, session start) is the same session — adopt its row.
+                using var find = _db.CreateCommand();
+                find.CommandText = """
+                    SELECT Id FROM Sessions WHERE Server=$server AND Character=$char
+                        AND StartUtc=$start LIMIT 1
+                    """;
+                find.Parameters.AddWithValue("$server", server);
+                find.Parameters.AddWithValue("$char", character);
+                find.Parameters.AddWithValue("$start", start.ToString("O"));
+                if (find.ExecuteScalar() is long existing) id = existing;
+            }
+
             using var cmd = _db.CreateCommand();
             if (id == 0)
             {
@@ -90,7 +105,6 @@ public sealed class SessionRepository : IDisposable
                     """;
                 cmd.Parameters.AddWithValue("$id", id);
             }
-            var start = (s.SessionStart ?? DateTime.Now).ToUniversalTime();
             cmd.Parameters.AddWithValue("$server", server);
             cmd.Parameters.AddWithValue("$char", character);
             if (id == 0)

@@ -30,10 +30,19 @@ public sealed class TrackedRule
     public bool AlertBanner { get; set; } = true;
     public bool AlertSound { get; set; }
 
+    /// <summary>The text actually matched against: the pattern, falling back to the name
+    /// when only the name box was filled in (a common way to enter rules). Death and
+    /// Milestone rules never fall back — their name is a label and an empty pattern
+    /// means match-all.</summary>
+    public string EffectivePattern =>
+        Pattern.Length > 0 ? Pattern
+        : Kind is WatchKind.Death or WatchKind.Milestone ? ""
+        : Name;
+
     /// <summary>Death and Milestone rules match everything when the pattern is empty.</summary>
     public bool Matches(string text) =>
-        Pattern.Length > 0
-            ? text.Contains(Pattern, StringComparison.OrdinalIgnoreCase)
+        EffectivePattern.Length > 0
+            ? text.Contains(EffectivePattern, StringComparison.OrdinalIgnoreCase)
             : Kind is WatchKind.Death or WatchKind.Milestone;
 }
 

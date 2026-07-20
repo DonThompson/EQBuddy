@@ -169,6 +169,31 @@ public class SessionStatsTests
     }
 
     [Fact]
+    public void LootWindowSaleCountsAsVendorIncomeNamedByDestroyLine()
+    {
+        // Selling from the advanced loot window logs a destroy line + an anonymous
+        // "from that item" money line; the pair must become one named vendor sale.
+        var s = Replay("Douglas",
+            At(0, 0, "You successfully destroyed 1 Spider Venom Sac."),
+            At(0, 0, "You received 3 gold, 5 silver and 7 copper from that item.")).Snapshot();
+        Assert.Equal(357, s.VendorCopper);
+        Assert.Equal(1, s.SalesCount);
+        var sold = Assert.Single(s.SoldItems);
+        Assert.Equal("Spider Venom Sac", sold.Item);
+        Assert.Equal(1, sold.Count);
+        Assert.Equal(357, sold.Copper);
+    }
+
+    [Fact]
+    public void LootWindowSaleWithoutDestroyLineStillCountsIncome()
+    {
+        var s = Replay("Douglas",
+            At(0, 0, "You received 2 silver from that item.")).Snapshot();
+        Assert.Equal(20, s.VendorCopper);
+        Assert.Equal("Loot window sale", Assert.Single(s.SoldItems).Item);
+    }
+
+    [Fact]
     public void DamageShieldExcludedFromAccuracyButCounted()
     {
         var s = Replay("Douglas",

@@ -143,6 +143,20 @@ public class EncounterTests
     }
 
     [Fact]
+    public void NameOnlyRuleFallsBackToNameAsPattern()
+    {
+        // Users often type the match text into the name box and leave the pattern
+        // empty; the rule must still match instead of being silently skipped.
+        var stats = Replay(
+            At(0, 0, "You have slain a ghoul!"),
+            At(0, 10, "You have slain orc pawn!"));
+        var rules = new[] { new TrackedRule { Name = "Ghoul", Kind = WatchKind.Kill } };
+        var r = Assert.Single(stats.Snapshot(null, rules).Tracked);
+        Assert.Equal(1, r.TotalQuantity);
+        Assert.Equal("Ghoul", r.Name);
+    }
+
+    [Fact]
     public void MilestoneWatchRuleMatchesWithEmptyPattern()
     {
         var stats = Replay(

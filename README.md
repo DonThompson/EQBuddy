@@ -14,10 +14,12 @@ download when one is available.
 
 | | |
 |---|---|
-| ![Compact view](docs/screenshots/widget-compact.png) | ![Mini dashboard](docs/screenshots/widget-mini.png) |
-| The default card — one glanceable line per category | Mini mode — only your starred stats, with time-to-level |
-| ![Expanded details](docs/screenshots/widget-expanded.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
-| Full drill-down: damage per skill/spell/pet with averages, kills, loot, money, progress | Background see-through — watch the game right through the widget |
+| ![Compact view](docs/screenshots/widget-compact.png) | ![Mini dashboard with alert](docs/screenshots/widget-mini-alert.png) |
+| The default card — one glanceable line per category | Mini mode — starred stats plus pinned watch-rule chips; alert banners pop even here |
+| ![Expanded details](docs/screenshots/widget-expanded.png) | ![Tracked rules & farming](docs/screenshots/widget-tracked.png) |
+| Full drill-down: damage per skill/spell/pet, recent fights with per-fight DPS, damage and DPS by stance | Watch rules (loot, kills, skill-ups…) with per-hour rates, per-creature farming stats, merchant sales |
+| ![Session history](docs/screenshots/history-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
+| Every session lands in a local, searchable history — notes, tags, compare, export | Background see-through — watch the game right through the widget |
 
 ## For players (family install guide)
 
@@ -57,7 +59,9 @@ Tracked loot & alerts:
 - ⚙ Options → **Tracked loot**: add simple match texts (e.g. `mote`) — the 🎯 Tracked
   card shows every matching item name, quantities, and per-hour rates (wall-clock and
   active-play). 📌 pins a chip to the mini dashboard; 🔔/🔊 fire a focus-safe banner
-  and/or sound the moment a matching item drops.
+  and/or sound the moment a matching item drops. A rule has a short *name* and a
+  *match text* — if you only fill in the name, it doubles as the match text, so
+  typing just `Ghoul` on a Kill rule works. Alert banners appear in mini mode too.
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
@@ -108,6 +112,10 @@ Notes:
   stays sharp so you can watch the game through the widget), and whole-widget opacity.
   Changes apply live and are remembered.
 - Loot that the game auto-sells on pickup counts as both loot and merchant income.
+  Selling straight from the **advanced loot window** is captured too, credited to the
+  item named on the game's "destroyed" line. The log always records which corpse an
+  item came from (even when the advanced loot window hides it), so per-creature drop
+  rates work regardless of how you loot.
 - A "session" is a contiguous stretch of play. After 60+ minutes of no log activity,
   the next activity starts a fresh session automatically.
 
@@ -164,7 +172,8 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
   the in-app updater compares it against the version stamped into the shared setup exe.
 - Settings live in `%AppData%\EQBuddy\settings.json`; errors in `%AppData%\EQBuddy\error.log`.
 - Debug: set `EQBUDDY_EXPAND=1` to launch with all sections expanded plus a state dump
-  in `%AppData%\EQBuddy\debug.txt`.
+  in `%AppData%\EQBuddy\debug.txt`. Set `EQBUDDY_APPDATA=<dir>` to run against an
+  isolated profile (settings, history, logs) without touching your real data.
 
 Log folder auto-detected at
 `C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest Legends\Logs`

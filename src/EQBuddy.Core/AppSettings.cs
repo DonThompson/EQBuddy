@@ -33,9 +33,7 @@ public sealed class AppSettings
     public string HotkeyMiniMode { get; set; } = "Ctrl+Shift+M";
     public string HotkeyCampMarker { get; set; } = "Ctrl+Shift+K";
 
-    private static string FilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "EQBuddy", "settings.json");
+    private static string FilePath => AppPaths.File("settings.json");
 
     public static AppSettings Load()
     {

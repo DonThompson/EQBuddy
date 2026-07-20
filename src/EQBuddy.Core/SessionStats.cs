@@ -111,6 +111,7 @@ public sealed class SessionStats
     private readonly List<EncounterInfo> _encounters = new();
     private readonly Dictionary<string, MobAgg> _mobs = new(StringComparer.OrdinalIgnoreCase);
     private (string Name, DateTime Time)? _lastKill;
+    private (string Item, int Count, DateTime Time)? _lastDestroyed;
 
     // ---- stance windows (Release D) ----
     private string? _currentStance;
@@ -284,13 +285,19 @@ public sealed class SessionStats
                 case CraftEvent c:
                     Bump(_crafted, c.Item);
                     break;
+                case ItemDestroyedEvent d:
+                    _lastDestroyed = (d.Item, d.Count, d.Time);
+                    break;
                 case MoneyEvent { Vendor: true } m:
                     _vendorCopper += m.Copper; _salesCount++;
-                    if (m.Item is { } sold)
-                    {
-                        var sv = _soldItems.TryGetValue(sold, out var sc) ? sc : (0, 0L);
-                        _soldItems[sold] = (sv.Item1 + 1, sv.Item2 + m.Copper);
-                    }
+                    // A sale from the advanced loot window logs no item name; the
+                    // "successfully destroyed" line just before it names what was sold.
+                    var (soldName, soldCount) = m.Item is { } named ? (named, 1)
+                        : _lastDestroyed is { } ld && m.Time - ld.Time <= RewardWindow
+                            ? (ld.Item, ld.Count)
+                            : ("Loot window sale", 1);
+                    var sv = _soldItems.TryGetValue(soldName, out var sc) ? sc : (0, 0L);
+                    _soldItems[soldName] = (sv.Item1 + soldCount, sv.Item2 + m.Copper);
                     break;
                 case MoneyEvent m:
                     _copper += m.Copper; _coinDrops++;
@@ -499,6 +506,7 @@ public sealed class SessionStats
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
+        _lastDestroyed = null;
         _currentStance = null; _stanceAgg.Clear();
     }
 
@@ -588,7 +596,7 @@ public sealed class SessionStats
                 foreach (var rule in rules)
                 {
                     if (!rule.Enabled) continue;
-                    if (rule.Pattern.Length == 0 &&
+                    if (rule.EffectivePattern.Length == 0 &&
                         rule.Kind is not (WatchKind.Death or WatchKind.Milestone)) continue;
                     var items = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                     var total = 0;

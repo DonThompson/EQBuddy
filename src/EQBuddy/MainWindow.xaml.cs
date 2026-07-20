@@ -474,9 +474,7 @@ public partial class MainWindow : Window
                     $"crafted={CraftedList.Items.Count} skills={SkillList.Items.Count} faction={FactionList.Items.Count} " +
                     $"zones={ZoneList.Items.Count} deaths={DeathList.Items.Count} " +
                     $"actualH={ActualHeight:0} actualW={ActualWidth:0}";
-                System.IO.File.WriteAllText(System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "EQBuddy", "debug.txt"), dump);
+                System.IO.File.WriteAllText(Core.AppPaths.File("debug.txt"), dump);
             }
             catch { }
         }

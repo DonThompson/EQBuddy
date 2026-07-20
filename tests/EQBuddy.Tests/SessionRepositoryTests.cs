@@ -52,6 +52,21 @@ public class SessionRepositoryTests : IDisposable
     }
 
     [Fact]
+    public void ReingestedSessionAdoptsExistingRowInsteadOfDuplicating()
+    {
+        // Restarting with auto-empty off (or re-importing a log) replays sessions the
+        // store already has; same (server, character, start) must update, not insert.
+        var s = SampleSnapshot();
+        var first = _repo.Checkpoint(0, s, "qeynos", "Douglas", "IdleTimeout");
+        var second = _repo.Checkpoint(0, s, "qeynos", "Douglas", "IdleTimeout");
+        Assert.Equal(first, second);
+        Assert.Single(_repo.Query());
+        // A different character with the same start time is still a separate session.
+        _repo.Checkpoint(0, s, "qeynos", "Caybin", "IdleTimeout");
+        Assert.Equal(2, _repo.Query().Count);
+    }
+
+    [Fact]
     public void SearchMatchesLootInsideSnapshot()
     {
         var id = _repo.Checkpoint(0, SampleSnapshot(), "freeport", "Kaybek", "IdleTimeout");
