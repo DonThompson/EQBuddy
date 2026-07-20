@@ -16,6 +16,11 @@ public sealed class OptionsWindow : Window
     private readonly Slider _scaleSlider = Slider(0.8, 1.6, 0.05);
     private readonly Slider _bgOpacitySlider = Slider(0.15, 1.0, 0.05);
     private readonly Slider _opacitySlider = Slider(0.5, 1.0, 0.02);
+    private readonly CheckBox _truncateCheck = new()
+    {
+        Content = new TextBlock { Text = "Auto-empty finished-session logs", FontSize = 12, Foreground = AppTheme.TextBrush },
+        Margin = new Thickness(0, 12, 0, 0),
+    };
     private bool _ready;
 
     public OptionsWindow(MainWindow main)
@@ -47,6 +52,11 @@ public sealed class OptionsWindow : Window
         Subscribe(_scaleSlider, () => _main.SetUiScale(_scaleSlider.Value));
         Subscribe(_bgOpacitySlider, () => _main.SetBackgroundOpacity(_bgOpacitySlider.Value));
         Subscribe(_opacitySlider, () => _main.SetWindowOpacity(_opacitySlider.Value));
+        _truncateCheck.IsChecked = main.TruncateLogsValue;
+        _truncateCheck.IsCheckedChanged += (_, _) =>
+        {
+            if (_ready) _main.SetTruncateLogs(_truncateCheck.IsChecked == true);
+        };
         UpdateLabels();
         _ready = true;
     }
@@ -73,6 +83,10 @@ public sealed class OptionsWindow : Window
             "Only the dark panel fades; text stays sharp.");
         AddSlider(panel, "Whole-widget opacity", _opacityLabel, _opacitySlider,
             "Fades everything, text included.");
+        panel.Children.Add(_truncateCheck);
+        panel.Children.Add(AppTheme.DimText(
+            "Turn off if you upload your log files elsewhere — they will grow forever, so clean them up yourself occasionally.",
+            margin: new Thickness(20, 2, 0, 0)));
         panel.Children.Add(AppTheme.DimText("Size also scales all text. Changes apply instantly and are saved.",
             margin: new Thickness(0, 8, 0, 0)));
         return panel;

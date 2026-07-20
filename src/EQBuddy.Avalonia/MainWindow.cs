@@ -65,7 +65,6 @@ public sealed class MainWindow : Window
     private readonly TextBlock _partyKillsLabel = AppTheme.Heading("Group kills");
     private readonly TextBlock _craftedLabel = AppTheme.Heading("Created by merging");
     private readonly TextBlock _soldLabel = AppTheme.Heading("Sold to merchants");
-    private readonly ToggleButton _pinBtn = AppTheme.IconToggle("P", "Always on top");
     private readonly Button _gearBtn = AppTheme.IconButton("...", "Settings");
     private readonly Dictionary<string, ToggleButton> _stars = new();
     private readonly List<SectionPanel> _sections = new();
@@ -101,7 +100,7 @@ public sealed class MainWindow : Window
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Background = Brushes.Transparent;
-        Topmost = _settings.AlwaysOnTop;
+        Topmost = true;
         ShowInTaskbar = true;
         CanResize = false;
         Opacity = _settings.Opacity;
@@ -113,7 +112,6 @@ public sealed class MainWindow : Window
         RestorePosition();
         ApplyUiScale(_settings.UiScale);
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
-        _pinBtn.IsChecked = _settings.AlwaysOnTop;
         foreach (var (key, star) in _stars)
             star.IsChecked = _settings.MiniStats.Contains(key);
         UpdateStarVisuals();
@@ -121,11 +119,14 @@ public sealed class MainWindow : Window
         FollowActiveCharacter();
 
         if (_settings.LogFolder is { } lf)
+        {
+            var prune = _settings.TruncateLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(lf);
-                EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap);
             });
+        }
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
@@ -135,6 +136,13 @@ public sealed class MainWindow : Window
     public double UiScale => _settings.UiScale;
     public double WidgetOpacity => Opacity;
     public double BackgroundOpacityValue => _settings.BackgroundOpacity;
+    public bool TruncateLogsValue => _settings.TruncateLogs;
+
+    public void SetTruncateLogs(bool enabled)
+    {
+        _settings.TruncateLogs = enabled;
+        _settings.Save();
+    }
 
     public void SetUiScale(double scale)
     {
@@ -228,7 +236,7 @@ public sealed class MainWindow : Window
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        for (var i = 0; i < 5; i++) grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        for (var i = 0; i < 4; i++) grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         _statusDot.Margin = new Thickness(2, 0, 7, 0);
         title.Children.Add(_statusDot);
@@ -241,20 +249,17 @@ public sealed class MainWindow : Window
         _gearBtn.Click += OnGear;
         Grid.SetColumn(_gearBtn, 2);
         grid.Children.Add(_gearBtn);
-        _pinBtn.Click += OnPinChanged;
-        Grid.SetColumn(_pinBtn, 3);
-        grid.Children.Add(_pinBtn);
         var reset = AppTheme.IconButton("R", "Reset session stats");
         reset.Click += (_, _) => _stats.Reset();
-        Grid.SetColumn(reset, 4);
+        Grid.SetColumn(reset, 3);
         grid.Children.Add(reset);
         var mini = AppTheme.IconButton("-", "Minimize to dashboard");
         mini.Click += (_, _) => SetMode(true);
-        Grid.SetColumn(mini, 5);
+        Grid.SetColumn(mini, 4);
         grid.Children.Add(mini);
         var close = AppTheme.IconButton("x", "Close");
         close.Click += (_, _) => Close();
-        Grid.SetColumn(close, 6);
+        Grid.SetColumn(close, 5);
         grid.Children.Add(close);
         return grid;
     }
@@ -519,10 +524,11 @@ public sealed class MainWindow : Window
         if (_settings.LogFolder is { } folder && DateTime.Now - _lastJanitorRun > TimeSpan.FromMinutes(10))
         {
             _lastJanitorRun = DateTime.Now;
+            var prune = _settings.TruncateLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(folder);
-                EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap);
             });
         }
 
@@ -695,13 +701,6 @@ public sealed class MainWindow : Window
     }
 
     private void OnGear(object? sender, EventArgs e) => _root.ContextMenu?.Open(_root);
-
-    private void OnPinChanged(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        Topmost = _pinBtn.IsChecked == true;
-        _settings.AlwaysOnTop = Topmost;
-        _settings.Save();
-    }
 
     private void OnStarChanged(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
     {
