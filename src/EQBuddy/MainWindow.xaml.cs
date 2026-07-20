@@ -42,8 +42,7 @@ public partial class MainWindow : Window
         if (!double.IsNaN(_settings.WindowLeft)) { Left = _settings.WindowLeft; Top = _settings.WindowTop; }
         else { Left = SystemParameters.WorkArea.Right - 360; Top = 40; }
         Opacity = _settings.Opacity;
-        Topmost = _settings.AlwaysOnTop;
-        PinBtn.IsChecked = _settings.AlwaysOnTop;
+        Topmost = true;
         ApplyUiScale(_settings.UiScale);
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
 
@@ -58,16 +57,22 @@ public partial class MainWindow : Window
         // Log hygiene at startup: force Log=1 and wipe finished-session logs
         // (both no-ops while the game is running).
         if (_settings.LogFolder is { } lf)
+        {
+            var prune = _settings.TruncateLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(lf);
-                EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap);
             });
+        }
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
                          MoneySection, ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
+
+        if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
+            Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_MENU") == "1")
             Loaded += (_, _) =>
@@ -106,6 +111,14 @@ public partial class MainWindow : Window
     }
 
     public double BackgroundOpacityValue => _settings.BackgroundOpacity;
+
+    public bool TruncateLogsValue => _settings.TruncateLogs;
+
+    public void SetTruncateLogs(bool enabled)
+    {
+        _settings.TruncateLogs = enabled;
+        _settings.Save();
+    }
 
     public void SetBackgroundOpacity(double opacity)
     {
@@ -217,10 +230,11 @@ public partial class MainWindow : Window
         if (_settings.LogFolder is { } folder && DateTime.Now - _lastJanitorRun > TimeSpan.FromMinutes(10))
         {
             _lastJanitorRun = DateTime.Now;
+            var prune = _settings.TruncateLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(folder);
-                EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap);
             });
         }
 
@@ -634,13 +648,6 @@ public partial class MainWindow : Window
             return;
         }
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
-    }
-
-    private void OnPinChanged(object sender, RoutedEventArgs e)
-    {
-        Topmost = PinBtn.IsChecked == true;
-        _settings.AlwaysOnTop = Topmost;
-        _settings.Save();
     }
 
     private void OnReset(object sender, RoutedEventArgs e) => _stats.Reset();

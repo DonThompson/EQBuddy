@@ -45,10 +45,13 @@ Updates (automatic, no internet service involved):
   folder named `EQBuddyDownload` under that PC's OneDrive; if it can't, set `UpdateFolder`
   in `%AppData%\EQBuddy\settings.json`.
 
-Log cleanup (automatic):
+Log cleanup (automatic, optional):
 - Because logging is always on, EQBuddy empties any character log that has been quiet
   for 60+ minutes (a finished play session), so files never grow across sessions.
   Cleanup runs at EQBuddy startup and every 10 minutes — but never while the game is open.
+- If you keep your logs (to upload to another parser, for example), turn off
+  **"Auto-empty finished-session logs"** in ⚙ Options — EQBuddy then never touches your
+  log files, but they'll grow forever, so clean them up yourself occasionally.
 
 Custom install locations:
 - EQBuddy finds the game via the installer's registry entry, so non-default install paths
@@ -61,7 +64,8 @@ Notes:
   actively playing (the log file that's currently growing) and switches automatically
   within a few seconds when you swap characters.
 - The ↻ button clears the session and starts counting from now.
-- The 📌 button toggles always-on-top. Drag anywhere on the widget to move it.
+- The widget always stays on top of the game. Drag anywhere on it to move it;
+  its position is remembered.
 - ⚙ (or right-click) → **Options…** has sliders for widget size (scales everything,
   fonts included, 80–160%), background see-through (only the dark panel fades — text
   stays sharp so you can watch the game through the widget), and whole-widget opacity.
@@ -129,3 +133,8 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
 Log folder auto-detected at
 `C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest Legends\Logs`
 (`eqlog_<Character>_<server>.txt`).
+
+## License
+
+MIT — see [LICENSE](LICENSE). Contributions welcome; parser fixes go fastest when the
+issue or PR includes the raw log lines involved.

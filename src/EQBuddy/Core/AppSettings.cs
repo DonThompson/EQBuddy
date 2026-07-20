@@ -8,7 +8,6 @@ public sealed class AppSettings
     public string? LogFolder { get; set; }
     /// <summary>Folder holding EQBuddySetup.exe for updates; null = auto-detect OneDrive.</summary>
     public string? UpdateFolder { get; set; }
-    public bool AlwaysOnTop { get; set; } = true;
     public bool Minimized { get; set; }
     public List<string> MiniStats { get; set; } = ["kills", "dps"];
     public double WindowLeft { get; set; } = double.NaN;
@@ -17,6 +16,9 @@ public sealed class AppSettings
     public double UiScale { get; set; } = 1.0;
     /// <summary>Opacity of the widget's background panel only — text stays fully opaque.</summary>
     public double BackgroundOpacity { get; set; } = 0.95;
+    /// <summary>Empty finished-session logs automatically. Off = logs grow forever
+    /// (for players who upload their logs elsewhere).</summary>
+    public bool TruncateLogs { get; set; } = true;
 
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

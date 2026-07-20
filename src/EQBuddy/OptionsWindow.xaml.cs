@@ -16,8 +16,28 @@ public partial class OptionsWindow : Window
         ScaleSlider.Value = main.UiScale;
         OpacitySlider.Value = main.Opacity;
         BgOpacitySlider.Value = main.BackgroundOpacityValue;
+        TruncateCheck.IsChecked = main.TruncateLogsValue;
         UpdateLabels();
         _ready = true;
+
+        // CenterOwner + SizeToContent positions before the size is known and can land
+        // off-screen next to an edge-docked widget — place ourselves once measured:
+        // beside the widget (left if room, else right), clamped to the work area.
+        Loaded += (_, _) =>
+        {
+            var wa = SystemParameters.WorkArea;
+            var left = _main.Left - ActualWidth - 12;
+            if (left < wa.Left + 8) left = _main.Left + _main.ActualWidth + 12;
+            Left = Math.Max(wa.Left + 8, Math.Min(left, wa.Right - ActualWidth - 8));
+            Top = Math.Max(wa.Top + 8, Math.Min(_main.Top, wa.Bottom - ActualHeight - 8));
+            Activate();
+        };
+    }
+
+    private void OnTruncateChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.SetTruncateLogs(TruncateCheck.IsChecked == true);
     }
 
     private void UpdateLabels()
