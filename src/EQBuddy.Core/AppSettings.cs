@@ -19,6 +19,19 @@ public sealed class AppSettings
     /// <summary>Empty finished-session logs automatically. Off = logs grow forever
     /// (for players who upload their logs elsewhere).</summary>
     public bool TruncateLogs { get; set; } = true;
+    /// <summary>User-defined tracked-loot rules (TRACK-018: persisted).</summary>
+    public List<TrackedRule> TrackedRules { get; set; } = [];
+    /// <summary>Default rolling window for "recent" rates, in minutes (5/15/30).</summary>
+    public int RecentWindowMinutes { get; set; } = 15;
+    /// <summary>Overlay card order (section keys); missing keys append in default order.</summary>
+    public List<string> SectionOrder { get; set; } = [];
+    /// <summary>Hidden overlay cards (still collect data — OVERLAY acceptance).</summary>
+    public List<string> HiddenSections { get; set; } = [];
+    /// <summary>Global hotkeys ("Ctrl+Shift+H" style; empty disables one).</summary>
+    public string HotkeyToggleOverlay { get; set; } = "Ctrl+Shift+H";
+    public string HotkeyClickThrough { get; set; } = "Ctrl+Shift+T";
+    public string HotkeyMiniMode { get; set; } = "Ctrl+Shift+M";
+    public string HotkeyCampMarker { get; set; } = "Ctrl+Shift+K";
 
     private static string FilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),

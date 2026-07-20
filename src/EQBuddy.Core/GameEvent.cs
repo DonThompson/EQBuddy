@@ -41,3 +41,5 @@ public record ThirdSchoolEvent(DateTime Time, string Attacker, string Target, in
 /// <summary>A missed attack between others (combat-clock signal only).</summary>
 public record ThirdMissEvent(DateTime Time, string Attacker) : GameEvent(Time);
 public record ResistEvent(DateTime Time) : GameEvent(Time);
+/// <summary>A user-dropped camp/segment marker (hotkey or menu), timestamped with wall clock.</summary>
+public record SessionMarkerEvent(DateTime Time, string Label) : GameEvent(Time);

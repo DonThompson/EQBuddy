@@ -12,7 +12,8 @@
             <ContextMenu>
                 <MenuItem x:Name="VersionMenuItem" Header="EQBuddy" IsEnabled="False"/>
                 <MenuItem Header="Check for updates" Click="OnCheckUpdates"/>
-                <MenuItem Header="Options… (size, opacity)" Click="OnOptions"/>
+                <MenuItem Header="Options… (size, opacity, tracked loot)" Click="OnOptions"/>
+                <MenuItem Header="Drop camp marker" Click="OnCampMarker"/>
                 <Separator/>
                 <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>
                 <MenuItem Header="Auto-detect log folder" Click="OnAutoDetectLogFolder"/>
@@ -91,6 +92,13 @@
                            Foreground="{StaticResource GoodBrush}" FontWeight="SemiBold"/>
             </Border>
 
+            <!-- Tracked-loot alert -->
+            <Border x:Name="AlertBanner" Background="#44E3B341" CornerRadius="6" Padding="8,6"
+                    Margin="0,8,0,0" Visibility="Collapsed">
+                <TextBlock x:Name="AlertText" TextWrapping="Wrap" FontSize="12"
+                           Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+            </Border>
+
             <!-- Session line -->
             <Grid Margin="2,8,2,4">
                 <TextBlock x:Name="ZoneText" Style="{StaticResource Dim}" Text="—"/>
@@ -100,7 +108,7 @@
             <!-- Sections -->
             <ScrollViewer x:Name="SectionScroll" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
+            <StackPanel x:Name="SectionsPanel">
             <Expander x:Name="CombatSection" Style="{StaticResource Section}">
                 <Expander.Header>
                     <Grid>
@@ -227,6 +235,20 @@
                 </StackPanel>
             </Expander>
 
+            <Expander x:Name="TrackedSection" Style="{StaticResource Section}" Visibility="Collapsed">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F3AF; Tracked" FontSize="13"/>
+                        <TextBlock x:Name="TrackedHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel x:Name="TrackedPanel"/>
+            </Expander>
+
             <Expander x:Name="MoneySection" Style="{StaticResource Section}">
                 <Expander.Header>
                     <Grid>
@@ -302,7 +324,10 @@
                     <TextBlock Text="Deaths" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource BadBrush}"/>
                     <ItemsControl x:Name="DeathList" Margin="0,2,0,4"/>
                     <TextBlock Text="Zones visited" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"/>
-                    <ItemsControl x:Name="ZoneList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="ZoneList" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="MarkersLabel" Text="Camp markers" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="MarkerList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
             </StackPanel>

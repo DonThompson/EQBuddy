@@ -53,6 +53,22 @@ Log cleanup (automatic, optional):
   **"Auto-empty finished-session logs"** in ⚙ Options — EQBuddy then never touches your
   log files, but they'll grow forever, so clean them up yourself occasionally.
 
+Tracked loot & alerts:
+- ⚙ Options → **Tracked loot**: add simple match texts (e.g. `mote`) — the 🎯 Tracked
+  card shows every matching item name, quantities, and per-hour rates (wall-clock and
+  active-play). 📌 pins a chip to the mini dashboard; 🔔/🔊 fire a focus-safe banner
+  and/or sound the moment a matching item drops.
+- Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
+  15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
+
+Hotkeys (global, defaults; edit in `%AppData%\EQBuddy\settings.json`):
+- `Ctrl+Shift+H` show/hide the widget · `Ctrl+Shift+T` click-through (game clicks pass
+  through the widget; border turns amber) · `Ctrl+Shift+M` mini mode ·
+  `Ctrl+Shift+K` drop a camp marker (also in the right-click menu; markers appear under
+  Travels & Deaths).
+- ⚙ Options → **Overlay cards**: reorder cards and hide the ones you don't want —
+  hidden cards keep collecting data.
+
 Custom install locations:
 - EQBuddy finds the game via the installer's registry entry, so non-default install paths
   are usually detected automatically. If yours isn't, **right-click the widget →

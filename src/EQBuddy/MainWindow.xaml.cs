@@ -50,6 +50,7 @@ public partial class MainWindow : Window
 
         foreach (var (key, star) in StarButtons())
             star.IsChecked = _settings.MiniStats.Contains(key);
+        ApplySectionLayout();
         SetMode(_settings.Minimized);
 
         FollowActiveCharacter();
@@ -68,7 +69,7 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
-                         MoneySection, ProgressSection, FactionSection, MiscSection })
+                         TrackedSection, MoneySection, ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
@@ -87,6 +88,42 @@ public partial class MainWindow : Window
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
+    }
+
+    public AppSettings Settings => _settings;
+    public void PersistSettings() => _settings.Save();
+
+    internal static readonly (string Key, string Title)[] SectionCatalog =
+    [
+        ("combat", "Combat"), ("healing", "Healing"), ("kills", "Kills"), ("loot", "Loot"),
+        ("tracked", "Tracked"), ("money", "Money"), ("progress", "Progress"),
+        ("faction", "Faction"), ("misc", "Travels & Deaths"),
+    ];
+
+    private Dictionary<string, UIElement> SectionMap() => new()
+    {
+        ["combat"] = CombatSection, ["healing"] = HealingSection, ["kills"] = KillsSection,
+        ["loot"] = LootSection, ["tracked"] = TrackedSection, ["money"] = MoneySection,
+        ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
+    };
+
+    /// <summary>Apply saved card order + hidden set (OVERLAY-001..003). Hidden cards keep collecting.</summary>
+    public void ApplySectionLayout()
+    {
+        var map = SectionMap();
+        var order = _settings.SectionOrder.Where(map.ContainsKey).ToList();
+        foreach (var (key, _) in SectionCatalog)
+            if (!order.Contains(key)) order.Add(key);
+
+        SectionsPanel.Children.Clear();
+        foreach (var key in order)
+        {
+            var el = map[key];
+            SectionsPanel.Children.Add(el);
+            if (key != "tracked")   // tracked manages its own visibility (no rules = hidden)
+                ((FrameworkElement)el).Visibility = _settings.HiddenSections.Contains(key)
+                    ? Visibility.Collapsed : Visibility.Visible;
+        }
     }
 
     public double UiScale => _settings.UiScale;
@@ -247,17 +284,27 @@ public partial class MainWindow : Window
             _upToDateNoticeUntil = DateTime.MinValue;
         }
 
+        if (_alertUntil != DateTime.MinValue && DateTime.Now > _alertUntil)
+        {
+            AlertBanner.Visibility = Visibility.Collapsed;
+            _alertUntil = DateTime.MinValue;
+        }
+
         if (_watcher.LastError is { } err)
             App.LogError(err);
 
-        var s = _stats.Snapshot();
+        var s = _stats.Snapshot(TimeSpan.FromMinutes(Math.Max(1, _settings.RecentWindowMinutes)),
+            _settings.TrackedRules);
+
+        ProcessTrackedAlerts(s);
 
         if (MiniRoot.Visibility == Visibility.Visible)
             UpdateMiniChips(s);
 
         ZoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "—";
+        var active = TimeSpan.FromSeconds(s.ActiveSeconds);
         SessionText.Text = s.SessionStart is { } start
-            ? $"session {(int)s.Elapsed.TotalHours}:{s.Elapsed.Minutes:D2} (since {start:h:mm tt})"
+            ? $"session {(int)s.Elapsed.TotalHours}:{s.Elapsed.Minutes:D2} · active {(int)active.TotalMinutes}m (since {start:h:mm tt})"
             : "waiting for log activity…";
 
         CombatHeader.Text = s.CurrentDps > 0
@@ -287,6 +334,9 @@ public partial class MainWindow : Window
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
                 $"In combat {(int)combatTime.TotalMinutes}m {combatTime.Seconds}s this session\n" +
+                (s.Recent is { } rc
+                    ? $"Last {(int)rc.Window.TotalMinutes}m: {rc.Dps:0.#} dps{(rc.HasFullWindow ? "" : " (partial window)")}\n"
+                    : "") +
                 $"Biggest hit: {s.MaxHit:N0} ({s.MaxHitDesc})\n" +
                 $"Taken {s.DamageTaken:N0} · avoided {s.AvoidedIncoming} of {incomingSwings} melee attacks ({avoidance:0}%)" +
                 (s.SpecialHits.Count > 0
@@ -302,6 +352,9 @@ public partial class MainWindow : Window
         {
             HealingSummary.Text =
                 $"Done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
+                (s.Recent is { Hps: > 0 } rh
+                    ? $"\nLast {(int)rh.Window.TotalMinutes}m: {rh.Hps:0.#} hps"
+                    : "") +
                 (s.RegenTicks > 0 ? $"\n{s.RegenTicks} regen/hymn ticks (game logs no amounts for these)" : "");
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
@@ -314,7 +367,8 @@ public partial class MainWindow : Window
 
         if (KillsSection.IsExpanded)
         {
-            KillsSummary.Text = $"{s.KillsPerHour:0.0} kills/hr";
+            KillsSummary.Text = $"{s.KillsPerHour:0.0} kills/hr · {s.KillsPerActiveHour:0.0} active" +
+                (s.Recent is { } rk ? $" · last {(int)rk.Window.TotalMinutes}m: {rk.Kills}" : "");
             FillList(KillList, s.YourKills.Select(k => (k.Name, $"×{k.Count}")));
             var showParty = s.PartyKillsByKiller.Count > 0;
             PartyKillsLabel.Visibility = showParty ? Visibility.Visible : Visibility.Collapsed;
@@ -333,7 +387,8 @@ public partial class MainWindow : Window
             MoneySummary.Text =
                 $"Corpses {StatsSnapshot.FormatCoin(s.CorpseCopper)} ({s.CoinDrops} drops, biggest {StatsSnapshot.FormatCoin(s.BiggestDrop)})\n" +
                 $"Merchant sales {StatsSnapshot.FormatCoin(s.VendorCopper)} ({s.SalesCount} sales)\n" +
-                $"{StatsSnapshot.FormatCoin(s.CopperPerHour)} per hour";
+                $"{StatsSnapshot.FormatCoin(s.CopperPerHour)} per hour · {StatsSnapshot.FormatCoin(s.CopperPerActiveHour)} per active hour" +
+                (s.Recent is { } rm ? $"\nLast {(int)rm.Window.TotalMinutes}m: {StatsSnapshot.FormatCoin(rm.Copper)}" : "");
             SoldLabel.Visibility = s.SoldItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(SoldList, s.SoldItems.Select(i =>
                 ($"{i.Item}{(i.Count > 1 ? $" ×{i.Count}" : "")}", StatsSnapshot.FormatCoin(i.Copper))));
@@ -342,7 +397,8 @@ public partial class MainWindow : Window
         if (ProgressSection.IsExpanded)
         {
             ProgressSummary.Text =
-                $"{s.XpTicks} xp gains · {s.XpPerHour:0.0}%/hr · {s.SkillUpTotal} skill-ups" +
+                $"{s.XpTicks} xp gains · {s.XpPerHour:0.0}%/hr · {s.XpPerActiveHour:0.0}% active · {s.SkillUpTotal} skill-ups" +
+                (s.Recent is { } rx ? $"\nLast {(int)rx.Window.TotalMinutes}m: {rx.XpPerHour:0.0}%/hr" : "") +
                 (s.AaGained > 0
                     ? $"\n{s.AaGained} AA point{(s.AaGained == 1 ? "" : "s")} · {s.AaPerHour:0.0} AA/hr (now {s.AaTotal} unspent)"
                     : "") +
@@ -358,10 +414,14 @@ public partial class MainWindow : Window
                 (f.Faction, $"{(f.Net >= 0 ? "+" : "")}{f.Net}")),
                 valueBrush: f => f.StartsWith('-') ? (Brush)FindResource("BadBrush") : (Brush)FindResource("GoodBrush"));
 
+        RenderTracked(s);
+
         if (MiscSection.IsExpanded)
         {
             FillList(DeathList, s.Deaths.Select(d => (d.Text, d.Time.ToString("h:mm tt"))));
             FillList(ZoneList, s.Zones.Select(z => (z.Text, z.Time.ToString("h:mm tt"))));
+            MarkersLabel.Visibility = s.Markers.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(MarkerList, s.Markers.Select(m => (m.Text, m.Time.ToString("h:mm tt"))));
         }
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
@@ -379,6 +439,127 @@ public partial class MainWindow : Window
             }
             catch { }
         }
+    }
+
+    // ---- tracked loot: rendering + alerts ----
+
+    private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTime> _ruleLastAlert = new(StringComparer.OrdinalIgnoreCase);
+    private string? _alertBaselinePath;
+    private DateTime _alertUntil = DateTime.MinValue;
+
+    private void RenderTracked(StatsSnapshot s)
+    {
+        var haveRules = _settings.TrackedRules.Count > 0 &&
+                        !_settings.HiddenSections.Contains("tracked");
+        TrackedSection.Visibility = haveRules ? Visibility.Visible : Visibility.Collapsed;
+        if (!haveRules) return;
+
+        TrackedHeader.Text = s.Tracked.Sum(t => t.TotalQuantity).ToString();
+        if (!TrackedSection.IsExpanded) return;
+
+        TrackedPanel.Children.Clear();
+        foreach (var r in s.Tracked)
+        {
+            var head = new Grid { Margin = new Thickness(0, 4, 0, 0) };
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            head.Children.Add(new TextBlock
+            {
+                Text = r.Name.ToUpperInvariant(), FontSize = 11, FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("AccentBrush"),
+            });
+            var rate = new TextBlock
+            {
+                Text = $"{r.TotalQuantity} total · {r.PerHour:0.#}/hr · {r.PerActiveHour:0.#}/active hr",
+                FontSize = 11, Foreground = (Brush)FindResource("DimBrush"),
+            };
+            Grid.SetColumn(rate, 1);
+            head.Children.Add(rate);
+            TrackedPanel.Children.Add(head);
+
+            foreach (var item in r.Items)
+                TrackedPanel.Children.Add(new TextBlock
+                {
+                    Text = $"{item.Name}   ×{item.Count}", FontSize = 12,
+                    Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(6, 1, 0, 0),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                });
+            if (r.LastMatch is { } lm)
+                TrackedPanel.Children.Add(new TextBlock
+                {
+                    Text = $"last drop {FormatAge(DateTime.Now - lm)} ago", FontSize = 11,
+                    Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(6, 1, 0, 2),
+                });
+            else
+                TrackedPanel.Children.Add(new TextBlock
+                {
+                    Text = "no matches yet", FontSize = 11,
+                    Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(6, 1, 0, 2),
+                });
+        }
+    }
+
+    private static string FormatAge(TimeSpan age) => age.TotalMinutes < 1
+        ? $"{Math.Max(0, (int)age.TotalSeconds)}s"
+        : age.TotalHours < 1 ? $"{(int)age.TotalMinutes}m" : $"{(int)age.TotalHours}h {age.Minutes}m";
+
+    /// <summary>
+    /// Fire banner/sound alerts when a tracked rule's total grows. Baselines are reset
+    /// (without alerting) whenever the watched log changes, so startup ingest and
+    /// character switches never replay old drops (ALERT-007, RECOVERY-006).
+    /// </summary>
+    private void ProcessTrackedAlerts(StatsSnapshot s)
+    {
+        if (!_watcher.InitialIngestDone) return;
+        if (_alertBaselinePath != _watcher.CurrentPath)
+        {
+            _alertBaselinePath = _watcher.CurrentPath;
+            _ruleBaseline.Clear();
+            foreach (var r in s.Tracked) _ruleBaseline[r.Name] = r.TotalQuantity;
+            return;
+        }
+
+        foreach (var r in s.Tracked)
+        {
+            var baseline = _ruleBaseline.TryGetValue(r.Name, out var b) ? b : 0;
+            if (r.TotalQuantity <= baseline)
+            {
+                _ruleBaseline[r.Name] = r.TotalQuantity;
+                continue;
+            }
+            var delta = r.TotalQuantity - baseline;
+            _ruleBaseline[r.Name] = r.TotalQuantity;
+
+            var rule = _settings.TrackedRules.FirstOrDefault(x =>
+                string.Equals(x.Name.Length > 0 ? x.Name : x.Pattern, r.Name, StringComparison.OrdinalIgnoreCase));
+            if (rule is null) continue;
+
+            var last = _ruleLastAlert.TryGetValue(r.Name, out var la) ? la : DateTime.MinValue;
+            if (DateTime.Now - last < TimeSpan.FromSeconds(5)) continue;   // ALERT-008 cooldown
+            _ruleLastAlert[r.Name] = DateTime.Now;
+
+            if (rule.AlertBanner)
+            {
+                AlertText.Text = $"★ {r.Name}: {r.LastItem ?? "match"}{(delta > 1 ? $" ×{delta}" : "")}";
+                AlertBanner.Visibility = Visibility.Visible;
+                _alertUntil = DateTime.Now.AddSeconds(6);
+            }
+            if (rule.AlertSound)
+            {
+                try { System.Media.SystemSounds.Asterisk.Play(); }
+                catch (Exception ex) { App.LogError(ex); }
+            }
+        }
+    }
+
+    private void OnCampMarker(object sender, RoutedEventArgs e) => DropCampMarker();
+
+    private void DropCampMarker()
+    {
+        var s = _stats.Snapshot();
+        _stats.AddMarker($"Marker {s.Markers.Count + 1}" +
+            (s.CurrentZone.Length > 0 ? $" — {s.CurrentZone}" : ""));
     }
 
     private void UpdateLoggingStatus()
@@ -464,6 +645,22 @@ public partial class MainWindow : Window
             MiniChips.Children.Add(new TextBlock
             {
                 Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("AccentBrush"),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 12, 0),
+            });
+        }
+
+        // Pinned tracked-loot rules get their own chips (TRACK-006).
+        foreach (var rule in _settings.TrackedRules.Where(r => r.Enabled && r.Pinned))
+        {
+            var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
+            var result = s.Tracked.FirstOrDefault(t =>
+                string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+            MiniChips.Children.Add(new TextBlock
+            {
+                Text = $"🎯 {name} {result?.TotalQuantity ?? 0}",
+                FontSize = 13, FontWeight = FontWeights.SemiBold,
                 Foreground = (Brush)FindResource("AccentBrush"),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 12, 0),
@@ -640,6 +837,95 @@ public partial class MainWindow : Window
         }
     }
 
+    // ---- global hotkeys + click-through (INPUT-*) ----
+
+    private System.Windows.Interop.HwndSource? _hwndSource;
+    private bool _clickThrough;
+    private const int WmHotkey = 0x0312;
+
+    private static class Native
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint mods, uint vk);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern int GetWindowLong(IntPtr hWnd, int index);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern int SetWindowLong(IntPtr hWnd, int index, int value);
+        public const int GwlExstyle = -20;
+        public const int WsExTransparent = 0x20;
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        _hwndSource = (System.Windows.Interop.HwndSource)PresentationSource.FromVisual(this)!;
+        _hwndSource.AddHook(WndProc);
+        RegisterHotkey(1, _settings.HotkeyToggleOverlay);
+        RegisterHotkey(2, _settings.HotkeyClickThrough);
+        RegisterHotkey(3, _settings.HotkeyMiniMode);
+        RegisterHotkey(4, _settings.HotkeyCampMarker);
+    }
+
+    private void RegisterHotkey(int id, string spec)
+    {
+        if (string.IsNullOrWhiteSpace(spec) || _hwndSource is null) return;
+        uint mods = 0, vk = 0;
+        foreach (var part in spec.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            switch (part.ToUpperInvariant())
+            {
+                case "CTRL" or "CONTROL": mods |= 0x2; break;
+                case "SHIFT": mods |= 0x4; break;
+                case "ALT": mods |= 0x1; break;
+                case "WIN": mods |= 0x8; break;
+                default:
+                    if (Enum.TryParse<System.Windows.Input.Key>(part, ignoreCase: true, out var key))
+                        vk = (uint)KeyInterop.VirtualKeyFromKey(key);
+                    break;
+            }
+        }
+        if (vk == 0 || !Native.RegisterHotKey(_hwndSource.Handle, id, mods, vk))
+            App.LogError($"Hotkey '{spec}' could not be registered (invalid or already in use).");
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != WmHotkey) return IntPtr.Zero;
+        handled = true;
+        switch (wParam.ToInt32())
+        {
+            case 1: // show/hide overlay
+                if (Visibility == Visibility.Visible) Hide(); else { Show(); Topmost = true; }
+                break;
+            case 2:
+                ToggleClickThrough();
+                break;
+            case 3:
+                SetMode(!_settings.Minimized);
+                break;
+            case 4:
+                DropCampMarker();
+                break;
+        }
+        return IntPtr.Zero;
+    }
+
+    private void ToggleClickThrough()
+    {
+        if (_hwndSource is null) return;
+        _clickThrough = !_clickThrough;
+        var style = Native.GetWindowLong(_hwndSource.Handle, Native.GwlExstyle);
+        Native.SetWindowLong(_hwndSource.Handle, Native.GwlExstyle,
+            _clickThrough ? style | Native.WsExTransparent : style & ~Native.WsExTransparent);
+        // Visible but unobtrusive state indicator (INPUT-012).
+        RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "BorderBrush");
+        RootBorder().ToolTip = _clickThrough
+            ? $"Click-through ON — press {_settings.HotkeyClickThrough} to interact again"
+            : null;
+    }
+
     private void OnDrag(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2 && MiniRoot.Visibility == Visibility.Visible)
@@ -656,6 +942,8 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        if (_hwndSource is not null)
+            for (var id = 1; id <= 4; id++) Native.UnregisterHotKey(_hwndSource.Handle, id);
         _settings.WindowLeft = Left;
         _settings.WindowTop = Top;
         _settings.Save();

@@ -53,6 +53,31 @@
             <TextBlock Text="Turn off if you upload your log files elsewhere — they will grow forever, so clean them up yourself occasionally."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
+            <Grid Margin="0,12,0,0">
+                <TextBlock Text="Recent-rate window" FontSize="12"/>
+                <ComboBox x:Name="WindowCombo" HorizontalAlignment="Right" Width="90" FontSize="12"
+                          SelectionChanged="OnWindowChanged"/>
+            </Grid>
+            <TextBlock Text='The "Last Xm" figures on Combat, Kills, Money, and Progress.'
+                       Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Tracked loot" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentBrush}" Margin="0,14,0,2"/>
+            <TextBlock Text="Match any looted item containing the text (e.g. 'mote'). 📌 pins a mini-dashboard chip; 🔔 banner and 🔊 sound alert on each drop."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+            <StackPanel x:Name="RulesPanel" Margin="0,4,0,0"/>
+            <Button x:Name="AddRuleBtn" Content="+ Add tracked item" Style="{StaticResource IconButton}"
+                    HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
+
+            <TextBlock Text="Overlay cards" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentBrush}" Margin="0,14,0,2"/>
+            <StackPanel x:Name="CardsPanel"/>
+
+            <TextBlock Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,14,0,0">
+                <Run Text="Hotkeys (global, editable in settings.json): "/><LineBreak/>
+                <Run x:Name="HotkeyNote" Text=""/>
+            </TextBlock>
+
             <TextBlock Text="Size also scales all text. Changes apply instantly and are saved."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
         </StackPanel>

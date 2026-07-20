@@ -17,6 +17,20 @@ public partial class OptionsWindow : Window
         OpacitySlider.Value = main.Opacity;
         BgOpacitySlider.Value = main.BackgroundOpacityValue;
         TruncateCheck.IsChecked = main.TruncateLogsValue;
+
+        foreach (var m in (int[])[5, 15, 30])
+            WindowCombo.Items.Add($"{m} min");
+        WindowCombo.SelectedIndex = main.Settings.RecentWindowMinutes switch
+        {
+            5 => 0, 30 => 2, _ => 1,
+        };
+
+        BuildRulesEditor();
+        BuildCardsEditor();
+        HotkeyNote.Text =
+            $"{main.Settings.HotkeyToggleOverlay} show/hide · {main.Settings.HotkeyClickThrough} click-through · " +
+            $"{main.Settings.HotkeyMiniMode} mini · {main.Settings.HotkeyCampMarker} camp marker";
+
         UpdateLabels();
         _ready = true;
 
@@ -38,6 +52,153 @@ public partial class OptionsWindow : Window
     {
         if (!_ready) return;
         _main.SetTruncateLogs(TruncateCheck.IsChecked == true);
+    }
+
+    private void OnWindowChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.Settings.RecentWindowMinutes = WindowCombo.SelectedIndex switch { 0 => 5, 2 => 30, _ => 15 };
+        _main.PersistSettings();
+    }
+
+    private void OnAddRule(object sender, RoutedEventArgs e)
+    {
+        _main.Settings.TrackedRules.Add(new EQBuddy.Core.TrackedRule { Name = "", Pattern = "" });
+        _main.PersistSettings();
+        BuildRulesEditor();
+    }
+
+    private void BuildRulesEditor()
+    {
+        RulesPanel.Children.Clear();
+        foreach (var rule in _main.Settings.TrackedRules)
+        {
+            var row = new System.Windows.Controls.Grid { Margin = new Thickness(0, 3, 0, 0) };
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(72) });
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            for (var i = 0; i < 4; i++)
+                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+
+            var name = DarkBox(rule.Name, "name");
+            name.LostFocus += (_, _) => { rule.Name = name.Text.Trim(); _main.PersistSettings(); };
+            row.Children.Add(name);
+
+            var pattern = DarkBox(rule.Pattern, "match text");
+            pattern.Margin = new Thickness(4, 0, 0, 0);
+            pattern.LostFocus += (_, _) => { rule.Pattern = pattern.Text.Trim(); _main.PersistSettings(); };
+            System.Windows.Controls.Grid.SetColumn(pattern, 1);
+            row.Children.Add(pattern);
+
+            row.Children.Add(RuleToggle("📌", "Pin to mini dashboard", 2, rule.Pinned,
+                v => rule.Pinned = v));
+            row.Children.Add(RuleToggle("🔔", "Banner alert on drop", 3, rule.AlertBanner,
+                v => rule.AlertBanner = v));
+            row.Children.Add(RuleToggle("🔊", "Sound alert on drop", 4, rule.AlertSound,
+                v => rule.AlertSound = v));
+
+            var del = new System.Windows.Controls.Button
+            {
+                Content = "✕", Style = (Style)FindResource("IconButton"), FontSize = 11,
+            };
+            del.Click += (_, _) =>
+            {
+                _main.Settings.TrackedRules.Remove(rule);
+                _main.PersistSettings();
+                BuildRulesEditor();
+            };
+            System.Windows.Controls.Grid.SetColumn(del, 5);
+            row.Children.Add(del);
+
+            RulesPanel.Children.Add(row);
+        }
+    }
+
+    private System.Windows.Controls.Primitives.ToggleButton RuleToggle(
+        string glyph, string tip, int column, bool initial, Action<bool> apply)
+    {
+        var t = new System.Windows.Controls.Primitives.ToggleButton
+        {
+            Content = glyph, ToolTip = tip, IsChecked = initial, FontSize = 11,
+            Style = (Style)FindResource("IconToggle"),
+        };
+        t.Checked += (_, _) => { apply(true); _main.PersistSettings(); };
+        t.Unchecked += (_, _) => { apply(false); _main.PersistSettings(); };
+        System.Windows.Controls.Grid.SetColumn(t, column);
+        return t;
+    }
+
+    private System.Windows.Controls.TextBox DarkBox(string text, string tip) => new()
+    {
+        Text = text, ToolTip = tip, FontSize = 12,
+        Background = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromRgb(0x2A, 0x25, 0x1F)),
+        Foreground = (System.Windows.Media.Brush)FindResource("TextBrush"),
+        BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
+        Padding = new Thickness(4, 2, 4, 2),
+    };
+
+    private void BuildCardsEditor()
+    {
+        CardsPanel.Children.Clear();
+        var order = _main.Settings.SectionOrder.ToList();
+        foreach (var (key, _) in MainWindow.SectionCatalog)
+            if (!order.Contains(key)) order.Add(key);
+        _main.Settings.SectionOrder = order;
+
+        foreach (var key in order)
+        {
+            var title = MainWindow.SectionCatalog.First(c => c.Key == key).Title;
+            var row = new System.Windows.Controls.Grid { Margin = new Thickness(0, 2, 0, 0) };
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            for (var i = 0; i < 3; i++)
+                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+
+            var hidden = _main.Settings.HiddenSections.Contains(key);
+            row.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = title, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = (System.Windows.Media.Brush)FindResource(hidden ? "DimBrush" : "TextBrush"),
+            });
+
+            row.Children.Add(CardButton("↑", "Move up", 1, () => MoveCard(key, -1)));
+            row.Children.Add(CardButton("↓", "Move down", 2, () => MoveCard(key, +1)));
+            row.Children.Add(CardButton(hidden ? "🙈" : "👁", hidden ? "Show card" : "Hide card (data still collected)", 3, () =>
+            {
+                if (!_main.Settings.HiddenSections.Remove(key))
+                    _main.Settings.HiddenSections.Add(key);
+                ApplyCards();
+            }));
+            CardsPanel.Children.Add(row);
+        }
+    }
+
+    private System.Windows.Controls.Button CardButton(string glyph, string tip, int column, Action action)
+    {
+        var b = new System.Windows.Controls.Button
+        {
+            Content = glyph, ToolTip = tip, FontSize = 11,
+            Style = (Style)FindResource("IconButton"),
+        };
+        b.Click += (_, _) => action();
+        System.Windows.Controls.Grid.SetColumn(b, column);
+        return b;
+    }
+
+    private void MoveCard(string key, int delta)
+    {
+        var order = _main.Settings.SectionOrder;
+        var i = order.IndexOf(key);
+        var j = i + delta;
+        if (i < 0 || j < 0 || j >= order.Count) return;
+        (order[i], order[j]) = (order[j], order[i]);
+        ApplyCards();
+    }
+
+    private void ApplyCards()
+    {
+        _main.PersistSettings();
+        _main.ApplySectionLayout();
+        BuildCardsEditor();
     }
 
     private void UpdateLabels()

@@ -72,7 +72,20 @@ public sealed class SessionStats
     private readonly List<(DateTime Time, string Zone)> _zones = new();
     private int _fizzles, _resists;
 
+    // Session event journal (JOURNAL-*): loot/coin/xp/kill/etc. kept whole-session;
+    // high-frequency combat/heal events pruned past the largest recent window.
+    private readonly List<GameEvent> _journal = new();
+    private static readonly TimeSpan CombatJournalRetention = TimeSpan.FromMinutes(40);
+    private int _journalAppendsSincePrune;
+
+    // Active-play tracking (ACTIVE-*): 2-minute buckets containing any meaningful event.
+    private static readonly TimeSpan ActiveBucket = TimeSpan.FromMinutes(2);
+    private readonly SortedSet<long> _activeBuckets = new();
+
+    private readonly List<(DateTime Time, string Label)> _markers = new();
+
     // Combat-window tracking for DPS
+    private readonly List<(DateTime Start, DateTime End)> _combatSpans = new();
     private double _closedCombatSeconds; private long _closedCombatDamage;
     private DateTime? _combatStart; private DateTime? _combatLast; private long _combatDamage;
     private DateTime? _lastOwnAction;
@@ -93,6 +106,17 @@ public sealed class SessionStats
             }
             _sessionStart ??= e.Time;
             _lastEventTime = e.Time;
+
+            _journal.Add(e);
+            _activeBuckets.Add(e.Time.Ticks / ActiveBucket.Ticks);
+            if (++_journalAppendsSincePrune >= 512)
+            {
+                _journalAppendsSincePrune = 0;
+                var cutoff = e.Time - CombatJournalRetention;
+                _journal.RemoveAll(j => j.Time < cutoff && j is DamageDealtEvent
+                    or DamageTakenEvent or MissEvent or ThirdMeleeEvent or ThirdDotEvent
+                    or ThirdSchoolEvent or ThirdMissEvent or HealEvent or RegenTickEvent);
+            }
 
             switch (e)
             {
@@ -251,6 +275,9 @@ public sealed class SessionStats
                     break;
                 case FizzleEvent: _fizzles++; break;
                 case ResistEvent: _resists++; break;
+                case SessionMarkerEvent mk:
+                    _markers.Add((mk.Time, mk.Label));
+                    break;
             }
         }
         // REL-001: never invoke user callbacks while holding the stats lock.
@@ -319,9 +346,14 @@ public sealed class SessionStats
         {
             _closedCombatSeconds += Math.Max(1, (cl - cs).TotalSeconds);
             _closedCombatDamage += _combatDamage;
+            _combatSpans.Add((cs, cl));
+            if (_combatSpans.Count > 2048) _combatSpans.RemoveRange(0, 1024);
         }
         _combatStart = null; _combatLast = null; _combatDamage = 0;
     }
+
+    /// <summary>Drop a camp/segment marker (wall-clock timestamped).</summary>
+    public void AddMarker(string label) => Apply(new SessionMarkerEvent(DateTime.Now, label));
 
     public void Reset()
     {
@@ -348,12 +380,21 @@ public sealed class SessionStats
         _closedCombatSeconds = 0; _closedCombatDamage = 0;
         _combatStart = null; _combatLast = null; _combatDamage = 0;
         _lastOwnAction = null; _petName = null; _petConfirmed = false;
+        _journal.Clear(); _journalAppendsSincePrune = 0;
+        _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
     }
 
     private static void Bump(Dictionary<string, int> d, string key) =>
         d[key] = d.TryGetValue(key, out var v) ? v + 1 : 1;
 
-    public StatsSnapshot Snapshot()
+    public StatsSnapshot Snapshot() => Snapshot(recentWindow: null, rules: null);
+
+    /// <summary>
+    /// Snapshot with optional journal-derived extras: recent-window rates (RATE-006:
+    /// computed from timestamped events, never proportional estimates) and tracked-rule
+    /// results (recomputed from the journal, so rule edits apply mid-session).
+    /// </summary>
+    public StatsSnapshot Snapshot(TimeSpan? recentWindow, IReadOnlyList<TrackedRule>? rules)
     {
         lock (_lock)
         {
@@ -374,6 +415,83 @@ public sealed class SessionStats
             var elapsed = _sessionStart is { } ss && _lastEventTime is { } le
                 ? (le - ss) : TimeSpan.Zero;
             var hours = Math.Max(elapsed.TotalHours, 1.0 / 60);
+
+            var activeSeconds = Math.Min(_activeBuckets.Count * ActiveBucket.TotalSeconds,
+                Math.Max(elapsed.TotalSeconds, ActiveBucket.TotalSeconds));
+            var activeHours = Math.Max(activeSeconds / 3600.0, 1.0 / 60);
+
+            RecentRates? recent = null;
+            if (recentWindow is { } w && _lastEventTime is { } winEnd)
+            {
+                var winStart = winEnd - w;
+                double xp = 0, dmg = 0, healed = 0;
+                int kills = 0;
+                long coin = 0;
+                foreach (var evt in _journal)
+                {
+                    if (evt.Time < winStart) continue;
+                    switch (evt)
+                    {
+                        case XpEvent x: xp += x.Percent; break;
+                        case KillEvent k when k.Killer == "You" || IsPet(k.Killer): kills++; break;
+                        case DamageDealtEvent dd: dmg += dd.Amount; break;
+                        case HealEvent { Outgoing: true } h: healed += h.Amount; break;
+                        case MoneyEvent m: coin += m.Copper; break;
+                        case AutoSellEvent a: coin += a.Copper; break;
+                    }
+                }
+                double combatInWindow = 0;
+                foreach (var (s2, e2) in _combatSpans)
+                    combatInWindow += OverlapSeconds(s2, e2, winStart, winEnd);
+                if (_combatStart is { } ocs && _combatLast is { } ocl)
+                    combatInWindow += OverlapSeconds(ocs, ocl, winStart, winEnd);
+                if (combatInWindow < 1 && dmg > 0) combatInWindow = 1;
+                recent = new RecentRates(
+                    Window: w,
+                    HasFullWindow: elapsed >= w,
+                    XpPercent: xp,
+                    XpPerHour: xp / w.TotalHours,
+                    Kills: kills,
+                    Copper: coin,
+                    Dps: combatInWindow > 0 ? dmg / combatInWindow : 0,
+                    Hps: combatInWindow > 0 ? healed / combatInWindow : 0);
+            }
+
+            List<TrackedRuleResult> tracked = [];
+            if (rules is not null)
+            {
+                foreach (var rule in rules)
+                {
+                    if (!rule.Enabled || rule.Pattern.Length == 0) continue;
+                    var items = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                    var total = 0;
+                    DateTime? first = null, last = null;
+                    string? lastItem = null;
+                    foreach (var evt in _journal)
+                    {
+                        var (item, qty) = evt switch
+                        {
+                            LootEvent l when rule.Matches(l.Item) => (l.Item, 1),
+                            AutoSellEvent a when rule.Matches(a.Item) => (a.Item, a.Count),
+                            _ => (null, 0),
+                        };
+                        if (item is null) continue;
+                        items[item] = items.TryGetValue(item, out var c) ? c + qty : qty;
+                        total += qty;
+                        first ??= evt.Time;
+                        last = evt.Time;
+                        lastItem = item;
+                    }
+                    tracked.Add(new TrackedRuleResult(
+                        rule.Name.Length > 0 ? rule.Name : rule.Pattern,
+                        total,
+                        items.OrderByDescending(kv => kv.Value)
+                            .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
+                        total / hours,
+                        total / activeHours,
+                        first, last, lastItem));
+                }
+            }
 
             return new StatsSnapshot
             {
@@ -452,12 +570,29 @@ public sealed class SessionStats
                 CurrentZone = _zones.Count > 0 ? _zones[^1].Zone : "",
                 Fizzles = _fizzles,
                 Resists = _resists,
+                ActiveSeconds = activeSeconds,
+                XpPerActiveHour = _xpPercent / activeHours,
+                CopperPerActiveHour = (long)((_copper + _vendorCopper) / activeHours),
+                KillsPerActiveHour = _yourKills.Values.Sum() / activeHours,
+                Recent = recent,
+                Tracked = tracked,
+                Markers = _markers.Select(m => new TimedDetail(m.Time, m.Label)).ToList(),
             };
         }
+    }
+
+    private static double OverlapSeconds(DateTime aStart, DateTime aEnd, DateTime bStart, DateTime bEnd)
+    {
+        var s = aStart > bStart ? aStart : bStart;
+        var e = aEnd < bEnd ? aEnd : bEnd;
+        return e > s ? (e - s).TotalSeconds : 0;
     }
 }
 
 public record NameCount(string Name, int Count);
+/// <summary>Rolling-window rates computed from journal events (never proportional estimates).</summary>
+public record RecentRates(TimeSpan Window, bool HasFullWindow, double XpPercent, double XpPerHour,
+    int Kills, long Copper, double Dps, double Hps);
 public record TimedDetail(DateTime Time, string Text);
 public record SourceDamage(string Name, int Hits, long Total);
 public record LootDetail(string Item, int Count, string LastSource);
@@ -528,6 +663,14 @@ public sealed class StatsSnapshot
     public string CurrentZone { get; init; } = "";
     public int Fizzles { get; init; }
     public int Resists { get; init; }
+    /// <summary>Active-play seconds (2-minute buckets containing any meaningful event).</summary>
+    public double ActiveSeconds { get; init; }
+    public double XpPerActiveHour { get; init; }
+    public long CopperPerActiveHour { get; init; }
+    public double KillsPerActiveHour { get; init; }
+    public RecentRates? Recent { get; init; }
+    public List<TrackedRuleResult> Tracked { get; init; } = [];
+    public List<TimedDetail> Markers { get; init; } = [];
 
     /// <summary>Format copper as "3p 2g 4s 7c".</summary>
     public static string FormatCoin(long copper)
