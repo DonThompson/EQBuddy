@@ -20,6 +20,31 @@ public class EncounterTests
     }
 
     [Fact]
+    public void RewardsLoggedBeforeKillLineCorrelate()
+    {
+        // Live EQL order: experience → coin → "You have slain X!", all the same second.
+        var s = Replay(
+            At(0, 0, "You slash a ghoul for 10 points of damage."),
+            At(0, 5, "You gain experience! (1.580%)"),
+            At(0, 5, "You receive 5 silver and 2 copper from the corpse."),
+            At(0, 5, "You have slain a ghoul!")).Snapshot();
+        var mob = s.Mobs.Single(m => m.Name == "Ghoul");
+        Assert.Equal(1.58, mob.XpPercent, 3);
+        Assert.Equal(52, mob.Copper);
+    }
+
+    [Fact]
+    public void StaleRewardsAreNotClaimedByALaterKill()
+    {
+        // Quest xp / old coin outside the window must not stick to the next kill.
+        var s = Replay(
+            At(0, 0, "You gain experience! (2.000%)"),
+            At(1, 0, "You slash a ghoul for 10 points of damage."),
+            At(1, 5, "You have slain a ghoul!")).Snapshot();
+        Assert.Equal(0, s.Mobs.Single(m => m.Name == "Ghoul").XpPercent);
+    }
+
+    [Fact]
     public void SequentialSameNameKillsAreDistinctEncounters()
     {
         var s = Replay(

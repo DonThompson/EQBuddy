@@ -404,8 +404,15 @@ public partial class MainWindow : Window
             FillList(KillList, s.YourKills.Select(k => (k.Name, $"×{k.Count}")));
             var farmed = s.Mobs.Where(m => m.Kills > 0).ToList();
             FarmingLabel.Visibility = farmed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillList(FarmingList, farmed.Select(m =>
-                (m.Name, $"avg {m.AvgFightSeconds:0}s · {StatsSnapshot.FormatCoin(m.Copper)} · {m.XpPercent:0.0}% xp")));
+            var farmRows = new List<(string, string)>();
+            foreach (var m in farmed)
+            {
+                farmRows.Add((m.Name,
+                    $"avg {m.AvgFightSeconds:0}s · {StatsSnapshot.FormatCoin(m.Copper)} · {m.XpPercent:0.0}% xp"));
+                foreach (var l in m.Loot)
+                    farmRows.Add(($"      {l.Item}", $"×{l.Count} · {l.Count}/{m.Kills} kills"));
+            }
+            FillList(FarmingList, farmRows);
             var showParty = s.PartyKillsByKiller.Count > 0;
             PartyKillsLabel.Visibility = showParty ? Visibility.Visible : Visibility.Collapsed;
             FillList(PartyKillList, s.PartyKillsByKiller.Select(k => (k.Name, $"×{k.Count}")));

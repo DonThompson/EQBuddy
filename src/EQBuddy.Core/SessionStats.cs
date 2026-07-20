@@ -112,6 +112,10 @@ public sealed class SessionStats
     private readonly Dictionary<string, MobAgg> _mobs = new(StringComparer.OrdinalIgnoreCase);
     private (string Name, DateTime Time)? _lastKill;
     private (string Item, int Count, DateTime Time)? _lastDestroyed;
+    // EQL logs rewards BEFORE the kill line ("You gain experience!" → coin → "You have
+    // slain X!", same second), so xp/coin are held here until a kill claims them.
+    private readonly List<(DateTime Time, double Percent)> _pendingXp = [];
+    private readonly List<(DateTime Time, long Copper)> _pendingCoin = [];
 
     // ---- stance windows (Release D) ----
     private string? _currentStance;
@@ -166,6 +170,7 @@ public sealed class SessionStats
                     FinalizeFight(k.Target, k.Time, "Killed");
                     Mob(k.Target).Kills++;
                     _lastKill = (k.Target, k.Time);
+                    ClaimPendingRewards(k.Target, k.Time);
                     break;
                 case KillEvent k:
                     Bump(_partyKillsByTarget, k.Target);
@@ -174,6 +179,7 @@ public sealed class SessionStats
                     // Someone else finished a mob we may have been fighting.
                     FinalizeFight(k.Target, k.Time, "Killed");
                     _lastKill = (k.Target, k.Time);
+                    ClaimPendingRewards(k.Target, k.Time);
                     break;
                 case PetClaimEvent pc:
                     ConfirmPet(LogParser.Normalize(pc.PetName));
@@ -302,15 +308,20 @@ public sealed class SessionStats
                 case MoneyEvent m:
                     _copper += m.Copper; _coinDrops++;
                     if (m.Copper > _biggestDrop) _biggestDrop = m.Copper;
-                    // Corpse coin arriving right after a kill belongs to that creature (timing correlation).
+                    // Coin right after a kill belongs to that creature; coin before the
+                    // kill line (EQL's usual order) waits for the kill to claim it.
                     if (_lastKill is { } lk1 && m.Time - lk1.Time <= RewardWindow)
                         Mob(lk1.Name).Copper += m.Copper;
+                    else
+                        _pendingCoin.Add((m.Time, m.Copper));
                     break;
                 case XpEvent x:
                     _xpPercent += x.Percent; _xpTicks++;
                     _xpSinceLevel += x.Percent;
                     if (_lastKill is { } lk2 && x.Time - lk2.Time <= RewardWindow)
                         Mob(lk2.Name).Xp += x.Percent;
+                    else
+                        _pendingXp.Add((x.Time, x.Percent));
                     break;
                 case LevelEvent lv2:
                     _levels.Add((lv2.Time, lv2.Level));
@@ -397,6 +408,19 @@ public sealed class SessionStats
 
     private MobAgg Mob(string name) =>
         _mobs.TryGetValue(name, out var m) ? m : _mobs[name] = new MobAgg();
+
+    /// <summary>A kill claims the xp/coin logged just before its kill line (EQL order);
+    /// anything older than the window is dropped as uncorrelatable.</summary>
+    private void ClaimPendingRewards(string target, DateTime killTime)
+    {
+        var mob = Mob(target);
+        foreach (var p in _pendingXp)
+            if (killTime - p.Time <= RewardWindow) mob.Xp += p.Percent;
+        foreach (var p in _pendingCoin)
+            if (killTime - p.Time <= RewardWindow) mob.Copper += p.Copper;
+        _pendingXp.Clear();
+        _pendingCoin.Clear();
+    }
 
     private void TouchFight(string target, DateTime t, long dmgOut = 0, long dmgIn = 0)
     {
@@ -506,7 +530,7 @@ public sealed class SessionStats
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
-        _lastDestroyed = null;
+        _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
         _currentStance = null; _stanceAgg.Clear();
     }
 
