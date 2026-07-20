@@ -585,11 +585,56 @@ public partial class MainWindow : Window
                 _alertUntil = DateTime.Now.AddSeconds(6);
             }
             if (rule.AlertSound)
-            {
-                try { System.Media.SystemSounds.Asterisk.Play(); }
-                catch (Exception ex) { App.LogError(ex); }
-            }
+                PlayAlertSound();
         }
+    }
+
+    private System.Windows.Media.MediaPlayer? _alertPlayer;
+
+    /// <summary>Named alert sounds → distinct files in C:\Windows\Media. SystemSounds is
+    /// useless here: most of its entries share one "ding" in the default scheme and
+    /// Question is typically unassigned (silent).</summary>
+    internal static readonly (string Name, string File)[] AlertSounds =
+    [
+        ("Ding", "Windows Ding.wav"),
+        ("Notify", "Windows Notify.wav"),
+        ("Chimes", "chimes.wav"),
+        ("Chord", "chord.wav"),
+        ("Tada", "tada.wav"),
+        ("Exclamation", "Windows Exclamation.wav"),
+        ("Alarm", "Alarm01.wav"),
+    ];
+
+    /// <summary>Play the configured alert sound: a named built-in, or a custom
+    /// .wav/.mp3 path. Unknown/missing values fall back to the system Asterisk.</summary>
+    internal void PlayAlertSound()
+    {
+        try
+        {
+            // Legacy SystemSounds names from earlier settings map onto the palette.
+            var choice = _settings.AlertSound switch
+            {
+                "Asterisk" or "" => "Ding",
+                "Beep" => "Chord",
+                "Hand" => "Chimes",
+                "Question" => "Notify",
+                { } other => other,
+            };
+            var named = Array.Find(AlertSounds, x => x.Name == choice);
+            var file = named.File is { } f
+                ? System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", f)
+                : choice;
+            if (System.IO.File.Exists(file))
+            {
+                _alertPlayer ??= new System.Windows.Media.MediaPlayer();
+                _alertPlayer.Open(new Uri(file));
+                _alertPlayer.Play();
+                return;
+            }
+            System.Media.SystemSounds.Asterisk.Play();
+        }
+        catch (Exception ex) { App.LogError(ex); }
     }
 
     private void OnCampMarker(object sender, RoutedEventArgs e) => DropCampMarker();

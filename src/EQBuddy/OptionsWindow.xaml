@@ -69,6 +69,18 @@
             <Button x:Name="AddRuleBtn" Content="+ Add tracked item" Style="{StaticResource IconButton}"
                     HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
 
+            <Grid Margin="0,8,0,0">
+                <TextBlock Text="Alert sound" FontSize="12" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ComboBox x:Name="SoundCombo" Width="120" FontSize="12"
+                              SelectionChanged="OnSoundChanged"/>
+                    <Button Content="&#x25B6;" Style="{StaticResource IconButton}" FontSize="11"
+                            ToolTip="Play the alert sound" Click="OnSoundTest" Margin="4,0,0,0"/>
+                </StackPanel>
+            </Grid>
+            <TextBlock x:Name="SoundFileNote" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                       Visibility="Collapsed"/>
+
             <TextBlock Text="Overlay cards" FontSize="12" FontWeight="SemiBold"
                        Foreground="{StaticResource AccentBrush}" Margin="0,14,0,2"/>
             <StackPanel x:Name="CardsPanel"/>

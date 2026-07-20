@@ -62,6 +62,9 @@ Tracked loot & alerts:
   and/or sound the moment a matching item drops. A rule has a short *name* and a
   *match text* — if you only fill in the name, it doubles as the match text, so
   typing just `Ghoul` on a Kill rule works. Alert banners appear in mini mode too.
+- **Alert sound** (Options, under the rules): pick from seven distinct built-in
+  sounds (Ding, Notify, Chimes, Chord, Tada, Exclamation, Alarm) or your own
+  `.wav`/`.mp3` file; ▶ previews it.
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 

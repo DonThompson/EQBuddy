@@ -25,6 +25,18 @@ public partial class OptionsWindow : Window
             5 => 0, 30 => 2, _ => 1,
         };
 
+        foreach (var name in SoundNames) SoundCombo.Items.Add($"{name}{(name == "Ding" ? " (default)" : "")}");
+        SoundCombo.Items.Add("Custom file…");
+        var current = main.Settings.AlertSound switch
+        {
+            // legacy SystemSounds names saved by earlier builds
+            "Asterisk" or "" => "Ding", "Beep" => "Chord", "Hand" => "Chimes", "Question" => "Notify",
+            { } other => other,
+        };
+        var idx = Array.IndexOf(SoundNames, current);
+        SoundCombo.SelectedIndex = idx >= 0 ? idx : SoundNames.Length;   // custom slot
+        UpdateSoundFileNote();
+
         BuildRulesEditor();
         BuildCardsEditor();
         HotkeyNote.Text =
@@ -60,6 +72,46 @@ public partial class OptionsWindow : Window
         _main.Settings.RecentWindowMinutes = WindowCombo.SelectedIndex switch { 0 => 5, 2 => 30, _ => 15 };
         _main.PersistSettings();
     }
+
+    private static readonly string[] SoundNames =
+        Array.ConvertAll(MainWindow.AlertSounds, x => x.Name);
+
+    private void UpdateSoundFileNote()
+    {
+        var custom = Array.IndexOf(SoundNames, _main.Settings.AlertSound) < 0;
+        SoundFileNote.Text = custom ? $"Custom: {_main.Settings.AlertSound}" : "";
+        SoundFileNote.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnSoundChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!_ready) return;
+        if (SoundCombo.SelectedIndex < SoundNames.Length)
+        {
+            _main.Settings.AlertSound = SoundNames[SoundCombo.SelectedIndex];
+        }
+        else
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Choose an alert sound",
+                Filter = "Sound files (*.wav;*.mp3)|*.wav;*.mp3|All files (*.*)|*.*",
+            };
+            if (dlg.ShowDialog(this) == true)
+            {
+                _main.Settings.AlertSound = dlg.FileName;
+            }
+            else if (Array.IndexOf(SoundNames, _main.Settings.AlertSound) is >= 0 and var prev)
+            {
+                _ready = false; SoundCombo.SelectedIndex = prev; _ready = true;   // cancelled — revert
+            }
+        }
+        _main.PersistSettings();
+        UpdateSoundFileNote();
+        _main.PlayAlertSound();   // instant feedback on the new choice
+    }
+
+    private void OnSoundTest(object sender, RoutedEventArgs e) => _main.PlayAlertSound();
 
     private void OnAddRule(object sender, RoutedEventArgs e)
     {
