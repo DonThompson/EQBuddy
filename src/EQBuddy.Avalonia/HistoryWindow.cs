@@ -19,12 +19,7 @@ public sealed class HistoryWindow : Window
     private readonly ComboBox _charFilter = new() { Width = 180 };
     private readonly TextBox _searchBox = TextBox("");
     private readonly TextBlock _countText = AppTheme.DimText("");
-    private readonly ListBox _sessionList = new()
-    {
-        Background = AppTheme.PanelBrush,
-        Foreground = AppTheme.TextBrush,
-        SelectionMode = SelectionMode.Multiple,
-    };
+    private readonly StackPanel _sessionRows = new();
     private readonly TextBlock _detailText = new()
     {
         Text = "Select a session.",
@@ -36,6 +31,7 @@ public sealed class HistoryWindow : Window
     private readonly TextBox _noteBox = TextBox("");
     private readonly TextBox _tagsBox = TextBox("");
     private List<SessionRow> _rows = [];
+    private readonly HashSet<int> _selectedIndexes = [];
     private SessionRow? _selected;
     private StatsSnapshot? _selectedSnapshot;
 
@@ -48,6 +44,7 @@ public sealed class HistoryWindow : Window
         MinWidth = 640;
         MinHeight = 400;
         Background = AppTheme.BgBrush;
+        StyleDarkCombo(_charFilter);
         Content = BuildContent();
         RefreshFilters();
         RefreshList();
@@ -85,9 +82,15 @@ public sealed class HistoryWindow : Window
         Grid.SetColumnSpan(filter, 2);
         root.Children.Add(filter);
 
-        _sessionList.SelectionChanged += OnSessionSelected;
-        Grid.SetRow(_sessionList, 1);
-        root.Children.Add(_sessionList);
+        var sessionScroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Background = new SolidColorBrush(Color.FromArgb(0x44, 0x1C, 0x19, 0x17)),
+            Content = _sessionRows,
+        };
+        Grid.SetRow(sessionScroll, 1);
+        root.Children.Add(sessionScroll);
 
         var detail = new Grid { Margin = new Thickness(10, 0, 0, 0) };
         detail.RowDefinitions.Add(new RowDefinition(GridLength.Star));
@@ -142,44 +145,68 @@ public sealed class HistoryWindow : Window
     {
         var (server, character) = SelectedFilter();
         _rows = _repo.Query(server, character, _searchBox.Text);
-        _sessionList.Items.Clear();
-        foreach (var r in _rows)
+        _selectedIndexes.Clear();
+        _selected = null;
+        _selectedSnapshot = null;
+        _sessionRows.Children.Clear();
+        for (var i = 0; i < _rows.Count; i++)
         {
+            var r = _rows[i];
             var dur = TimeSpan.FromSeconds(r.ElapsedSeconds);
-            _sessionList.Items.Add(
+            _sessionRows.Children.Add(SessionRow(i,
                 $"{r.StartLocal:MMM d h:mm tt} - {r.Character}\n" +
                 $"   {(r.PrimaryZone.Length > 0 ? r.PrimaryZone : "-")} - {(int)dur.TotalHours}h {dur.Minutes}m - " +
                 $"{r.Kills} kills - {r.XpPercent:0.#}% xp - {StatsSnapshot.FormatCoin(r.Copper)}" +
                 (r.EndReason == "RecoveredAfterCrash" ? " - (recovered)" : "") +
-                (r.EndReason == "Active" ? " - (in progress)" : ""));
+                (r.EndReason == "Active" ? " - (in progress)" : "")));
         }
         _countText.Text = $"{_rows.Count} session{(_rows.Count == 1 ? "" : "s")}";
     }
 
-    private void OnSessionSelected(object? sender, SelectionChangedEventArgs e)
+    private void OnSessionSelected(int index, KeyModifiers modifiers)
     {
-        if (_sessionList.SelectedItems is { Count: 2 } selectedItems)
+        if (modifiers.HasFlag(KeyModifiers.Control))
         {
-            var idx = selectedItems.Cast<object>()
-                .Select(item => _sessionList.Items.IndexOf(item)).OrderBy(x => x).ToList();
-            if (idx[0] >= 0 && idx[1] < _rows.Count)
-            {
-                _selected = null;
-                _selectedSnapshot = null;
-                _detailText.Text = BuildComparison(_rows[idx[0]], _rows[idx[1]]);
-                return;
-            }
+            if (!_selectedIndexes.Remove(index))
+                _selectedIndexes.Add(index);
+        }
+        else
+        {
+            _selectedIndexes.Clear();
+            _selectedIndexes.Add(index);
+        }
+        RefreshRowSelectionVisuals();
+
+        if (_selectedIndexes.Count == 2)
+        {
+            var idx = _selectedIndexes.OrderBy(x => x).ToList();
+            _selected = null;
+            _selectedSnapshot = null;
+            _detailText.Text = BuildComparison(_rows[idx[0]], _rows[idx[1]]);
+            return;
         }
 
-        var i = _sessionList.SelectedIndex;
-        if (i < 0 || i >= _rows.Count) { _selected = null; return; }
-        _selected = _rows[i];
+        if (index < 0 || index >= _rows.Count) { _selected = null; return; }
+        _selected = _rows[index];
         _selectedSnapshot = _repo.LoadSnapshot(_selected.Id);
         _noteBox.Text = _selected.Note;
         _tagsBox.Text = _selected.Tags;
         _detailText.Text = _selectedSnapshot is null
             ? "Could not load session detail."
             : BuildOverview(_selected, _selectedSnapshot);
+    }
+
+    private void RefreshRowSelectionVisuals()
+    {
+        for (var i = 0; i < _sessionRows.Children.Count; i++)
+        {
+            if (_sessionRows.Children[i] is not Border row) continue;
+            var selected = _selectedIndexes.Contains(i);
+            row.Background = selected
+                ? new SolidColorBrush(Color.FromArgb(0x88, 0x5A, 0x45, 0x13))
+                : new SolidColorBrush(Color.FromArgb(0x55, 0x2A, 0x25, 0x1F));
+            row.BorderBrush = selected ? AppTheme.AccentBrush : AppTheme.BorderBrush;
+        }
     }
 
     internal static string BuildOverview(SessionRow r, StatsSnapshot s)
@@ -387,13 +414,78 @@ public sealed class HistoryWindow : Window
         return button;
     }
 
-    private static TextBox TextBox(string text) => new()
+    private static TextBox TextBox(string text)
     {
-        Text = text,
-        FontSize = 12,
-        Padding = new Thickness(6, 4),
-        Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F)),
-        Foreground = AppTheme.TextBrush,
-        BorderBrush = AppTheme.BorderBrush,
-    };
+        var box = new TextBox
+        {
+            Text = text,
+            FontSize = 12,
+            Padding = new Thickness(6, 4),
+            Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F)),
+            Foreground = AppTheme.TextBrush,
+            BorderBrush = AppTheme.BorderBrush,
+            CaretBrush = AppTheme.AccentBrush,
+            SelectionBrush = new SolidColorBrush(Color.FromArgb(0x77, 0xE3, 0xB3, 0x41)),
+        };
+        box.GotFocus += (_, _) => ApplyDarkInput(box);
+        box.LostFocus += (_, _) => ApplyDarkInput(box);
+        return box;
+    }
+
+    private static void ApplyDarkInput(TextBox box)
+    {
+        box.Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F));
+        box.Foreground = AppTheme.TextBrush;
+        box.BorderBrush = AppTheme.BorderBrush;
+    }
+
+    private Border SessionRow(int index, string text)
+    {
+        var row = new Border
+        {
+            Margin = new Thickness(0, 0, 0, 2),
+            Background = new SolidColorBrush(Color.FromArgb(0x55, 0x2A, 0x25, 0x1F)),
+            BorderBrush = AppTheme.BorderBrush,
+            BorderThickness = new Thickness(0, 0, 0, 1),
+            Padding = new Thickness(8, 6),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Child = new TextBlock
+            {
+                Text = text,
+                FontSize = 12,
+                Foreground = AppTheme.TextBrush,
+                TextWrapping = TextWrapping.Wrap,
+            },
+        };
+        row.PointerPressed += (_, args) =>
+        {
+            OnSessionSelected(index, args.KeyModifiers);
+            args.Handled = true;
+        };
+        row.PointerEntered += (_, _) =>
+        {
+            if (!_selectedIndexes.Contains(index))
+                row.Background = new SolidColorBrush(Color.FromArgb(0x77, 0x2F, 0x2A, 0x22));
+        };
+        row.PointerExited += (_, _) => RefreshRowSelectionVisuals();
+        return row;
+    }
+
+    private static void StyleDarkCombo(ComboBox combo)
+    {
+        combo.Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F));
+        combo.Foreground = AppTheme.TextBrush;
+        combo.BorderBrush = AppTheme.BorderBrush;
+        combo.FontSize = 12;
+        combo.GotFocus += (_, _) =>
+        {
+            combo.Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F));
+            combo.Foreground = AppTheme.TextBrush;
+        };
+        combo.LostFocus += (_, _) =>
+        {
+            combo.Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F));
+            combo.Foreground = AppTheme.TextBrush;
+        };
+    }
 }
