@@ -28,10 +28,30 @@ public sealed class SessionStats
     private readonly Dictionary<string, int> _partyKillsByKiller = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(DateTime Time, string Killer)> _deaths = new();
 
+    /// <summary>Per-ability aggregate. ActiveSeconds approximates the time the ability
+    /// was in use: consecutive hits within AbilityGap accumulate their real spacing;
+    /// an isolated hit (or the first) counts IsolatedHitSeconds. Total ÷ ActiveSeconds
+    /// is the closest per-ability DPS/HPS the log allows (no cast-time data exists).</summary>
+    private sealed class AbilityAgg
+    {
+        public int Count; public long Total; public int Crits;
+        public double ActiveSeconds; public DateTime LastTime;
+
+        public void Add(DateTime t, long amount, bool crit = false)
+        {
+            var gap = (t - LastTime).TotalSeconds;
+            ActiveSeconds += Count == 0 || gap < 0 || gap > AbilityGapSeconds
+                ? IsolatedHitSeconds : gap;
+            LastTime = t; Count++; Total += amount; if (crit) Crits++;
+        }
+    }
+    private const double AbilityGapSeconds = 10;
+    private const double IsolatedHitSeconds = 2.5;
+
     private long _damageDealt, _meleeDamage, _spellDamage;
     private int _hitCount, _critCount, _missCount;
     private int _maxHit; private string _maxHitDesc = "";
-    private readonly Dictionary<string, (int Count, long Total, int Crits)> _damageBySource = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AbilityAgg> _damageBySource = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _specialHits = new(StringComparer.OrdinalIgnoreCase);
 
     private long _damageTaken;
@@ -42,7 +62,7 @@ public sealed class SessionStats
     private long _healingDone; private int _healCount;
     private long _healingReceived;
     private readonly Dictionary<string, (int Count, long Total)> _healsByHealer = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (int Count, long Total)> _healsBySpell = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AbilityAgg> _healsBySpell = new(StringComparer.OrdinalIgnoreCase);
     private int _regenTicks;
     private string? _characterName;
 
@@ -228,9 +248,7 @@ public sealed class SessionStats
                             Bump(_specialHits, note);
                     }
                     if (dd.Amount > _maxHit) { _maxHit = dd.Amount; _maxHitDesc = $"{dd.Source} on {dd.Target}"; }
-                    var src = _damageBySource.TryGetValue(dd.Source, out var s) ? s : default;
-                    _damageBySource[dd.Source] =
-                        (src.Count + 1, src.Total + dd.Amount, src.Crits + (dd.Critical ? 1 : 0));
+                    Ability(_damageBySource, dd.Source).Add(dd.Time, dd.Amount, dd.Critical);
                     TrackCombat(dd.Time, dd.Amount);
                     TouchFight(dd.Target, dd.Time, dmgOut: dd.Amount);
                     if (_currentStance is { } st1)
@@ -259,8 +277,7 @@ public sealed class SessionStats
                     break;
                 case HealEvent { Outgoing: true } h:
                     _healingDone += h.Amount; _healCount++;
-                    var sp = _healsBySpell.TryGetValue(h.Spell, out var spv) ? spv : (0, 0L);
-                    _healsBySpell[h.Spell] = (spv.Item1 + 1, spv.Item2 + h.Amount);
+                    Ability(_healsBySpell, h.Spell).Add(h.Time, h.Amount);
                     // Self-heals appear as "You healed <own name>" — count as received too.
                     if (_characterName is { } me &&
                         string.Equals(h.Target, me, StringComparison.OrdinalIgnoreCase))
@@ -387,10 +404,12 @@ public sealed class SessionStats
         _petConfirmed = true;
         if (_damageBySource.Remove($"Pet? ({name})", out var provisional))
         {
-            var label = $"Pet ({name})";
-            var cur = _damageBySource.TryGetValue(label, out var c) ? c : default;
-            _damageBySource[label] = (cur.Count + provisional.Count,
-                cur.Total + provisional.Total, cur.Crits + provisional.Crits);
+            var cur = Ability(_damageBySource, $"Pet ({name})");
+            cur.Count += provisional.Count;
+            cur.Total += provisional.Total;
+            cur.Crits += provisional.Crits;
+            cur.ActiveSeconds += provisional.ActiveSeconds;
+            if (provisional.LastTime > cur.LastTime) cur.LastTime = provisional.LastTime;
         }
     }
 
@@ -403,14 +422,16 @@ public sealed class SessionStats
         var label = _petConfirmed ? $"Pet ({_petName})" : $"Pet? ({_petName})";
         if (amount > _maxHit) { _maxHit = amount; _maxHitDesc = $"{label} on {target}"; }
         // Pet crit annotations aren't in third-party log lines, so pet crits stay 0.
-        var src = _damageBySource.TryGetValue(label, out var s) ? s : default;
-        _damageBySource[label] = (src.Count + 1, src.Total + amount, src.Crits);
+        Ability(_damageBySource, label).Add(t, amount);
         TrackCombat(t, amount);
         TouchFight(target, t, dmgOut: amount);
     }
 
     private MobAgg Mob(string name) =>
         _mobs.TryGetValue(name, out var m) ? m : _mobs[name] = new MobAgg();
+
+    private static AbilityAgg Ability(Dictionary<string, AbilityAgg> d, string key) =>
+        d.TryGetValue(key, out var a) ? a : d[key] = new AbilityAgg();
 
     /// <summary>A kill claims the xp/coin logged just before its kill line (EQL order);
     /// anything older than the window is dropped as uncorrelatable.</summary>
@@ -687,7 +708,7 @@ public sealed class SessionStats
                 MaxHitDesc = _maxHitDesc,
                 DamageBySource = _damageBySource.OrderByDescending(kv => kv.Value.Total)
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
-                        kv.Value.Crits)).ToList(),
+                        kv.Value.Crits, kv.Value.ActiveSeconds)).ToList(),
                 SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 SessionDps = sessionDps,
@@ -703,7 +724,8 @@ public sealed class SessionStats
                 HealsByHealer = _healsByHealer.OrderByDescending(kv => kv.Value.Total)
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total)).ToList(),
                 HealsBySpell = _healsBySpell.OrderByDescending(kv => kv.Value.Total)
-                    .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total)).ToList(),
+                    .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
+                        0, kv.Value.ActiveSeconds)).ToList(),
                 Hps = combatSeconds > 0 ? _healingDone / combatSeconds : 0,
                 RegenTicks = _regenTicks,
                 LootTotal = _lootCount,
@@ -781,7 +803,10 @@ public record NameCount(string Name, int Count);
 public record RecentRates(TimeSpan Window, bool HasFullWindow, double XpPercent, double XpPerHour,
     int Kills, long Copper, double Dps, double Hps);
 public record TimedDetail(DateTime Time, string Text);
-public record SourceDamage(string Name, int Hits, long Total, int Crits = 0);
+/// <summary>ActiveSeconds &gt; 0 enables per-ability rate display (Total ÷ ActiveSeconds);
+/// it is 0 for lists that don't track it (damage taken, healers) and for
+/// sessions stored before it existed.</summary>
+public record SourceDamage(string Name, int Hits, long Total, int Crits = 0, double ActiveSeconds = 0);
 public record LootDetail(string Item, int Count, string LastSource);
 public record SkillDetail(string Skill, int Ups, int Value);
 public record SoldDetail(string Item, int Count, long Copper);

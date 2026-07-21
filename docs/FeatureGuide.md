@@ -40,9 +40,13 @@ Header: session DPS (+ live fight DPS while fighting). Details:
 - Summary block: damage dealt (melee/spell split), crits + crit rate, accuracy,
   time-in-combat, recent-window DPS ("Last 15m"), biggest hit, damage taken +
   avoidance %, fizzles/resists, current stance.
-- **Damage by attack** — Details!-style breakdown: each source has a proportional
-  share bar (relative to the top source) with `total · hits · avg (· crit%)` inline;
-  `% of total · per-ability dps` in the row tooltip. Sort bar: total/hits/avg.
+- **Damage by attack** — Details!-style breakdown: each source shows
+  `total · ×hits · avg · dps (· crit%)`. The dps is per-ability: damage ÷ the time
+  that ability was in use (consecutive hits within 10 s accumulate their real
+  spacing; an isolated hit counts ~2.5 s) — the closest the log allows, since it has
+  no cast-time data. Sort bar: total/dps/hits/avg — the bar behind each row is
+  proportional to whichever column is sorted. Tooltip: share of total + the active
+  time behind the dps figure.
   Pet damage appears as "Pet (Name)" — provisional charm pets as "Pet? (Name)" until a
   "Master" tell confirms them. Pets show no crit % (the log doesn't annotate pet crits).
 - **Damage taken from** per attacker (total · hits · avg).
@@ -60,9 +64,10 @@ slain X!"` in the same second.
 
 ### Healing card
 HPS (healing ÷ combat time), healing done/received, heals cast per spell with the
-same share-bar breakdown as Combat (total · casts · avg per row; share % and per-spell
-hps in tooltips), who healed you, regen/hymn tick counts (no amounts — the log gives
-none).
+same breakdown as Combat: `total · ×casts · avg · hps` per row, sortable by
+total/hps/casts/avg with the bar following the sort; per-spell hps = healing ÷ that
+spell's active casting time. Who healed you, regen/hymn tick counts (no amounts —
+the log gives none).
 
 ### Kills card
 Header: your kills (+ group kills). Details: per-creature counts, kills/hour +

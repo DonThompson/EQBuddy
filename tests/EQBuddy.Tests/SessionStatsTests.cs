@@ -158,6 +158,31 @@ public class SessionStatsTests
     }
 
     [Fact]
+    public void AbilityActiveTimeApproximatesPerAbilityRate()
+    {
+        // Consecutive hits within 10s accumulate real spacing; isolated hits count 2.5s.
+        var s = Replay("Kaybek",
+            At(0, 0, "You slash orc pawn for 10 points of damage."),
+            At(0, 3, "You slash orc pawn for 10 points of damage."),
+            At(0, 6, "You slash orc pawn for 10 points of damage."),
+            At(0, 10, "You kick orc pawn for 5 points of damage."),
+            At(0, 50, "You kick orc pawn for 5 points of damage.")).Snapshot();
+        // Slash: 2.5 (first) + 3 + 3 = 8.5s active.
+        Assert.Equal(8.5, s.DamageBySource.Single(d => d.Name == "Slash").ActiveSeconds, 3);
+        // Kick: two isolated hits = 2.5 + 2.5 = 5s active.
+        Assert.Equal(5.0, s.DamageBySource.Single(d => d.Name == "Kick").ActiveSeconds, 3);
+    }
+
+    [Fact]
+    public void HealsBySpellTrackActiveTime()
+    {
+        var s = Replay("Douglas",
+            At(0, 0, "You healed Zumm for 30 hit points by Light Healing."),
+            At(0, 4, "You healed Zumm for 30 hit points by Light Healing.")).Snapshot();
+        Assert.Equal(6.5, s.HealsBySpell.Single().ActiveSeconds, 3);   // 2.5 + 4
+    }
+
+    [Fact]
     public void DamageBySourceTracksPerSourceCrits()
     {
         var s = Replay("Kaybek",

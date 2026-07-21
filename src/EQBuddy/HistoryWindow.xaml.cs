@@ -113,6 +113,7 @@ public partial class HistoryWindow : Window
             foreach (var d in s.DamageBySource.Take(8))
                 sb.AppendLine($"  {d.Name,-24} {ShareBar((double)d.Total / top),-10} {d.Total,8:N0}" +
                     $" · {100.0 * d.Total / grand,3:0}% · {d.Hits} hits · avg {(double)d.Total / d.Hits:0.#}" +
+                    (d.ActiveSeconds > 0 ? $" · {d.Total / d.ActiveSeconds:0.#} dps" : "") +
                     (d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : ""));
             sb.AppendLine();
         }
@@ -124,7 +125,8 @@ public partial class HistoryWindow : Window
             foreach (var h in s.HealsBySpell.Take(6))
                 sb.AppendLine($"  {h.Name,-24} {ShareBar((double)h.Total / hTop),-10} {h.Total,8:N0}" +
                     $" · {100.0 * h.Total / hGrand,3:0}% · {h.Hits} cast{(h.Hits == 1 ? "" : "s")}" +
-                    $" · avg {(double)h.Total / Math.Max(1, h.Hits):0.#}");
+                    $" · avg {(double)h.Total / Math.Max(1, h.Hits):0.#}" +
+                    (h.ActiveSeconds > 0 ? $" · {h.Total / h.ActiveSeconds:0.#} hps" : ""));
             sb.AppendLine();
         }
         if (s.YourKills.Count > 0)
