@@ -86,12 +86,14 @@ public sealed class MainWindow : Window
     private readonly Dictionary<string, SectionPanel> _sections = new(StringComparer.OrdinalIgnoreCase);
     private readonly StackPanel _sectionsPanel = new();
     private TextBlock _dmgOutSortTotal = null!;
+    private TextBlock? _dmgOutSortDps;
     private TextBlock _dmgOutSortHits = null!;
     private TextBlock _dmgOutSortAvg = null!;
     private TextBlock _dmgInSortTotal = null!;
     private TextBlock _dmgInSortHits = null!;
     private TextBlock _dmgInSortAvg = null!;
     private TextBlock _healSortTotal = null!;
+    private TextBlock? _healSortHps;
     private TextBlock _healSortHits = null!;
     private TextBlock _healSortAvg = null!;
     private DateTime _lastCharScan = DateTime.MinValue;
@@ -107,10 +109,11 @@ public sealed class MainWindow : Window
     private StatSort _dmgOutSort = StatSort.Total;
     private StatSort _dmgInSort = StatSort.Total;
     private StatSort _healSort = StatSort.Total;
+    private readonly bool _expandForTesting = Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1";
 
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "loot", "money", "xp", "deaths"];
 
-    private enum StatSort { Total, Hits, Avg }
+    private enum StatSort { Total, Hits, Avg, Rate }
 
     public MainWindow()
     {
@@ -137,6 +140,9 @@ public sealed class MainWindow : Window
         UpdateStarVisuals();
         ApplySectionLayout();
         SetMode(_settings.Minimized);
+        if (_expandForTesting)
+            foreach (var section in _sections.Values)
+                section.IsExpanded = true;
         FollowActiveCharacter();
 
         if (_settings.LogFolder is { } lf)
@@ -152,7 +158,11 @@ public sealed class MainWindow : Window
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
-        Loaded += (_, _) => RegisterGlobalHotkeys();
+        Loaded += (_, _) =>
+        {
+            UpdateWindowHeightLimit();
+            RegisterGlobalHotkeys();
+        };
     }
 
     public double UiScale => _settings.UiScale;
@@ -370,9 +380,11 @@ public sealed class MainWindow : Window
         var panel = new StackPanel();
         _combatSummary.Margin = new Thickness(0, 2, 0, 4);
         panel.Children.Add(_combatSummary);
-        panel.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits, out _dmgOutSortAvg, OnSortDmgOut));
+        panel.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits,
+            out _dmgOutSortAvg, out _dmgOutSortDps, OnSortDmgOut, rateText: "dps"));
         panel.Children.Add(_damageSourceList);
-        panel.Children.Add(SortHeader("Damage taken from", out _dmgInSortTotal, out _dmgInSortHits, out _dmgInSortAvg, OnSortDmgIn));
+        panel.Children.Add(SortHeader("Damage taken from", out _dmgInSortTotal, out _dmgInSortHits,
+            out _dmgInSortAvg, out _, OnSortDmgIn));
         panel.Children.Add(_damageTakenList);
         _recentFightsLabel.Margin = new Thickness(0, 6, 0, 0);
         panel.Children.Add(_recentFightsLabel);
@@ -388,7 +400,8 @@ public sealed class MainWindow : Window
         var panel = new StackPanel();
         _healingSummary.Margin = new Thickness(0, 2, 0, 4);
         panel.Children.Add(_healingSummary);
-        var sort = SortHeader("Heals cast", out _healSortTotal, out _healSortHits, out _healSortAvg, OnSortHeal, _healSpellsLabel, _healSortBar);
+        var sort = SortHeader("Heals cast", out _healSortTotal, out _healSortHits, out _healSortAvg,
+            out _healSortHps, OnSortHeal, _healSpellsLabel, _healSortBar, "hps");
         panel.Children.Add(sort);
         panel.Children.Add(_healSpellList);
         panel.Children.Add(_healersLabel);
@@ -455,7 +468,8 @@ public sealed class MainWindow : Window
     }
 
     private static Control SortHeader(string title, out TextBlock total, out TextBlock hits, out TextBlock avg,
-        EventHandler<PointerPressedEventArgs> handler, TextBlock? titleBlock = null, StackPanel? sortBar = null)
+        out TextBlock? rate, EventHandler<PointerPressedEventArgs> handler, TextBlock? titleBlock = null,
+        StackPanel? sortBar = null, string? rateText = null)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
@@ -465,9 +479,12 @@ public sealed class MainWindow : Window
         sortBar.HorizontalAlignment = HorizontalAlignment.Right;
         sortBar.Children.Add(AppTheme.DimText("sort:", new Thickness(0, 0, 4, 0)));
         total = SortLink("total", "total", handler, selected: true);
+        rate = rateText is null ? null : SortLink(rateText, "rate", handler,
+            tip: $"Per-ability {rateText}: total divided by the time that ability was in use");
         hits = SortLink(title.Contains("Heal", StringComparison.OrdinalIgnoreCase) ? "casts" : "hits", "hits", handler);
         avg = SortLink("avg", "avg", handler);
         sortBar.Children.Add(total);
+        if (rate is not null) sortBar.Children.Add(rate);
         sortBar.Children.Add(hits);
         sortBar.Children.Add(avg);
         Grid.SetColumn(sortBar, 1);
@@ -475,7 +492,8 @@ public sealed class MainWindow : Window
         return grid;
     }
 
-    private static TextBlock SortLink(string text, string tag, EventHandler<PointerPressedEventArgs> handler, bool selected = false)
+    private static TextBlock SortLink(string text, string tag, EventHandler<PointerPressedEventArgs> handler,
+        bool selected = false, string? tip = null)
     {
         var link = new TextBlock
         {
@@ -486,6 +504,7 @@ public sealed class MainWindow : Window
             Cursor = new Cursor(StandardCursorType.Hand),
             Margin = new Thickness(text == "total" ? 0 : 6, 0, 0, 0),
         };
+        if (tip is not null) ToolTip.SetTip(link, tip);
         link.PointerPressed += handler;
         return link;
     }
@@ -532,8 +551,23 @@ public sealed class MainWindow : Window
     private void ApplyUiScale(double scale)
     {
         _scaleRoot.LayoutTransform = Math.Abs(scale - 1.0) < 0.001 ? null : new ScaleTransform(scale, scale);
+        UpdateWindowHeightLimit();
         _scaleRoot.InvalidateMeasure();
         InvalidateMeasure();
+    }
+
+    private void UpdateWindowHeightLimit()
+    {
+        var screen = Screens.ScreenFromWindow(this);
+        if (screen is null) return;
+
+        var workingHeight = screen.WorkingArea.Height / screen.Scaling;
+        MaxHeight = Math.Max(240, workingHeight - 20);
+
+        // The section list sits inside the scaled widget. Reserve room for the title,
+        // status/session lines, borders, and a little work-area breathing room.
+        var scale = Math.Max(0.5, _settings.UiScale);
+        _sectionScroll.MaxHeight = Math.Max(160, (workingHeight - 160) / scale);
     }
 
     private void ApplyBackgroundOpacity(double opacity) => _root.Background = AppTheme.BgWithOpacity(opacity);
@@ -663,11 +697,17 @@ public sealed class MainWindow : Window
                 (s.SpecialHits.Count > 0 ? "\n" + string.Join(" - ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}")) : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
-            FillStatList(_damageSourceList, s.DamageBySource, _dmgOutSort, "hit");
+            FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, "dps");
             FillStatList(_damageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
-            FillList(_recentFightsList, s.RecentEncounters.Select(f =>
-                (f.Name, $"{f.DurationSeconds:0}s - {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " - ?" : "")}")));
+            var topFightDps = Math.Max(0.1, s.RecentEncounters.Count > 0
+                ? s.RecentEncounters.Max(f => f.Dps)
+                : 0);
+            var fightBrush = AccentBarBrush();
+            _recentFightsList.ItemsSource = s.RecentEncounters.Select(f => BarRow(f.Name,
+                $"{f.DurationSeconds:0}s - {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " - ?" : "")}",
+                f.Dps / topFightDps, fightBrush,
+                $"{f.DamageOut:N0} damage over {f.DurationSeconds:0}s")).ToList();
             _stanceLabel.IsVisible = s.Stances.Count > 0;
             FillList(_stanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg - {(int)x.CombatSeconds}s - {x.Dps:0.#} dps")));
@@ -681,7 +721,7 @@ public sealed class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0;
             _healSpellsLabel.IsVisible = showSpells;
             _healSortBar.IsVisible = showSpells;
-            FillStatList(_healSpellList, s.HealsBySpell, _healSort, "cast");
+            FillBreakdown(_healSpellList, s.HealsBySpell, _healSort, "hps");
             _healersLabel.IsVisible = s.HealsByHealer.Count > 0;
             FillList(_healerList, s.HealsByHealer.Select(h => (h.Name, $"{h.Total:N0} - {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
         }
@@ -745,6 +785,20 @@ public sealed class MainWindow : Window
             FillList(_zoneList, s.Zones.Select(z => (z.Text, z.Time.ToString("h:mm tt"))));
             _markersLabel.IsVisible = s.Markers.Count > 0;
             FillList(_markerList, s.Markers.Select(m => (m.Text, m.Time.ToString("h:mm tt"))));
+        }
+
+        if (_expandForTesting)
+        {
+            try
+            {
+                var dump = $"dmgSrc={_damageSourceList.Items.Count} dmgTaken={_damageTakenList.Items.Count} " +
+                    $"kills={_killList.Items.Count} party={_partyKillList.Items.Count} loot={_lootList.Items.Count} " +
+                    $"crafted={_craftedList.Items.Count} skills={_skillList.Items.Count} faction={_factionList.Items.Count} " +
+                    $"zones={_zoneList.Items.Count} deaths={_deathList.Items.Count} " +
+                    $"actualH={Bounds.Height:0} actualW={Bounds.Width:0}";
+                File.WriteAllText(AppPaths.File("debug.txt"), dump);
+            }
+            catch { }
         }
     }
 
@@ -1065,13 +1119,13 @@ public sealed class MainWindow : Window
 
     internal static readonly (string Name, string File)[] AlertSounds =
     [
-        ("Ding", "Windows Ding.wav"),
-        ("Notify", "Windows Notify.wav"),
-        ("Chimes", "chimes.wav"),
-        ("Chord", "chord.wav"),
-        ("Tada", "tada.wav"),
-        ("Exclamation", "Windows Exclamation.wav"),
-        ("Alarm", "Alarm01.wav"),
+        ("Ding", "bell.oga"),
+        ("Notify", "message-new-instant.oga"),
+        ("Chimes", "service-login.oga"),
+        ("Chord", "device-added.oga"),
+        ("Tada", "complete.oga"),
+        ("Exclamation", "dialog-warning.oga"),
+        ("Alarm", "alarm-clock-elapsed.oga"),
     ];
 
     internal void PlayAlertSound()
@@ -1087,10 +1141,10 @@ public sealed class MainWindow : Window
                 { } other => other,
             };
             var named = Array.Find(AlertSounds, x => x.Name == choice);
-            var file = named.File is { } ? "" : choice;
+            var file = named.File is { } systemFile ? FindFreeDesktopSound(systemFile) : choice;
             if (file.Length > 0 && File.Exists(file))
             {
-                if (TryStart("paplay", file) || TryStart("aplay", file))
+                if (TryStart("pw-play", file) || TryStart("paplay", file) || TryStart("aplay", file))
                     return;
             }
             Console.Beep();
@@ -1098,11 +1152,35 @@ public sealed class MainWindow : Window
         catch (Exception ex) { App.LogError(ex); }
     }
 
+    private static string FindFreeDesktopSound(string fileName)
+    {
+        var dataDirs = new List<string>();
+        var userData = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+        if (!string.IsNullOrWhiteSpace(userData))
+            dataDirs.Add(userData);
+        else
+            dataDirs.Add(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share"));
+
+        var systemData = Environment.GetEnvironmentVariable("XDG_DATA_DIRS");
+        dataDirs.AddRange(string.IsNullOrWhiteSpace(systemData)
+            ? ["/usr/local/share", "/usr/share"]
+            : systemData.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+        foreach (var dataDir in dataDirs)
+        {
+            var path = System.IO.Path.Combine(dataDir, "sounds", "freedesktop", "stereo", fileName);
+            if (File.Exists(path)) return path;
+        }
+        return "";
+    }
+
     private static bool TryStart(string command, string file)
     {
         try
         {
-            Process.Start(new ProcessStartInfo(command, file) { UseShellExecute = false });
+            var start = new ProcessStartInfo(command) { UseShellExecute = false };
+            start.ArgumentList.Add(file);
+            Process.Start(start);
             return true;
         }
         catch { return false; }
@@ -1150,6 +1228,97 @@ public sealed class MainWindow : Window
         });
     }
 
+    private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
+        StatSort sort, string rateLabel)
+    {
+        static double Avg(SourceDamage d) => (double)d.Total / Math.Max(1, d.Hits);
+        static double Rate(SourceDamage d) => d.Total / Math.Max(1, d.ActiveSeconds);
+        var sorted = (sort switch
+        {
+            StatSort.Hits => stats.OrderByDescending(d => d.Hits),
+            StatSort.Avg => stats.OrderByDescending(Avg),
+            StatSort.Rate => stats.OrderByDescending(Rate),
+            _ => stats.OrderByDescending(d => d.Total),
+        }).ToList();
+        if (sorted.Count == 0)
+        {
+            list.ItemsSource = Array.Empty<Control>();
+            return;
+        }
+
+        var grand = Math.Max(1, sorted.Sum(d => d.Total));
+        Func<SourceDamage, double> metric = sort switch
+        {
+            StatSort.Hits => d => d.Hits,
+            StatSort.Avg => Avg,
+            StatSort.Rate => Rate,
+            _ => d => d.Total,
+        };
+        var topMetric = Math.Max(1e-9, sorted.Max(metric));
+        var barBrush = AccentBarBrush();
+        list.ItemsSource = sorted.Select(d =>
+        {
+            var critPart = d.Crits > 0
+                ? $" - {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit"
+                : "";
+            var ratePart = d.ActiveSeconds > 0 ? $" - {Rate(d):0.#} {rateLabel}" : "";
+            var value = $"{d.Total:N0} - ×{d.Hits} - avg {Avg(d):0.#}{ratePart}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total" +
+                (d.ActiveSeconds > 0
+                    ? $" - {rateLabel} = total / ~{d.ActiveSeconds:0}s this ability was in use"
+                    : "");
+            return BarRow(d.Name, value, metric(d) / topMetric, barBrush, tooltip);
+        }).ToList();
+    }
+
+    private static Grid BarRow(string name, string value, double fraction, IBrush barBrush, string? tooltip)
+    {
+        fraction = Math.Clamp(fraction, 0.004, 1.0);
+        var row = new Grid
+        {
+            Margin = new Thickness(0, 1, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var bar = new Border
+        {
+            Background = barBrush,
+            CornerRadius = new CornerRadius(2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Width = 0,
+        };
+        row.SizeChanged += (_, args) => bar.Width = Math.Max(0, args.NewSize.Width * fraction);
+        row.Children.Add(bar);
+
+        var content = new Grid { Margin = new Thickness(4, 1, 0, 1) };
+        content.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        content.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        content.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 12,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Foreground = AppTheme.TextBrush,
+        });
+        var right = new TextBlock
+        {
+            Text = value,
+            FontSize = 11,
+            Foreground = AppTheme.DimBrush,
+            Margin = new Thickness(8, 1, 2, 0),
+        };
+        Grid.SetColumn(right, 1);
+        content.Children.Add(right);
+        row.Children.Add(content);
+        if (tooltip is not null) ToolTip.SetTip(row, tooltip);
+        return row;
+    }
+
+    private static SolidColorBrush AccentBarBrush()
+    {
+        var accent = ((SolidColorBrush)AppTheme.AccentBrush).Color;
+        return new SolidColorBrush(Color.FromArgb(0x2E, accent.R, accent.G, accent.B));
+    }
+
     private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)
     {
         var sorted = sort switch
@@ -1165,20 +1334,24 @@ public sealed class MainWindow : Window
     {
         "hits" => StatSort.Hits,
         "avg" => StatSort.Avg,
+        "rate" => StatSort.Rate,
         _ => StatSort.Total,
     };
 
-    private static void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg)
+    private static void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg,
+        TextBlock? rate = null)
     {
         total.Foreground = mode == StatSort.Total ? AppTheme.AccentBrush : AppTheme.DimBrush;
         hits.Foreground = mode == StatSort.Hits ? AppTheme.AccentBrush : AppTheme.DimBrush;
         avg.Foreground = mode == StatSort.Avg ? AppTheme.AccentBrush : AppTheme.DimBrush;
+        if (rate is not null)
+            rate.Foreground = mode == StatSort.Rate ? AppTheme.AccentBrush : AppTheme.DimBrush;
     }
 
     private void OnSortDmgOut(object? sender, PointerPressedEventArgs e)
     {
         _dmgOutSort = ParseSort(sender!);
-        SetSortVisual(_dmgOutSort, _dmgOutSortTotal, _dmgOutSortHits, _dmgOutSortAvg);
+        SetSortVisual(_dmgOutSort, _dmgOutSortTotal, _dmgOutSortHits, _dmgOutSortAvg, _dmgOutSortDps);
         RefreshUi();
     }
 
@@ -1192,7 +1365,7 @@ public sealed class MainWindow : Window
     private void OnSortHeal(object? sender, PointerPressedEventArgs e)
     {
         _healSort = ParseSort(sender!);
-        SetSortVisual(_healSort, _healSortTotal, _healSortHits, _healSortAvg);
+        SetSortVisual(_healSort, _healSortTotal, _healSortHits, _healSortAvg, _healSortHps);
         RefreshUi();
     }
 
