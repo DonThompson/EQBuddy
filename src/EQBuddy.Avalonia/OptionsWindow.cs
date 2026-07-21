@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using EQBuddy.Core;
 
 namespace EQBuddy.Avalonia;
@@ -49,7 +50,6 @@ public sealed class OptionsWindow : Window
             Child = BuildContent(),
         };
         PointerPressed += OnDrag;
-
         _scaleSlider.Value = main.UiScale;
         _opacitySlider.Value = main.WidgetOpacity;
         _bgOpacitySlider.Value = main.BackgroundOpacityValue;
@@ -101,7 +101,7 @@ public sealed class OptionsWindow : Window
 
     private Control BuildContent()
     {
-        var panel = new StackPanel { Margin = new Thickness(16), Width = 280 };
+        var panel = new StackPanel { Margin = new Thickness(16), Width = 340 };
         var title = new Grid { Margin = new Thickness(0, 0, 0, 10) };
         title.Children.Add(new TextBlock
         {
@@ -130,7 +130,7 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(AppTheme.DimText("The Last Xm figures on Combat, Kills, Money, and Progress."));
 
         panel.Children.Add(Heading("Tracked loot", new Thickness(0, 14, 0, 2)));
-        panel.Children.Add(AppTheme.DimText("Match looted items, kills, skill-ups, deaths, or milestones. Pin adds a mini chip; banner and sound alert on each match."));
+        panel.Children.Add(AppTheme.DimText("Choose what to watch and give the rule a display name. Match text is an optional case-insensitive filter; when empty, the display name is used. P pins a mini chip, B shows a banner, and S plays a sound."));
         panel.Children.Add(_rulesPanel);
         var add = AppTheme.IconButton("+ Add tracked item", "Add tracked item");
         add.HorizontalAlignment = HorizontalAlignment.Left;
@@ -167,36 +167,29 @@ public sealed class OptionsWindow : Window
         _rulesPanel.Children.Clear();
         foreach (var rule in _main.Settings.TrackedRules)
         {
-            var row = new Grid { Margin = new Thickness(0, 3, 0, 0) };
-            row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(72)));
-            row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(64)));
-            row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            for (var i = 0; i < 4; i++) row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            var editor = new StackPanel { Margin = new Thickness(0, 5, 0, 3) };
+            var topRow = new Grid();
+            topRow.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));
+            topRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            topRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
 
-            var kind = new ComboBox { FontSize = 11 };
+            var kind = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
             foreach (var k in Enum.GetNames<WatchKind>()) kind.Items.Add(k);
             kind.SelectedIndex = (int)rule.Kind;
+            ToolTip.SetTip(kind, "What this rule watches");
             kind.SelectionChanged += (_, _) =>
             {
                 if (!_ready || kind.SelectedIndex < 0) return;
                 rule.Kind = (WatchKind)kind.SelectedIndex;
                 _main.PersistSettings();
             };
-            row.Children.Add(kind);
+            topRow.Children.Add(kind);
 
-            var name = DarkBox(rule.Name, "name");
+            var name = DarkBox(rule.Name, "Display name (also used as match text when the filter below is empty)");
+            name.PlaceholderText = "Display name";
             name.LostFocus += (_, _) => { rule.Name = (name.Text ?? "").Trim(); _main.PersistSettings(); };
             Grid.SetColumn(name, 1);
-            row.Children.Add(name);
-
-            var pattern = DarkBox(rule.Pattern, "match text");
-            pattern.LostFocus += (_, _) => { rule.Pattern = (pattern.Text ?? "").Trim(); _main.PersistSettings(); };
-            Grid.SetColumn(pattern, 2);
-            row.Children.Add(pattern);
-
-            row.Children.Add(RuleToggle("P", "Pin to mini dashboard", 3, rule.Pinned, v => rule.Pinned = v));
-            row.Children.Add(RuleToggle("B", "Banner alert on match", 4, rule.AlertBanner, v => rule.AlertBanner = v));
-            row.Children.Add(RuleToggle("S", "Sound alert on match", 5, rule.AlertSound, v => rule.AlertSound = v));
+            topRow.Children.Add(name);
 
             var del = AppTheme.IconButton("x", "Delete rule");
             del.Click += (_, _) =>
@@ -205,9 +198,24 @@ public sealed class OptionsWindow : Window
                 _main.PersistSettings();
                 BuildRulesEditor();
             };
-            Grid.SetColumn(del, 6);
-            row.Children.Add(del);
-            _rulesPanel.Children.Add(row);
+            Grid.SetColumn(del, 2);
+            topRow.Children.Add(del);
+            editor.Children.Add(topRow);
+
+            var filterRow = new Grid { Margin = new Thickness(0, 3, 0, 0) };
+            filterRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            for (var i = 0; i < 3; i++)
+                filterRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            var pattern = DarkBox(rule.Pattern, "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone");
+            pattern.PlaceholderText = "Match text (optional)";
+            pattern.Margin = new Thickness(0, 0, 4, 0);
+            pattern.LostFocus += (_, _) => { rule.Pattern = (pattern.Text ?? "").Trim(); _main.PersistSettings(); };
+            filterRow.Children.Add(pattern);
+            filterRow.Children.Add(RuleToggle("P", "Pin to mini dashboard", 1, rule.Pinned, v => rule.Pinned = v));
+            filterRow.Children.Add(RuleToggle("B", "Banner alert on match", 2, rule.AlertBanner, v => rule.AlertBanner = v));
+            filterRow.Children.Add(RuleToggle("S", "Sound alert on match", 3, rule.AlertSound, v => rule.AlertSound = v));
+            editor.Children.Add(filterRow);
+            _rulesPanel.Children.Add(editor);
         }
     }
 
@@ -396,9 +404,14 @@ public sealed class OptionsWindow : Window
 
     private void OnDrag(object? sender, PointerPressedEventArgs e)
     {
+        if (e.Source is Visual source && source.GetSelfAndVisualAncestors().Any(IsInteractiveControl))
+            return;
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
+
+    private static bool IsInteractiveControl(Visual visual) => visual is
+        Button or TextBox or ComboBox or global::Avalonia.Controls.Slider or CheckBox or ToggleButton or ScrollBar;
 
     private static TextBlock LabelValue() => new()
     {
