@@ -101,7 +101,7 @@ public sealed class OptionsWindow : Window
 
     private Control BuildContent()
     {
-        var panel = new StackPanel { Margin = new Thickness(16), Width = 340 };
+        var panel = new StackPanel { Margin = new Thickness(16), Width = 520 };
         var title = new Grid { Margin = new Thickness(0, 0, 0, 10) };
         title.Children.Add(new TextBlock
         {
@@ -167,11 +167,12 @@ public sealed class OptionsWindow : Window
         _rulesPanel.Children.Clear();
         foreach (var rule in _main.Settings.TrackedRules)
         {
-            var editor = new StackPanel { Margin = new Thickness(0, 5, 0, 3) };
-            var topRow = new Grid();
-            topRow.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));
-            topRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            topRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            var row = new Grid { Margin = new Thickness(0, 5, 0, 3) };
+            row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));
+            row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(115)));
+            row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            for (var i = 0; i < 4; i++)
+                row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
 
             var kind = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
             foreach (var k in Enum.GetNames<WatchKind>()) kind.Items.Add(k);
@@ -183,13 +184,25 @@ public sealed class OptionsWindow : Window
                 rule.Kind = (WatchKind)kind.SelectedIndex;
                 _main.PersistSettings();
             };
-            topRow.Children.Add(kind);
+            row.Children.Add(kind);
 
-            var name = DarkBox(rule.Name, "Display name (also used as match text when the filter below is empty)");
+            var name = DarkBox(rule.Name, "Display name (also used as match text when the optional filter is empty)");
             name.PlaceholderText = "Display name";
+            name.Margin = new Thickness(0, 0, 4, 0);
             name.LostFocus += (_, _) => { rule.Name = (name.Text ?? "").Trim(); _main.PersistSettings(); };
             Grid.SetColumn(name, 1);
-            topRow.Children.Add(name);
+            row.Children.Add(name);
+
+            var pattern = DarkBox(rule.Pattern, "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone");
+            pattern.PlaceholderText = "Match text (optional)";
+            pattern.Margin = new Thickness(0, 0, 4, 0);
+            pattern.LostFocus += (_, _) => { rule.Pattern = (pattern.Text ?? "").Trim(); _main.PersistSettings(); };
+            Grid.SetColumn(pattern, 2);
+            row.Children.Add(pattern);
+
+            row.Children.Add(RuleToggle("P", "Pin to mini dashboard", 3, rule.Pinned, v => rule.Pinned = v));
+            row.Children.Add(RuleToggle("B", "Banner alert on match", 4, rule.AlertBanner, v => rule.AlertBanner = v));
+            row.Children.Add(RuleToggle("S", "Sound alert on match", 5, rule.AlertSound, v => rule.AlertSound = v));
 
             var del = AppTheme.IconButton("x", "Delete rule");
             del.Click += (_, _) =>
@@ -198,24 +211,9 @@ public sealed class OptionsWindow : Window
                 _main.PersistSettings();
                 BuildRulesEditor();
             };
-            Grid.SetColumn(del, 2);
-            topRow.Children.Add(del);
-            editor.Children.Add(topRow);
-
-            var filterRow = new Grid { Margin = new Thickness(0, 3, 0, 0) };
-            filterRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            for (var i = 0; i < 3; i++)
-                filterRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-            var pattern = DarkBox(rule.Pattern, "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone");
-            pattern.PlaceholderText = "Match text (optional)";
-            pattern.Margin = new Thickness(0, 0, 4, 0);
-            pattern.LostFocus += (_, _) => { rule.Pattern = (pattern.Text ?? "").Trim(); _main.PersistSettings(); };
-            filterRow.Children.Add(pattern);
-            filterRow.Children.Add(RuleToggle("P", "Pin to mini dashboard", 1, rule.Pinned, v => rule.Pinned = v));
-            filterRow.Children.Add(RuleToggle("B", "Banner alert on match", 2, rule.AlertBanner, v => rule.AlertBanner = v));
-            filterRow.Children.Add(RuleToggle("S", "Sound alert on match", 3, rule.AlertSound, v => rule.AlertSound = v));
-            editor.Children.Add(filterRow);
-            _rulesPanel.Children.Add(editor);
+            Grid.SetColumn(del, 6);
+            row.Children.Add(del);
+            _rulesPanel.Children.Add(row);
         }
     }
 
