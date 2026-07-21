@@ -667,11 +667,17 @@ public sealed class MainWindow : Window
                 (s.SpecialHits.Count > 0 ? "\n" + string.Join(" - ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}")) : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
-            FillStatList(_damageSourceList, s.DamageBySource, _dmgOutSort, "hit");
+            FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "hit", "dps");
             FillStatList(_damageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
-            FillList(_recentFightsList, s.RecentEncounters.Select(f =>
-                (f.Name, $"{f.DurationSeconds:0}s - {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " - ?" : "")}")));
+            var topFightDps = Math.Max(0.1, s.RecentEncounters.Count > 0
+                ? s.RecentEncounters.Max(f => f.Dps)
+                : 0);
+            var fightBrush = AccentBarBrush();
+            _recentFightsList.ItemsSource = s.RecentEncounters.Select(f => BarRow(f.Name,
+                $"{f.DurationSeconds:0}s - {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " - ?" : "")}",
+                f.Dps / topFightDps, fightBrush,
+                $"{f.DamageOut:N0} damage over {f.DurationSeconds:0}s")).ToList();
             _stanceLabel.IsVisible = s.Stances.Count > 0;
             FillList(_stanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg - {(int)x.CombatSeconds}s - {x.Dps:0.#} dps")));
@@ -685,7 +691,7 @@ public sealed class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0;
             _healSpellsLabel.IsVisible = showSpells;
             _healSortBar.IsVisible = showSpells;
-            FillStatList(_healSpellList, s.HealsBySpell, _healSort, "cast");
+            FillBreakdown(_healSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "cast", "hps");
             _healersLabel.IsVisible = s.HealsByHealer.Count > 0;
             FillList(_healerList, s.HealsByHealer.Select(h => (h.Name, $"{h.Total:N0} - {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
         }
@@ -1166,6 +1172,85 @@ public sealed class MainWindow : Window
                 });
             }
         });
+    }
+
+    private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
+        StatSort sort, double combatSeconds, string unit, string rateLabel)
+    {
+        var sorted = (sort switch
+        {
+            StatSort.Hits => stats.OrderByDescending(d => d.Hits),
+            StatSort.Avg => stats.OrderByDescending(d => (double)d.Total / d.Hits),
+            _ => stats.OrderByDescending(d => d.Total),
+        }).ToList();
+        if (sorted.Count == 0)
+        {
+            list.ItemsSource = Array.Empty<Control>();
+            return;
+        }
+
+        var grand = Math.Max(1, sorted.Sum(d => d.Total));
+        var top = Math.Max(1, sorted.Max(d => d.Total));
+        var secs = Math.Max(1, combatSeconds);
+        var barBrush = AccentBarBrush();
+        list.ItemsSource = sorted.Select(d =>
+        {
+            var critPart = d.Crits > 0
+                ? $" - {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit"
+                : "";
+            var value = $"{d.Total:N0} - {d.Hits} {unit}{(d.Hits == 1 ? "" : "s")}" +
+                        $" - avg {(double)d.Total / Math.Max(1, d.Hits):0.#}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total - {d.Total / secs:0.#} {rateLabel}";
+            return BarRow(d.Name, value, (double)d.Total / top, barBrush, tooltip);
+        }).ToList();
+    }
+
+    private static Grid BarRow(string name, string value, double fraction, IBrush barBrush, string? tooltip)
+    {
+        fraction = Math.Clamp(fraction, 0.004, 1.0);
+        var row = new Grid
+        {
+            Margin = new Thickness(0, 1, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var bar = new Border
+        {
+            Background = barBrush,
+            CornerRadius = new CornerRadius(2),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            Width = 0,
+        };
+        row.SizeChanged += (_, args) => bar.Width = Math.Max(0, args.NewSize.Width * fraction);
+        row.Children.Add(bar);
+
+        var content = new Grid { Margin = new Thickness(4, 1, 0, 1) };
+        content.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        content.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        content.Children.Add(new TextBlock
+        {
+            Text = name,
+            FontSize = 12,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            Foreground = AppTheme.TextBrush,
+        });
+        var right = new TextBlock
+        {
+            Text = value,
+            FontSize = 11,
+            Foreground = AppTheme.DimBrush,
+            Margin = new Thickness(8, 1, 2, 0),
+        };
+        Grid.SetColumn(right, 1);
+        content.Children.Add(right);
+        row.Children.Add(content);
+        if (tooltip is not null) ToolTip.SetTip(row, tooltip);
+        return row;
+    }
+
+    private static SolidColorBrush AccentBarBrush()
+    {
+        var accent = ((SolidColorBrush)AppTheme.AccentBrush).Color;
+        return new SolidColorBrush(Color.FromArgb(0x2E, accent.R, accent.G, accent.B));
     }
 
     private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)

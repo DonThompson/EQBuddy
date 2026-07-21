@@ -230,8 +230,23 @@ public sealed class HistoryWindow : Window
         if (s.DamageBySource.Count > 0)
         {
             sb.AppendLine("Top damage sources:");
+            var grand = Math.Max(1, s.DamageBySource.Sum(x => x.Total));
+            var top = Math.Max(1, s.DamageBySource.Max(x => x.Total));
             foreach (var d in s.DamageBySource.Take(8))
-                sb.AppendLine($"  {d.Name,-28} {d.Total,8:N0} - {d.Hits} hits - avg {(double)d.Total / d.Hits:0.#}");
+                sb.AppendLine($"  {d.Name,-24} {ShareBar((double)d.Total / top),-10} {d.Total,8:N0}" +
+                    $" - {100.0 * d.Total / grand,3:0}% - {d.Hits} hits - avg {(double)d.Total / Math.Max(1, d.Hits):0.#}" +
+                    (d.Crits > 0 ? $" - {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : ""));
+            sb.AppendLine();
+        }
+        if (s.HealsBySpell.Count > 0)
+        {
+            sb.AppendLine("Top heals:");
+            var grand = Math.Max(1, s.HealsBySpell.Sum(x => x.Total));
+            var top = Math.Max(1, s.HealsBySpell.Max(x => x.Total));
+            foreach (var h in s.HealsBySpell.Take(6))
+                sb.AppendLine($"  {h.Name,-24} {ShareBar((double)h.Total / top),-10} {h.Total,8:N0}" +
+                    $" - {100.0 * h.Total / grand,3:0}% - {h.Hits} cast{(h.Hits == 1 ? "" : "s")}" +
+                    $" - avg {(double)h.Total / Math.Max(1, h.Hits):0.#}");
             sb.AppendLine();
         }
         if (s.YourKills.Count > 0)
@@ -271,6 +286,9 @@ public sealed class HistoryWindow : Window
             sb.AppendLine("Markers: " + string.Join(" - ", s.Markers.Select(m => $"{m.Text} ({m.Time:h:mm tt})")));
         return sb.ToString();
     }
+
+    private static string ShareBar(double fraction) =>
+        new('█', Math.Clamp((int)Math.Round(fraction * 10), 1, 10));
 
     private string BuildComparison(SessionRow ra, SessionRow rb)
     {
