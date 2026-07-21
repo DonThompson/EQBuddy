@@ -50,24 +50,27 @@ internal static class BreakdownRows
     }
 
     /// <summary>Fill an ItemsControl with ability rows (ordered by total): the standard
-    /// "total · ×hits · avg · rate (· crit%)" columns with share bars.</summary>
+    /// "total · ×hits · avg · rate (· crit%)" columns with share bars. Rate uses the
+    /// parser convention (ability total ÷ time in combat); burst is in the tooltip.</summary>
     public static void FillAbilityRows(FrameworkElement resources, ItemsControl list,
-        IReadOnlyList<SourceDamage> stats, string unit, string rateLabel, int max = int.MaxValue)
+        IReadOnlyList<SourceDamage> stats, double combatSeconds, string rateLabel,
+        int max = int.MaxValue)
     {
         list.Items.Clear();
         if (stats.Count == 0) return;
         var grand = Math.Max(1, stats.Sum(d => d.Total));
         var top = Math.Max(1, stats.Max(d => d.Total));
+        var secs = Math.Max(1, combatSeconds);
         var barBrush = BarBrush(resources);
         foreach (var d in stats.Take(max))
         {
             var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
-            var ratePart = d.ActiveSeconds > 0
-                ? $" · {d.Total / Math.Max(1, d.ActiveSeconds):0.#} {rateLabel}" : "";
-            var value = $"{d.Total:N0} · ×{d.Hits} · avg {(double)d.Total / Math.Max(1, d.Hits):0.#}{ratePart}{critPart}";
-            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total" +
+            var value = $"{d.Total:N0} · ×{d.Hits} · avg {(double)d.Total / Math.Max(1, d.Hits):0.#}" +
+                        $" · {d.Total / secs:0.#} {rateLabel}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {rateLabel} = total ÷ {secs:0}s in combat" +
                 (d.ActiveSeconds > 0
-                    ? $" · {rateLabel} = total ÷ ~{d.ActiveSeconds:0}s this {unit} was in use" : "");
+                    ? $" · burst {d.Total / Math.Max(1, d.ActiveSeconds):0.#}/s over the ~{d.ActiveSeconds:0}s it was in use"
+                    : "");
             list.Items.Add(Row(resources, d.Name, value, (double)d.Total / top, barBrush, tooltip));
         }
     }

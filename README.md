@@ -144,7 +144,7 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
 
 | Section | Summary stat | Click-in details |
 |---|---|---|
-| Combat | Session DPS (+ live fight DPS) | Details!-style damage breakdown per attack/spell/song — every row shows total, hits, average, **per-ability DPS** (damage ÷ the time that ability was in use), and crit rate; sortable by total/dps/hits/avg with the bar following the sorted column; accuracy, melee avoidance %, biggest hit, time in combat, damage taken per mob, recent fights with DPS bars, fizzles/resists |
+| Combat | Session DPS (+ live fight DPS) | Details!-style damage breakdown per attack/spell/song — every row shows total, hits, average, **per-ability DPS** (that ability's damage ÷ time in combat — its contribution rate; burst rate in the tooltip), and crit rate; sortable by total/dps/hits/avg with the bar following the sorted column; accuracy, melee avoidance %, biggest hit, time in combat, damage taken per mob, recent fights with DPS bars, fizzles/resists |
 | Healing | HPS (healing ÷ time in combat) | Healing done and received, heals cast per spell with the same breakdown as Combat (total, casts, average, **per-spell HPS**; sortable by total/hps/casts/avg with matching bars), who healed you, hymn/regen tick counts (the log gives no amounts for those) |
 | Kills | Your kills incl. pet (+ group kills) | Count per creature type, kills/hour, group-member kill counts; per-creature farming: avg fight length, coin, XP, and observed drops with your personal rate (e.g. `×2 · 22%`) |
 | Loot | Items looted (+ items made) | Every item with counts, items created by merging |

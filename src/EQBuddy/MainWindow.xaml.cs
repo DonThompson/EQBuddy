@@ -369,7 +369,7 @@ public partial class MainWindow : Window
                     : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
-            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, "dps");
+            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             RecentFightsLabel.Visibility = s.RecentEncounters.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             RecentFightsList.Items.Clear();
@@ -401,7 +401,7 @@ public partial class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;
-            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, "hps");
+            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps");
             HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(HealerList, s.HealsByHealer.Select(h =>
                 (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
@@ -880,14 +880,16 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Details!-style breakdown: proportional bar behind each row with the full
-    /// "total · ×hits · avg · rate (· crit%)" columns inline. The rate (dps/hps) is the
-    /// closest per-ability figure the log allows: total ÷ the ability's own active time
-    /// (Core's AbilityAgg). The bar follows the sorted column.</summary>
+    /// "total · ×hits · avg · rate (· crit%)" columns inline. The rate (dps/hps) uses the
+    /// parser convention: ability damage ÷ total time in combat, so an ability's dps
+    /// falls the longer you go without using it. The burst rate (total ÷ the ability's
+    /// own active time) lives in the tooltip. The bar follows the sorted column.</summary>
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
-        StatSort sort, string rateLabel)
+        StatSort sort, double combatSeconds, string rateLabel)
     {
+        var secs = Math.Max(1, combatSeconds);
+        double Rate(SourceDamage d) => d.Total / secs;
         static double Avg(SourceDamage d) => (double)d.Total / Math.Max(1, d.Hits);
-        static double Rate(SourceDamage d) => d.Total / Math.Max(1, d.ActiveSeconds);
         var sorted = (sort switch
         {
             StatSort.Hits => stats.OrderByDescending(d => d.Hits),
@@ -911,10 +913,11 @@ public partial class MainWindow : Window
         foreach (var d in sorted)
         {
             var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
-            var ratePart = d.ActiveSeconds > 0 ? $" · {Rate(d):0.#} {rateLabel}" : "";
-            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#}{ratePart}{critPart}";
-            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total" +
-                (d.ActiveSeconds > 0 ? $" · {rateLabel} = total ÷ ~{d.ActiveSeconds:0}s this ability was in use" : "");
+            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#} · {Rate(d):0.#} {rateLabel}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {rateLabel} = total ÷ {secs:0}s in combat" +
+                (d.ActiveSeconds > 0
+                    ? $" · burst {d.Total / Math.Max(1, d.ActiveSeconds):0.#}/s over the ~{d.ActiveSeconds:0}s it was in use"
+                    : "");
             list.Items.Add(BreakdownRows.Row(this, d.Name, value, metric(d) / topMetric, barBrush, tooltip));
         }
     }
