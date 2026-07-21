@@ -132,6 +132,9 @@
                             <TextBlock Text="sort:" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,4,0"/>
                             <TextBlock x:Name="DmgOutSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
                                        Foreground="{StaticResource AccentBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
+                            <TextBlock x:Name="DmgOutSortDps" Text="dps" FontSize="10" Cursor="Hand" Tag="rate" Margin="6,0,0,0"
+                                       ToolTip="Per-ability DPS: damage ÷ the time that ability was in use"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
                             <TextBlock x:Name="DmgOutSortHits" Text="hits" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
                                        Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
                             <TextBlock x:Name="DmgOutSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
@@ -184,6 +187,9 @@
                             <TextBlock Text="sort:" FontSize="10" Foreground="{StaticResource DimBrush}" Margin="0,0,4,0"/>
                             <TextBlock x:Name="HealSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
                                        Foreground="{StaticResource AccentBrush}" MouseLeftButtonDown="OnSortHeal"/>
+                            <TextBlock x:Name="HealSortHps" Text="hps" FontSize="10" Cursor="Hand" Tag="rate" Margin="6,0,0,0"
+                                       ToolTip="Per-spell HPS: healing ÷ the time that spell was in use"
+                                       Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
                             <TextBlock x:Name="HealSortHits" Text="casts" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
                                        Foreground="{StaticResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
                             <TextBlock x:Name="HealSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"

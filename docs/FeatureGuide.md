@@ -40,9 +40,13 @@ Header: session DPS (+ live fight DPS while fighting). Details:
 - Summary block: damage dealt (melee/spell split), crits + crit rate, accuracy,
   time-in-combat, recent-window DPS ("Last 15m"), biggest hit, damage taken +
   avoidance %, fizzles/resists, current stance.
-- **Damage by attack** — Details!-style breakdown: each source has a proportional
-  share bar (relative to the top source) with `total · hits · avg (· crit%)` inline;
-  `% of total · per-ability dps` in the row tooltip. Sort bar: total/hits/avg.
+- **Damage by attack** — Details!-style breakdown: each source shows
+  `total · ×hits · avg · dps (· crit%)`. The dps is per-ability: damage ÷ the time
+  that ability was in use (consecutive hits within 10 s accumulate their real
+  spacing; an isolated hit counts ~2.5 s) — the closest the log allows, since it has
+  no cast-time data. Sort bar: total/dps/hits/avg — the bar behind each row is
+  proportional to whichever column is sorted. Tooltip: share of total + the active
+  time behind the dps figure.
   Pet damage appears as "Pet (Name)" — provisional charm pets as "Pet? (Name)" until a
   "Master" tell confirms them. Pets show no crit % (the log doesn't annotate pet crits).
 - **Damage taken from** per attacker (total · hits · avg).
@@ -60,9 +64,10 @@ slain X!"` in the same second.
 
 ### Healing card
 HPS (healing ÷ combat time), healing done/received, heals cast per spell with the
-same share-bar breakdown as Combat (total · casts · avg per row; share % and per-spell
-hps in tooltips), who healed you, regen/hymn tick counts (no amounts — the log gives
-none).
+same breakdown as Combat: `total · ×casts · avg · hps` per row, sortable by
+total/hps/casts/avg with the bar following the sort; per-spell hps = healing ÷ that
+spell's active casting time. Who healed you, regen/hymn tick counts (no amounts —
+the log gives none).
 
 ### Kills card
 Header: your kills (+ group kills). Details: per-creature counts, kills/hour +
@@ -146,10 +151,13 @@ session-start) never inserts twice — restarts with auto-empty off and repeated
 imports update the existing row.
 
 History window: character filter, live search (zone, loot, creature, notes, tags,
-snapshot content), full per-session breakdown, notes + tags, copy summary, JSON
-export, delete (confirmed), **Ctrl-click two sessions to compare** rates
-side-by-side, **Import log…** replays any eqlog into history (ImportedBoundary
-sessions).
+snapshot content), full per-session breakdown — Top damage sources and Top heals
+render with the same bar rows as the live widget (total · ×hits · avg · dps/hps ·
+crit%), falling back to text-only for sessions stored before active-time tracking —
+notes + tags, copy summary (plain text with `█` share bars), JSON export, delete
+(confirmed), **Ctrl-click two sessions to compare** rates side-by-side,
+**Import log…** replays any eqlog into history (ImportedBoundary sessions;
+re-importing the same file updates rows instead of duplicating).
 
 **Verify:** fixture with an old block + live block → exactly one finished row + one
 in-progress row; relaunch → still exactly those rows (dedup); import the same file

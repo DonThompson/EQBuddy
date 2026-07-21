@@ -26,7 +26,7 @@ public partial class MainWindow : Window
 
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "loot", "money", "xp", "deaths"];
 
-    private enum StatSort { Total, Hits, Avg }
+    private enum StatSort { Total, Hits, Avg, Rate }
     private StatSort _dmgOutSort = StatSort.Total;
     private StatSort _dmgInSort = StatSort.Total;
     private StatSort _healSort = StatSort.Total;
@@ -369,7 +369,7 @@ public partial class MainWindow : Window
                     : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
-            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "hit", "dps");
+            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, "dps");
             FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             RecentFightsLabel.Visibility = s.RecentEncounters.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             RecentFightsList.Items.Clear();
@@ -377,9 +377,9 @@ public partial class MainWindow : Window
             {
                 // Bars compare per-fight DPS against the hottest recent fight.
                 var topFightDps = Math.Max(0.1, s.RecentEncounters.Max(f => f.Dps));
-                var fightBrush = AccentBarBrush();
+                var fightBrush = BreakdownRows.BarBrush(this);
                 foreach (var f in s.RecentEncounters)
-                    RecentFightsList.Items.Add(BarRow(f.Name,
+                    RecentFightsList.Items.Add(BreakdownRows.Row(this, f.Name,
                         $"{f.DurationSeconds:0}s · {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " · ?" : "")}",
                         f.Dps / topFightDps, fightBrush,
                         $"{f.DamageOut:N0} damage over {f.DurationSeconds:0}s"));
@@ -401,7 +401,7 @@ public partial class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;
-            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "cast", "hps");
+            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, "hps");
             HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(HealerList, s.HealsByHealer.Select(h =>
                 (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
@@ -879,73 +879,44 @@ public partial class MainWindow : Window
         });
     }
 
-    /// <summary>Details!-style breakdown: proportional share bar behind each row with the
-    /// full "total · hits · avg (· crit%)" columns inline; share % and per-second rate
-    /// in the tooltip. Used for damage-by-attack and heals-by-spell.</summary>
+    /// <summary>Details!-style breakdown: proportional bar behind each row with the full
+    /// "total · ×hits · avg · rate (· crit%)" columns inline. The rate (dps/hps) is the
+    /// closest per-ability figure the log allows: total ÷ the ability's own active time
+    /// (Core's AbilityAgg). The bar follows the sorted column.</summary>
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
-        StatSort sort, double combatSeconds, string unit, string rateLabel)
+        StatSort sort, string rateLabel)
     {
+        static double Avg(SourceDamage d) => (double)d.Total / Math.Max(1, d.Hits);
+        static double Rate(SourceDamage d) => d.Total / Math.Max(1, d.ActiveSeconds);
         var sorted = (sort switch
         {
             StatSort.Hits => stats.OrderByDescending(d => d.Hits),
-            StatSort.Avg => stats.OrderByDescending(d => (double)d.Total / d.Hits),
+            StatSort.Avg => stats.OrderByDescending(Avg),
+            StatSort.Rate => stats.OrderByDescending(Rate),
             _ => stats.OrderByDescending(d => d.Total),
         }).ToList();
         list.Items.Clear();
         if (sorted.Count == 0) return;
         var grand = Math.Max(1, sorted.Sum(d => d.Total));
-        var top = Math.Max(1, sorted.Max(d => d.Total));
-        var secs = Math.Max(1, combatSeconds);
-        var barBrush = AccentBarBrush();
+        Func<SourceDamage, double> metric = sort switch
+        {
+            StatSort.Hits => d => d.Hits,
+            StatSort.Avg => Avg,
+            StatSort.Rate => Rate,
+            _ => d => d.Total,
+        };
+        var topMetric = Math.Max(1e-9, sorted.Max(metric));
+        var barBrush = BreakdownRows.BarBrush(this);
 
         foreach (var d in sorted)
         {
             var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
-            var value = $"{d.Total:N0} · {d.Hits} {unit}{(d.Hits == 1 ? "" : "s")}" +
-                        $" · avg {(double)d.Total / Math.Max(1, d.Hits):0.#}{critPart}";
-            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {d.Total / secs:0.#} {rateLabel}";
-            list.Items.Add(BarRow(d.Name, value, (double)d.Total / top, barBrush, tooltip));
+            var ratePart = d.ActiveSeconds > 0 ? $" · {Rate(d):0.#} {rateLabel}" : "";
+            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#}{ratePart}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total" +
+                (d.ActiveSeconds > 0 ? $" · {rateLabel} = total ÷ ~{d.ActiveSeconds:0}s this ability was in use" : "");
+            list.Items.Add(BreakdownRows.Row(this, d.Name, value, metric(d) / topMetric, barBrush, tooltip));
         }
-    }
-
-    /// <summary>One breakdown row: a share bar sized to frac behind "name … value".</summary>
-    private Grid BarRow(string name, string value, double frac, Brush barBrush, string? tooltip)
-    {
-        frac = Math.Clamp(frac, 0.004, 1.0);
-        var row = new Grid { Margin = new Thickness(0, 1, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
-        var bar = new Border
-        {
-            Background = barBrush, CornerRadius = new CornerRadius(2),
-            HorizontalAlignment = HorizontalAlignment.Left, Width = 0,
-        };
-        // Star columns collapse under infinite measure, so size the bar explicitly.
-        row.SizeChanged += (_, se) => bar.Width = Math.Max(0, se.NewSize.Width * frac);
-        row.Children.Add(bar);
-
-        var content = new Grid { Margin = new Thickness(4, 1, 0, 1) };
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        content.Children.Add(new TextBlock
-        {
-            Text = name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = (Brush)FindResource("TextBrush"),
-        });
-        var right = new TextBlock
-        {
-            Text = value, FontSize = 11, Foreground = (Brush)FindResource("DimBrush"),
-            Margin = new Thickness(8, 1, 2, 0),
-        };
-        Grid.SetColumn(right, 1);
-        content.Children.Add(right);
-        row.Children.Add(content);
-        if (tooltip is not null) row.ToolTip = tooltip;
-        return row;
-    }
-
-    private SolidColorBrush AccentBarBrush()
-    {
-        var accent = ((SolidColorBrush)FindResource("AccentBrush")).Color;
-        return new SolidColorBrush(Color.FromArgb(0x2E, accent.R, accent.G, accent.B));
     }
 
     /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>
@@ -965,20 +936,24 @@ public partial class MainWindow : Window
     {
         "hits" => StatSort.Hits,
         "avg" => StatSort.Avg,
+        "rate" => StatSort.Rate,
         _ => StatSort.Total,
     };
 
-    private void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg)
+    private void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg,
+        TextBlock? rate = null)
     {
         total.Foreground = (Brush)FindResource(mode == StatSort.Total ? "AccentBrush" : "DimBrush");
         hits.Foreground = (Brush)FindResource(mode == StatSort.Hits ? "AccentBrush" : "DimBrush");
         avg.Foreground = (Brush)FindResource(mode == StatSort.Avg ? "AccentBrush" : "DimBrush");
+        if (rate is not null)
+            rate.Foreground = (Brush)FindResource(mode == StatSort.Rate ? "AccentBrush" : "DimBrush");
     }
 
     private void OnSortDmgOut(object sender, MouseButtonEventArgs e)
     {
         _dmgOutSort = ParseSort(sender);
-        SetSortVisual(_dmgOutSort, DmgOutSortTotal, DmgOutSortHits, DmgOutSortAvg);
+        SetSortVisual(_dmgOutSort, DmgOutSortTotal, DmgOutSortHits, DmgOutSortAvg, DmgOutSortDps);
         RefreshUi();
     }
 
@@ -992,7 +967,7 @@ public partial class MainWindow : Window
     private void OnSortHeal(object sender, MouseButtonEventArgs e)
     {
         _healSort = ParseSort(sender);
-        SetSortVisual(_healSort, HealSortTotal, HealSortHits, HealSortAvg);
+        SetSortVisual(_healSort, HealSortTotal, HealSortHits, HealSortAvg, HealSortHps);
         RefreshUi();
     }
 

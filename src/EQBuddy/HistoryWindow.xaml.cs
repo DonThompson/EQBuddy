@@ -71,7 +71,7 @@ public partial class HistoryWindow : Window
             if (idx[0] >= 0 && idx[1] < _rows.Count)
             {
                 _selected = null;
-                DetailText.Text = BuildComparison(_rows[idx[0]], _rows[idx[1]]);
+                ShowText(BuildComparison(_rows[idx[0]], _rows[idx[1]]));
                 return;
             }
         }
@@ -82,12 +82,38 @@ public partial class HistoryWindow : Window
         _selectedSnapshot = _repo.LoadSnapshot(_selected.Id);
         NoteBox.Text = _selected.Note;
         TagsBox.Text = _selected.Tags;
-        DetailText.Text = _selectedSnapshot is null
-            ? "Could not load session detail."
-            : BuildOverview(_selected, _selectedSnapshot);
+        if (_selectedSnapshot is null) ShowText("Could not load session detail.");
+        else ShowSession(_selected, _selectedSnapshot);
     }
 
-    internal static string BuildOverview(SessionRow r, StatsSnapshot s)
+    /// <summary>Plain-text mode (comparison, import status, empty state).</summary>
+    private void ShowText(string text)
+    {
+        DetailText.Text = text;
+        DamageVisualLabel.Visibility = HealVisualLabel.Visibility = Visibility.Collapsed;
+        DamageVisualList.Items.Clear();
+        HealVisualList.Items.Clear();
+        DetailRest.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>Session detail: text header, then the same bar-row breakdowns as the
+    /// live widget for damage sources and heals, then the remaining text sections.</summary>
+    private void ShowSession(SessionRow r, StatsSnapshot s)
+    {
+        DetailText.Text = BuildHeaderText(r, s).TrimEnd();
+        BreakdownRows.FillAbilityRows(this, DamageVisualList, s.DamageBySource, "ability", "dps", max: 10);
+        DamageVisualLabel.Visibility = s.DamageBySource.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        BreakdownRows.FillAbilityRows(this, HealVisualList, s.HealsBySpell, "spell", "hps", max: 6);
+        HealVisualLabel.Visibility = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var rest = BuildRestText(s).Trim();
+        DetailRest.Text = rest;
+        DetailRest.Visibility = rest.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    internal static string BuildOverview(SessionRow r, StatsSnapshot s) =>
+        BuildHeaderText(r, s) + BuildBarsText(s) + BuildRestText(s);
+
+    private static string BuildHeaderText(SessionRow r, StatsSnapshot s)
     {
         var sb = new StringBuilder();
         var dur = TimeSpan.FromSeconds(r.ElapsedSeconds);
@@ -105,6 +131,14 @@ public partial class HistoryWindow : Window
         sb.AppendLine($"Money      {StatsSnapshot.FormatCoin(s.Copper)} ({StatsSnapshot.FormatCoin(s.CopperPerHour)}/hr)");
         sb.AppendLine($"Deaths     {s.Deaths.Count}");
         sb.AppendLine();
+        return sb.ToString();
+    }
+
+    /// <summary>Text-bar rendition of the breakdowns — used by Copy summary, where the
+    /// visual rows can't travel; the detail pane shows real bar rows instead.</summary>
+    private static string BuildBarsText(StatsSnapshot s)
+    {
+        var sb = new StringBuilder();
         if (s.DamageBySource.Count > 0)
         {
             sb.AppendLine("Top damage sources:");
@@ -113,6 +147,7 @@ public partial class HistoryWindow : Window
             foreach (var d in s.DamageBySource.Take(8))
                 sb.AppendLine($"  {d.Name,-24} {ShareBar((double)d.Total / top),-10} {d.Total,8:N0}" +
                     $" · {100.0 * d.Total / grand,3:0}% · {d.Hits} hits · avg {(double)d.Total / d.Hits:0.#}" +
+                    (d.ActiveSeconds > 0 ? $" · {d.Total / d.ActiveSeconds:0.#} dps" : "") +
                     (d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : ""));
             sb.AppendLine();
         }
@@ -124,9 +159,16 @@ public partial class HistoryWindow : Window
             foreach (var h in s.HealsBySpell.Take(6))
                 sb.AppendLine($"  {h.Name,-24} {ShareBar((double)h.Total / hTop),-10} {h.Total,8:N0}" +
                     $" · {100.0 * h.Total / hGrand,3:0}% · {h.Hits} cast{(h.Hits == 1 ? "" : "s")}" +
-                    $" · avg {(double)h.Total / Math.Max(1, h.Hits):0.#}");
+                    $" · avg {(double)h.Total / Math.Max(1, h.Hits):0.#}" +
+                    (h.ActiveSeconds > 0 ? $" · {h.Total / h.ActiveSeconds:0.#} hps" : ""));
             sb.AppendLine();
         }
+        return sb.ToString();
+    }
+
+    private static string BuildRestText(StatsSnapshot s)
+    {
+        var sb = new StringBuilder();
         if (s.YourKills.Count > 0)
         {
             sb.AppendLine("Kills by creature:");
@@ -208,7 +250,7 @@ public partial class HistoryWindow : Window
         var info = CharacterLog.FromPath(path);
         var character = info?.Character ?? Path.GetFileNameWithoutExtension(path);
         var server = info?.Server ?? "imported";
-        DetailText.Text = $"Importing {Path.GetFileName(path)}…";
+        ShowText($"Importing {Path.GetFileName(path)}…");
 
         Task.Run(() =>
         {
@@ -241,8 +283,8 @@ public partial class HistoryWindow : Window
             catch (Exception ex) { CoreLog.Error(ex); }
             Dispatcher.Invoke(() =>
             {
-                DetailText.Text = $"Imported {imported} session{(imported == 1 ? "" : "s")} from {Path.GetFileName(path)}. " +
-                    "Re-importing the same file will create duplicates — delete the old rows if you re-import.";
+                ShowText($"Imported {imported} session{(imported == 1 ? "" : "s")} from {Path.GetFileName(path)}. " +
+                    "Re-importing the same file updates the existing rows rather than duplicating them.");
                 RefreshFilters();
                 RefreshList();
             });
@@ -286,7 +328,7 @@ public partial class HistoryWindow : Window
         _repo.Delete(_selected.Id);
         _selected = null;
         _selectedSnapshot = null;
-        DetailText.Text = "Select a session.";
+        ShowText("Select a session.");
         RefreshFilters();
         RefreshList();
     }
