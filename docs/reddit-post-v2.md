@@ -92,3 +92,4 @@ Per-section gallery (for an album or comment thread):
 | `section-loot.png` | Loot: every item with counts, plus items created by merging |
 | `section-tracked-money.png` | Tracked watch rules with per-hour rates; Money: corpse coin vs merchant sales, everything sold with prices |
 | `section-progress.png` | Progress: XP/hour, AA, time-to-level estimate; faction standings; zones visited |
+| `section-options.png` | Options: size/opacity sliders, watch-rule editor (Loot/Kill/SkillUp/Death/Milestone kinds), alert sound picker, overlay card reorder/hide |
