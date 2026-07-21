@@ -158,7 +158,11 @@ public sealed class MainWindow : Window
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
-        Loaded += (_, _) => RegisterGlobalHotkeys();
+        Loaded += (_, _) =>
+        {
+            UpdateWindowHeightLimit();
+            RegisterGlobalHotkeys();
+        };
     }
 
     public double UiScale => _settings.UiScale;
@@ -547,8 +551,23 @@ public sealed class MainWindow : Window
     private void ApplyUiScale(double scale)
     {
         _scaleRoot.LayoutTransform = Math.Abs(scale - 1.0) < 0.001 ? null : new ScaleTransform(scale, scale);
+        UpdateWindowHeightLimit();
         _scaleRoot.InvalidateMeasure();
         InvalidateMeasure();
+    }
+
+    private void UpdateWindowHeightLimit()
+    {
+        var screen = Screens.ScreenFromWindow(this);
+        if (screen is null) return;
+
+        var workingHeight = screen.WorkingArea.Height / screen.Scaling;
+        MaxHeight = Math.Max(240, workingHeight - 20);
+
+        // The section list sits inside the scaled widget. Reserve room for the title,
+        // status/session lines, borders, and a little work-area breathing room.
+        var scale = Math.Max(0.5, _settings.UiScale);
+        _sectionScroll.MaxHeight = Math.Max(160, (workingHeight - 160) / scale);
     }
 
     private void ApplyBackgroundOpacity(double opacity) => _root.Background = AppTheme.BgWithOpacity(opacity);
