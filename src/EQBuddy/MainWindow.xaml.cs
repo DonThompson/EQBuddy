@@ -369,11 +369,21 @@ public partial class MainWindow : Window
                     : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
-            FillDamageBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds);
+            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "hit", "dps");
             FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             RecentFightsLabel.Visibility = s.RecentEncounters.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillList(RecentFightsList, s.RecentEncounters.Select(f =>
-                (f.Name, $"{f.DurationSeconds:0}s · {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " · ?" : "")}")));
+            RecentFightsList.Items.Clear();
+            if (s.RecentEncounters.Count > 0)
+            {
+                // Bars compare per-fight DPS against the hottest recent fight.
+                var topFightDps = Math.Max(0.1, s.RecentEncounters.Max(f => f.Dps));
+                var fightBrush = AccentBarBrush();
+                foreach (var f in s.RecentEncounters)
+                    RecentFightsList.Items.Add(BarRow(f.Name,
+                        $"{f.DurationSeconds:0}s · {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " · ?" : "")}",
+                        f.Dps / topFightDps, fightBrush,
+                        $"{f.DamageOut:N0} damage over {f.DurationSeconds:0}s"));
+            }
             StanceLabel.Visibility = s.Stances.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(StanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg · {(int)x.CombatSeconds}s · {x.Dps:0.#} dps")));
@@ -391,7 +401,7 @@ public partial class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;
-            FillStatList(HealSpellList, s.HealsBySpell, _healSort, "cast");
+            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "cast", "hps");
             HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(HealerList, s.HealsByHealer.Select(h =>
                 (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
@@ -869,10 +879,11 @@ public partial class MainWindow : Window
         });
     }
 
-    /// <summary>Details!-style damage breakdown: proportional share bar behind each row,
-    /// "% of total · per-source dps · crit%" up front; total/hits/avg in the tooltip.</summary>
-    private void FillDamageBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
-        StatSort sort, double combatSeconds)
+    /// <summary>Details!-style breakdown: proportional share bar behind each row with the
+    /// full "total · hits · avg (· crit%)" columns inline; share % and per-second rate
+    /// in the tooltip. Used for damage-by-attack and heals-by-spell.</summary>
+    private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
+        StatSort sort, double combatSeconds, string unit, string rateLabel)
     {
         var sorted = (sort switch
         {
@@ -885,44 +896,56 @@ public partial class MainWindow : Window
         var grand = Math.Max(1, sorted.Sum(d => d.Total));
         var top = Math.Max(1, sorted.Max(d => d.Total));
         var secs = Math.Max(1, combatSeconds);
-        var accent = ((SolidColorBrush)FindResource("AccentBrush")).Color;
-        var barBrush = new SolidColorBrush(Color.FromArgb(0x2E, accent.R, accent.G, accent.B));
+        var barBrush = AccentBarBrush();
 
         foreach (var d in sorted)
         {
-            var frac = Math.Clamp((double)d.Total / top, 0.004, 1.0);
-            var row = new Grid { Margin = new Thickness(0, 1, 0, 0) };
-            var bar = new Border
-            {
-                Background = barBrush, CornerRadius = new CornerRadius(2),
-                HorizontalAlignment = HorizontalAlignment.Left, Width = 0,
-            };
-            // Star columns collapse under infinite measure, so size the bar explicitly.
-            row.SizeChanged += (_, se) => bar.Width = Math.Max(0, se.NewSize.Width * frac);
-            row.Children.Add(bar);
-
-            var content = new Grid { Margin = new Thickness(4, 1, 0, 1) };
-            content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            content.Children.Add(new TextBlock
-            {
-                Text = d.Name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
-                Foreground = (Brush)FindResource("TextBrush"),
-            });
             var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
-            var right = new TextBlock
-            {
-                Text = $"{100.0 * d.Total / grand:0}% · {d.Total / secs:0.#} dps{critPart}",
-                FontSize = 12, Foreground = (Brush)FindResource("DimBrush"),
-                Margin = new Thickness(8, 0, 2, 0),
-            };
-            Grid.SetColumn(right, 1);
-            content.Children.Add(right);
-            row.Children.Add(content);
-            row.HorizontalAlignment = HorizontalAlignment.Stretch;
-            row.ToolTip = $"{d.Total:N0} total · {d.Hits} hit{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / Math.Max(1, d.Hits):0.#}";
-            list.Items.Add(row);
+            var value = $"{d.Total:N0} · {d.Hits} {unit}{(d.Hits == 1 ? "" : "s")}" +
+                        $" · avg {(double)d.Total / Math.Max(1, d.Hits):0.#}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {d.Total / secs:0.#} {rateLabel}";
+            list.Items.Add(BarRow(d.Name, value, (double)d.Total / top, barBrush, tooltip));
         }
+    }
+
+    /// <summary>One breakdown row: a share bar sized to frac behind "name … value".</summary>
+    private Grid BarRow(string name, string value, double frac, Brush barBrush, string? tooltip)
+    {
+        frac = Math.Clamp(frac, 0.004, 1.0);
+        var row = new Grid { Margin = new Thickness(0, 1, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
+        var bar = new Border
+        {
+            Background = barBrush, CornerRadius = new CornerRadius(2),
+            HorizontalAlignment = HorizontalAlignment.Left, Width = 0,
+        };
+        // Star columns collapse under infinite measure, so size the bar explicitly.
+        row.SizeChanged += (_, se) => bar.Width = Math.Max(0, se.NewSize.Width * frac);
+        row.Children.Add(bar);
+
+        var content = new Grid { Margin = new Thickness(4, 1, 0, 1) };
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        content.Children.Add(new TextBlock
+        {
+            Text = name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+            Foreground = (Brush)FindResource("TextBrush"),
+        });
+        var right = new TextBlock
+        {
+            Text = value, FontSize = 11, Foreground = (Brush)FindResource("DimBrush"),
+            Margin = new Thickness(8, 1, 2, 0),
+        };
+        Grid.SetColumn(right, 1);
+        content.Children.Add(right);
+        row.Children.Add(content);
+        if (tooltip is not null) row.ToolTip = tooltip;
+        return row;
+    }
+
+    private SolidColorBrush AccentBarBrush()
+    {
+        var accent = ((SolidColorBrush)FindResource("AccentBrush")).Color;
+        return new SolidColorBrush(Color.FromArgb(0x2E, accent.R, accent.G, accent.B));
     }
 
     /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>

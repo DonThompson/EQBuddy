@@ -40,14 +40,15 @@ Header: session DPS (+ live fight DPS while fighting). Details:
 - Summary block: damage dealt (melee/spell split), crits + crit rate, accuracy,
   time-in-combat, recent-window DPS ("Last 15m"), biggest hit, damage taken +
   avoidance %, fizzles/resists, current stance.
-- **Damage by attack** — Details!-style breakdown (v1.8.5): each source has a
-  proportional share bar (relative to the top source), with `% of total · dps ·
-  crit%` inline; full `total · hits · avg` in the row tooltip. Sort bar: dps/hits/avg.
+- **Damage by attack** — Details!-style breakdown: each source has a proportional
+  share bar (relative to the top source) with `total · hits · avg (· crit%)` inline;
+  `% of total · per-ability dps` in the row tooltip. Sort bar: total/hits/avg.
   Pet damage appears as "Pet (Name)" — provisional charm pets as "Pet? (Name)" until a
   "Master" tell confirms them. Pets show no crit % (the log doesn't annotate pet crits).
 - **Damage taken from** per attacker (total · hits · avg).
-- **Recent fights** — last 8 encounters: creature, duration, per-fight DPS. A fight
-  opens on damage, closes on the kill line or a 20 s timeout ("· ?" marks timeouts).
+- **Recent fights** — last 8 encounters: creature, duration, per-fight DPS, with a
+  bar comparing each fight's DPS to the hottest recent fight. A fight opens on
+  damage, closes on the kill line or a 20 s timeout ("· ?" marks timeouts).
   Back-to-back same-name kills are distinct fights.
 - **By stance** — damage, combat time, DPS per stance; combat windows close on stance
   change so time lands on the right stance.
@@ -58,9 +59,10 @@ top source's bar spans the full row, the % column sums to ~100, and dps × comba
 slain X!"` in the same second.
 
 ### Healing card
-HPS (healing ÷ combat time), healing done/received, heals cast per spell
-(total · casts · avg), who healed you, regen/hymn tick counts (no amounts — the log
-gives none).
+HPS (healing ÷ combat time), healing done/received, heals cast per spell with the
+same share-bar breakdown as Combat (total · casts · avg per row; share % and per-spell
+hps in tooltips), who healed you, regen/hymn tick counts (no amounts — the log gives
+none).
 
 ### Kills card
 Header: your kills (+ group kills). Details: per-creature counts, kills/hour +
