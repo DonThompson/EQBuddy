@@ -246,8 +246,8 @@ public sealed class OptionsWindow : Window
                 VerticalAlignment = VerticalAlignment.Center,
                 Foreground = hidden ? AppTheme.DimBrush : AppTheme.TextBrush,
             });
-            row.Children.Add(CardButton("^", "Move up", 1, () => MoveCard(key, -1)));
-            row.Children.Add(CardButton("v", "Move down", 2, () => MoveCard(key, 1)));
+            row.Children.Add(CardButton("^", "Move up", 1, () => MoveCard(key, -1), compact: true));
+            row.Children.Add(CardButton("v", "Move down", 2, () => MoveCard(key, 1), compact: true));
             row.Children.Add(CardButton(hidden ? "Show" : "Hide", hidden ? "Show card" : "Hide card", 3, () =>
             {
                 if (!_main.Settings.HiddenSections.Remove(key))
@@ -258,10 +258,19 @@ public sealed class OptionsWindow : Window
         }
     }
 
-    private Button CardButton(string text, string tip, int column, Action action)
+    private Button CardButton(string text, string tip, int column, Action action, bool compact = false)
     {
         var b = AppTheme.IconButton(text, tip);
-        b.FontSize = 11;
+        b.FontSize = 12;
+        b.Width = compact ? 28 : 48;
+        b.MinWidth = b.Width;
+        b.Height = 26;
+        b.MinHeight = 26;
+        b.Padding = new Thickness(0);
+        b.Margin = new Thickness(column == 1 ? 0 : 4, 0, 0, 0);
+        b.HorizontalContentAlignment = HorizontalAlignment.Center;
+        b.VerticalContentAlignment = VerticalAlignment.Center;
+        b.VerticalAlignment = VerticalAlignment.Center;
         b.Click += (_, _) => action();
         Grid.SetColumn(b, column);
         return b;

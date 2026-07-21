@@ -23,6 +23,7 @@ public sealed class MainWindow : Window
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
     private readonly DispatcherTimer _uiTimer;
+    private readonly LayoutTransformControl _scaleRoot = new();
     private readonly Border _root = new();
     private readonly Grid _miniRoot = new();
     private readonly StackPanel _miniChips = new() { Orientation = Orientation.Horizontal };
@@ -212,6 +213,7 @@ public sealed class MainWindow : Window
 
     private Control BuildRoot()
     {
+        _scaleRoot.Child = _root;
         _root.CornerRadius = new CornerRadius(10);
         _root.BorderBrush = AppTheme.BorderBrush;
         _root.BorderThickness = new Thickness(1);
@@ -229,7 +231,7 @@ public sealed class MainWindow : Window
         };
         _alertBanner.Child = _alertText;
         _alertBanner.Margin = new Thickness(0, 0, 0, 8);
-        return _root;
+        return _scaleRoot;
     }
 
     private Control BuildMiniRoot()
@@ -526,8 +528,12 @@ public sealed class MainWindow : Window
             Position = new PixelPoint((int)_settings.WindowLeft, (int)_settings.WindowTop);
     }
 
-    private void ApplyUiScale(double scale) =>
-        _root.RenderTransform = Math.Abs(scale - 1.0) < 0.001 ? null : new ScaleTransform(scale, scale);
+    private void ApplyUiScale(double scale)
+    {
+        _scaleRoot.LayoutTransform = Math.Abs(scale - 1.0) < 0.001 ? null : new ScaleTransform(scale, scale);
+        _scaleRoot.InvalidateMeasure();
+        InvalidateMeasure();
+    }
 
     private void ApplyBackgroundOpacity(double opacity) => _root.Background = AppTheme.BgWithOpacity(opacity);
 
