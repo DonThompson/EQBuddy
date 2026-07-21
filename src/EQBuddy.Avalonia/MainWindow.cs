@@ -495,7 +495,7 @@ public sealed class MainWindow : Window
         var version = new MenuItem { Header = $"EQBuddy v{UpdateChecker.CurrentVersion}", IsEnabled = false };
         var check = new MenuItem { Header = "Check for updates" };
         check.Click += (_, _) => { _lastUpdateCheck = DateTime.Now; CheckForUpdates(manual: true); };
-        var options = new MenuItem { Header = "Options... (size, opacity)" };
+        var options = new MenuItem { Header = "Options... (size, opacity, tracked loot)" };
         options.Click += OnOptions;
         var marker = new MenuItem { Header = "Drop camp marker" };
         marker.Click += (_, _) => DropCampMarker();
@@ -643,6 +643,8 @@ public sealed class MainWindow : Window
 
     private void RefreshExpandedSections(StatsSnapshot s)
     {
+        RefreshOptionalSectionVisibility(s);
+
         if (_sections["combat"].IsExpanded)
         {
             var acc = s.HitCount + s.MissCount > 0 ? (double)s.HitCount / (s.HitCount + s.MissCount) * 100 : 0;
@@ -723,7 +725,14 @@ public sealed class MainWindow : Window
                 (s.Recent is { } rx ? $"\nLast {(int)rx.Window.TotalMinutes}m: {rx.XpPerHour:0.0}%/hr" : "") +
                 (s.AaGained > 0 ? $"\n{s.AaGained} AA point{(s.AaGained == 1 ? "" : "s")} - {s.AaPerHour:0.0} AA/hr (now {s.AaTotal} unspent)" : "") +
                 (s.HoursToLevel is { } eta ? $"\nNext level in {FormatEta(eta)} at this pace" : "") +
-                (s.Levels.Count > 0 ? "\n" + string.Join(", ", s.Levels.Select(l => $"{l.Text} at {l.Time:h:mm tt}")) : "");
+                (s.Levels.Count > 0
+                    ? "\n" + string.Join(", ", s.Levels.Select((l, i) =>
+                    {
+                        var from = i == 0 ? s.SessionStart : s.Levels[i - 1].Time;
+                        var mins = from is { } f ? (int)(l.Time - f).TotalMinutes : 0;
+                        return $"{l.Text} at {l.Time:h:mm tt} ({mins}m)";
+                    }))
+                    : "");
             FillList(_skillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
         }
         if (_sections["faction"].IsExpanded)
@@ -736,6 +745,20 @@ public sealed class MainWindow : Window
             _markersLabel.IsVisible = s.Markers.Count > 0;
             FillList(_markerList, s.Markers.Select(m => (m.Text, m.Time.ToString("h:mm tt"))));
         }
+    }
+
+    private void RefreshOptionalSectionVisibility(StatsSnapshot s)
+    {
+        _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
+        _stanceLabel.IsVisible = s.Stances.Count > 0;
+        _farmingLabel.IsVisible = s.Mobs.Any(m => m.Kills > 0);
+        _partyKillsLabel.IsVisible = s.PartyKillsByKiller.Count > 0;
+        _craftedLabel.IsVisible = s.Crafted.Count > 0;
+        _soldLabel.IsVisible = s.SoldItems.Count > 0;
+        _healSpellsLabel.IsVisible = s.HealsBySpell.Count > 0;
+        _healSortBar.IsVisible = s.HealsBySpell.Count > 0;
+        _healersLabel.IsVisible = s.HealsByHealer.Count > 0;
+        _markersLabel.IsVisible = s.Markers.Count > 0;
     }
 
     private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.OrdinalIgnoreCase);
