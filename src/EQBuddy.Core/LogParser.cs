@@ -130,6 +130,10 @@ public static partial class LogParser
     [GeneratedRegex(@"^You received (?<coins>.+?) from that item\.$")]
     private static partial Regex LootWindowSaleRx();
 
+    // Your Befriend Animal spell has worn off of a puma. / Your Root spell has worn off.
+    [GeneratedRegex(@"^Your (?<spell>.+?) spell has worn off(?: of (?<target>.+?))?\.$")]
+    private static partial Regex SpellWornOffRx();
+
     [GeneratedRegex(@"^You have gained a level! Welcome to level (?<level>\d+)!$")]
     private static partial Regex LevelRx();
 
@@ -307,6 +311,10 @@ public static partial class LogParser
             return new XpEvent(ts,
                 r.Groups["pct"].Success ? double.Parse(r.Groups["pct"].Value, CultureInfo.InvariantCulture) : 0,
                 r.Groups["party"].Success);
+
+        if ((r = SpellWornOffRx().Match(msg)).Success)
+            return new SpellWornOffEvent(ts, r.Groups["spell"].Value,
+                r.Groups["target"].Success ? Normalize(r.Groups["target"].Value) : "");
 
         if ((r = LevelRx().Match(msg)).Success)
             return new LevelEvent(ts, int.Parse(r.Groups["level"].Value));

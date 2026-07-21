@@ -663,6 +663,8 @@ public sealed class SessionStats
                                 => ($"Slain by {de.Killer}", 1),
                             (WatchKind.Milestone, LevelEvent lev) => ($"Level {lev.Level}", 1),
                             (WatchKind.Milestone, AaEvent) => ("AA point", 1),
+                            (WatchKind.SpellFade, SpellWornOffEvent wo) when rule.Matches(wo.Spell)
+                                => (wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell, 1),
                             _ => (null, 0),
                         };
                         if (item is null) continue;

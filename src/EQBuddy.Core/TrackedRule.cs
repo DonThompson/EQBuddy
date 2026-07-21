@@ -13,6 +13,9 @@ public enum WatchKind
     Death = 3,
     /// <summary>Level-ups and AA points (pattern ignored).</summary>
     Milestone = 4,
+    /// <summary>Your spells wearing off ("Your X spell has worn off of Y.") — the
+    /// pattern matches the spell name, e.g. a mez or charm breaking.</summary>
+    SpellFade = 5,
 }
 
 /// <summary>

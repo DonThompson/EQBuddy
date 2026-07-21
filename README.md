@@ -76,7 +76,9 @@ Encounters, mob farming, and stances:
   plus each creature's observed drops with your personal drop % (the History window
   shows the full x/y kill counts behind each rate — these are your rates, not the game's).
 - Watch rules aren't just loot anymore: a rule can watch **Loot, Kills (creature name),
-  Skill-ups, Deaths, or Milestones** (levels/AA) — same counters, chips, and alerts.
+  Skill-ups, Deaths, Milestones** (levels/AA), or **SpellFade** — your spells wearing
+  off, matched by spell name. A SpellFade rule on your mez or charm spell with 🔊 on
+  chimes the instant it breaks. Same counters, chips, and alerts for every kind.
 - History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
   **Import log…** parses any old eqlog file into your session history.
 

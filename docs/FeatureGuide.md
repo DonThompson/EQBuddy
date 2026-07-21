@@ -89,9 +89,11 @@ Selling from the advanced loot window ("You successfully destroyed N X." followe
 "You received … from that item.") is paired into a named merchant sale.
 
 ### Tracked card (watch rules)
-Rules are defined in Options: **Kind** (Loot / Kill / SkillUp / Death / Milestone) +
-name + match text (case-insensitive substring; the name doubles as match text if the
-match box is empty; Death/Milestone match everything when empty). Each rule shows
+Rules are defined in Options: **Kind** (Loot / Kill / SkillUp / Death / Milestone /
+SpellFade) + name + match text (case-insensitive substring; the name doubles as match
+text if the match box is empty; Death/Milestone match everything when empty).
+SpellFade matches "Your X spell has worn off (of Y)." by spell name — the mez/charm
+break alarm; entries show as "Spell (Target)". Each rule shows
 total, per-item breakdown, per-hour rates (wall-clock + active-time), last-match age.
 Rules are evaluated over the whole session journal, so editing a rule mid-session
 recalculates history, and alerts never fire during startup ingest or character switch.

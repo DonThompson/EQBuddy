@@ -182,6 +182,24 @@ public class EncounterTests
     }
 
     [Fact]
+    public void SpellFadeRuleAlertsOnMezOrCharmBreak()
+    {
+        // Real EQL lines: the caster sees spell wear-offs with spell + target names.
+        var s = Replay(
+            At(0, 0, "Your Befriend Animal spell has worn off of a puma."),
+            At(0, 30, "Your Chords of Dissonance spell has worn off of a giant spider."),
+            At(1, 0, "Your Root spell has worn off."));
+        var rules = new[] { new TrackedRule { Name = "Charm", Pattern = "Befriend", Kind = WatchKind.SpellFade } };
+        var r = Assert.Single(s.Snapshot(null, rules).Tracked);
+        Assert.Equal(1, r.TotalQuantity);
+        Assert.Equal("Befriend Animal (Puma)", Assert.Single(r.Items).Name);
+
+        // Name-only rule + the targetless variant both work.
+        var root = new[] { new TrackedRule { Name = "Root", Kind = WatchKind.SpellFade } };
+        Assert.Equal("Root", Assert.Single(s.Snapshot(null, root).Tracked).Items.Single().Name);
+    }
+
+    [Fact]
     public void MilestoneWatchRuleMatchesWithEmptyPattern()
     {
         var stats = Replay(
