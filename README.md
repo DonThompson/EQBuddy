@@ -55,8 +55,8 @@ Log cleanup (automatic, optional):
   **"Auto-empty finished-session logs"** in ⚙ Options — EQBuddy then never touches your
   log files, but they'll grow forever, so clean them up yourself occasionally.
 
-Tracked loot & alerts:
-- ⚙ Options → **Tracked loot**: add simple match texts (e.g. `mote`) — the 🎯 Tracked
+Watch rules & alerts:
+- ⚙ Options → **Watch rules**: add simple match texts (e.g. `mote`) — the 🎯 Tracked
   card shows every matching item name, quantities, and per-hour rates (wall-clock and
   active-play). 📌 pins a chip to the mini dashboard; 🔔/🔊 fire a focus-safe banner
   and/or sound the moment a matching item drops. A rule has a short *name* and a

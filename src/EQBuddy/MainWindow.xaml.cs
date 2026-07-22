@@ -496,7 +496,7 @@ public partial class MainWindow : Window
         }
     }
 
-    // ---- tracked loot: rendering + alerts ----
+    // ---- watch rules: rendering + alerts ----
 
     private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _ruleLastAlert = new(StringComparer.OrdinalIgnoreCase);
