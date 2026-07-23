@@ -479,8 +479,9 @@ public sealed class MainWindow : Window
         sortBar.HorizontalAlignment = HorizontalAlignment.Right;
         sortBar.Children.Add(AppTheme.DimText("sort:", new Thickness(0, 0, 4, 0)));
         total = SortLink("total", "total", handler, selected: true);
+        var rateSubject = title.Contains("Heal", StringComparison.OrdinalIgnoreCase) ? "spell" : "ability";
         rate = rateText is null ? null : SortLink(rateText, "rate", handler,
-            tip: $"Per-ability {rateText}: total divided by the time that ability was in use");
+            tip: $"Per-{rateSubject} {rateText}: that {rateSubject}'s total divided by total time in combat");
         hits = SortLink(title.Contains("Heal", StringComparison.OrdinalIgnoreCase) ? "casts" : "hits", "hits", handler);
         avg = SortLink("avg", "avg", handler);
         sortBar.Children.Add(total);
@@ -697,7 +698,7 @@ public sealed class MainWindow : Window
                 (s.SpecialHits.Count > 0 ? "\n" + string.Join(" - ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}")) : "") +
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
-            FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, "dps");
+            FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(_damageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
             var topFightDps = Math.Max(0.1, s.RecentEncounters.Count > 0
@@ -721,7 +722,7 @@ public sealed class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0;
             _healSpellsLabel.IsVisible = showSpells;
             _healSortBar.IsVisible = showSpells;
-            FillBreakdown(_healSpellList, s.HealsBySpell, _healSort, "hps");
+            FillBreakdown(_healSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps");
             _healersLabel.IsVisible = s.HealsByHealer.Count > 0;
             FillList(_healerList, s.HealsByHealer.Select(h => (h.Name, $"{h.Total:N0} - {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
         }
@@ -1228,11 +1229,15 @@ public sealed class MainWindow : Window
         });
     }
 
+    /// <summary>Details-style breakdown whose displayed rate follows parser convention:
+    /// source total divided by total combat time. The source's active-time burst rate
+    /// remains available in the row tooltip.</summary>
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
-        StatSort sort, string rateLabel)
+        StatSort sort, double combatSeconds, string rateLabel)
     {
+        var secs = Math.Max(1, combatSeconds);
         static double Avg(SourceDamage d) => (double)d.Total / Math.Max(1, d.Hits);
-        static double Rate(SourceDamage d) => d.Total / Math.Max(1, d.ActiveSeconds);
+        double Rate(SourceDamage d) => d.Total / secs;
         var sorted = (sort switch
         {
             StatSort.Hits => stats.OrderByDescending(d => d.Hits),
@@ -1261,11 +1266,10 @@ public sealed class MainWindow : Window
             var critPart = d.Crits > 0
                 ? $" - {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit"
                 : "";
-            var ratePart = d.ActiveSeconds > 0 ? $" - {Rate(d):0.#} {rateLabel}" : "";
-            var value = $"{d.Total:N0} - ×{d.Hits} - avg {Avg(d):0.#}{ratePart}{critPart}";
-            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total" +
+            var value = $"{d.Total:N0} - ×{d.Hits} - avg {Avg(d):0.#} - {Rate(d):0.#} {rateLabel}{critPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total - {rateLabel} = total / {secs:0}s in combat" +
                 (d.ActiveSeconds > 0
-                    ? $" - {rateLabel} = total / ~{d.ActiveSeconds:0}s this ability was in use"
+                    ? $" - burst {d.Total / Math.Max(1, d.ActiveSeconds):0.#}/s over the ~{d.ActiveSeconds:0}s it was in use"
                     : "");
             return BarRow(d.Name, value, metric(d) / topMetric, barBrush, tooltip);
         }).ToList();
