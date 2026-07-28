@@ -153,6 +153,26 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your (?<spell>.+?) spell fizzles!$")]
     private static partial Regex FizzleRx();
 
+    // You begin casting Stinging Swarm.   (bard songs use "begin singing"; same shape)
+    [GeneratedRegex(@"^You begin (?:casting|singing) (?<spell>.+?)\.$")]
+    private static partial Regex CastStartRx();
+
+    // Your Stinging Swarm spell is interrupted.
+    [GeneratedRegex(@"^Your (?<spell>.+?) spell is interrupted\.$")]
+    private static partial Regex CastInterruptedRx();
+
+    // Wording of the crowd-control *landing* lines ("X is mesmerized") is unconfirmed
+    // against a real EQ Legends log, so we ship no regex for them. Instead, unmatched
+    // lines that look like CC land in the debug sink during play so the real text can be
+    // captured and turned into a proper pattern (with a fixture) in a later release.
+    [GeneratedRegex(@"mesmeriz|stunned|rooted|charmed|enthrall|entranc|pacif|lulled|snared",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex CrowdControlCandidateRx();
+
+    /// <summary>Opt-in sink for unmatched lines that look like crowd-control effects.
+    /// Wired up by the host only when debug capture is enabled; null in normal runs.</summary>
+    public static Action<string>? CrowdControlCandidateSink { get; set; }
+
     // Third-party combat (group members, the player's pet, nearby fights):
     // "Orc centurion hits Lizzid for 4 points of damage." / "Lizzid tries to frenzy on orc centurion, but misses!"
     // "Orc centurion has taken 1 damage from Disease Cloud by Lizzid."
@@ -250,7 +270,7 @@ public static partial class LogParser
         if ((r = DotOutRx().Match(msg)).Success)
             return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),
                 int.Parse(r.Groups["dmg"].Value), DamageKind.Spell,
-                r.Groups["spell"].Value, IsCritNote(r));
+                r.Groups["spell"].Value, IsCritNote(r), OverTime: true);
 
         if ((r = MeleeMissRx().Match(msg)).Success)
             return new MissEvent(ts, Outgoing: true);
@@ -331,14 +351,20 @@ public static partial class LogParser
         if ((r = MergeRx().Match(msg)).Success)
             return new CraftEvent(ts, r.Groups["item"].Value);
 
+        if ((r = CastStartRx().Match(msg)).Success)
+            return new SpellCastEvent(ts, r.Groups["spell"].Value);
+
+        if ((r = CastInterruptedRx().Match(msg)).Success)
+            return new SpellInterruptedEvent(ts, r.Groups["spell"].Value);
+
         if ((r = FizzleRx().Match(msg)).Success)
-            return new FizzleEvent(ts);
+            return new FizzleEvent(ts, r.Groups["spell"].Value);
 
         if ((r = ResistRx().Match(msg)).Success)
-            return new ResistEvent(ts);
+            return new ResistEvent(ts, r.Groups["spell"].Value);
 
         if ((r = ResistAltRx().Match(msg)).Success)
-            return new ResistEvent(ts);
+            return new ResistEvent(ts, r.Groups["spell"].Value);
 
         if ((r = StanceRx().Match(msg)).Success)
             return new StanceEvent(ts, Normalize(r.Groups["stance"].Value));
@@ -374,6 +400,11 @@ public static partial class LogParser
             if (!zone.StartsWith("an area", StringComparison.OrdinalIgnoreCase) &&
                 !zone.Contains("area where", StringComparison.OrdinalIgnoreCase))
                 return new ZoneEvent(ts, zone);
+        }
+
+        if (CrowdControlCandidateSink is { } sink && CrowdControlCandidateRx().IsMatch(msg))
+        {
+            try { sink(msg); } catch { /* debug capture must never break parsing */ }
         }
 
         return null;

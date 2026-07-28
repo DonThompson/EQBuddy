@@ -69,7 +69,7 @@
 
             <TextBlock Text="Watch rules" FontSize="12" FontWeight="SemiBold"
                        Foreground="{StaticResource AccentBrush}" Margin="0,14,0,2"/>
-            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off (SpellFade — the mez/charm-break alarm). Match is a substring, e.g. 'mote' or 'Befriend'. 🔔 banner and 🔊 sound alert on each match."
+            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a substring, e.g. 'mote' or 'Befriend'. 🔔 banner and 🔊 sound alert on each match."
                        Style="{StaticResource Dim}" TextWrapping="Wrap"/>
             <StackPanel x:Name="RulesPanel" Margin="0,4,0,0"/>
             <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource IconButton}"

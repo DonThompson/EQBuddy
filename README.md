@@ -196,3 +196,7 @@ Log folder auto-detected at
 
 MIT — see [LICENSE](LICENSE). Contributions welcome; parser fixes go fastest when the
 issue or PR includes the raw log lines involved.
+
+Third-party credits are in [NOTICE](NOTICE). The crowd-control spell seed list is
+adapted from [Spyxy's DPS Meter](https://github.com/khadesh/SpyxysDPSMeter) by khadesh
+(MIT) — thanks for making it open source.

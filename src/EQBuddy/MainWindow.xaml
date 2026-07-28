@@ -252,7 +252,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F3AF; Tracked" FontSize="13"/>
+                        <TextBlock Text="&#x1F3AF; Watch" FontSize="13"/>
                         <TextBlock x:Name="TrackedHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
                     </Grid>
                 </Expander.Header>

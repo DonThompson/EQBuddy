@@ -291,7 +291,8 @@ public class LogParserTests
     [InlineData("Auto attack is on.")]
     [InlineData("Your target is too far away, get closer!")]
     [InlineData("Orc centurion says, 'Hail, Emperor Crush!'")]
-    [InlineData("You begin casting Poison Bolt.")]
     [InlineData("a hardened skeleton winces.")]
     public void ChatAndFlavorIgnored(string msg) => AssertIgnored(msg);
+    // "You begin casting X." used to be ignored; it now parses as a SpellCastEvent
+    // (see SpellTrackingTests) and drives charm claiming and cast completion.
 }

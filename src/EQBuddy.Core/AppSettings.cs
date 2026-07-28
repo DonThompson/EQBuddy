@@ -21,6 +21,10 @@ public sealed class AppSettings
     public bool TruncateLogs { get; set; } = true;
     /// <summary>User-defined tracked-loot rules (TRACK-018: persisted).</summary>
     public List<TrackedRule> TrackedRules { get; set; } = [];
+    /// <summary>Highest version of the built-in default watch rules already applied.
+    /// Bumping <see cref="CurrentDefaultRulesVersion"/> hands new defaults to existing
+    /// installs exactly once, and never re-adds a rule the user deleted on purpose.</summary>
+    public int DefaultRulesVersion { get; set; }
     /// <summary>Default rolling window for "recent" rates, in minutes (5/15/30).</summary>
     public int RecentWindowMinutes { get; set; } = 15;
     /// <summary>Alert sound: a built-in name (Ding, Notify, Chimes, Chord, Tada,
@@ -58,18 +62,58 @@ public sealed class AppSettings
         NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals,
     };
 
+    /// <summary>Bump when adding a built-in rule; see <see cref="DefaultRulesVersion"/>.</summary>
+    private const int CurrentDefaultRulesVersion = 1;
+
     public static AppSettings Load()
     {
+        AppSettings settings;
         try
         {
-            if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), JsonOpts) ?? new();
+            settings = File.Exists(FilePath)
+                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), JsonOpts) ?? new()
+                : new AppSettings();
         }
         catch (Exception ex)
         {
             CoreLog.Error(ex); // corrupted settings — start fresh, but say so
+            settings = new AppSettings();
         }
-        return new AppSettings();
+        if (settings.ApplyDefaultRules()) settings.Save();
+        return settings;
+    }
+
+    /// <summary>
+    /// Adds built-in watch rules that ship enabled. A charm or mez breaking is the one
+    /// event where finding out late is expensive — and you are looking at the game, not
+    /// the widget — so both the banner and the sound are on out of the box rather than
+    /// waiting for the player to discover watch rules and configure one.
+    ///
+    /// Everything about it stays editable: 🔔 and 🔊 toggle per rule, the class filter and
+    /// name are editable, the whole rule can be deleted (and stays deleted), and the sound
+    /// itself is the shared <see cref="AlertSound"/> choice.
+    ///
+    /// Runs once per version — deleting the rule makes it stay deleted.
+    /// Returns true when something changed and the settings need saving.
+    /// </summary>
+    public bool ApplyDefaultRules()
+    {
+        if (DefaultRulesVersion >= CurrentDefaultRulesVersion) return false;
+        if (DefaultRulesVersion < 1 &&
+            !TrackedRules.Any(r => r.Kind == WatchKind.SpellFade &&
+                                   r.SpellFilter == SpellFilter.AnyCrowdControl))
+        {
+            TrackedRules.Add(new TrackedRule
+            {
+                Name = "CC broke",
+                Kind = WatchKind.SpellFade,
+                SpellFilter = SpellFilter.AnyCrowdControl,
+                AlertBanner = true,
+                AlertSound = true,
+            });
+        }
+        DefaultRulesVersion = CurrentDefaultRulesVersion;
+        return true;
     }
 
     public void Save()

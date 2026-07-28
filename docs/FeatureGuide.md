@@ -49,7 +49,15 @@ second character's growing log → title switches, session resets.
 Header: session DPS (+ live fight DPS while fighting). Details:
 - Summary block: damage dealt (melee/spell split), crits + crit rate, accuracy,
   time-in-combat, recent-window DPS ("Last 15m"), biggest hit, damage taken +
-  avoidance %, fizzles/resists, current stance.
+  avoidance %, your spells (over-time vs direct), cast completion, current stance.
+- **Your spells: N over time / M direct** — the DoT/nuke split, classified by log-line
+  shape (`X has taken N damage from your Y.` is a tick; `You hit X for N points of
+  <school> damage by Y.` is direct), not by spell name. Pet damage is excluded, so the
+  two need not sum to the spell total.
+- **Cast completion** — `Casts N · P% completed (i interrupted · f fizzled · r resisted)`
+  from `You begin casting X.` / `Your X spell is interrupted.`. Resists are excluded from
+  the failure count: a resisted spell was cast fine, it just did nothing. Logs with no
+  cast lines fall back to the old `Fizzles n · resists n` line.
 - **Damage by attack** — Details!-style breakdown: each source shows
   `total · ×hits · avg · dps (· crit%)`. The dps follows parser convention:
   **that ability's damage ÷ total time in combat** — its contribution rate, which
@@ -58,8 +66,14 @@ Header: session DPS (+ live fight DPS while fighting). Details:
   10 s accumulate real spacing, an isolated hit counts ~2.5 s). Sort bar:
   total/dps/hits/avg — the bar behind each row is proportional to whichever column
   is sorted.
-  Pet damage appears as "Pet (Name)" — provisional charm pets as "Pet? (Name)" until a
-  "Master" tell confirms them. Pets show no crit % (the log doesn't annotate pet crits).
+  Pet damage appears as "Pet (Name)". A charm cast in flight (`You begin casting
+  <charm>.` followed by `<creature> blinks.`) confirms the pet outright; a blink with no
+  charm cast behind it stays provisional as "Pet? (Name)" until a "Master" tell confirms
+  it. An interrupted or fizzled charm claims nothing, and `Your <charm> spell has worn
+  off of <pet>.` drops the claim immediately rather than waiting for the creature to turn
+  on you. Charm spells outside the seed list are learned from the cast → blink → "Master"
+  sequence, so they behave the same on the second cast.
+  Pets show no crit % (the log doesn't annotate pet crits).
 - **Damage taken from** per attacker (total · hits · avg).
 - **Recent fights** — last 8 encounters: creature, duration, per-fight DPS, with a
   bar comparing each fight's DPS to the hottest recent fight. A fight opens on
@@ -98,12 +112,29 @@ form), plus "Created by merging". Auto-sold loot counts as loot AND merchant inc
 Selling from the advanced loot window ("You successfully destroyed N X." followed by
 "You received … from that item.") is paired into a named merchant sale.
 
-### Tracked card (watch rules)
-Rules are defined in Options: **Kind** (Loot / Kill / SkillUp / Death / Milestone /
-SpellFade) + name + match text (case-insensitive substring; the name doubles as match
+### Watch card (watch rules)
+The card is labelled **🎯 Watch**; its persisted key is still `tracked`, so existing
+`SectionOrder`/`HiddenSections` settings keep working.
+
+**Ships with one rule already on.** A fresh install (and every existing install, once)
+gets a "CC broke" rule — Spell fade + Any crowd control, banner **and** sound enabled —
+seeded by `AppSettings.ApplyDefaultRules()` and guarded by `DefaultRulesVersion`, so it
+is applied exactly once. Everything about it is editable, and deleting it makes it stay
+deleted.
+
+Rules are defined in Options: **Kind** (Loot / Kill / Skill-up / Death / Milestone /
+Spell fade) + name + match text (case-insensitive substring; the name doubles as match
 text if the match box is empty; Death/Milestone match everything when empty).
-SpellFade matches "Your X spell has worn off (of Y)." by spell name — the mez/charm
-break alarm; entries show as "Spell (Target)". Each rule shows
+
+**Spell fade** matches "Your X spell has worn off (of Y)." and takes a second dropdown:
+- *By name…* — the original substring match against the spell name.
+- *Any spell* — every fade, including buffs (which we can't classify).
+- *Any crowd control* / *Charm* / *Mez* / *Root* / *Lull* / *Stun* — matched by category
+  via `SpellCatalog`, needing no match text at all. Ranks collapse onto the base name, so
+  one rule covers `Befriend Animal` through `Befriend Animal V` and every CC spell the
+  character learns later. A damage song wearing off does **not** trigger these.
+
+Entries show as "Spell (Target)". Each rule shows
 total, per-item breakdown, per-hour rates (wall-clock + active-time), last-match age.
 Rules are evaluated over the whole session journal, so editing a rule mid-session
 recalculates history, and alerts never fire during startup ingest or character switch.
@@ -118,6 +149,12 @@ sounds or a custom .wav/.mp3, with a ▶ preview. (Linux: sound backend TBD.)
 **Verify:** create a Loot rule matching an item in your fixture, append the loot line
 live → counter increments, banner pops (also while minimized), sound plays once even
 if two matches land within 5 s.
+
+**Verify (built-in CC alert):** on a fresh profile (`EQBUDDY_APPDATA=<empty dir>`) the
+"CC broke" rule is present with 🔔 and 🔊 on. Append
+`Your Befriend Animal spell has worn off of a puma.` → banner + sound, counter 1.
+Append `Your Chords of Dissonance spell has worn off of a giant spider.` → no alert
+(not crowd control). Toggle 🔊 off, delete the rule, restart → it stays deleted.
 
 ### Money card
 Corpse coin vs merchant income, drops count, biggest drop, per-hour rates (wall +

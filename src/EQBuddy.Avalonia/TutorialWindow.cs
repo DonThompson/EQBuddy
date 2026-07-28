@@ -55,10 +55,12 @@ public sealed class TutorialWindow : Window
             "t-combat.png"),
 
         new("Watch rules & alerts",
-            "⚙ Options → Watch rules: watch Loot ('mote'), Kills, Skill-ups, Deaths, " +
-            "Milestones, or SpellFade — your mez or charm breaking. Matches count on the 🎯 " +
-            "Tracked card with per-hour rates, and can 🔔 pop a floating banner and 🔊 play a " +
-            "sound. The banner tile is click-through and movable — drag it while Options is open.",
+            "EQBuddy starts with one rule already on: when any of your crowd-control spells " +
+            "breaks — charm, mez, root, lull or stun — you get a banner and a sound. Turn " +
+            "either off, or delete the rule, in ⚙ Options → Watch rules. Add your own to " +
+            "watch Loot ('mote'), Kills, Skill-ups, Deaths, Milestones, or one named spell. " +
+            "Matches count on the 🎯 Tracked card with per-hour rates. The banner tile is " +
+            "click-through and movable — drag it while Options is open.",
             "t-watch.png"),
 
         new("Mini mode & hotkeys",

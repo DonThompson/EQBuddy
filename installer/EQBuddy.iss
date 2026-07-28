@@ -35,6 +35,9 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 
 [Files]
 Source: "..\dist\publish\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
+; MIT requires the copyright and permission notice to travel with copies.
+Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\NOTICE"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\EQBuddy"; Filename: "{app}\{#AppExe}"

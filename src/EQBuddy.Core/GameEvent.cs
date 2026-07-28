@@ -7,8 +7,10 @@ public abstract record GameEvent(DateTime Time);
 public record KillEvent(DateTime Time, string Target, string Killer) : GameEvent(Time);
 public record DeathEvent(DateTime Time, string Killer) : GameEvent(Time);
 /// <summary>IsAux marks automatic damage (damage shields) excluded from hit/accuracy counters.
-/// Note is the raw trailing annotation ("Riposte", "Double Bow Shot", …) when present.</summary>
-public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical, bool IsAux = false, string? Note = null) : GameEvent(Time);
+/// Note is the raw trailing annotation ("Riposte", "Double Bow Shot", …) when present.
+/// OverTime marks a damage-over-time tick, which the log distinguishes by line shape
+/// ("X has taken N damage from your Y.") rather than by spell name.</summary>
+public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical, bool IsAux = false, string? Note = null, bool OverTime = false) : GameEvent(Time);
 public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee) : GameEvent(Time);
 public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "") : GameEvent(Time);
@@ -33,7 +35,12 @@ public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(T
 public record FactionEvent(DateTime Time, string Faction, int Delta) : GameEvent(Time);
 public record ZoneEvent(DateTime Time, string Zone) : GameEvent(Time);
 public record CraftEvent(DateTime Time, string Item) : GameEvent(Time);
-public record FizzleEvent(DateTime Time) : GameEvent(Time);
+public record FizzleEvent(DateTime Time, string Spell = "") : GameEvent(Time);
+/// <summary>"You begin casting X." / "You begin singing X." — the player started a cast.
+/// Only the player's own casts are parsed; other entities' casts are deliberately ignored.</summary>
+public record SpellCastEvent(DateTime Time, string Spell) : GameEvent(Time);
+/// <summary>"Your X spell is interrupted." — a started cast that never landed.</summary>
+public record SpellInterruptedEvent(DateTime Time, string Spell) : GameEvent(Time);
 /// <summary>The player's pet announced itself ("<Pet> told you, 'Attacking X Master.'").</summary>
 public record PetClaimEvent(DateTime Time, string PetName) : GameEvent(Time);
 /// <summary>A creature blinked ("an asp blinks.") — the charm-spell tell; treated as a provisional pet claim.</summary>
@@ -46,7 +53,7 @@ public record ThirdDotEvent(DateTime Time, string Caster, string Target, int Amo
 public record ThirdSchoolEvent(DateTime Time, string Attacker, string Target, int Amount, string Spell) : GameEvent(Time);
 /// <summary>A missed attack between others (combat-clock signal only).</summary>
 public record ThirdMissEvent(DateTime Time, string Attacker) : GameEvent(Time);
-public record ResistEvent(DateTime Time) : GameEvent(Time);
+public record ResistEvent(DateTime Time, string Spell = "") : GameEvent(Time);
 /// <summary>A user-dropped camp/segment marker (hotkey or menu), timestamped with wall clock.</summary>
 public record SessionMarkerEvent(DateTime Time, string Label) : GameEvent(Time);
 /// <summary>"You assume a defensive stance." — stance state change (EQL-specific).</summary>

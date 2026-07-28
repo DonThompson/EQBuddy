@@ -89,8 +89,12 @@ public partial class MainWindow : Window
                          TrackedSection, MoneySection, ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
+            StartCrowdControlCapture();
+
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
+
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_HISTORY") == "1")
             Loaded += async (_, _) =>
@@ -115,6 +119,30 @@ public partial class MainWindow : Window
     }
 
     public AppSettings Settings => _settings;
+    /// <summary>
+    /// EQBUDDY_CCLOG=1: append log lines that look like crowd-control effects but that no
+    /// pattern matched, to %AppData%\EQBuddy\cc-candidates.txt. The wording of the CC
+    /// landing lines ("X is mesmerized") is still unconfirmed for EQ Legends, so rather
+    /// than ship guessed regexes we capture the real text during play and turn it into
+    /// proper patterns — with fixtures — in a later release. Distinct lines only, capped,
+    /// so a long session can't fill the disk.
+    /// </summary>
+    private static void StartCrowdControlCapture()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var path = Core.AppPaths.File("cc-candidates.txt");
+        var gate = new object();
+        LogParser.CrowdControlCandidateSink = msg =>
+        {
+            lock (gate)
+            {
+                if (seen.Count >= 500 || !seen.Add(msg)) return;
+                try { System.IO.File.AppendAllText(path, msg + Environment.NewLine); }
+                catch { /* diagnostics must never break tailing */ }
+            }
+        };
+    }
+
     public void PersistSettings() => _settings.Save();
 
     internal static readonly (string Key, string Title)[] SectionCatalog =
@@ -372,7 +400,15 @@ public partial class MainWindow : Window
                 (s.SpecialHits.Count > 0
                     ? "\n" + string.Join(" · ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}"))
                     : "") +
-                (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
+                (s.DotDamage + s.DirectSpellDamage > 0
+                    ? $"\nYour spells: {s.DotDamage:N0} over time / {s.DirectSpellDamage:N0} direct"
+                    : "") +
+                // Cast completion subsumes the fizzle count, so only show the old
+                // fizzle/resist line for logs with no cast lines in them.
+                (s.CastCompletion is { } completion
+                    ? $"\nCasts {s.CastsStarted} · {completion * 100:0}% completed" +
+                      $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted)"
+                    : s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");

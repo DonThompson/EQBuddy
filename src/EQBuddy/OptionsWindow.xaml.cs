@@ -162,12 +162,6 @@ public partial class OptionsWindow : Window
             var kind = new System.Windows.Controls.ComboBox { FontSize = 11, ToolTip = "What this rule watches" };
             foreach (var k in OptionsViewModel.KindNames) kind.Items.Add(k);
             kind.SelectedIndex = (int)rule.Kind;
-            kind.SelectionChanged += (_, _) =>
-            {
-                if (!_ready || kind.SelectedIndex < 0) return;
-                rule.Kind = (EQBuddy.Core.WatchKind)kind.SelectedIndex;
-                _vm.Persist();
-            };
             row.Children.Add(kind);
 
             var name = DarkBox(rule.Name, "name");
@@ -176,11 +170,57 @@ public partial class OptionsWindow : Window
             System.Windows.Controls.Grid.SetColumn(name, 1);
             row.Children.Add(name);
 
+            // Column 2 holds the match text, preceded (for Spell fade rules) by a class
+            // picker: one named spell, or a whole class that keeps working as the
+            // character levels into new spells and ranks.
+            var matchArea = new System.Windows.Controls.Grid();
+            matchArea.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+            matchArea.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            System.Windows.Controls.Grid.SetColumn(matchArea, 2);
+            row.Children.Add(matchArea);
+
+            var spellFilter = new System.Windows.Controls.ComboBox
+            {
+                FontSize = 11,
+                Width = 118,
+                Margin = new Thickness(4, 0, 0, 0),
+                ToolTip = "Watch one named spell, or a whole class of spells",
+            };
+            foreach (var f in OptionsViewModel.SpellFilterNames) spellFilter.Items.Add(f);
+            spellFilter.SelectedIndex = (int)rule.SpellFilter;
+            matchArea.Children.Add(spellFilter);
+
             var pattern = DarkBox(rule.Pattern, "match text (uses the name if left empty; optional for Death/Milestone)");
             pattern.Margin = new Thickness(4, 0, 0, 0);
             pattern.LostFocus += (_, _) => { rule.Pattern = pattern.Text.Trim(); _vm.Persist(); };
-            System.Windows.Controls.Grid.SetColumn(pattern, 2);
-            row.Children.Add(pattern);
+            System.Windows.Controls.Grid.SetColumn(pattern, 1);
+            matchArea.Children.Add(pattern);
+
+            // A class filter needs no match text, so the box goes away rather than sitting
+            // there inviting input that would be ignored.
+            void SyncMatchArea()
+            {
+                var isFade = rule.Kind == EQBuddy.Core.WatchKind.SpellFade;
+                spellFilter.Visibility = isFade ? Visibility.Visible : Visibility.Collapsed;
+                pattern.Visibility = isFade && rule.SpellFilter != EQBuddy.Core.SpellFilter.ByName
+                    ? Visibility.Collapsed : Visibility.Visible;
+            }
+            SyncMatchArea();
+
+            kind.SelectionChanged += (_, _) =>
+            {
+                if (!_ready || kind.SelectedIndex < 0) return;
+                rule.Kind = (EQBuddy.Core.WatchKind)kind.SelectedIndex;
+                SyncMatchArea();
+                _vm.Persist();
+            };
+            spellFilter.SelectionChanged += (_, _) =>
+            {
+                if (!_ready || spellFilter.SelectedIndex < 0) return;
+                rule.SpellFilter = (EQBuddy.Core.SpellFilter)spellFilter.SelectedIndex;
+                SyncMatchArea();
+                _vm.Persist();
+            };
 
             row.Children.Add(RuleToggle("🔔", "Banner alert on match", 3, rule.AlertBanner,
                 v => rule.AlertBanner = v));

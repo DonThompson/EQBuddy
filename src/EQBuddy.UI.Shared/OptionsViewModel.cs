@@ -42,7 +42,9 @@ public static class OverlaySections
     public static readonly (string Key, string Title)[] Catalog =
     [
         ("combat", "Combat"), ("healing", "Healing"), ("kills", "Kills"), ("loot", "Loot"),
-        ("tracked", "Tracked"), ("money", "Money"), ("progress", "Progress"),
+        // Key stays "tracked" — it's persisted in SectionOrder/HiddenSections. Only the
+        // label follows the feature's rename from tracked loot to watch rules (#5).
+        ("tracked", "Watch"), ("money", "Money"), ("progress", "Progress"),
         ("faction", "Faction"), ("misc", "Travels & Deaths"),
     ];
 }
@@ -151,7 +153,30 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         AlertSoundCatalog.IsCustom(_settings.AlertSound) ? $"Custom: {_settings.AlertSound}" : "";
 
     // ---- watch rules ----
-    public static readonly string[] KindNames = Enum.GetNames<WatchKind>();
+    /// <summary>Dropdown labels, in WatchKind order — both UIs map the selected index
+    /// straight back to the enum value, so this must stay aligned with the enum.</summary>
+    public static readonly string[] KindNames =
+    [
+        "Loot",
+        "Kill",
+        "Skill-up",
+        "Death",
+        "Milestone",
+        "Spell fade",
+    ];
+
+    /// <summary>Labels for the SpellFade class picker, in SpellFilter order.</summary>
+    public static readonly string[] SpellFilterNames =
+    [
+        "By name…",
+        "Any spell",
+        "Any crowd control",
+        "Charm",
+        "Mez",
+        "Root",
+        "Lull",
+        "Stun",
+    ];
     public IReadOnlyList<TrackedRule> Rules => _settings.TrackedRules;
 
     public TrackedRule AddRule()

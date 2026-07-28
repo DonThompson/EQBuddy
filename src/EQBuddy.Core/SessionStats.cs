@@ -149,6 +149,20 @@ public sealed class SessionStats
     private string? _petName;        // normalized (article stripped, capitalized)
     private bool _petConfirmed;      // false = blink-only (charm suspected, no "Master" tell yet)
 
+    // ---- spell tracking ----
+    private readonly SpellCatalog _spells = new();
+    private (string Spell, DateTime Time)? _pendingCast;     // last cast started
+    private (string Spell, DateTime Time)? _charmCandidate;  // cast that preceded a blink
+    private int _castsStarted, _castsInterrupted;
+    private long _dotDamage, _directSpellDamage;
+
+    /// <summary>How long after a cast starts a blink can still belong to it. Charm casts
+    /// run a few seconds; observed gap in real logs is ~4s.</summary>
+    private static readonly TimeSpan CastToBlink = TimeSpan.FromSeconds(30);
+    /// <summary>How long after a blink a "Master" tell still confirms the same charm.
+    /// Observed gap in real logs is ~5s; pets can be slow to announce.</summary>
+    private static readonly TimeSpan BlinkToClaim = TimeSpan.FromSeconds(60);
+
     public event Action? SessionRolledOver;
     /// <summary>Raised (outside the lock) with the final snapshot of a session that just
     /// ended via the inactivity gap — the hook for persisting it to history.</summary>
@@ -202,12 +216,50 @@ public sealed class SessionStats
                     ClaimPendingRewards(k.Target, k.Time);
                     break;
                 case PetClaimEvent pc:
+                    // A blink that followed an unrecognised cast, now proven to be ours:
+                    // that cast was a charm spell, so remember it for the rest of the run.
+                    if (_charmCandidate is { } cand && pc.Time - cand.Time <= BlinkToClaim)
+                    {
+                        _spells.Learn(cand.Spell, SpellCategory.Charm);
+                        _charmCandidate = null;
+                    }
                     ConfirmPet(LogParser.Normalize(pc.PetName));
                     TrackCombat(pc.Time);
                     break;
                 case PetBlinkEvent pb:
-                    // Charm just landed (probably) — provisionally claim this creature.
-                    _petName = LogParser.Normalize(pb.Name);
+                    // Charm just landed. If one of our charm casts is still in flight the
+                    // claim is certain, so skip the provisional "Pet?" state entirely.
+                    var blinked = LogParser.Normalize(pb.Name);
+                    if (_pendingCast is { } cast && pb.Time - cast.Time <= CastToBlink)
+                    {
+                        var category = _spells.Classify(cast.Spell);
+                        if (category == SpellCategory.Charm)
+                        {
+                            ConfirmPet(blinked);
+                            _pendingCast = null;
+                            break;
+                        }
+                        // Unrecognised spell: hold onto it so a following "Master" tell
+                        // can teach us it was a charm.
+                        if (category == SpellCategory.Unknown)
+                            _charmCandidate = (cast.Spell, pb.Time);
+                    }
+                    _petName = blinked;
+                    _petConfirmed = false;
+                    break;
+                case SpellCastEvent started:
+                    _castsStarted++;
+                    _pendingCast = (started.Spell, started.Time);
+                    break;
+                case SpellInterruptedEvent:
+                    _castsInterrupted++;
+                    _pendingCast = null;
+                    break;
+                case SpellWornOffEvent wo when _petName is not null && wo.Target.Length > 0
+                        && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
+                    // Charm broke on our pet. Drop the claim now instead of waiting for the
+                    // creature to turn around and hit us.
+                    _petName = null;
                     _petConfirmed = false;
                     break;
                 case ThirdMeleeEvent tm when IsPet(tm.Attacker):
@@ -240,6 +292,21 @@ public sealed class SessionStats
                 case DamageDealtEvent dd:
                     _damageDealt += dd.Amount;
                     if (dd.Kind == DamageKind.Melee) _meleeDamage += dd.Amount; else _spellDamage += dd.Amount;
+                    // Damage spells label themselves by line shape, so classification is
+                    // observed rather than looked up in a table.
+                    if (dd.Kind == DamageKind.Spell && !dd.IsAux)
+                    {
+                        if (dd.OverTime)
+                        {
+                            _dotDamage += dd.Amount;
+                            _spells.Learn(dd.Source, SpellCategory.DamageOverTime);
+                        }
+                        else
+                        {
+                            _directSpellDamage += dd.Amount;
+                            _spells.Learn(dd.Source, SpellCategory.DirectDamage);
+                        }
+                    }
                     if (!dd.IsAux)
                     {
                         _hitCount++;
@@ -278,6 +345,7 @@ public sealed class SessionStats
                 case HealEvent { Outgoing: true } h:
                     _healingDone += h.Amount; _healCount++;
                     Ability(_healsBySpell, h.Spell).Add(h.Time, h.Amount);
+                    if (h.Spell != "Unknown") _spells.Learn(h.Spell, SpellCategory.Heal);
                     // Self-heals appear as "You healed <own name>" — count as received too.
                     if (_characterName is { } me &&
                         string.Equals(h.Target, me, StringComparison.OrdinalIgnoreCase))
@@ -391,6 +459,17 @@ public sealed class SessionStats
             SessionRolledOver?.Invoke();
         }
     }
+
+    /// <summary>A SpellFade rule matches either one named spell or a whole class of them.
+    /// Class filters are evaluated against the catalog, so they keep working as a
+    /// character levels into new spells and higher ranks.</summary>
+    private bool SpellFadeMatches(TrackedRule rule, string spell) => rule.SpellFilter switch
+    {
+        SpellFilter.ByName => rule.Matches(spell),
+        SpellFilter.AnySpell => true,
+        SpellFilter.AnyCrowdControl => _spells.IsCrowdControl(spell),
+        _ => rule.FilterCategory is { } wanted && _spells.Classify(spell) == wanted,
+    };
 
     private bool IsPet(string name) =>
         _petName is not null &&
@@ -551,6 +630,9 @@ public sealed class SessionStats
         _closedCombatSeconds = 0; _closedCombatDamage = 0;
         _combatStart = null; _combatLast = null; _combatDamage = 0;
         _lastOwnAction = null; _petName = null; _petConfirmed = false;
+        _pendingCast = null; _charmCandidate = null;
+        _castsStarted = 0; _castsInterrupted = 0;
+        _dotDamage = 0; _directSpellDamage = 0;
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
@@ -644,8 +726,7 @@ public sealed class SessionStats
                 foreach (var rule in rules)
                 {
                     if (!rule.Enabled) continue;
-                    if (rule.EffectivePattern.Length == 0 &&
-                        rule.Kind is not (WatchKind.Death or WatchKind.Milestone)) continue;
+                    if (rule.EffectivePattern.Length == 0 && !rule.IsMatchAllKind) continue;
                     var items = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                     var total = 0;
                     DateTime? first = null, last = null;
@@ -663,7 +744,7 @@ public sealed class SessionStats
                                 => ($"Slain by {de.Killer}", 1),
                             (WatchKind.Milestone, LevelEvent lev) => ($"Level {lev.Level}", 1),
                             (WatchKind.Milestone, AaEvent) => ("AA point", 1),
-                            (WatchKind.SpellFade, SpellWornOffEvent wo) when rule.Matches(wo.Spell)
+                            (WatchKind.SpellFade, SpellWornOffEvent wo) when SpellFadeMatches(rule, wo.Spell)
                                 => (wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell, 1),
                             _ => (null, 0),
                         };
@@ -764,6 +845,10 @@ public sealed class SessionStats
                 CurrentZone = _zones.Count > 0 ? _zones[^1].Zone : "",
                 Fizzles = _fizzles,
                 Resists = _resists,
+                CastsStarted = _castsStarted,
+                CastsInterrupted = _castsInterrupted,
+                DotDamage = _dotDamage,
+                DirectSpellDamage = _directSpellDamage,
                 ActiveSeconds = activeSeconds,
                 XpPerActiveHour = _xpPercent / activeHours,
                 CopperPerActiveHour = (long)((_copper + _vendorCopper) / activeHours),
@@ -877,6 +962,21 @@ public sealed class StatsSnapshot
     public string CurrentZone { get; init; } = "";
     public int Fizzles { get; init; }
     public int Resists { get; init; }
+    /// <summary>Casts begun ("You begin casting X."). The denominator for cast completion.</summary>
+    public int CastsStarted { get; init; }
+    public int CastsInterrupted { get; init; }
+    /// <summary>Share of started casts that were neither interrupted nor fizzled. Null
+    /// until at least one cast is seen. Resists are excluded — a resisted spell was cast
+    /// successfully, it just did nothing.</summary>
+    public double? CastCompletion => CastsStarted > 0
+        ? Math.Max(0, CastsStarted - CastsInterrupted - Fizzles) / (double)CastsStarted
+        : null;
+    /// <summary>Your own damage-over-time damage, split out from direct spell damage.
+    /// Classified by log-line shape rather than by spell name. Pet damage is excluded —
+    /// third-party lines carry no shape we can split on — so these two need not sum to
+    /// the spell total.</summary>
+    public long DotDamage { get; init; }
+    public long DirectSpellDamage { get; init; }
     /// <summary>Active-play seconds (2-minute buckets containing any meaningful event).</summary>
     public double ActiveSeconds { get; init; }
     public double XpPerActiveHour { get; init; }

@@ -7,6 +7,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
@@ -161,7 +162,7 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(AppTheme.DimText("The Last Xm figures on Combat, Kills, Money, and Progress."));
 
         panel.Children.Add(Heading("Watch rules", new Thickness(0, 14, 0, 2)));
-        panel.Children.Add(AppTheme.DimText("Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off (SpellFade — the mez/charm-break alarm). Match is a case-insensitive substring, e.g. 'mote' or 'Befriend'; when empty, the display name is used. B shows a banner and S plays a sound."));
+        panel.Children.Add(AppTheme.DimText("Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a case-insensitive substring, e.g. 'mote' or 'Befriend'; when empty, the display name is used. B shows a banner and S plays a sound."));
         panel.Children.Add(_rulesPanel);
         var add = AppTheme.IconButton("+ Add watch rule", "Add watch rule");
         add.HorizontalAlignment = HorizontalAlignment.Left;
@@ -210,7 +211,7 @@ public sealed class OptionsWindow : Window
                 row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
 
             var kind = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
-            foreach (var k in Enum.GetNames<WatchKind>()) kind.Items.Add(k);
+            foreach (var k in OptionsViewModel.KindNames) kind.Items.Add(k);
             kind.SelectedIndex = (int)rule.Kind;
             ToolTip.SetTip(kind, "What this rule watches");
             kind.SelectionChanged += (_, _) =>
