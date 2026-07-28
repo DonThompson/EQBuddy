@@ -129,7 +129,7 @@ text if the match box is empty; Death/Milestone match everything when empty).
 **Spell fade** matches "Your X spell has worn off (of Y)." and takes a second dropdown:
 - *By name…* — the original substring match against the spell name.
 - *Any spell* — every fade, including buffs (which we can't classify).
-- *Any crowd control* / *Charm* / *Mez* / *Root* / *Lull* / *Stun* — matched by category
+- *Any CC* / *Charm* / *Mez* / *Root* / *Lull* / *Stun* — matched by category
   via `SpellCatalog`, needing no match text at all. Ranks collapse onto the base name, so
   one rule covers `Befriend Animal` through `Befriend Animal V` and every CC spell the
   character learns later. A damage song wearing off does **not** trigger these.
@@ -190,9 +190,20 @@ Deaths. Intended use: "since I set up camp here" bookkeeping.
 
 Sliders: widget size (80–160 %, scales fonts), background see-through (panel only —
 text stays opaque), whole-widget opacity. Auto-empty toggle (see Log hygiene).
-Recent-rate window (5/15/30 min). Watch-rule editor (kind dropdown, name, match text,
-📌/🔔/🔊 toggles, delete, add). Alert sound picker + ▶ test. Overlay cards: per-card
-up/down reorder and hide/show — hidden cards keep collecting; layout persists.
+Recent-rate window (5/15/30 min). Watch-rule editor (kind dropdown, name, spell-class
+picker for Spell fade rules, match text, 🔔/🔊 toggles, delete, add). Alert sound picker
++ ▶ test. Overlay cards: per-card up/down reorder and hide/show — hidden cards keep
+collecting; layout persists.
+
+**Width is draggable.** The window has custom chrome (`WindowStyle=None` +
+`AllowsTransparency`), so there is no native resize border; a transparent `Thumb` on the
+right edge drives `Width` instead, clamped to 272–900 px and saved to `OptionsWidth` on
+release. Height still auto-fits via `SizeToContent="Height"`.
+
+**Verify:** with two rules present (one Loot, one Spell fade set to a class), no field is
+clipped at the default width — check "Any CC" in particular, since the class combo shares
+the row with the alert toggles. Drag the right edge wider, close, reopen: the width is
+remembered.
 
 ## Session history
 

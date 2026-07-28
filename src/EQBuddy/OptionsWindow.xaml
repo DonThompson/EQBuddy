@@ -1,14 +1,19 @@
 <Window x:Class="EQBuddy.OptionsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="EQBuddy Options" SizeToContent="WidthAndHeight"
+        Title="EQBuddy Options" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        MinWidth="272" MaxWidth="900"
         WindowStartupLocation="Manual">
+    <!-- Custom chrome (WindowStyle=None + AllowsTransparency) has no native resize
+         border, so width is driven by the drag handle on the right edge below.
+         SizeToContent stays on Height so the panel keeps auto-fitting vertically. -->
     <Border Background="{StaticResource BgBrush}" CornerRadius="10"
             BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
-        <StackPanel Margin="16" Width="240">
+      <Grid>
+        <StackPanel Margin="16">
             <Grid Margin="0,0,0,10">
                 <TextBlock Text="Options" FontWeight="Bold" FontSize="14"
                            Foreground="{StaticResource AccentBrush}"/>
@@ -103,8 +108,21 @@
                 <Run x:Name="HotkeyNote" Text=""/>
             </TextBlock>
 
-            <TextBlock Text="Size also scales all text. Changes apply instantly and are saved."
+            <TextBlock Text="Size also scales all text. Changes apply instantly and are saved. Drag the right edge to widen this window."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
         </StackPanel>
+
+        <!-- Right-edge width handle. Transparent template so it reads as a bare edge;
+             the cursor is the affordance. Width is persisted on release. -->
+        <Thumb Width="8" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+               Cursor="SizeWE" ToolTip="Drag to resize"
+               DragDelta="OnResizeDelta" DragCompleted="OnResizeCompleted">
+          <Thumb.Template>
+            <ControlTemplate TargetType="Thumb">
+              <Rectangle Fill="Transparent"/>
+            </ControlTemplate>
+          </Thumb.Template>
+        </Thumb>
+      </Grid>
     </Border>
 </Window>

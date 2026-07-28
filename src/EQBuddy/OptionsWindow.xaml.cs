@@ -21,6 +21,7 @@ public partial class OptionsWindow : Window
         _main = main;
         _vm = new OptionsViewModel(main.Settings, main.PersistSettings);
         Owner = main;
+        Width = Math.Clamp(_vm.OptionsWidth, MinWidth, MaxWidth);
 
         ScaleSlider.Value = _vm.UiScale;
         OpacitySlider.Value = _vm.Opacity;
@@ -141,6 +142,12 @@ public partial class OptionsWindow : Window
         SoundFileNote.Visibility = _vm.SoundFileNote.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void OnResizeDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e) =>
+        Width = Math.Clamp(Width + e.HorizontalChange, MinWidth, MaxWidth);
+
+    private void OnResizeCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e) =>
+        _vm.OptionsWidth = Width;
+
     private void OnAddRule(object sender, RoutedEventArgs e)
     {
         _vm.AddRule();
@@ -152,10 +159,13 @@ public partial class OptionsWindow : Window
         RulesPanel.Children.Clear();
         foreach (var rule in _vm.Rules)
         {
+            // Kind and name were 58/60 px, which clipped their content even before the
+            // spell-class picker existed. Name and match text share the remaining width so
+            // widening the window grows the fields that actually hold free text.
             var row = new System.Windows.Controls.Grid { Margin = new Thickness(0, 3, 0, 0) };
-            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(58) });
-            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(60) });
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
             for (var i = 0; i < 3; i++)
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
 
@@ -182,7 +192,7 @@ public partial class OptionsWindow : Window
             var spellFilter = new System.Windows.Controls.ComboBox
             {
                 FontSize = 11,
-                Width = 118,
+                MinWidth = 122,
                 Margin = new Thickness(4, 0, 0, 0),
                 ToolTip = "Watch one named spell, or a whole class of spells",
             };
@@ -201,9 +211,12 @@ public partial class OptionsWindow : Window
             void SyncMatchArea()
             {
                 var isFade = rule.Kind == EQBuddy.Core.WatchKind.SpellFade;
+                var byName = rule.SpellFilter == EQBuddy.Core.SpellFilter.ByName;
                 spellFilter.Visibility = isFade ? Visibility.Visible : Visibility.Collapsed;
-                pattern.Visibility = isFade && rule.SpellFilter != EQBuddy.Core.SpellFilter.ByName
-                    ? Visibility.Collapsed : Visibility.Visible;
+                pattern.Visibility = isFade && !byName ? Visibility.Collapsed : Visibility.Visible;
+                // With no match box beside it the combo takes the whole cell, so its text
+                // and drop arrow stay inside the row instead of running under the toggles.
+                System.Windows.Controls.Grid.SetColumnSpan(spellFilter, isFade && !byName ? 2 : 1);
             }
             SyncMatchArea();
 

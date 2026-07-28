@@ -25,6 +25,10 @@ public sealed class AppSettings
     /// Bumping <see cref="CurrentDefaultRulesVersion"/> hands new defaults to existing
     /// installs exactly once, and never re-adds a rule the user deleted on purpose.</summary>
     public int DefaultRulesVersion { get; set; }
+    /// <summary>Options window width, dragged by its right edge. Wide enough by default
+    /// that the watch-rule row (kind + name + spell class + match text + toggles) fits
+    /// without clipping.</summary>
+    public double OptionsWidth { get; set; } = 340;
     /// <summary>Default rolling window for "recent" rates, in minutes (5/15/30).</summary>
     public int RecentWindowMinutes { get; set; } = 15;
     /// <summary>Alert sound: a built-in name (Ding, Notify, Chimes, Chord, Tada,

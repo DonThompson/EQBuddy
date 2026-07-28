@@ -255,7 +255,7 @@ public sealed class SessionStats
                     _castsInterrupted++;
                     _pendingCast = null;
                     break;
-                case SpellWornOffEvent wo when _petName is not null && wo.Target.Length > 0
+                case SpellWornOffEvent { Pet: false } wo when _petName is not null && wo.Target.Length > 0
                         && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
                     // Charm broke on our pet. Drop the claim now instead of waiting for the
                     // creature to turn around and hit us.
@@ -744,7 +744,8 @@ public sealed class SessionStats
                                 => ($"Slain by {de.Killer}", 1),
                             (WatchKind.Milestone, LevelEvent lev) => ($"Level {lev.Level}", 1),
                             (WatchKind.Milestone, AaEvent) => ("AA point", 1),
-                            (WatchKind.SpellFade, SpellWornOffEvent wo) when SpellFadeMatches(rule, wo.Spell)
+                            (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
+                                when SpellFadeMatches(rule, wo.Spell)
                                 => (wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell, 1),
                             _ => (null, 0),
                         };

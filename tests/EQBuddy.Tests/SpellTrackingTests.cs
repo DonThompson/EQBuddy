@@ -72,6 +72,39 @@ public class SpellTrackingTests
         Assert.Null(LogParser.Parse(Ts + "Otherchar`s warder begins casting Minor Healing."));
     }
 
+    /// <summary>Real line from a mage log. Without its own pattern the general worn-off
+    /// regex captures the spell as "pet's Tangling Weeds" and, worse, lets the pet's spell
+    /// trigger the player's spell-fade rules.</summary>
+    [Fact]
+    public void ThePetsOwnSpellFadingIsAttributedToThePet()
+    {
+        var e = Assert.IsType<SpellWornOffEvent>(
+            LogParser.Parse(Ts + "Your pet's Tangling Weeds spell has worn off."));
+        Assert.True(e.Pet);
+        Assert.Equal("Tangling Weeds", e.Spell);
+
+        var yours = Assert.IsType<SpellWornOffEvent>(
+            LogParser.Parse(Ts + "Your Befriend Animal spell has worn off of a puma."));
+        Assert.False(yours.Pet);
+    }
+
+    [Fact]
+    public void APetsSpellFadingNeverFiresTheAnySpellRule()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "Anything dropped", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.AnySpell,
+        };
+        var s = Replay(
+            At(0, 0, "Your pet's Tangling Weeds spell has worn off."),
+            At(0, 5, "Your Befriend Animal spell has worn off of a puma."))
+            .Snapshot(recentWindow: null, rules: [rule]);
+
+        var tracked = Assert.Single(s.Tracked);
+        Assert.Equal(1, tracked.TotalQuantity);
+        Assert.Equal("Befriend Animal (Puma)", tracked.LastItem);
+    }
+
     // ---- classification ----
 
     [Theory]

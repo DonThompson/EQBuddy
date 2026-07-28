@@ -152,6 +152,14 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     public string SoundFileNote =>
         AlertSoundCatalog.IsCustom(_settings.AlertSound) ? $"Custom: {_settings.AlertSound}" : "";
 
+    /// <summary>Options window width (the user drags its right edge). Clamping to the
+    /// window's own Min/Max stays in the view — Core has no notion of chrome.</summary>
+    public double OptionsWidth
+    {
+        get => _settings.OptionsWidth;
+        set { _settings.OptionsWidth = value; PersistAnd(); }
+    }
+
     // ---- watch rules ----
     /// <summary>Dropdown labels, in WatchKind order — both UIs map the selected index
     /// straight back to the enum value, so this must stay aligned with the enum.</summary>
@@ -165,12 +173,14 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         "Spell fade",
     ];
 
-    /// <summary>Labels for the SpellFade class picker, in SpellFilter order.</summary>
+    /// <summary>Labels for the SpellFade class picker, in SpellFilter order. Kept short
+    /// on purpose — this combo shares a rule row with the alert toggles, and the help
+    /// text above the list spells out what "Any CC" covers.</summary>
     public static readonly string[] SpellFilterNames =
     [
         "By name…",
         "Any spell",
-        "Any crowd control",
+        "Any CC",
         "Charm",
         "Mez",
         "Root",

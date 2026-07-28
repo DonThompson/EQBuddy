@@ -28,8 +28,10 @@ public record AutoSellEvent(DateTime Time, string Item, int Count, string Source
 /// action; when a "received … from that item" money line follows, this names the item.</summary>
 public record ItemDestroyedEvent(DateTime Time, string Item, int Count) : GameEvent(Time);
 /// <summary>"Your X spell has worn off (of target)." — mez/charm/buff expiry, seen by
-/// the caster. Fires whether the spell timed out or broke early.</summary>
-public record SpellWornOffEvent(DateTime Time, string Spell, string Target) : GameEvent(Time);
+/// the caster. Fires whether the spell timed out or broke early.
+/// Pet=true is the "Your pet's X spell has worn off." form: the pet's spell, not yours,
+/// so it is excluded from spell-fade watch rules.</summary>
+public record SpellWornOffEvent(DateTime Time, string Spell, string Target, bool Pet = false) : GameEvent(Time);
 public record LevelEvent(DateTime Time, int Level) : GameEvent(Time);
 public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(Time);
 public record FactionEvent(DateTime Time, string Faction, int Delta) : GameEvent(Time);

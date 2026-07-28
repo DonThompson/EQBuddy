@@ -134,6 +134,12 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your (?<spell>.+?) spell has worn off(?: of (?<target>.+?))?\.$")]
     private static partial Regex SpellWornOffRx();
 
+    // Your pet's Tangling Weeds spell has worn off.  — the PET's spell, not the player's.
+    // Must be tested before SpellWornOffRx, which would otherwise capture the spell name
+    // as "pet's Tangling Weeds" and let it match the player's spell-fade rules.
+    [GeneratedRegex(@"^Your pet's (?<spell>.+?) spell has worn off(?: of (?<target>.+?))?\.$")]
+    private static partial Regex PetSpellWornOffRx();
+
     [GeneratedRegex(@"^You have gained a level! Welcome to level (?<level>\d+)!$")]
     private static partial Regex LevelRx();
 
@@ -331,6 +337,10 @@ public static partial class LogParser
             return new XpEvent(ts,
                 r.Groups["pct"].Success ? double.Parse(r.Groups["pct"].Value, CultureInfo.InvariantCulture) : 0,
                 r.Groups["party"].Success);
+
+        if ((r = PetSpellWornOffRx().Match(msg)).Success)
+            return new SpellWornOffEvent(ts, r.Groups["spell"].Value,
+                r.Groups["target"].Success ? Normalize(r.Groups["target"].Value) : "", Pet: true);
 
         if ((r = SpellWornOffRx().Match(msg)).Success)
             return new SpellWornOffEvent(ts, r.Groups["spell"].Value,
