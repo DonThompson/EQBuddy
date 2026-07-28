@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace EQBuddy.Core;
 
 /// <summary>What a watch rule matches against (WATCH-001: structured events, not raw text).</summary>
@@ -60,12 +62,14 @@ public sealed class TrackedRule
     /// <summary>Rules whose name is a label rather than a pattern, so an empty pattern
     /// means "match everything of this kind" instead of falling back to the name. A
     /// SpellFade rule filtered by class needs no match text either.</summary>
+    [JsonIgnore]
     public bool IsMatchAllKind =>
         Kind is WatchKind.Death or WatchKind.Milestone
         || (Kind is WatchKind.SpellFade && SpellFilter != SpellFilter.ByName);
 
     /// <summary>The spell class this rule covers, or null when it matches by name or by
     /// a group with no single category (Any spell / Any crowd control).</summary>
+    [JsonIgnore]
     public SpellCategory? FilterCategory => SpellFilter switch
     {
         SpellFilter.Charm => SpellCategory.Charm,
@@ -79,6 +83,7 @@ public sealed class TrackedRule
     /// <summary>The text actually matched against: the pattern, falling back to the name
     /// when only the name box was filled in (a common way to enter rules). Match-all kinds
     /// never fall back — their name is a label and an empty pattern means match-all.</summary>
+    [JsonIgnore]
     public string EffectivePattern =>
         Pattern.Length > 0 ? Pattern
         : IsMatchAllKind ? ""
