@@ -79,6 +79,14 @@ Header: session DPS (+ live fight DPS while fighting). Details:
   bar comparing each fight's DPS to the hottest recent fight. A fight opens on
   damage, closes on the kill line or a 20 s timeout ("· ?" marks timeouts).
   Back-to-back same-name kills are distinct fights.
+- **Area spells (per cast)** — any spell seen damaging two or more creatures inside a
+  2 s burst, reported as `damage/cast · ×casts · avg targets (best N)`. Per-target figures
+  understate an AoE: one cast hitting four creatures for 100 each shows as `avg 100` in
+  the damage breakdown but is worth 400 per cast, which is the number that decides whether
+  pulling a group beats killing them singly. `avg targets` below `best` means later pulls
+  were smaller than the best one. Detection is behavioural — no spell list — and works off
+  damage lines, so travel spells can't be mistaken for area damage since they deal none.
+  Melee and damage shields are excluded.
 - **By stance** — damage, combat time, DPS per stance; combat windows close on stance
   change so time lands on the right stance.
 

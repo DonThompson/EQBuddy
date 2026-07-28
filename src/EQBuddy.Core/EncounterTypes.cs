@@ -15,3 +15,9 @@ public sealed record MobSummary(
 
 /// <summary>Combat time and damage while a stance was active (STANCE-*).</summary>
 public sealed record StanceInfo(string Name, double CombatSeconds, long Damage, double Dps);
+
+/// <summary>A spell observed hitting several creatures at once, measured per cast.
+/// AvgTargets below MaxTargets means some casts caught fewer creatures than the best one —
+/// the gap between them is how much AoE value is being left on the table by pull size.</summary>
+public sealed record AreaSpellInfo(
+    string Name, int Casts, double AvgTargets, int MaxTargets, long Damage, double DamagePerCast);

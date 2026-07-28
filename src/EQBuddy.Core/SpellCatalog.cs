@@ -109,6 +109,50 @@ public sealed partial class SpellCatalog
             ["Scintillating Colors"] = SpellCategory.Stun,
         };
 
+    /// <summary>
+    /// Family fragments, tried in order when a spell isn't in the seed list or already
+    /// learned. EverQuest names spells in families ("Ensnaring Roots", "Engulfing Roots",
+    /// "Engorging Roots"), so a fragment covers a whole line — including ranks we've never
+    /// seen — where an exact list only covers what someone remembered to type.
+    ///
+    /// ORDER MATTERS, and the reason is "Lullaby": Kelin's Lucid Lullaby is a MEZ, but it
+    /// contains "Lull". Anything whose fragment is a substring of another family's names
+    /// has to be listed before the family it would be stolen by. Keep this list narrow —
+    /// a wrong classification is worse than none, because callers treat Unknown as
+    /// "fall back to previous behavior" while a wrong answer silently misfires alerts.
+    /// </summary>
+    private static readonly (string Fragment, SpellCategory Category)[] Families =
+    [
+        // Must precede the Lull family — "Lullaby" contains "Lull".
+        ("lullaby", SpellCategory.Mesmerize),
+
+        ("mesmeriz", SpellCategory.Mesmerize),
+        ("enthrall", SpellCategory.Mesmerize),
+        ("entrance", SpellCategory.Mesmerize),
+
+        ("charm", SpellCategory.Charm),
+        ("beguil", SpellCategory.Charm),
+        ("dominat", SpellCategory.Charm),
+        ("enslave", SpellCategory.Charm),
+        ("allure", SpellCategory.Charm),
+        ("befriend", SpellCategory.Charm),
+        ("cajol", SpellCategory.Charm),
+
+        ("root", SpellCategory.Root),
+        ("ensnar", SpellCategory.Root),
+        ("entrap", SpellCategory.Root),
+        ("immobiliz", SpellCategory.Root),
+        ("paralyz", SpellCategory.Root),
+
+        ("pacif", SpellCategory.Lull),
+        ("lull", SpellCategory.Lull),
+        ("sooth", SpellCategory.Lull),
+        ("mollif", SpellCategory.Lull),
+
+        ("stun", SpellCategory.Stun),
+        ("scintillat", SpellCategory.Stun),
+    ];
+
     private readonly Dictionary<string, SpellCategory> _learned =
         new(StringComparer.OrdinalIgnoreCase);
 
@@ -126,7 +170,13 @@ public sealed partial class SpellCatalog
     {
         var name = BaseName(spell);
         if (Seed.TryGetValue(name, out var seeded)) return seeded;
-        return _learned.TryGetValue(name, out var learned) ? learned : SpellCategory.Unknown;
+        if (_learned.TryGetValue(name, out var learned)) return learned;
+        // Fall back to family matching, so an unlisted rank or a spell nobody typed into
+        // the seed list still classifies.
+        foreach (var (fragment, category) in Families)
+            if (name.Contains(fragment, StringComparison.OrdinalIgnoreCase))
+                return category;
+        return SpellCategory.Unknown;
     }
 
     /// <summary>

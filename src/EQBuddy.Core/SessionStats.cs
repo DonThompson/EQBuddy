@@ -156,6 +156,33 @@ public sealed class SessionStats
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
+    // ---- area-spell detection ----
+    // A spell that damages several creatures at once is one cast, not several. Reporting
+    // it per target makes an AoE look weaker than a nuke it actually beats, which is
+    // exactly backwards for deciding whether to pull a group and AoE it down.
+    // Detection is behavioural (same spell, multiple targets, close together) so no list
+    // of area spells is needed. Working from damage lines also means travel spells can
+    // never be mistaken for area damage — they produce no damage at all.
+    private static readonly TimeSpan AreaBurstWindow = TimeSpan.FromSeconds(2);
+
+    private sealed class SpellBurst
+    {
+        public DateTime Start;
+        public readonly HashSet<string> Targets = new(StringComparer.OrdinalIgnoreCase);
+        public long Damage;
+    }
+
+    private sealed class CastAgg
+    {
+        public int Casts;
+        public int TargetHits;
+        public long Damage;
+        public int MaxTargets;
+    }
+
+    private readonly Dictionary<string, SpellBurst> _openBursts = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, CastAgg> _castAgg = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>How long after a cast starts a blink can still belong to it. Charm casts
     /// run a few seconds; observed gap in real logs is ~4s.</summary>
     private static readonly TimeSpan CastToBlink = TimeSpan.FromSeconds(30);
@@ -306,6 +333,7 @@ public sealed class SessionStats
                             _directSpellDamage += dd.Amount;
                             _spells.Learn(dd.Source, SpellCategory.DirectDamage);
                         }
+                        TrackSpellBurst(dd.Source, dd.Target, dd.Amount, dd.Time);
                     }
                     if (!dd.IsAux)
                     {
@@ -471,6 +499,73 @@ public sealed class SessionStats
         _ => rule.FilterCategory is { } wanted && _spells.Classify(spell) == wanted,
     };
 
+    /// <summary>
+    /// Group a spell's damage into casts. Hits on distinct creatures inside
+    /// <see cref="AreaBurstWindow"/> belong to one cast; a hit after the window (or a
+    /// repeat on a creature already in this burst, which means it landed again) starts a
+    /// new one. DoT ticks therefore count as separate casts, which is right — each tick
+    /// is its own damage event and the spell was only cast once, so per-cast figures stay
+    /// meaningful only for direct damage. Callers filter on MaxTargets to find real AoEs.
+    /// </summary>
+    private void TrackSpellBurst(string spell, string target, int amount, DateTime time)
+    {
+        var key = SpellCatalog.BaseName(spell);
+        if (_openBursts.TryGetValue(key, out var burst) &&
+            time - burst.Start <= AreaBurstWindow && !burst.Targets.Contains(target))
+        {
+            burst.Targets.Add(target);
+            burst.Damage += amount;
+            return;
+        }
+        if (burst is not null) CloseBurst(key, burst);
+        var fresh = new SpellBurst { Start = time, Damage = amount };
+        fresh.Targets.Add(target);
+        _openBursts[key] = fresh;
+    }
+
+    /// <summary>
+    /// Per-cast figures for spells seen hitting more than one creature at once. The
+    /// still-open burst is folded in so a spell shows up the moment it lands, rather than
+    /// waiting for the next cast to close it out.
+    /// </summary>
+    private List<AreaSpellInfo> BuildAreaSpells()
+    {
+        var totals = new Dictionary<string, CastAgg>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (key, agg) in _castAgg)
+            totals[key] = new CastAgg
+            {
+                Casts = agg.Casts, TargetHits = agg.TargetHits,
+                Damage = agg.Damage, MaxTargets = agg.MaxTargets,
+            };
+        foreach (var (key, burst) in _openBursts)
+        {
+            var agg = totals.TryGetValue(key, out var a) ? a : totals[key] = new CastAgg();
+            agg.Casts++;
+            agg.TargetHits += burst.Targets.Count;
+            agg.Damage += burst.Damage;
+            agg.MaxTargets = Math.Max(agg.MaxTargets, burst.Targets.Count);
+        }
+        return totals
+            .Where(kv => kv.Value.MaxTargets >= 2 && kv.Value.Casts > 0)
+            .Select(kv => new AreaSpellInfo(
+                kv.Key, kv.Value.Casts,
+                kv.Value.TargetHits / (double)kv.Value.Casts,
+                kv.Value.MaxTargets,
+                kv.Value.Damage,
+                kv.Value.Damage / (double)kv.Value.Casts))
+            .OrderByDescending(x => x.Damage)
+            .ToList();
+    }
+
+    private void CloseBurst(string key, SpellBurst burst)
+    {
+        var agg = _castAgg.TryGetValue(key, out var a) ? a : _castAgg[key] = new CastAgg();
+        agg.Casts++;
+        agg.TargetHits += burst.Targets.Count;
+        agg.Damage += burst.Damage;
+        agg.MaxTargets = Math.Max(agg.MaxTargets, burst.Targets.Count);
+    }
+
     private bool IsPet(string name) =>
         _petName is not null &&
         string.Equals(LogParser.Normalize(name), _petName, StringComparison.OrdinalIgnoreCase);
@@ -633,6 +728,7 @@ public sealed class SessionStats
         _pendingCast = null; _charmCandidate = null;
         _castsStarted = 0; _castsInterrupted = 0;
         _dotDamage = 0; _directSpellDamage = 0;
+        _openBursts.Clear(); _castAgg.Clear();
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
@@ -869,6 +965,7 @@ public sealed class SessionStats
                                 kv.Value.Kills > 0 ? 100.0 * l.Value / kv.Value.Kills : null))
                             .ToList()))
                     .ToList(),
+                AreaSpells = BuildAreaSpells(),
                 CurrentStance = _currentStance ?? "",
                 Stances = _stanceAgg
                     .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,
@@ -991,6 +1088,10 @@ public sealed class StatsSnapshot
     public List<MobSummary> Mobs { get; init; } = [];
     public string CurrentStance { get; init; } = "";
     public List<StanceInfo> Stances { get; init; } = [];
+    /// <summary>Spells observed hitting more than one creature at once, reported per
+    /// cast rather than per target — the figures that decide whether pulling a group and
+    /// AoEing it beats killing them one at a time.</summary>
+    public List<AreaSpellInfo> AreaSpells { get; init; } = [];
 
     /// <summary>Format copper as "3p 2g 4s 7c".</summary>
     public static string FormatCoin(long copper)

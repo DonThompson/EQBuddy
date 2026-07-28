@@ -129,6 +129,57 @@ public class SpellTrackingTests
     public void UnknownSpellsClassifyAsUnknownRatherThanGuessing() =>
         Assert.Equal(SpellCategory.Unknown, new SpellCatalog().Classify("Tame Spirit"));
 
+    // ---- family fragments ----
+
+    /// <summary>EQ names spells in families, so a fragment covers a whole line including
+    /// ranks nobody typed into the seed list.</summary>
+    [Theory]
+    [InlineData("Engorging Roots", SpellCategory.Root)]
+    [InlineData("Ensnaring Roots IV", SpellCategory.Root)]
+    [InlineData("Paralyzing Earth", SpellCategory.Root)]
+    [InlineData("Cajoling Whispers II", SpellCategory.Charm)]
+    [InlineData("Beguile Animals", SpellCategory.Charm)]
+    [InlineData("Befriend Beast", SpellCategory.Charm)]
+    [InlineData("Enthralling Chant", SpellCategory.Mesmerize)]
+    [InlineData("Mesmerizing Gaze", SpellCategory.Mesmerize)]
+    [InlineData("Pacify the Wild", SpellCategory.Lull)]
+    [InlineData("Soothing Words", SpellCategory.Lull)]
+    [InlineData("Stunning Flash", SpellCategory.Stun)]
+    public void UnlistedSpellsClassifyByFamily(string spell, SpellCategory expected) =>
+        Assert.Equal(expected, new SpellCatalog().Classify(spell));
+
+    /// <summary>The ordering trap: Kelin's Lucid Lullaby is a mez, but "Lullaby" contains
+    /// "Lull". If the Lull family were tested first this would silently misclassify, and a
+    /// "Any CC" rule would still fire — just under the wrong category.</summary>
+    [Fact]
+    public void LullabyIsAMezNotALull() =>
+        Assert.Equal(SpellCategory.Mesmerize, new SpellCatalog().Classify("Kelin's Lucid Lullaby"));
+
+    [Fact]
+    public void FamilyMatchingDoesNotInventCategoriesForOrdinarySpells()
+    {
+        var catalog = new SpellCatalog();
+        foreach (var spell in (string[])["Stinging Swarm", "Chords of Dissonance",
+                                         "Light Healing", "Burn", "Succor: East Karana"])
+            Assert.Equal(SpellCategory.Unknown, catalog.Classify(spell));
+    }
+
+    /// <summary>Observation beats a family guess — otherwise a damage spell whose name
+    /// happens to contain a CC fragment would be stuck as CC forever.</summary>
+    [Fact]
+    public void ObservedBehaviourOverridesAFamilyGuess()
+    {
+        var catalog = new SpellCatalog();
+        Assert.Equal(SpellCategory.Stun, catalog.Classify("Stunning Flash"));
+        Assert.True(catalog.Learn("Stunning Flash", SpellCategory.DirectDamage));
+        Assert.Equal(SpellCategory.DirectDamage, catalog.Classify("Stunning Flash"));
+    }
+
+    /// <summary>Seeded names still win, so a curated entry can't be undone by a fragment.</summary>
+    [Fact]
+    public void SeededNamesBeatFamilyMatching() =>
+        Assert.Equal(SpellCategory.Charm, new SpellCatalog().Classify("Befriend Animal"));
+
     [Fact]
     public void ObservationCannotReclassifyASeededCrowdControlSpell()
     {
@@ -258,6 +309,117 @@ public class SpellTrackingTests
         Assert.Equal(20, s.DotDamage);
         Assert.Equal(13, s.DirectSpellDamage);
         Assert.Equal(58, s.DamageDealt);   // melee stays out of both spell buckets
+    }
+
+    // ---- area spells ----
+
+    /// <summary>The whole point: one cast hitting four creatures is one cast worth 400,
+    /// not four hits worth 100. Per-target figures make an AoE look weaker than a nuke it
+    /// actually beats.</summary>
+    [Fact]
+    public void OneCastHittingSeveralCreaturesIsCountedAsOneCast()
+    {
+        var s = Replay(
+            At(0, 0, "You hit orc pawn for 100 points of fire damage by Rain of Fire."),
+            At(0, 0, "You hit orc centurion for 100 points of fire damage by Rain of Fire."),
+            At(0, 1, "You hit a giant spider for 100 points of fire damage by Rain of Fire."),
+            At(0, 1, "You hit an asp for 100 points of fire damage by Rain of Fire.")).Snapshot();
+
+        var aoe = Assert.Single(s.AreaSpells);
+        Assert.Equal("Rain of Fire", aoe.Name);
+        Assert.Equal(1, aoe.Casts);
+        Assert.Equal(4, aoe.MaxTargets);
+        Assert.Equal(4, aoe.AvgTargets);
+        Assert.Equal(400, aoe.Damage);
+        Assert.Equal(400, aoe.DamagePerCast);
+    }
+
+    [Fact]
+    public void CastsSeparatedInTimeAreCountedSeparately()
+    {
+        var s = Replay(
+            At(0, 0, "You hit orc pawn for 100 points of fire damage by Rain of Fire."),
+            At(0, 0, "You hit orc centurion for 100 points of fire damage by Rain of Fire."),
+            // Well past the burst window — a second cast.
+            At(0, 30, "You hit a giant spider for 100 points of fire damage by Rain of Fire."),
+            At(0, 30, "You hit an asp for 100 points of fire damage by Rain of Fire.")).Snapshot();
+
+        var aoe = Assert.Single(s.AreaSpells);
+        Assert.Equal(2, aoe.Casts);
+        Assert.Equal(2, aoe.AvgTargets);
+        Assert.Equal(200, aoe.DamagePerCast);
+    }
+
+    /// <summary>A single-target nuke must never be reported as an area spell, however
+    /// often it's cast.</summary>
+    [Fact]
+    public void SingleTargetSpellsAreNotAreaSpells()
+    {
+        var s = Replay(
+            At(0, 0, "You hit orc pawn for 100 points of fire damage by Burn."),
+            At(0, 6, "You hit orc pawn for 100 points of fire damage by Burn."),
+            At(0, 12, "You hit orc centurion for 100 points of fire damage by Burn.")).Snapshot();
+
+        Assert.Empty(s.AreaSpells);
+    }
+
+    /// <summary>Average below max is the useful signal — it says later pulls were smaller
+    /// than the best one, i.e. AoE value left on the table.</summary>
+    [Fact]
+    public void AverageTargetsPerCastExposesUndersizedPulls()
+    {
+        var s = Replay(
+            At(0, 0, "You hit orc pawn for 100 points of fire damage by Rain of Fire."),
+            At(0, 0, "You hit orc centurion for 100 points of fire damage by Rain of Fire."),
+            At(0, 0, "You hit a giant spider for 100 points of fire damage by Rain of Fire."),
+            At(0, 30, "You hit an asp for 100 points of fire damage by Rain of Fire.")).Snapshot();
+
+        var aoe = Assert.Single(s.AreaSpells);
+        Assert.Equal(2, aoe.Casts);
+        Assert.Equal(3, aoe.MaxTargets);
+        Assert.Equal(2, aoe.AvgTargets);   // (3 + 1) / 2
+    }
+
+    /// <summary>Ranks are the same spell, so they must not split into separate rows.</summary>
+    [Fact]
+    public void RanksOfTheSameAreaSpellAggregateTogether()
+    {
+        var s = Replay(
+            At(0, 0, "You hit orc pawn for 100 points of fire damage by Rain of Fire."),
+            At(0, 0, "You hit orc centurion for 100 points of fire damage by Rain of Fire."),
+            At(0, 30, "You hit a giant spider for 150 points of fire damage by Rain of Fire II."),
+            At(0, 30, "You hit an asp for 150 points of fire damage by Rain of Fire II.")).Snapshot();
+
+        var aoe = Assert.Single(s.AreaSpells);
+        Assert.Equal(2, aoe.Casts);
+        Assert.Equal(500, aoe.Damage);
+    }
+
+    /// <summary>An area spell shows up the moment it lands, without waiting for the next
+    /// cast to close the burst out.</summary>
+    [Fact]
+    public void AnAreaSpellAppearsWhileItsBurstIsStillOpen()
+    {
+        var s = Replay(
+            At(0, 0, "You hit orc pawn for 100 points of fire damage by Rain of Fire."),
+            At(0, 0, "You hit orc centurion for 100 points of fire damage by Rain of Fire.")).Snapshot();
+
+        Assert.Single(s.AreaSpells);
+        Assert.Equal(1, s.AreaSpells[0].Casts);
+    }
+
+    /// <summary>Melee never enters area detection, and neither does a damage shield —
+    /// a shield hitting several attackers isn't a cast at all.</summary>
+    [Fact]
+    public void MeleeAndDamageShieldsAreNeverAreaSpells()
+    {
+        var s = Replay(
+            At(0, 0, "You slash orc pawn for 10 points of damage."),
+            At(0, 0, "You slash orc centurion for 10 points of damage."),
+            At(0, 1, "Orc pawn is burned by YOUR flames for 5 points of non-melee damage."),
+            At(0, 1, "Orc centurion is burned by YOUR flames for 5 points of non-melee damage.")).Snapshot();
+
+        Assert.Empty(s.AreaSpells);
     }
 
     // ---- crowd-control watch rules ----

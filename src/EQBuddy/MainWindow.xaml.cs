@@ -425,6 +425,11 @@ public partial class MainWindow : Window
                         f.Dps / topFightDps, fightBrush,
                         $"{f.DamageOut:N0} damage over {f.DurationSeconds:0}s"));
             }
+            // Per cast, not per target — an AoE's whole value is what one cast produces.
+            AreaSpellLabel.Visibility = s.AreaSpells.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(AreaSpellList, s.AreaSpells.Select(x =>
+                (x.Name, $"{x.DamagePerCast:N0}/cast · ×{x.Casts} · {x.AvgTargets:0.#} targets" +
+                         (x.MaxTargets > x.AvgTargets + 0.05 ? $" (best {x.MaxTargets})" : ""))));
             StanceLabel.Visibility = s.Stances.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(StanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg · {(int)x.CombatSeconds}s · {x.Dps:0.#} dps")));
@@ -1052,6 +1057,23 @@ public partial class MainWindow : Window
         public static extern int SetWindowLong(IntPtr hWnd, int index, int value);
         public const int GwlExstyle = -20;
         public const int WsExTransparent = 0x20;
+    }
+
+    /// <summary>
+    /// Someone launched a second EQBuddy. Surface this one instead — which is almost
+    /// certainly what they wanted, since the usual reason to relaunch is that the widget
+    /// is hidden by the hotkey or buried behind a fullscreen game.
+    /// </summary>
+    internal void RestoreFromAnotherInstance()
+    {
+        try
+        {
+            if (Visibility != Visibility.Visible) Show();
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            Topmost = true;
+            Activate();
+        }
+        catch (Exception ex) { App.LogError(ex); }
     }
 
     protected override void OnSourceInitialized(EventArgs e)

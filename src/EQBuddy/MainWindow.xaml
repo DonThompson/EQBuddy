@@ -152,6 +152,9 @@
                     <TextBlock x:Name="RecentFightsLabel" Text="Recent fights" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentBrush}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="RecentFightsList" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="AreaSpellLabel" Text="Area spells (per cast)" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource AccentBrush}" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="AreaSpellList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="StanceLabel" Text="By stance" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource AccentBrush}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="StanceList" Margin="0,2,0,0"/>
