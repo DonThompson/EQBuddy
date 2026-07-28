@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  # NuGet. The immediate reason this exists: SQLitePCLRaw 2.1.11 carries
+  # CVE-2025-6965 (SQLite < 3.50.2) with no patched release available yet, so we
+  # want a PR the moment one ships rather than noticing it in build output.
+  # Security updates are raised regardless of this schedule once Dependabot
+  # alerts are enabled in repository settings.
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # One PR for routine version bumps keeps the noise down on a small repo;
+    # anything with a security advisory still comes through on its own.
+    groups:
+      nuget-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"
+
+  # Workflow actions pin to major tags that quietly go stale otherwise.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "ci"
