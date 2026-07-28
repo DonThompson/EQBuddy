@@ -10,7 +10,7 @@ binding instructions for work in this repository.
 |---|---|---|
 | `src/EQBuddy.Core` | maintainer (David) | Parser, aggregation, journal, SQLite, settings. Ships with tests, always. |
 | `src/EQBuddy.UI.Shared` | shared | ViewModels + presentation. Framework-neutral: **no WPF or Avalonia references, ever.** Logic added here needs tests. |
-| `src/EQBuddy` (WPF) | maintainer (David) | The Windows app the family runs. Thin views over UI.Shared where migrated. |
+| `src/EQBuddy` (WPF) | maintainer (David) | The primary Windows app. Thin views over UI.Shared where migrated. |
 | `src/EQBuddy.Avalonia` | Don Thompson | The Linux/cross-platform app. Thin views over UI.Shared where migrated. |
 
 Don't edit the other lane's UI directory except by agreed handoff; cross-lane

@@ -252,11 +252,15 @@ twice → no duplicates.
 
 ## Updates
 
-Checks a OneDrive-synced folder (auto-discovered `EQBuddyDownload`, or `UpdateFolder`
-in settings) at startup + every 6 h + on demand. Newer version → green banner → click
-installs silently and restarts. The staged installer's SHA-256 is verified against
-the GitHub release; mismatch refuses the install, offline fails open with a log
-entry. GitHub-only installs get a banner linking the release page.
+Checks at startup + every 6 h + on demand. Newer version → green banner linking the
+release page.
+
+Local-first when a shared folder is configured: set `UpdateFolder` in settings (or drop
+an `EQBuddyDownload` folder in a synced location, which is auto-discovered) and the
+banner installs silently and restarts instead. Intended for guild or LAN setups that
+would rather not have every machine pull from GitHub. The staged installer's SHA-256 is
+verified against the published hash; mismatch refuses the install, offline fails open
+with a log entry.
 
 ## Log hygiene
 

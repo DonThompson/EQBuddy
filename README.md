@@ -21,7 +21,7 @@ download when one is available.
 | ![Session history](docs/screenshots/history-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | Every session lands in a local, searchable history — notes, tags, compare, export | Background see-through — watch the game right through the widget |
 
-## For players (family install guide)
+## For players (install guide)
 
 1. Run **EQBuddySetup.exe** and click through the installer (no admin needed).
 2. Launch **EQBuddy** from the Start Menu or desktop shortcut. A **quick tutorial**
@@ -41,14 +41,15 @@ Mini dashboard:
   always-on-top pill (e.g. `💀 12  ⚔ 34 dps`). Great while actually fighting.
 - Double-click the pill (or click ⤢) to expand back to the full view.
 
-Updates (automatic, no internet service involved):
-- EQBuddy checks the family's shared **EQBuddyDownload** OneDrive folder at startup and
-  every 6 hours. When a newer version is there, a green banner appears — click it and
-  EQBuddy installs the update silently and restarts itself.
+Updates (automatic):
+- EQBuddy checks for new releases at startup and every 6 hours, and a green banner
+  appears when one is available — click it to open the download page.
 - Right-click the widget → **Check for updates** to check on demand.
-- On a family PC where the shared folder syncs to a different path, EQBuddy auto-finds a
-  folder named `EQBuddyDownload` under that PC's OneDrive; if it can't, set `UpdateFolder`
-  in `%AppData%\EQBuddy\settings.json`.
+- Nothing is sent anywhere: the check is a read-only request to the GitHub Releases API.
+- *Optional, for guilds and LAN setups:* point `UpdateFolder` in
+  `%AppData%\EQBuddy\settings.json` at a shared folder holding `EQBuddySetup.exe`, and
+  EQBuddy will install from there silently and restart itself instead of sending you to
+  GitHub. The published `EQBuddySetup.exe.sha256` is verified before anything runs.
 
 Log cleanup (automatic, optional):
 - Because logging is always on, EQBuddy empties any character log that has been quiet
@@ -61,15 +62,17 @@ Log cleanup (automatic, optional):
 Watch rules & alerts:
 - ⚙ Options → **Watch rules**: add simple match texts (e.g. `mote`) — the 🎯 Tracked
   card shows every matching item name, quantities, and per-hour rates (wall-clock and
-  active-play). 📌 pins a chip to the mini dashboard; 🔔/🔊 fire a focus-safe banner
-  and/or sound the moment a matching item drops. A rule has a short *name* and a
+  active-play). 📌 pins a chip to the mini dashboard; 🔔 and the sound box fire a
+  focus-safe banner and/or sound the moment a matching item drops. A rule has a short *name* and a
   *match text* — if you only fill in the name, it doubles as the match text, so
   typing just `Ghoul` on a Kill rule works. The alert banner is a **floating tile**
   you position anywhere (open Options and drag it); during play it's click-through
   and never steals focus, so it can sit right over the action.
-- **Alert sound** (Options, under the rules): pick from seven distinct built-in
-  sounds (Ding, Notify, Chimes, Chord, Tada, Exclamation, Alarm) or your own
-  `.wav`/`.mp3` file; ▶ previews it.
+- **Every rule gets its own sound.** The sound box on each rule offers seven built-ins
+  (Ding, Notify, Chimes, Chord, Tada, Exclamation, Alarm), your own `.wav`/`.mp3` via
+  **Custom…**, **Default** to follow the shared choice, or **Off**. Give your charm-break
+  rule one sound and your rare-drop rule another and you'll know what happened without
+  looking away from the game. Picking a sound plays it straight away.
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
@@ -82,8 +85,9 @@ Encounters, mob farming, and stances:
   shows the full x/y kill counts behind each rate — these are your rates, not the game's).
 - Watch rules aren't just loot anymore: a rule can watch **Loot, Kills (creature name),
   Skill-ups, Deaths, Milestones** (levels/AA), or **SpellFade** — your spells wearing
-  off, matched by spell name. A SpellFade rule on your mez or charm spell with 🔊 on
-  chimes the instant it breaks. Same counters, chips, and alerts for every kind.
+  off — either one named spell or a whole class (**Any CC**, Charm, Mez, Root, Lull,
+  Stun), which needs no match text and keeps working as you level into new spells. A
+  charm-break alert is on out of the box. Same counters, chips, and alerts for every kind.
 - History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
   **Import log…** parses any old eqlog file into your session history.
 
@@ -180,9 +184,9 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
 - Publish: `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o dist/publish`
 - Release: `scripts\release.ps1` — reads the version from the csproj, publishes, signs both
   exes (self-signed cert; create once with `scripts\new-cert.ps1`), compiles the installer
-  with the matching version stamp, and copies to the OneDrive family folder. Pass
-  `-Tag vX.Y.Z` to also publish a GitHub release. Bump `<Version>` in the csproj first —
-  the in-app updater compares it against the version stamped into the shared setup exe.
+  with the matching version stamp, and stages the artifacts locally. Pass `-Tag vX.Y.Z` to
+  also publish a GitHub release. Bump `<Version>` in both csproj files first — the in-app
+  updater compares it against the version stamped into the setup exe.
 - Settings live in `%AppData%\EQBuddy\settings.json`; errors in `%AppData%\EQBuddy\error.log`.
 - Debug: set `EQBUDDY_EXPAND=1` to launch with all sections expanded plus a state dump
   in `%AppData%\EQBuddy\debug.txt`. Set `EQBUDDY_APPDATA=<dir>` to run against an
