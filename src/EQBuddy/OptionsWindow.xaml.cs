@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using EQBuddy.UI.Shared;
@@ -22,6 +23,10 @@ public partial class OptionsWindow : Window
         _vm = new OptionsViewModel(main.Settings, main.PersistSettings);
         Owner = main;
         Width = Math.Clamp(_vm.OptionsWidth, MinWidth, MaxWidth);
+        // The handle only exists once the window is sourced; re-clamp on move because the
+        // user may drag it to a monitor with a different size or DPI.
+        SourceInitialized += (_, _) => ClampToMonitor();
+        LocationChanged += (_, _) => ClampToMonitor();
 
         ScaleSlider.Value = _vm.UiScale;
         OpacitySlider.Value = _vm.Opacity;
@@ -142,11 +147,97 @@ public partial class OptionsWindow : Window
         SoundFileNote.Visibility = _vm.SoundFileNote.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void OnResizeDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e) =>
-        Width = Math.Clamp(Width + e.HorizontalChange, MinWidth, MaxWidth);
+    // Resize state captured at drag start. Deriving each frame from the cursor's absolute
+    // position rather than accumulating DragDelta avoids the feedback jitter you get when
+    // the thumb moves with the window (which the left grip does).
+    private double _dragCursorX, _dragLeft, _dragWidth;
+
+    private void OnResizeStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+    {
+        _dragCursorX = CursorX();
+        _dragLeft = Left;
+        _dragWidth = Width;
+    }
+
+    private void OnResizeRightDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e) =>
+        Width = Math.Clamp(_dragWidth + (CursorX() - _dragCursorX), MinWidth, MaxWidth);
+
+    /// <summary>Left edge: grow leftwards, keeping the right edge where it is.</summary>
+    private void OnResizeLeftDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+    {
+        var width = Math.Clamp(_dragWidth - (CursorX() - _dragCursorX), MinWidth, MaxWidth);
+        Left = _dragLeft + (_dragWidth - width);
+        Width = width;
+    }
 
     private void OnResizeCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e) =>
         _vm.OptionsWidth = Width;
+
+    /// <summary>Cursor X in device-independent units (the space Left/Width live in).</summary>
+    private double CursorX()
+    {
+        Native.GetCursorPos(out var p);
+        return p.X * DipScale().X;
+    }
+
+    private (double X, double Y) DipScale()
+    {
+        var m = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformFromDevice;
+        return m is { } t ? (t.M11, t.M22) : (1.0, 1.0);
+    }
+
+    /// <summary>
+    /// Cap the window to the work area of whichever monitor it is on. At high Windows
+    /// scaling (a tester runs 300%) the full options panel is taller than the screen, so
+    /// without this the bottom is simply unreachable — the ScrollViewer only helps once
+    /// the window itself is bounded. Recomputed on move because monitors differ in both
+    /// size and DPI.
+    /// </summary>
+    private void ClampToMonitor()
+    {
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        if (hwnd == IntPtr.Zero) return;
+        var monitor = Native.MonitorFromWindow(hwnd, Native.MonitorDefaultToNearest);
+        var info = new Native.MonitorInfo { cbSize = Marshal.SizeOf<Native.MonitorInfo>() };
+        if (!Native.GetMonitorInfo(monitor, ref info)) return;
+
+        var scale = DipScale();
+        var workHeight = (info.rcWork.bottom - info.rcWork.top) * scale.Y;
+        var workWidth = (info.rcWork.right - info.rcWork.left) * scale.X;
+        // Leave a little breathing room so the rounded border isn't flush to the edge.
+        MaxHeight = Math.Max(MinHeight + 1, workHeight - 24);
+        MaxWidth = Math.Max(MinWidth + 1, Math.Min(900, workWidth - 24));
+        if (Width > MaxWidth) Width = MaxWidth;
+    }
+
+    private static class Native
+    {
+        public const uint MonitorDefaultToNearest = 2;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Rect { public int left, top, right, bottom; }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MonitorInfo
+        {
+            public int cbSize;
+            public Rect rcMonitor;
+            public Rect rcWork;
+            public uint dwFlags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Point { public int X, Y; }
+
+        [DllImport("user32.dll")]
+        public static extern bool GetCursorPos(out Point point);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+    }
 
     private void OnAddRule(object sender, RoutedEventArgs e)
     {
@@ -154,20 +245,56 @@ public partial class OptionsWindow : Window
         BuildRulesEditor();
     }
 
+    /// <summary>
+    /// Column layout for both the header and every rule row. Auto columns are matched by
+    /// SharedSizeGroup (the panel is a shared-size scope) so the header labels stay lined
+    /// up with the controls no matter how wide the combo boxes render.
+    /// </summary>
+    private static System.Windows.Controls.Grid RuleGrid()
+    {
+        var grid = new System.Windows.Controls.Grid();
+        void Auto(string group) => grid.ColumnDefinitions.Add(
+            new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = group });
+        void Star(double w) => grid.ColumnDefinitions.Add(
+            new System.Windows.Controls.ColumnDefinition { Width = new GridLength(w, GridUnitType.Star) });
+
+        // Kind and name were fixed at 58/60 px, which clipped their content even before
+        // the spell-class picker existed. Name and match text share the free width, so
+        // widening the window grows the fields that actually hold free text.
+        Auto("RuleKind");
+        Star(1);
+        Star(1.4);
+        Auto("RuleBanner");
+        Auto("RuleSound");
+        Auto("RuleDelete");
+        return grid;
+    }
+
     private void BuildRulesEditor()
     {
         RulesPanel.Children.Clear();
+
+        var header = RuleGrid();
+        header.Margin = new Thickness(0, 2, 0, 2);
+        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2) };
+        foreach (var (text, column) in headings)
+        {
+            var label = new System.Windows.Controls.TextBlock
+            {
+                Text = text,
+                FontSize = 10,
+                Opacity = 0.7,
+                Margin = new Thickness(column == 0 ? 0 : 6, 0, 0, 0),
+            };
+            System.Windows.Controls.Grid.SetColumn(label, column);
+            header.Children.Add(label);
+        }
+        RulesPanel.Children.Add(header);
+
         foreach (var rule in _vm.Rules)
         {
-            // Kind and name were 58/60 px, which clipped their content even before the
-            // spell-class picker existed. Name and match text share the remaining width so
-            // widening the window grows the fields that actually hold free text.
-            var row = new System.Windows.Controls.Grid { Margin = new Thickness(0, 3, 0, 0) };
-            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
-            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = new GridLength(1.4, GridUnitType.Star) });
-            for (var i = 0; i < 3; i++)
-                row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+            var row = RuleGrid();
+            row.Margin = new Thickness(0, 3, 0, 0);
 
             var kind = new System.Windows.Controls.ComboBox { FontSize = 11, ToolTip = "What this rule watches" };
             foreach (var k in OptionsViewModel.KindNames) kind.Items.Add(k);

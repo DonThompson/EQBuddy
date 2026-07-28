@@ -195,15 +195,29 @@ picker for Spell fade rules, match text, 🔔/🔊 toggles, delete, add). Alert 
 + ▶ test. Overlay cards: per-card up/down reorder and hide/show — hidden cards keep
 collecting; layout persists.
 
-**Width is draggable.** The window has custom chrome (`WindowStyle=None` +
-`AllowsTransparency`), so there is no native resize border; a transparent `Thumb` on the
-right edge drives `Width` instead, clamped to 272–900 px and saved to `OptionsWidth` on
-release. Height still auto-fits via `SizeToContent="Height"`.
+**Width is draggable from either side.** The window has custom chrome (`WindowStyle=None`
++ `AllowsTransparency`), so there is no native resize border; transparent `Thumb`s on the
+left and right edges drive `Width` instead, clamped to `OptionsWidth` (saved on release).
+Dragging the left edge moves `Left` too so the right edge stays put. Both derive size from
+the cursor's absolute position rather than accumulated `DragDelta` — the left grip moves
+with the window, and accumulating would feed back into itself as jitter.
+
+**Height is bounded by the monitor, and the body scrolls.** `SizeToContent="Height"` still
+auto-fits, but `MaxHeight` is clamped at runtime to the work area of whichever monitor the
+window is on (recomputed on `LocationChanged`, since monitors differ in size *and* DPI).
+Without this, high Windows scaling makes the panel taller than the screen and the bottom is
+simply unreachable — a tester running 300 % on a 4K TV could not see the lower half. The
+title row sits outside the `ScrollViewer` so ✕ is always reachable.
+
+**Watch-rule columns are labelled** (Watch / Name / Match). The header is a `Grid` sharing
+`SharedSizeGroup`s with every rule row inside a `Grid.IsSharedSizeScope` panel, so labels
+stay aligned however wide the combos render.
 
 **Verify:** with two rules present (one Loot, one Spell fade set to a class), no field is
 clipped at the default width — check "Any CC" in particular, since the class combo shares
-the row with the alert toggles. Drag the right edge wider, close, reopen: the width is
-remembered.
+the row with the alert toggles. Drag either edge wider, close, reopen: the width is
+remembered. Add rules until the content exceeds your screen: the window stops growing at
+the work-area height and a scrollbar appears rather than the bottom going off-screen.
 
 ## Session history
 

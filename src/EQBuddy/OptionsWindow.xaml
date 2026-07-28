@@ -7,19 +7,30 @@
         MinWidth="272" MaxWidth="900"
         WindowStartupLocation="Manual">
     <!-- Custom chrome (WindowStyle=None + AllowsTransparency) has no native resize
-         border, so width is driven by the drag handle on the right edge below.
-         SizeToContent stays on Height so the panel keeps auto-fitting vertically. -->
+         border, so width is driven by the drag handles on both edges below.
+         SizeToContent stays on Height, but MaxHeight is clamped at runtime to the work
+         area of whichever monitor the window is on — at high Windows scaling the content
+         is taller than the screen, so the body has to scroll. The title row stays outside
+         the scroll so ✕ is always reachable. -->
     <Border Background="{StaticResource BgBrush}" CornerRadius="10"
             BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid>
-        <StackPanel Margin="16">
-            <Grid Margin="0,0,0,10">
-                <TextBlock Text="Options" FontWeight="Bold" FontSize="14"
-                           Foreground="{StaticResource AccentBrush}"/>
-                <Button Style="{StaticResource IconButton}" Content="&#x2715;" ToolTip="Close"
-                        HorizontalAlignment="Right" Click="OnClose"/>
-            </Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="16,16,16,6">
+            <TextBlock Text="Options" FontWeight="Bold" FontSize="14"
+                       Foreground="{StaticResource AccentBrush}"/>
+            <Button Style="{StaticResource IconButton}" Content="&#x2715;" ToolTip="Close"
+                    HorizontalAlignment="Right" Click="OnClose"/>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
+        <StackPanel Margin="16,0,16,16">
 
             <Grid>
                 <TextBlock Text="Widget size" FontSize="12"/>
@@ -76,7 +87,8 @@
                        Foreground="{StaticResource AccentBrush}" Margin="0,14,0,2"/>
             <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a substring, e.g. 'mote' or 'Befriend'. 🔔 banner and 🔊 sound alert on each match."
                        Style="{StaticResource Dim}" TextWrapping="Wrap"/>
-            <StackPanel x:Name="RulesPanel" Margin="0,4,0,0"/>
+            <!-- Shared-size scope so the header row's Auto columns track the rule rows'. -->
+            <StackPanel x:Name="RulesPanel" Margin="0,4,0,0" Grid.IsSharedSizeScope="True"/>
             <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource IconButton}"
                     HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
             <CheckBox x:Name="PinChipsCheck" Margin="0,6,0,0"
@@ -108,19 +120,31 @@
                 <Run x:Name="HotkeyNote" Text=""/>
             </TextBlock>
 
-            <TextBlock Text="Size also scales all text. Changes apply instantly and are saved. Drag the right edge to widen this window."
+            <TextBlock Text="Size also scales all text. Changes apply instantly and are saved. Drag either side edge to widen this window."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
         </StackPanel>
+        </ScrollViewer>
 
-        <!-- Right-edge width handle. Transparent template so it reads as a bare edge;
-             the cursor is the affordance. Width is persisted on release. -->
-        <Thumb Width="8" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+        <!-- Width handles on both edges. Transparent template so they read as bare edges;
+             the cursor is the affordance. Dragging the left edge moves Left as well as
+             Width so the right edge stays put. Width is persisted on release. -->
+        <Thumb x:Name="LeftGrip" Grid.RowSpan="2" Width="8"
+               HorizontalAlignment="Left" VerticalAlignment="Stretch"
                Cursor="SizeWE" ToolTip="Drag to resize"
-               DragDelta="OnResizeDelta" DragCompleted="OnResizeCompleted">
+               DragStarted="OnResizeStarted" DragDelta="OnResizeLeftDelta"
+               DragCompleted="OnResizeCompleted">
           <Thumb.Template>
-            <ControlTemplate TargetType="Thumb">
-              <Rectangle Fill="Transparent"/>
-            </ControlTemplate>
+            <ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent"/></ControlTemplate>
+          </Thumb.Template>
+        </Thumb>
+
+        <Thumb x:Name="RightGrip" Grid.RowSpan="2" Width="8"
+               HorizontalAlignment="Right" VerticalAlignment="Stretch"
+               Cursor="SizeWE" ToolTip="Drag to resize"
+               DragStarted="OnResizeStarted" DragDelta="OnResizeRightDelta"
+               DragCompleted="OnResizeCompleted">
+          <Thumb.Template>
+            <ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent"/></ControlTemplate>
           </Thumb.Template>
         </Thumb>
       </Grid>
