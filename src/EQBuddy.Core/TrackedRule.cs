@@ -58,6 +58,14 @@ public sealed class TrackedRule
     public bool Pinned { get; set; }
     public bool AlertBanner { get; set; } = true;
     public bool AlertSound { get; set; }
+    /// <summary>
+    /// Which sound this rule plays: a built-in name, a full .wav/.mp3 path, or empty to
+    /// use the shared <see cref="AppSettings.AlertSound"/>. Giving each rule its own
+    /// sound is the point — you learn what happened from the audio without looking.
+    /// Empty by default so rules saved before this existed keep the shared sound.
+    /// Ignored when <see cref="AlertSound"/> is false.
+    /// </summary>
+    public string AlertSoundName { get; set; } = "";
 
     /// <summary>Rules whose name is a label rather than a pattern, so an empty pattern
     /// means "match everything of this kind" instead of falling back to the name. A

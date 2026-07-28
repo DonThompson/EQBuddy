@@ -85,7 +85,7 @@
 
             <TextBlock Text="Watch rules" FontSize="12" FontWeight="SemiBold"
                        Foreground="{StaticResource AccentBrush}" Margin="0,14,0,2"/>
-            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a substring, e.g. 'mote' or 'Befriend'. 🔔 banner and 🔊 sound alert on each match."
+            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a substring, e.g. 'mote' or 'Befriend'. 🔔 shows a banner; the sound box picks this rule's own sound, so you can tell what happened by ear — 'Default' follows the shared choice below, 'Off' stays silent, 'Custom…' takes your own .wav/.mp3."
                        Style="{StaticResource Dim}" TextWrapping="Wrap"/>
             <!-- Shared-size scope so the header row's Auto columns track the rule rows'. -->
             <StackPanel x:Name="RulesPanel" Margin="0,4,0,0" Grid.IsSharedSizeScope="True"/>

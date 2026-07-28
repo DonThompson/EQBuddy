@@ -33,6 +33,46 @@ public static class AlertSoundCatalog
     };
 
     public static bool IsCustom(string choice) => Array.IndexOf(Names, Normalize(choice)) < 0;
+
+    /// <summary>
+    /// The sound a rule should actually play. A rule with its own
+    /// <see cref="TrackedRule.AlertSoundName"/> wins; otherwise it inherits the shared
+    /// choice. Returns null when the rule is muted, so callers play nothing at all
+    /// rather than falling back to a default.
+    /// </summary>
+    public static string? Resolve(TrackedRule rule, string sharedChoice) =>
+        !rule.AlertSound ? null
+        : rule.AlertSoundName.Length > 0 ? Normalize(rule.AlertSoundName)
+        : Normalize(sharedChoice);
+
+    /// <summary>Per-rule picker entries, in order. Index 0 mutes the rule, index 1
+    /// inherits the shared choice, then the built-ins, then "Custom…".</summary>
+    public const string OffChoice = "Off";
+    public const string InheritChoice = "Default";
+    public const string CustomChoice = "Custom…";
+
+    public static string[] RuleChoices => [OffChoice, InheritChoice, .. Names, CustomChoice];
+
+    /// <summary>Which entry of <see cref="RuleChoices"/> a rule currently sits on.</summary>
+    public static int RuleChoiceIndex(TrackedRule rule)
+    {
+        if (!rule.AlertSound) return 0;
+        if (rule.AlertSoundName.Length == 0) return 1;
+        var named = Array.IndexOf(Names, Normalize(rule.AlertSoundName));
+        return named >= 0 ? named + 2 : RuleChoices.Length - 1;   // custom path
+    }
+
+    /// <summary>Apply a picker selection to a rule. Returns true when the caller still
+    /// needs to ask the user for a custom file (the "Custom…" entry).</summary>
+    public static bool ApplyRuleChoice(TrackedRule rule, int index)
+    {
+        if (index <= 0) { rule.AlertSound = false; return false; }
+        rule.AlertSound = true;
+        if (index == 1) { rule.AlertSoundName = ""; return false; }
+        var namedIndex = index - 2;
+        if (namedIndex < Names.Length) { rule.AlertSoundName = Names[namedIndex]; return false; }
+        return true;   // "Custom…" — the view owns the file dialog
+    }
 }
 
 /// <summary>The overlay cards, in default order — shared by both UIs' layout and

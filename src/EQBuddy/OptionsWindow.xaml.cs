@@ -364,8 +364,52 @@ public partial class OptionsWindow : Window
 
             row.Children.Add(RuleToggle("🔔", "Banner alert on match", 3, rule.AlertBanner,
                 v => rule.AlertBanner = v));
-            row.Children.Add(RuleToggle("🔊", "Sound alert on match", 4, rule.AlertSound,
-                v => rule.AlertSound = v));
+
+            // Per-rule sound, so you can tell what happened from the audio alone.
+            // Replaces the old on/off toggle: "Off" mutes, "Default" follows the shared
+            // choice below, anything else is this rule's own sound.
+            var sound = new System.Windows.Controls.ComboBox
+            {
+                FontSize = 11,
+                MinWidth = 84,
+                Margin = new Thickness(4, 0, 0, 0),
+                ToolTip = "Sound for this rule — pick a different one per rule to tell them apart by ear",
+            };
+            foreach (var s in AlertSoundCatalog.RuleChoices) sound.Items.Add(s);
+            sound.SelectedIndex = AlertSoundCatalog.RuleChoiceIndex(rule);
+            if (AlertSoundCatalog.IsCustom(rule.AlertSoundName) && rule.AlertSoundName.Length > 0)
+                sound.ToolTip = $"Custom: {rule.AlertSoundName}";
+            sound.SelectionChanged += (_, _) =>
+            {
+                if (!_ready || sound.SelectedIndex < 0) return;
+                if (AlertSoundCatalog.ApplyRuleChoice(rule, sound.SelectedIndex))
+                {
+                    var dlg = new Microsoft.Win32.OpenFileDialog
+                    {
+                        Title = $"Choose a sound for \"{(rule.Name.Length > 0 ? rule.Name : rule.Pattern)}\"",
+                        Filter = "Sound files (*.wav;*.mp3)|*.wav;*.mp3|All files (*.*)|*.*",
+                    };
+                    if (dlg.ShowDialog(this) == true)
+                    {
+                        rule.AlertSoundName = dlg.FileName;
+                        sound.ToolTip = $"Custom: {dlg.FileName}";
+                    }
+                    else
+                    {
+                        // Cancelled — snap back to whatever the rule already had.
+                        _ready = false;
+                        sound.SelectedIndex = AlertSoundCatalog.RuleChoiceIndex(rule);
+                        _ready = true;
+                        return;
+                    }
+                }
+                _vm.Persist();
+                // Play it straight away so picking a sound is a decision you can hear.
+                if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
+                    _main.PlayAlertSound(preview);
+            };
+            System.Windows.Controls.Grid.SetColumn(sound, 4);
+            row.Children.Add(sound);
 
             var del = new System.Windows.Controls.Button
             {

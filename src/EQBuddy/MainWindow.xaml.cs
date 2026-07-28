@@ -642,8 +642,8 @@ public partial class MainWindow : Window
 
             if (rule.AlertBanner)
                 AlertTile.ShowAlert($"★ {r.Name}: {r.LastItem ?? "match"}{(delta > 1 ? $" ×{delta}" : "")}");
-            if (rule.AlertSound)
-                PlayAlertSound();
+            if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
+                PlayAlertSound(sound);
         }
     }
 
@@ -655,14 +655,18 @@ public partial class MainWindow : Window
     internal static readonly (string Name, string File)[] AlertSounds =
         EQBuddy.UI.Shared.AlertSoundCatalog.Sounds;
 
-    /// <summary>Play the configured alert sound: a named built-in, or a custom
+    /// <summary>Play the shared alert sound (Options preview, and rules with no sound
+    /// of their own).</summary>
+    internal void PlayAlertSound() => PlayAlertSound(_settings.AlertSound);
+
+    /// <summary>Play a specific alert sound: a named built-in, or a custom
     /// .wav/.mp3 path. Unknown/missing values fall back to the system Asterisk.</summary>
-    internal void PlayAlertSound()
+    internal void PlayAlertSound(string choiceOrPath)
     {
         try
         {
             // Legacy SystemSounds names from earlier settings map onto the palette.
-            var choice = EQBuddy.UI.Shared.AlertSoundCatalog.Normalize(_settings.AlertSound);
+            var choice = EQBuddy.UI.Shared.AlertSoundCatalog.Normalize(choiceOrPath);
             var named = Array.Find(AlertSounds, x => x.Name == choice);
             var file = named.File is { } f
                 ? System.IO.Path.Combine(

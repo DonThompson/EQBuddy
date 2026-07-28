@@ -139,7 +139,12 @@ total, per-item breakdown, per-hour rates (wall-clock + active-time), last-match
 Rules are evaluated over the whole session journal, so editing a rule mid-session
 recalculates history, and alerts never fire during startup ingest or character switch.
 
-**Alerts:** 🔔 banner + 🔊 sound per rule, 5 s per-rule cooldown. The banner is a
+**Alerts:** 🔔 banner + a **per-rule sound**, 5 s per-rule cooldown. Each rule's sound box
+offers `Off` (silent), `Default` (follow the shared choice), any built-in, or `Custom…`
+for that rule's own `.wav`/`.mp3` — the point being that you learn what happened from the
+audio without looking at the widget. `TrackedRule.AlertSoundName` holds it; empty means
+inherit, so rules saved before this feature keep the shared sound. Resolution lives in
+`AlertSoundCatalog.Resolve` and is covered by tests. The banner is a
 **floating tile**, independent of the widget: always on top, permanently
 click-through, never takes focus, auto-dismisses ~6 s. Position it by opening
 Options — the tile appears in placement mode ("drag me") and saves its spot on
@@ -149,6 +154,10 @@ sounds or a custom .wav/.mp3, with a ▶ preview. (Linux: sound backend TBD.)
 **Verify:** create a Loot rule matching an item in your fixture, append the loot line
 live → counter increments, banner pops (also while minimized), sound plays once even
 if two matches land within 5 s.
+
+**Verify (per-rule sounds):** give two rules different sounds, trigger each, and confirm
+you hear two *different* sounds — one sound for everything was the original bug. Set a
+third to `Off` and confirm it stays silent rather than falling back to the default.
 
 **Verify (built-in CC alert):** on a fresh profile (`EQBUDDY_APPDATA=<empty dir>`) the
 "CC broke" rule is present with 🔔 and 🔊 on. Append
