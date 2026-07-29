@@ -222,6 +222,16 @@ Deaths. Intended use: "since I set up camp here" bookkeeping.
 
 ## Options window
 
+**Theme** picker: Parchment & Brass (the original look, and the default so upgrades don't
+change appearance), Blue Grey, Turquoise, Redish, Grey, Solarized, Solarized Dark. Each is
+a palette dictionary in `src/EQBuddy/Themes/`; `Theme.xaml` holds only structure and
+references palette brushes via `DynamicResource`, so switching repaints every open window
+in place — no restart, and no window needs reloading. Rows built in code (the damage
+breakdowns) bake their brush in at construction, so `MainWindow.RefreshTheme()` forces one
+rebuild after a switch. Adding a theme = one more file in `Themes/` plus an entry in
+`ThemeCatalog` (in UI.Shared, so the Avalonia port can offer the same list and the saved
+`Theme` setting round-trips between the two UIs).
+
 Sliders: widget size (80–160 %, scales fonts), background see-through (panel only —
 text stays opaque), whole-widget opacity. Auto-empty toggle (see Log hygiene).
 Recent-rate window (5/15/30 min). Watch-rule editor (kind dropdown, name, spell-class

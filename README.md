@@ -121,10 +121,11 @@ Notes:
 - The ↻ button clears the session and starts counting from now.
 - The widget always stays on top of the game. Drag anywhere on it to move it;
   its position is remembered.
-- ⚙ (or right-click) → **Options…** has sliders for widget size (scales everything,
-  fonts included, 80–160%), background see-through (only the dark panel fades — text
+- ⚙ (or right-click) → **Options…** has a **theme** picker (Parchment & Brass, Blue Grey,
+  Turquoise, Redish, Grey, Solarized, Solarized Dark) and sliders for widget size (scales
+  everything, fonts included, 80–160%), background see-through (only the panel fades — text
   stays sharp so you can watch the game through the widget), and whole-widget opacity.
-  Changes apply live and are remembered.
+  Changes apply live — the theme repaints open windows instantly — and are remembered.
 - Loot that the game auto-sells on pickup counts as both loot and merchant income.
   Selling straight from the **advanced loot window** is captured too, credited to the
   item named on the game's "destroyed" line. The log always records which corpse an
