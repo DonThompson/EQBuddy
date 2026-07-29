@@ -75,6 +75,10 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        // Applied before the StartupUri window is created (that happens after OnStartup
+        // returns), so the saved theme is already live for the very first frame.
+        try { ThemeManager.Apply(Core.AppSettings.Load().Theme); }
+        catch (Exception ex) { LogError(ex); }
         DispatcherUnhandledException += (_, args) =>
         {
             LogError(args.Exception);

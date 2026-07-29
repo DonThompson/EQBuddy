@@ -75,6 +75,33 @@ public static class AlertSoundCatalog
     }
 }
 
+/// <summary>Color themes both UIs offer, keyed the same as the WPF app's
+/// Themes/*.xaml palette dictionaries so <see cref="AppSettings.Theme"/> round-trips
+/// between the two without translation.</summary>
+public static class ThemeCatalog
+{
+    public static readonly (string Key, string Label)[] Themes =
+    [
+        ("ParchmentBrass", "Parchment & Brass"),
+        ("BlueGrey", "Blue Grey"),
+        ("Turquoise", "Turquoise"),
+        ("Redish", "Redish"),
+        ("Grey", "Grey"),
+        ("Solarized", "Solarized"),
+        ("SolarizedDark", "Solarized Dark"),
+    ];
+
+    public static readonly string[] Labels = [.. Themes.Select(t => t.Label)];
+
+    /// <summary>Index of a theme key in <see cref="Themes"/>/<see cref="Labels"/>;
+    /// falls back to 0 for an unrecognized key (e.g. an older settings.json).</summary>
+    public static int IndexOf(string key)
+    {
+        var i = Array.FindIndex(Themes, t => t.Key == key);
+        return i >= 0 ? i : 0;
+    }
+}
+
 /// <summary>The overlay cards, in default order — shared by both UIs' layout and
 /// Options card editors.</summary>
 public static class OverlaySections
@@ -133,6 +160,18 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         set { _settings.BackgroundOpacity = Math.Clamp(value, 0.15, 1.0); Changed(); Changed(nameof(BackgroundOpacityLabel)); }
     }
     public string BackgroundOpacityLabel => $"{_settings.BackgroundOpacity * 100:0}%";
+
+    // ---- theme ----
+    /// <summary>Display labels for the theme picker, in <see cref="ThemeCatalog"/> order.</summary>
+    public static readonly string[] ThemeLabels = ThemeCatalog.Labels;
+
+    /// <summary>Index into <see cref="ThemeLabels"/>. The view applies the visual side
+    /// effect (swapping the live resource dictionary) after setting this.</summary>
+    public int ThemeIndex
+    {
+        get => ThemeCatalog.IndexOf(_settings.Theme);
+        set { _settings.Theme = ThemeCatalog.Themes[value].Key; PersistAnd(); }
+    }
 
     // ---- toggles ----
     public bool TruncateLogs

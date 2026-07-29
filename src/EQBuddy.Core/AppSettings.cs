@@ -54,6 +54,9 @@ public sealed class AppSettings
     public string HotkeyClickThrough { get; set; } = "Ctrl+Shift+T";
     public string HotkeyMiniMode { get; set; } = "Ctrl+Shift+M";
     public string HotkeyCampMarker { get; set; } = "Ctrl+Shift+K";
+    /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
+    /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
+    public string Theme { get; set; } = "ParchmentBrass";
 
     private static string FilePath => AppPaths.File("settings.json");
 
