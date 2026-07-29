@@ -52,7 +52,8 @@ public static partial class LogParser
     private static partial Regex DamageShieldRx();
 
     // Jibekn hit orc centurion for 11 points of magic damage by Lifespike.
-    [GeneratedRegex(@"^(?<attacker>.+?) hit (?<target>.+?) for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.$")]
+    // Xabeker hit a Deathfist Pawn for 6 points of magic damage by Harm Touch.
+    [GeneratedRegex(@"^(?<attacker>.+?) hit (?<target>.+?) for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex ThirdSchoolRx();
 
     // Orc centurion hits YOU for 4 points of damage.
@@ -189,13 +190,15 @@ public static partial class LogParser
     // Third-party combat (group members, the player's pet, nearby fights):
     // "Orc centurion hits Lizzid for 4 points of damage." / "Lizzid tries to frenzy on orc centurion, but misses!"
     // "Orc centurion has taken 1 damage from Disease Cloud by Lizzid."
-    [GeneratedRegex(@"^(?<attacker>.+?) (?:hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \([^)]+\))?$")]
+    // The trailing note is the same annotation your own hits carry — "Lizzid slashes orc
+    // centurion for 13 points of damage. (Critical)" — so pets DO report crits.
+    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex ThirdMeleeRx();
 
     [GeneratedRegex(@"^(?<attacker>.+?) tries to \w+(?: on)? .+?, but .+!(?: \([^)]+\))?$")]
     private static partial Regex ThirdMissRx();
 
-    [GeneratedRegex(@"^(?<target>.+?) has taken (?<dmg>\d+) damage from (?<spell>.+?) by (?<caster>.+?)\.$")]
+    [GeneratedRegex(@"^(?<target>.+?) has taken (?<dmg>\d+) damage from (?<spell>.+?) by (?<caster>.+?)\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex ThirdDotRx();
 
     // Jibekn told you, 'Attacking orc centurion Master.'
@@ -395,17 +398,18 @@ public static partial class LogParser
 
         if ((r = ThirdMeleeRx().Match(msg)).Success)
             return new ThirdMeleeEvent(ts, r.Groups["attacker"].Value.Trim(),
-                Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value));
+                Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
+                ThirdVerbToSkill(r.Groups["verb"].Value), IsCritNote(r));
 
         if ((r = ThirdDotRx().Match(msg)).Success)
             return new ThirdDotEvent(ts, r.Groups["caster"].Value.Trim(),
                 Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
-                r.Groups["spell"].Value);
+                r.Groups["spell"].Value, IsCritNote(r));
 
         if ((r = ThirdSchoolRx().Match(msg)).Success)
             return new ThirdSchoolEvent(ts, r.Groups["attacker"].Value.Trim(),
                 Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
-                r.Groups["spell"].Value);
+                r.Groups["spell"].Value, IsCritNote(r));
 
         if ((r = ThirdMissRx().Match(msg)).Success)
             return new ThirdMissEvent(ts, r.Groups["attacker"].Value.Trim());
@@ -482,4 +486,13 @@ public static partial class LogParser
         "shoot" => "Archery",
         _ => char.ToUpperInvariant(verb[0]) + verb[1..],
     };
+
+    /// <summary>Third-person verbs ("bashes") reduce to the same skill labels as the
+    /// player's own first-person forms, so a pet's Bash reads like yours. Only "-shes"
+    /// and "-ches" need the whole "-es" dropped; the rest lose just the "s".</summary>
+    private static string ThirdVerbToSkill(string verb) => VerbToSkill(
+        verb == "frenzies on" ? "frenzy on"
+        : verb.EndsWith("shes", StringComparison.Ordinal) || verb.EndsWith("ches", StringComparison.Ordinal)
+            ? verb[..^2]
+            : verb[..^1]);
 }

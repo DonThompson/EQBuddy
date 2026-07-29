@@ -47,12 +47,15 @@ public record SpellInterruptedEvent(DateTime Time, string Spell) : GameEvent(Tim
 public record PetClaimEvent(DateTime Time, string PetName) : GameEvent(Time);
 /// <summary>A creature blinked ("an asp blinks.") — the charm-spell tell; treated as a provisional pet claim.</summary>
 public record PetBlinkEvent(DateTime Time, string Name) : GameEvent(Time);
-/// <summary>Someone other than the player landed a melee hit (may be the player's pet).</summary>
-public record ThirdMeleeEvent(DateTime Time, string Attacker, string Target, int Amount) : GameEvent(Time);
+/// <summary>Someone other than the player landed a melee hit (may be the player's pet).
+/// Skill is the attack verb mapped to the same label the player's own hits use ("bashes" → Bash).
+/// Critical comes from the same trailing annotation your own hits carry — third-party lines
+/// do report it ("Lizzid slashes orc centurion for 13 points of damage. (Critical)").</summary>
+public record ThirdMeleeEvent(DateTime Time, string Attacker, string Target, int Amount, string Skill = "", bool Critical = false) : GameEvent(Time);
 /// <summary>Spell/DoT damage from someone other than the player (may be the player's pet).</summary>
-public record ThirdDotEvent(DateTime Time, string Caster, string Target, int Amount, string Spell) : GameEvent(Time);
+public record ThirdDotEvent(DateTime Time, string Caster, string Target, int Amount, string Spell, bool Critical = false) : GameEvent(Time);
 /// <summary>Direct spell hit by someone else: "Jibekn hit orc centurion for 11 points of magic damage by Lifespike."</summary>
-public record ThirdSchoolEvent(DateTime Time, string Attacker, string Target, int Amount, string Spell) : GameEvent(Time);
+public record ThirdSchoolEvent(DateTime Time, string Attacker, string Target, int Amount, string Spell, bool Critical = false) : GameEvent(Time);
 /// <summary>A missed attack between others (combat-clock signal only).</summary>
 public record ThirdMissEvent(DateTime Time, string Attacker) : GameEvent(Time);
 public record ResistEvent(DateTime Time, string Spell = "") : GameEvent(Time);

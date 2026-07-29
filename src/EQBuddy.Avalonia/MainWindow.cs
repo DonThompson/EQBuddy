@@ -52,6 +52,8 @@ public sealed class MainWindow : Window
     private readonly TextBlock _moneySummary = AppTheme.DimText("");
     private readonly TextBlock _progressSummary = AppTheme.DimText("");
     private readonly ItemsControl _damageSourceList = new();
+    private readonly TextBlock _petAbilityLabel = AppTheme.Heading("Pet abilities");
+    private readonly ItemsControl _petAbilityList = new();
     private readonly ItemsControl _damageTakenList = new();
     private readonly ItemsControl _healSpellList = new();
     private readonly ItemsControl _healerList = new();
@@ -387,6 +389,8 @@ public sealed class MainWindow : Window
         panel.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits,
             out _dmgOutSortAvg, out _dmgOutSortDps, OnSortDmgOut, rateText: "dps"));
         panel.Children.Add(_damageSourceList);
+        panel.Children.Add(_petAbilityLabel);
+        panel.Children.Add(_petAbilityList);
         panel.Children.Add(SortHeader("Damage taken from", out _dmgInSortTotal, out _dmgInSortHits,
             out _dmgInSortAvg, out _, OnSortDmgIn));
         panel.Children.Add(_damageTakenList);
@@ -701,6 +705,9 @@ public sealed class MainWindow : Window
                 (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
+            // Shares the damage sort bar above it — it's the same rows, one level down.
+            _petAbilityLabel.IsVisible = s.PetAbilities.Count > 0;
+            FillBreakdown(_petAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(_damageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
             var topFightDps = Math.Max(0.1, s.RecentEncounters.Count > 0
@@ -808,6 +815,7 @@ public sealed class MainWindow : Window
     private void RefreshOptionalSectionVisibility(StatsSnapshot s)
     {
         _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
+        _petAbilityLabel.IsVisible = s.PetAbilities.Count > 0;
         _stanceLabel.IsVisible = s.Stances.Count > 0;
         _farmingLabel.IsVisible = s.Mobs.Any(m => m.Kills > 0);
         _partyKillsLabel.IsVisible = s.PartyKillsByKiller.Count > 0;

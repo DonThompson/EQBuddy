@@ -52,6 +52,10 @@ public sealed class SessionStats
     private int _hitCount, _critCount, _missCount;
     private int _maxHit; private string _maxHitDesc = "";
     private readonly Dictionary<string, AbilityAgg> _damageBySource = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>What the pet is doing, split out of its single "Pet (Name)" damage row.
+    /// Keyed by ability alone, not by pet: swapping charms keeps one readable list, and the
+    /// per-pet totals are already the rows above it.</summary>
+    private readonly Dictionary<string, AbilityAgg> _petAbilities = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _specialHits = new(StringComparer.OrdinalIgnoreCase);
 
     private long _damageTaken;
@@ -290,13 +294,13 @@ public sealed class SessionStats
                     _petConfirmed = false;
                     break;
                 case ThirdMeleeEvent tm when IsPet(tm.Attacker):
-                    AddPetDamage(tm.Time, tm.Amount, DamageKind.Melee, tm.Target);
+                    AddPetDamage(tm.Time, tm.Amount, DamageKind.Melee, tm.Target, tm.Skill, tm.Critical);
                     break;
                 case ThirdDotEvent td when IsPet(td.Caster):
-                    AddPetDamage(td.Time, td.Amount, DamageKind.Spell, td.Target);
+                    AddPetDamage(td.Time, td.Amount, DamageKind.Spell, td.Target, td.Spell, td.Critical);
                     break;
                 case ThirdSchoolEvent tse when IsPet(tse.Attacker):
-                    AddPetDamage(tse.Time, tse.Amount, DamageKind.Spell, tse.Target);
+                    AddPetDamage(tse.Time, tse.Amount, DamageKind.Spell, tse.Target, tse.Spell, tse.Critical);
                     break;
                 case ThirdSchoolEvent tse2:
                     TrackCombat(tse2.Time, canStart: false);
@@ -600,8 +604,11 @@ public sealed class SessionStats
     }
 
     /// <summary>Pet damage is the player's damage, reported under a "Pet (Name)" source
-    /// ("Pet? (Name)" while the charm is only suspected from a blink).</summary>
-    private void AddPetDamage(DateTime t, int amount, DamageKind kind, string target)
+    /// ("Pet? (Name)" while the charm is only suspected from a blink). The ability behind
+    /// each hit — the melee skill, or the spell the log names — is also totalled on its own
+    /// so the single pet row can be broken down.</summary>
+    private void AddPetDamage(DateTime t, int amount, DamageKind kind, string target, string ability,
+        bool critical = false)
     {
         _damageDealt += amount;
         if (kind == DamageKind.Melee) _meleeDamage += amount; else _spellDamage += amount;
@@ -610,8 +617,14 @@ public sealed class SessionStats
         var label = _petName is null ? "Pet"
             : _petConfirmed ? $"Pet ({_petName})" : $"Pet? ({_petName})";
         if (amount > _maxHit) { _maxHit = amount; _maxHitDesc = $"{label} on {target}"; }
-        // Pet crit annotations aren't in third-party log lines, so pet crits stay 0.
-        Ability(_damageBySource, label).Add(t, amount);
+        // Pet crits carry the same "(Critical)" annotation your own hits do, so the pet rows
+        // show a real crit % rather than a blank one. Pet hits stay out of YOUR accuracy
+        // counters, though — those are about what you swung, and pet misses aren't credited.
+        Ability(_damageBySource, label).Add(t, amount, critical);
+        // A verb the melee pattern matched but the mapping didn't recognise still counts;
+        // it just lands in a generic bucket rather than being dropped.
+        Ability(_petAbilities, ability.Length > 0 ? ability
+            : kind == DamageKind.Melee ? "Melee" : "Spell").Add(t, amount, critical);
         TrackCombat(t, amount);
         TouchFight(target, t, dmgOut: amount);
     }
@@ -726,7 +739,7 @@ public sealed class SessionStats
         _yourKills.Clear(); _partyKillsByTarget.Clear(); _partyKillsByKiller.Clear(); _deaths.Clear();
         _damageDealt = _meleeDamage = _spellDamage = 0;
         _hitCount = _critCount = _missCount = 0; _maxHit = 0; _maxHitDesc = "";
-        _damageBySource.Clear(); _specialHits.Clear();
+        _damageBySource.Clear(); _petAbilities.Clear(); _specialHits.Clear();
         _damageTaken = 0; _avoidedIncoming = 0; _meleeHitsTaken = 0; _damageByAttacker.Clear();
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
@@ -904,6 +917,9 @@ public sealed class SessionStats
                 DamageBySource = _damageBySource.OrderByDescending(kv => kv.Value.Total)
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
                         kv.Value.Crits, kv.Value.ActiveSeconds)).ToList(),
+                PetAbilities = _petAbilities.OrderByDescending(kv => kv.Value.Total)
+                    .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
+                        kv.Value.Crits, kv.Value.ActiveSeconds)).ToList(),
                 SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 SessionDps = sessionDps,
@@ -1033,6 +1049,9 @@ public sealed class StatsSnapshot
     public int MaxHit { get; init; }
     public string MaxHitDesc { get; init; } = "";
     public List<SourceDamage> DamageBySource { get; init; } = [];
+    /// <summary>Your pet's damage split by what it used (melee skill or spell name), summing
+    /// to the pet rows in <see cref="DamageBySource"/>. Empty when no pet damage was seen.</summary>
+    public List<SourceDamage> PetAbilities { get; init; } = [];
     public List<NameCount> SpecialHits { get; init; } = [];
     public double SessionDps { get; init; }
     public double CurrentDps { get; init; }

@@ -79,7 +79,18 @@ Header: session DPS (+ live fight DPS while fighting). Details:
   off of <pet>.` drops the claim immediately rather than waiting for the creature to turn
   on you. Charm spells outside the seed list are learned from the cast → blink → "Master"
   sequence, so they behave the same on the second cast.
-  Pets show no crit % (the log doesn't annotate pet crits).
+  Pet crits count: third-party damage lines carry the same trailing `(Critical)` your own
+  hits do (`Lebn slashes a decaying skeleton for 13 points of damage. (Critical)`), so the
+  pet rows show a real crit %. Pet hits stay out of *your* accuracy and crit counters —
+  those describe what you swung, and pet misses aren't credited either.
+- **Pet abilities** — the pet's row split by what it actually used, in the same
+  `total · ×hits · avg · dps (· crit%)` columns and following the damage sort bar above it.
+  Melee comes from the attack verb mapped to the skill your own hits use (`bashes` → Bash),
+  spells from the name the log gives (`… hit X for N points of magic damage by Lifetap.` /
+  `X has taken N damage from Poison Bolt by <pet>.`). Rows are keyed by ability, not by pet,
+  so charm swaps stay one readable list — the per-pet totals are the rows above. The
+  section is hidden when no pet damage was seen. A generic bucket ("Melee"/"Spell") catches
+  any attack whose verb the mapping doesn't recognise, so nothing is lost.
 - **Damage taken from** per attacker (total · hits · avg).
 - **Recent fights** — last 8 encounters: creature, duration, per-fight DPS, with a
   bar comparing each fight's DPS to the hottest recent fight. A fight opens on

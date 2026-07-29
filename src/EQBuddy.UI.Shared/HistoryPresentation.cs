@@ -137,6 +137,10 @@ public static class HistoryPresentation
             text.AppendLine();
         }
 
+        if (snapshot.PetAbilities.Count > 0)
+            text.AppendLine("Pet abilities: " + string.Join(" - ",
+                snapshot.PetAbilities.Take(8).Select(ability =>
+                    $"{ability.Name} {ability.Total:N0} ({ability.Hits} hits)")));
         if (snapshot.Stances.Count > 0)
             text.AppendLine("Stances: " + string.Join(" - ",
                 snapshot.Stances.Select(stance => $"{stance.Name} {stance.Damage:N0} dmg over {(int)stance.CombatSeconds}s ({stance.Dps:0.#} dps)")));

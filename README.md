@@ -142,7 +142,9 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
   "Pet (Name)" in the damage breakdown). Pet kills count as your kills. A charm landing
   ("an asp blinks.") claims the creature provisionally — its damage shows as
   "Pet? (Name)" until a Master message confirms it, then merges into "Pet (Name)".
-  If a pet ever damages you (charm broke), it stops being credited.
+  If a pet ever damages you (charm broke), it stops being credited. A **Pet abilities**
+  list under the damage breakdown splits that row by what the pet used — melee skills and
+  the spells the log names — so you can see what it is actually doing.
 - The combat clock opens when *you* act — hit, miss, pet attack, or getting hit — and
   stays open while your group keeps fighting, so slow-swinging melee and casters between
   casts aren't penalized mid-fight.

@@ -329,6 +329,87 @@ public class SpellTrackingTests
         Assert.DoesNotContain(s.DamageBySource, d => d.Name == "Pet");
     }
 
+    // ---- pet ability breakdown ----
+
+    /// <summary>The pet keeps its single damage row; what it used is broken out beside it,
+    /// with the melee verb reduced to the same skill label the player's own hits use.</summary>
+    [Fact]
+    public void PetDamageIsBrokenOutByAbility()
+    {
+        var s = Replay(
+            At(0, 0, "Jibekn told you, 'Attacking orc pawn Master.'"),
+            At(0, 2, "Jibekn hits orc pawn for 12 points of damage."),
+            At(0, 4, "Jibekn bashes orc pawn for 6 points of damage."),
+            At(0, 6, "Jibekn hits orc pawn for 10 points of damage."),
+            At(0, 8, "Jibekn hit orc pawn for 8 points of magic damage by Lifespike."),
+            At(0, 10, "Orc pawn has taken 3 damage from Poison Bolt by Jibekn.")).Snapshot();
+
+        var pet = Assert.Single(s.DamageBySource, d => d.Name == "Pet (Jibekn)");
+        Assert.Equal(39, pet.Total);
+        Assert.Equal(39, s.PetAbilities.Sum(a => a.Total));
+        Assert.Equal(["Hit", "Lifespike", "Bash", "Poison Bolt"], s.PetAbilities.Select(a => a.Name));
+        var hit = s.PetAbilities.Single(a => a.Name == "Hit");
+        Assert.Equal(22, hit.Total);
+        Assert.Equal(2, hit.Hits);
+    }
+
+    /// <summary>Third-party lines are only broken out when the attacker is our pet —
+    /// a bystander's abilities are not ours to report.</summary>
+    [Fact]
+    public void BystanderAbilitiesAreNotBrokenOut()
+    {
+        var s = Replay(
+            At(0, 0, "Otherchar kicks orc pawn for 50 points of damage."),
+            At(0, 2, "Orc pawn has taken 9 damage from Disease Cloud by Otherchar.")).Snapshot();
+
+        Assert.Empty(s.PetAbilities);
+    }
+
+    /// <summary>Real necro sequence from eqlog_Dranak_freeport (2026-07-28): the pet melees
+    /// and lifetaps, and the trailing "(Critical)" that third-party lines carry is credited
+    /// to the pet the same way your own crits are.</summary>
+    [Fact]
+    public void PetCritsAreCounted()
+    {
+        var s = Replay(
+            At(0, 0, "Lebn told you, 'Attacking a decaying skeleton Master.'"),
+            At(0, 2, "Lebn slashes a decaying skeleton for 6 points of damage."),
+            At(0, 4, "Lebn slashes a decaying skeleton for 13 points of damage. (Critical)"),
+            At(0, 6, "Lebn hit a decaying skeleton for 4 points of magic damage by Lifetap."),
+            At(0, 8, "Lebn hit a decaying skeleton for 9 points of magic damage by Lifetap. (Critical)")).Snapshot();
+
+        var pet = Assert.Single(s.DamageBySource, d => d.Name == "Pet (Lebn)");
+        Assert.Equal(32, pet.Total);
+        Assert.Equal(2, pet.Crits);
+        Assert.Equal(1, s.PetAbilities.Single(a => a.Name == "Slash").Crits);
+        Assert.Equal(1, s.PetAbilities.Single(a => a.Name == "Lifetap").Crits);
+        // A pet swinging is not you swinging: your own accuracy is unaffected.
+        Assert.Equal(0, s.HitCount);
+        Assert.Equal(0, s.CritCount);
+    }
+
+    /// <summary>A group member's crit is still not your damage — the annotation changed, the
+    /// attribution rule did not.</summary>
+    [Fact]
+    public void BystanderCritsAreStillNotYours()
+    {
+        var s = Replay(At(0, 0, "Lizzid slashes orc centurion for 13 points of damage. (Critical)")).Snapshot();
+
+        Assert.Equal(0, s.DamageDealt);
+        Assert.Empty(s.PetAbilities);
+    }
+
+    [Theory]
+    [InlineData("Jibekn slashes orc pawn for 5 points of damage.", "Slash")]
+    [InlineData("Jibekn crushes orc pawn for 5 points of damage.", "Crush")]
+    [InlineData("Jibekn punches orc pawn for 5 points of damage.", "Punch")]
+    [InlineData("Jibekn bites orc pawn for 5 points of damage.", "Bite")]
+    [InlineData("Jibekn backstabs orc pawn for 5 points of damage.", "Backstab")]
+    [InlineData("Jibekn shoots orc pawn for 5 points of damage.", "Archery")]
+    [InlineData("Jibekn frenzies on orc pawn for 5 points of damage.", "Frenzy")]
+    public void ThirdPartyMeleeVerbsMapToSkillNames(string line, string skill) =>
+        Assert.Equal(skill, Assert.IsType<ThirdMeleeEvent>(LogParser.Parse(Ts + line)).Skill);
+
     // ---- cast analytics ----
 
     [Fact]
