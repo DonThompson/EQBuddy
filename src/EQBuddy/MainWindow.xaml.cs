@@ -864,8 +864,7 @@ public partial class MainWindow : Window
             // fall back to the GitHub Releases feed for public installs.
             var folder = UpdateChecker.FindUpdateFolder(_settings.UpdateFolder);
             var info = folder is null ? null : UpdateChecker.Check(folder);
-            if (info is null && await UpdateChecker.CheckGitHubAsync() is { } webLatest)
-                info = new UpdateInfo(webLatest, SetupPath: null);
+            info ??= await UpdateChecker.CheckGitHubAsync();
 
             Dispatcher.Invoke(() =>
             {
@@ -873,7 +872,7 @@ public partial class MainWindow : Window
                 if (info is not null && UpdateChecker.IsNewer(info))
                 {
                     _pendingUpdate = info;
-                    UpdateText.Text = info.SetupPath is not null
+                    UpdateText.Text = info.SetupPath is not null || info.DownloadUrl is not null
                         ? $"Update v{info.Latest} is ready — click here to install."
                         : $"Update v{info.Latest} is available — click to open the download page.";
                     UpdateBanner.Visibility = Visibility.Visible;
@@ -896,9 +895,10 @@ public partial class MainWindow : Window
         e.Handled = true;
         if (_pendingUpdate is not { } info || _installingUpdate) return;
 
-        if (info.SetupPath is null)
+        if (info.SetupPath is null && info.DownloadUrl is null)
         {
-            // Web update: send the user to the GitHub release page.
+            // No installer to fetch (e.g. a release that shipped without one) — send the
+            // user to the GitHub release page instead.
             try
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
@@ -916,12 +916,14 @@ public partial class MainWindow : Window
         }
 
         _installingUpdate = true;
-        UpdateText.Text = "Installing update — EQBuddy will restart itself…";
-        Task.Run(() =>
+        UpdateText.Text = info.DownloadUrl is not null
+            ? "Downloading update — EQBuddy will restart itself…"
+            : "Installing update — EQBuddy will restart itself…";
+        Task.Run(async () =>
         {
             try
             {
-                var staged = UpdateChecker.StageForInstall(info);
+                var staged = await UpdateChecker.StageForInstall(info);
                 System.Diagnostics.Process.Start(staged, "/SILENT");
                 Dispatcher.Invoke(() => Application.Current.Shutdown());
             }

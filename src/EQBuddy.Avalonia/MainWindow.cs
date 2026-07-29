@@ -1106,15 +1106,14 @@ public sealed class MainWindow : Window
         {
             var folder = UpdateChecker.FindUpdateFolder(_settings.UpdateFolder);
             var info = folder is null ? null : UpdateChecker.Check(folder);
-            if (info is null && await UpdateChecker.CheckGitHubAsync() is { } webLatest)
-                info = new UpdateInfo(webLatest, SetupPath: null);
+            info ??= await UpdateChecker.CheckGitHubAsync();
             Dispatcher.UIThread.Post(() =>
             {
                 if (_installingUpdate) return;
                 if (info is not null && UpdateChecker.IsNewer(info))
                 {
                     _pendingUpdate = info;
-                    _updateText.Text = info.SetupPath is not null
+                    _updateText.Text = info.SetupPath is not null || info.DownloadUrl is not null
                         ? $"Update v{info.Latest} is ready - click here to install."
                         : $"Update v{info.Latest} is available - click to open the download page.";
                     _updateBanner.IsVisible = true;
@@ -1205,7 +1204,14 @@ public sealed class MainWindow : Window
     {
         e.Handled = true;
         if (_pendingUpdate is not { } info || _installingUpdate) return;
-        if (info.SetupPath is null)
+
+        // The staged file is always a Windows EQBuddySetup.exe run with an Inno Setup
+        // /SILENT flag — there's nothing installable that way on Linux, so a GitHub-sourced
+        // update there always goes to the release page, same as when no installer asset
+        // is attached at all. OneDrive-sourced updates (SetupPath) predate this and are a
+        // Windows-only distribution channel already, so they're unaffected by this check.
+        var canAutoInstall = OperatingSystem.IsWindows() && (info.SetupPath is not null || info.DownloadUrl is not null);
+        if (!canAutoInstall)
         {
             try
             {
@@ -1222,12 +1228,14 @@ public sealed class MainWindow : Window
             return;
         }
         _installingUpdate = true;
-        _updateText.Text = "Installing update - EQBuddy will restart itself...";
-        Task.Run(() =>
+        _updateText.Text = info.DownloadUrl is not null
+            ? "Downloading update - EQBuddy will restart itself..."
+            : "Installing update - EQBuddy will restart itself...";
+        Task.Run(async () =>
         {
             try
             {
-                var staged = UpdateChecker.StageForInstall(info);
+                var staged = await UpdateChecker.StageForInstall(info);
                 Process.Start(staged, "/SILENT");
                 Dispatcher.UIThread.Post(Shutdown);
             }

@@ -15,30 +15,109 @@ public class UpdateCheckerTests : IDisposable
     private UpdateInfo Info => new(new Version(9, 9, 9), SetupPath);
 
     [Fact]
-    public void StagesWithoutHashFile()
+    public async Task StagesWithoutHashFile()
     {
-        var staged = UpdateChecker.StageForInstall(Info);
+        var staged = await UpdateChecker.StageForInstall(Info);
         Assert.True(File.Exists(staged));
     }
 
     [Fact]
-    public void StagesWhenHashMatches()
+    public async Task StagesWhenHashMatches()
     {
         using var s = File.OpenRead(SetupPath);
         File.WriteAllText(SetupPath + ".sha256", Convert.ToHexString(SHA256.HashData(s)));
-        var staged = UpdateChecker.StageForInstall(Info);
+        var staged = await UpdateChecker.StageForInstall(Info);
         Assert.True(File.Exists(staged));
     }
 
     [Fact]
-    public void RefusesWhenHashMismatches()
+    public async Task RefusesWhenHashMismatches()
     {
         File.WriteAllText(SetupPath + ".sha256", new string('A', 64));
-        Assert.Throws<InvalidOperationException>(() => UpdateChecker.StageForInstall(Info));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateChecker.StageForInstall(Info));
     }
 
     [Fact]
-    public void WebUpdateCannotBeStaged() =>
-        Assert.Throws<InvalidOperationException>(() =>
+    public async Task NothingToStageCannotBeStaged() =>
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             UpdateChecker.StageForInstall(new UpdateInfo(new Version(9, 9, 9), null)));
+
+    [Fact]
+    public async Task DownloadsAndStagesFromGitHub()
+    {
+        var bytes = new byte[] { 9, 8, 7, 6, 5 };
+        var hash = Convert.ToHexString(SHA256.HashData(bytes));
+        using var server = new StubAssetServer(bytes, hash);
+
+        var info = new UpdateInfo(new Version(9, 9, 9), SetupPath: null, server.SetupUrl, server.Sha256Url);
+        var staged = await UpdateChecker.StageForInstall(info);
+
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(staged));
+    }
+
+    [Fact]
+    public async Task RefusesWhenDownloadedHashMismatches()
+    {
+        var bytes = new byte[] { 9, 8, 7, 6, 5 };
+        using var server = new StubAssetServer(bytes, new string('A', 64));
+
+        var info = new UpdateInfo(new Version(9, 9, 9), SetupPath: null, server.SetupUrl, server.Sha256Url);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => UpdateChecker.StageForInstall(info));
+    }
+
+    /// <summary>Minimal local HTTP server standing in for a GitHub release's download
+    /// assets, so StageForInstall's HTTP path gets real network round-trips in tests
+    /// rather than only the local-file (OneDrive) path.</summary>
+    private sealed class StubAssetServer : IDisposable
+    {
+        private readonly System.Net.HttpListener _listener = new();
+        private readonly CancellationTokenSource _cts = new();
+
+        public string SetupUrl { get; }
+        public string Sha256Url { get; }
+
+        public StubAssetServer(byte[] setupBytes, string sha256Hex)
+        {
+            var port = GetFreePort();
+            var prefix = $"http://127.0.0.1:{port}/";
+            _listener.Prefixes.Add(prefix);
+            _listener.Start();
+            SetupUrl = prefix + "EQBuddySetup.exe";
+            Sha256Url = prefix + "EQBuddySetup.exe.sha256";
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!_cts.IsCancellationRequested)
+                    {
+                        var ctx = await _listener.GetContextAsync();
+                        var body = ctx.Request.Url!.AbsolutePath.EndsWith(".sha256")
+                            ? System.Text.Encoding.ASCII.GetBytes(sha256Hex)
+                            : setupBytes;
+                        ctx.Response.ContentLength64 = body.Length;
+                        await ctx.Response.OutputStream.WriteAsync(body);
+                        ctx.Response.OutputStream.Close();
+                    }
+                }
+                catch (Exception) { /* listener stopped */ }
+            }, _cts.Token);
+        }
+
+        private static int GetFreePort()
+        {
+            using var socket = new System.Net.Sockets.Socket(
+                System.Net.Sockets.AddressFamily.InterNetwork,
+                System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Tcp);
+            socket.Bind(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 0));
+            return ((System.Net.IPEndPoint)socket.LocalEndPoint!).Port;
+        }
+
+        public void Dispose()
+        {
+            _cts.Cancel();
+            _listener.Stop();
+            _listener.Close();
+        }
+    }
 }

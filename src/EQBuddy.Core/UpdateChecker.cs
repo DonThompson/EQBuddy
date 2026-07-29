@@ -6,8 +6,10 @@ using System.Text.Json;
 
 namespace EQBuddy.Core;
 
-/// <summary>SetupPath is null for web (GitHub) updates — the banner links to the release page instead of installing.</summary>
-public sealed record UpdateInfo(Version Latest, string? SetupPath);
+/// <summary>SetupPath is a local file ready to install as-is (the OneDrive path). DownloadUrl
+/// is set instead for a GitHub-sourced update — StageForInstall fetches it over HTTP first,
+/// then installs the same way. Both null means no update is available.</summary>
+public sealed record UpdateInfo(Version Latest, string? SetupPath, string? DownloadUrl = null, string? Sha256Url = null);
 
 /// <summary>
 /// Local-first update checker: looks for a newer EQBuddySetup.exe in the family's
@@ -90,15 +92,28 @@ public static class UpdateChecker
 
     public static bool IsNewer(UpdateInfo info) => info.Latest > CurrentVersion;
 
-    /// <summary>Latest released version tag on GitHub, or null if unreachable/unparseable.</summary>
-    public static async Task<Version?> CheckGitHubAsync()
+    /// <summary>Latest GitHub release, including the installer asset's download URL when
+    /// the release publishes one (SetupName, optionally with a sibling .sha256 for
+    /// integrity checking) — null if unreachable, unparseable, or no installer is attached
+    /// (e.g. a release that only ships the Linux tarball).</summary>
+    public static async Task<UpdateInfo?> CheckGitHubAsync()
     {
         try
         {
             var json = await Http.GetStringAsync(GitHubLatestApi);
             using var doc = JsonDocument.Parse(json);
             var tag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-            return Version.TryParse(tag.TrimStart('v', 'V'), out var v) ? Normalize(v) : null;
+            if (!Version.TryParse(tag.TrimStart('v', 'V'), out var v)) return null;
+
+            string? downloadUrl = null, sha256Url = null;
+            foreach (var asset in doc.RootElement.GetProperty("assets").EnumerateArray())
+            {
+                var name = asset.GetProperty("name").GetString() ?? "";
+                var url = asset.GetProperty("browser_download_url").GetString();
+                if (name.Equals(SetupName, StringComparison.OrdinalIgnoreCase)) downloadUrl = url;
+                else if (name.Equals(SetupName + ".sha256", StringComparison.OrdinalIgnoreCase)) sha256Url = url;
+            }
+            return new UpdateInfo(Normalize(v), SetupPath: null, downloadUrl, sha256Url);
         }
         catch
         {
@@ -107,22 +122,36 @@ public static class UpdateChecker
     }
 
     /// <summary>
-    /// Copy the setup out of OneDrive into %TEMP% (forces hydration of cloud-only files,
-    /// and survives OneDrive sync touching the original), then return the staged path.
-    /// When a sibling "EQBuddySetup.exe.sha256" exists (published by the release script),
-    /// the staged copy must match it — a corrupted or tampered installer is never run.
+    /// Stage the installer into %TEMP% and return its path, ready to run. From OneDrive
+    /// this is a local copy (forces hydration of cloud-only files, and survives OneDrive
+    /// sync touching the original); from GitHub it's an HTTP download of the release
+    /// asset. Either way, when a sibling "EQBuddySetup.exe.sha256" is published alongside
+    /// it, the staged copy must match it — a corrupted or tampered installer is never run.
     /// </summary>
-    public static string StageForInstall(UpdateInfo info)
+    public static async Task<string> StageForInstall(UpdateInfo info)
     {
-        if (info.SetupPath is null)
-            throw new InvalidOperationException("Web updates are installed via the browser, not staged.");
         var staged = Path.Combine(Path.GetTempPath(), SetupName);
-        File.Copy(info.SetupPath, staged, overwrite: true);
+        string? expected;
 
-        var shaFile = info.SetupPath + ".sha256";
-        if (File.Exists(shaFile))
+        if (info.SetupPath is { } localPath)
         {
-            var expected = File.ReadAllText(shaFile).Trim();
+            File.Copy(localPath, staged, overwrite: true);
+            var shaFile = localPath + ".sha256";
+            expected = File.Exists(shaFile) ? File.ReadAllText(shaFile).Trim() : null;
+        }
+        else if (info.DownloadUrl is { } url)
+        {
+            var bytes = await Http.GetByteArrayAsync(url);
+            await File.WriteAllBytesAsync(staged, bytes);
+            expected = info.Sha256Url is { } shaUrl ? (await Http.GetStringAsync(shaUrl)).Trim() : null;
+        }
+        else
+        {
+            throw new InvalidOperationException("Nothing to stage: no local setup path or download URL.");
+        }
+
+        if (expected is not null)
+        {
             using var stream = File.OpenRead(staged);
             var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
             if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
