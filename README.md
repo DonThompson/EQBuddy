@@ -7,8 +7,11 @@ faction changes, deaths, and zones visited. Click any section to drill into deta
 **Download:** grab `EQBuddySetup.exe` from the
 [latest release](https://github.com/DranakCorps-bot/EQBuddy/releases/latest).
 EQBuddy checks for new releases itself (at startup, every 6 hours, and via
-right-click → "Check for updates") and shows a banner linking to the latest
-download when one is available.
+right-click → "Check for updates") and shows a banner when one is available.
+Click it and EQBuddy downloads the signed installer from the release, checks it
+against the published SHA-256, installs, and restarts — no browser trip. If the
+hash isn't published it won't download anything and points you at the release
+page instead.
 
 ## Screenshots
 

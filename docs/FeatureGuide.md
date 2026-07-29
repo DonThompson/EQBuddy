@@ -223,14 +223,27 @@ Deaths. Intended use: "since I set up camp here" bookkeeping.
 ## Options window
 
 **Theme** picker: Parchment & Brass (the original look, and the default so upgrades don't
-change appearance), Blue Grey, Turquoise, Redish, Grey, Solarized, Solarized Dark. Each is
-a palette dictionary in `src/EQBuddy/Themes/`; `Theme.xaml` holds only structure and
-references palette brushes via `DynamicResource`, so switching repaints every open window
-in place — no restart, and no window needs reloading. Rows built in code (the damage
-breakdowns) bake their brush in at construction, so `MainWindow.RefreshTheme()` forces one
-rebuild after a switch. Adding a theme = one more file in `Themes/` plus an entry in
-`ThemeCatalog` (in UI.Shared, so the Avalonia port can offer the same list and the saved
-`Theme` setting round-trips between the two UIs).
+change appearance), Blue Grey, Turquoise, Redish, Grey, Solarized, Solarized Dark. Both
+UIs offer all seven, and the saved `Theme` setting round-trips between them.
+
+The colors live once, as data, in `EQBuddy.UI.Shared.ThemePalettes` — 17 brush keys per
+theme. WPF composes those into a `ResourceDictionary` at runtime and swaps it into
+`Application.Resources`; since `Theme.xaml` holds only structure and reads every brush via
+`DynamicResource`, the swap repaints open windows with no restart or reload. Avalonia
+builds its UI in code, so it can't swap a dictionary: `AppTheme` keeps one permanent
+`SolidColorBrush` per key and mutates `.Color`, which repaints everything still holding
+that reference. It implements 14 of the 17 keys, ignoring the scrollbar/toggle ones its
+own control themes handle.
+
+Either way, colors baked in at construction can't repaint themselves — `BgWithOpacity`
+returns a fresh brush, and the damage rows snapshot a color when built — so both UIs have
+a `RefreshTheme()` that re-applies those and forces one rebuild after a switch.
+
+Adding a theme = one row in `ThemePalettes.Values` plus an entry in `ThemeCatalog`.
+`ThemePaletteTests` enforces that every catalogued theme has a palette, that every palette
+defines every key with a parseable `#AARRGGBB` value, that an unknown theme falls back
+instead of throwing, and that text clears 4.5:1 contrast against its background — the
+check that caught Solarized's canonical body pairing at 4.1:1.
 
 Sliders: widget size (80–160 %, scales fonts), background see-through (panel only —
 text stays opaque), whole-widget opacity. Auto-empty toggle (see Log hygiene).
@@ -287,15 +300,24 @@ twice → no duplicates.
 
 ## Updates
 
-Checks at startup + every 6 h + on demand. Newer version → green banner linking the
-release page.
+Checks at startup + every 6 h + on demand. Newer version → green banner; clicking it
+installs and restarts, on Windows, from either source below. Nothing downloads or
+installs without that click.
 
 Local-first when a shared folder is configured: set `UpdateFolder` in settings (or drop
-an `EQBuddyDownload` folder in a synced location, which is auto-discovered) and the
-banner installs silently and restarts instead. Intended for guild or LAN setups that
-would rather not have every machine pull from GitHub. The staged installer's SHA-256 is
-verified against the published hash; mismatch refuses the install, offline fails open
-with a log entry.
+an `EQBuddyDownload` folder in a synced location, which is auto-discovered). Intended for
+guild or LAN setups that would rather not have every machine pull from GitHub.
+
+Otherwise the GitHub release itself is the source: EQBuddy reads the latest release's
+assets and downloads `EQBuddySetup.exe` directly. **The published `.sha256` is required
+for this path** — no hash, no download; the banner falls back to offering the release
+page so the update is still visible and can be fetched by hand. Downloads stream to disk
+with a 10-minute timeout (the 15 s used for the version probe covers the whole response
+body and would abort a ~45 MB installer on a normal connection). A hash mismatch refuses
+the install and deletes the staged file.
+
+Linux always goes to the release page — the staged file is a Windows installer run with
+Inno Setup's `/SILENT`, which has no meaning there.
 
 ## Log hygiene
 
