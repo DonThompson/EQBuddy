@@ -173,6 +173,39 @@ first case). Details worth knowing:
 - Matched text does **not** count towards active-play time. Someone else's macro firing
   while you stand in the bank isn't you playing.
 
+### Alert latency
+
+EQBuddy reads a log file the game writes; it cannot know about a line before the game
+flushes it, and there is no callback to hook. So an alert is always *reactive*, and the
+delay has three parts:
+
+| Stage | Cost |
+| --- | --- |
+| Game writes the line and flushes it | outside our control, unmeasured |
+| Tailer notices the new bytes | 0–150 ms (poll interval) |
+| Match → alert dispatched | ~1 ms |
+
+Measured over 30 appends with the phase swept across the poll cycle: **min 7 ms, median
+84 ms, max 195 ms** from the line hitting the file to the alert firing.
+
+Two decisions get it there, both worth preserving:
+
+- **The tailer polls every 150 ms**, not the 500 ms it used before text rules existed. That
+  interval *is* the latency floor. Polling an unchanged file is a length check; at 150 ms
+  the widget idles at well under 1 % of one core.
+- **Text alerts fire from the ingest thread** (`SessionStats.TextMatched`), not from the
+  1 s UI refresh that drives every other alert. That refresh alone used to add up to a
+  full second, which for a heal rotation is the difference between a cue and a reminder of
+  something you missed. Text rules are therefore skipped by the snapshot-driven alert path
+  in both UIs — alerting in both places would double-fire.
+
+Per-rule cooldown is **1 s** for text rules rather than the 5 s used elsewhere: a chain
+announces every few seconds by design, and the longer cooldown would swallow exactly the
+repeats you asked to hear about.
+
+Anything needing sub-frame reaction — casting on a timer you can see coming — is better
+served by an in-game trigger. EQBuddy is honest about being a log reader.
+
 **Spell fade** matches "Your X spell has worn off (of Y)." and takes a second dropdown:
 - *By name…* — the original substring match against the spell name.
 - *Any spell* — every fade, including buffs (which we can't classify).

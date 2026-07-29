@@ -168,6 +168,40 @@ public class TextWatchRuleTests
         Assert.Equal(0, s.ActiveSeconds);
     }
 
+    /// <summary>The whole point of the immediate hook: hosts are told at ingest time, not
+    /// on their next refresh, because a heal-chain call is only useful while it's current.
+    /// Fires once per matching line, carrying the message without its timestamp prefix.</summary>
+    [Fact]
+    public void TextMatchedFiresOnceAtIngest()
+    {
+        var rules = new[] { TextRule("CH -->") };
+        var stats = new SessionStats { CharacterName = "Kaybek" };
+        stats.RefreshTextPatterns(rules);
+        var seen = new List<string>();
+        stats.TextMatched += raw => seen.Add(raw.Line);
+
+        stats.ObserveRawLine(At(0, 0, "Cleric1 tells the raid, 'CH --> Tankname'"));
+        stats.ObserveRawLine(At(0, 1, "Someone tells the guild, 'hi'"));
+
+        Assert.Equal(["Cleric1 tells the raid, 'CH --> Tankname'"], seen);
+    }
+
+    /// <summary>Two rules matching one line still means one event — the host decides which
+    /// of its rules to alert for, and shouldn't be handed the same line twice.</summary>
+    [Fact]
+    public void TextMatchedFiresOncePerLineNotPerRule()
+    {
+        var rules = new[] { TextRule("CH -->", "chain"), TextRule("Tankname", "my tank") };
+        var stats = new SessionStats { CharacterName = "Kaybek" };
+        stats.RefreshTextPatterns(rules);
+        var count = 0;
+        stats.TextMatched += _ => count++;
+
+        stats.ObserveRawLine(At(0, 0, "Cleric1 tells the raid, 'CH --> Tankname'"));
+
+        Assert.Equal(1, count);
+    }
+
     /// <summary>Long raid announcements become row labels, so they're trimmed to something
     /// a 320px card can show.</summary>
     [Fact]

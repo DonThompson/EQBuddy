@@ -122,6 +122,7 @@ public sealed class MainWindow : Window
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
+        _stats.TextMatched += OnTextMatched;
         _archiver = new SessionArchiver(_repo);
         _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");
         Title = "EQBuddy";
@@ -895,6 +896,39 @@ public sealed class MainWindow : Window
         ? $"{Math.Max(0, (int)age.TotalSeconds)}s"
         : age.TotalHours < 1 ? $"{(int)age.TotalMinutes}m" : $"{(int)age.TotalHours}h {age.Minutes}m";
 
+    /// <summary>Per-rule alert cooldown for text rules. Shorter than the 5 s used elsewhere
+    /// (ALERT-008): a heal rotation announces every few seconds by design, and swallowing
+    /// those repeats would silence exactly the case this rule kind exists for.</summary>
+    private static readonly TimeSpan TextAlertCooldown = TimeSpan.FromSeconds(1);
+
+    /// <summary>
+    /// A Text watch rule matched, straight off the ingest thread. Alerting here rather than
+    /// from the next snapshot removes a whole refresh interval of lag from the one rule
+    /// kind that's about reacting in time. Suppressed during initial ingest, like every
+    /// other alert, so replaying today's log at startup fires nothing.
+    /// </summary>
+    private void OnTextMatched(RawLineEvent raw)
+    {
+        if (!_watcher.InitialIngestDone) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            foreach (var rule in _settings.TrackedRules)
+            {
+                if (!rule.Enabled || rule.Kind != WatchKind.Text) continue;
+                if (!rule.Matches(raw.Line)) continue;
+
+                var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
+                var last = _ruleLastAlert.TryGetValue(name, out var la) ? la : DateTime.MinValue;
+                if (DateTime.Now - last < TextAlertCooldown) continue;
+                _ruleLastAlert[name] = DateTime.Now;
+
+                var line = raw.Line.Length <= 80 ? raw.Line : raw.Line[..79].TrimEnd() + "…";
+                if (rule.AlertBanner) AlertTile.ShowAlert($"★ {name}: {line}");
+                if (rule.AlertSound) PlayAlertSound();
+            }
+        });
+    }
+
     private void ProcessTrackedAlerts(StatsSnapshot s)
     {
         if (!_watcher.InitialIngestDone) return;
@@ -919,6 +953,10 @@ public sealed class MainWindow : Window
             var rule = _settings.TrackedRules.FirstOrDefault(x =>
                 string.Equals(x.Name.Length > 0 ? x.Name : x.Pattern, r.Name, StringComparison.OrdinalIgnoreCase));
             if (rule is null) continue;
+            // Text rules already alerted from the ingest thread the moment the line
+            // arrived (OnTextMatched). The baseline above still had to move so this rule
+            // doesn't look like a fresh burst later.
+            if (rule.Kind == WatchKind.Text) continue;
             var last = _ruleLastAlert.TryGetValue(r.Name, out var la) ? la : DateTime.MinValue;
             if (DateTime.Now - last < TimeSpan.FromSeconds(5)) continue;
             _ruleLastAlert[r.Name] = DateTime.Now;

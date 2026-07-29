@@ -39,7 +39,12 @@ public sealed class LogWatcher : IDisposable
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
-        _timer = new System.Timers.Timer(500) { AutoReset = true };
+        // 150 ms, not 500: this interval is the floor on how fast a watch rule can alert,
+        // and Text rules are used for time-critical calls (a heal rotation announced by
+        // someone else's raid script) where half a second of polling lag is the difference
+        // between a useful cue and a late one. A poll on an unchanged file is a length
+        // check — cheap enough to run ~7×/s and still be invisible next to the game.
+        _timer = new System.Timers.Timer(150) { AutoReset = true };
         _timer.Elapsed += (_, _) => Poll();
     }
 

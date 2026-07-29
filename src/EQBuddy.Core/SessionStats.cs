@@ -238,10 +238,24 @@ public sealed class SessionStats
         foreach (var pattern in patterns)
         {
             if (!msg.Contains(pattern, StringComparison.OrdinalIgnoreCase)) continue;
-            Apply(new RawLineEvent(ts, msg));
+            var evt = new RawLineEvent(ts, msg);
+            Apply(evt);
+            // Raised outside the lock, on the ingest thread, so the host can alert now
+            // rather than on its next refresh. See TextMatched.
+            TextMatched?.Invoke(evt);
             return;   // one event per line, however many rules it satisfies
         }
     }
+
+    /// <summary>
+    /// A line just matched a <see cref="WatchKind.Text"/> rule. Every other alert is driven
+    /// off the host's periodic snapshot, which adds up to a full refresh interval of lag;
+    /// text rules exist for calls you have to react to, so they get told immediately.
+    ///
+    /// Raised on the ingest thread — handlers must marshal to their UI thread themselves,
+    /// and must not block, or they stall tailing.
+    /// </summary>
+    public event Action<RawLineEvent>? TextMatched;
 
     public void Apply(GameEvent e)
     {
