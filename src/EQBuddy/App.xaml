@@ -5,6 +5,11 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Index 0: the color palette — swapped at runtime by ThemeManager based
+                     on the saved theme; this is just the fallback shown before that runs. -->
+                <ResourceDictionary Source="Themes/ParchmentBrass.xaml"/>
+                <!-- Index 1: structural styles/templates, referencing palette brushes via
+                     DynamicResource so a palette swap repaints already-open windows. -->
                 <ResourceDictionary Source="Theme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

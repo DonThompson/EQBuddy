@@ -28,6 +28,9 @@ public partial class OptionsWindow : Window
         SourceInitialized += (_, _) => ClampToMonitor();
         LocationChanged += (_, _) => ClampToMonitor();
 
+        foreach (var label in OptionsViewModel.ThemeLabels) ThemeCombo.Items.Add(label);
+        ThemeCombo.SelectedIndex = _vm.ThemeIndex;
+
         ScaleSlider.Value = _vm.UiScale;
         OpacitySlider.Value = _vm.Opacity;
         BgOpacitySlider.Value = _vm.BackgroundOpacity;
@@ -112,6 +115,18 @@ public partial class OptionsWindow : Window
     private void OnWindowChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (_ready) _vm.RecentWindowIndex = WindowCombo.SelectedIndex;
+    }
+
+    private void OnThemeChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!_ready) return;
+        _vm.ThemeIndex = ThemeCombo.SelectedIndex;
+        ThemeManager.Apply(_vm.Settings.Theme);
+        // The card rows pick Foreground (dim vs. normal) via FindResource at construction
+        // time rather than a binding, so they need an explicit rebuild to pick up the new
+        // palette — everything else in the window repaints on its own via DynamicResource.
+        BuildCardsEditor();
+        _main.RefreshTheme();
     }
 
     private void OnSoundChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -441,15 +456,20 @@ public partial class OptionsWindow : Window
         return t;
     }
 
-    private System.Windows.Controls.TextBox DarkBox(string text, string tip) => new()
+    private System.Windows.Controls.TextBox DarkBox(string text, string tip)
     {
-        Text = text, ToolTip = tip, FontSize = 12,
-        Background = new System.Windows.Media.SolidColorBrush(
-            System.Windows.Media.Color.FromRgb(0x2A, 0x25, 0x1F)),
-        Foreground = (System.Windows.Media.Brush)FindResource("TextBrush"),
-        BorderBrush = (System.Windows.Media.Brush)FindResource("BorderBrush"),
-        Padding = new Thickness(4, 2, 4, 2),
-    };
+        var box = new System.Windows.Controls.TextBox
+        {
+            Text = text, ToolTip = tip, FontSize = 12,
+            Padding = new Thickness(4, 2, 4, 2),
+        };
+        // SetResourceReference (not FindResource) so an in-place theme switch repaints
+        // these rows too, not just the chrome built from XAML.
+        box.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty, "ComboBoxBrush");
+        box.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "TextBrush");
+        box.SetResourceReference(System.Windows.Controls.Control.BorderBrushProperty, "BorderBrush");
+        return box;
+    }
 
     private void BuildCardsEditor()
     {

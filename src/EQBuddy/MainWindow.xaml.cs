@@ -212,9 +212,26 @@ public partial class MainWindow : Window
         _settings.Save();
     }
 
-    private void ApplyBackgroundOpacity(double opacity) =>
+    private void ApplyBackgroundOpacity(double opacity)
+    {
+        // Tint comes from the current theme's BgBrush rather than a fixed color, so this
+        // still reads right after a theme switch — only the alpha is opacity's to control.
+        var tint = ((SolidColorBrush)FindResource("BgBrush")).Color;
         RootBorder().Background = new SolidColorBrush(
-            Color.FromArgb((byte)(opacity * 255), 0x1C, 0x19, 0x17));
+            Color.FromArgb((byte)(opacity * 255), tint.R, tint.G, tint.B));
+    }
+
+    /// <summary>Re-applies visual state that was baked in via FindResource at construction
+    /// time rather than DynamicResource, so a live theme switch reaches it too.</summary>
+    public void RefreshTheme()
+    {
+        ApplyBackgroundOpacity(_settings.BackgroundOpacity);
+        RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "BorderBrush");
+        // Most stat rows bake their brush in via FindResource when built rather than a
+        // binding, and only get rebuilt on the next data change — force one now so an idle
+        // widget still repaints immediately when the theme switches.
+        RefreshUi();
+    }
 
     private OptionsWindow? _optionsWindow;
 
