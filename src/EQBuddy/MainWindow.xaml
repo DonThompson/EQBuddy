@@ -77,7 +77,7 @@
             </Grid>
 
             <!-- Logging-off reminder -->
-            <Border x:Name="LogBanner" Background="#33E0A030" CornerRadius="6" Padding="8,6"
+            <Border x:Name="LogBanner" Background="{DynamicResource WarnWashBrush}" CornerRadius="6" Padding="8,6"
                     Margin="0,8,0,0" Visibility="Collapsed">
                 <TextBlock TextWrapping="Wrap" FontSize="12">
                     <Run Foreground="{DynamicResource WarnBrush}" FontWeight="SemiBold" Text="Logging looks off."/>
@@ -87,7 +87,7 @@
             </Border>
 
             <!-- Update available -->
-            <Border x:Name="UpdateBanner" Background="#337FBF5F" CornerRadius="6" Padding="8,6"
+            <Border x:Name="UpdateBanner" Background="{DynamicResource GoodWashBrush}" CornerRadius="6" Padding="8,6"
                     Margin="0,8,0,0" Visibility="Collapsed" Cursor="Hand"
                     MouseLeftButtonDown="OnUpdateBannerClick">
                 <TextBlock x:Name="UpdateText" TextWrapping="Wrap" FontSize="12"

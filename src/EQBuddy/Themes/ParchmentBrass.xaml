@@ -17,5 +17,7 @@
     <SolidColorBrush x:Key="ToggleHighlightBrush" Color="#33E3B341"/>
     <SolidColorBrush x:Key="ScrollThumbBrush" Color="#40FFD98C"/>
     <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#8CFFD98C"/>
+    <SolidColorBrush x:Key="GoodWashBrush" Color="#337FBF5F"/>
+    <SolidColorBrush x:Key="WarnWashBrush" Color="#33E0A030"/>
 
 </ResourceDictionary>
