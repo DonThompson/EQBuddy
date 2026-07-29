@@ -272,6 +272,63 @@ public class SpellTrackingTests
         Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
     }
 
+    // ---- generic "Your pet" attribution ----
+
+    /// <summary>
+    /// A summoned pet that has never been given an attack order emits no
+    /// "Attacking … Master." line, so it was invisible — the bug a beastlord player
+    /// reported. When the game names it generically instead, no prior identification is
+    /// needed: nothing but your own pet is ever called "Your pet".
+    /// </summary>
+    [Fact]
+    public void TheGenericPetFormIsCreditedWithNoMasterTell()
+    {
+        var s = Replay(
+            At(0, 0, "Your pet hits orc pawn for 12 points of damage."),
+            At(0, 2, "Your pet hit orc pawn for 8 points of magic damage by Lifespike.")).Snapshot();
+
+        Assert.Equal(20, s.DamageDealt);
+        var pet = Assert.Single(s.DamageBySource, d => d.Name == "Pet");
+        Assert.Equal(20, pet.Total);
+    }
+
+    [Fact]
+    public void AGenericPetKillCountsAsYours()
+    {
+        var s = Replay(
+            At(0, 0, "Your pet hits orc pawn for 12 points of damage."),
+            At(0, 4, "Orc pawn has been slain by Your pet!")).Snapshot();
+
+        Assert.Equal(1, s.YourKillCount);
+        Assert.Empty(s.PartyKillsByKiller);
+    }
+
+    /// <summary>The guard that keeps this safe: only the exact generic phrase counts, so
+    /// other people's pets and bystanders are still not credited to you.</summary>
+    [Fact]
+    public void OtherPeoplesCombatIsStillNotCreditedToYou()
+    {
+        var s = Replay(
+            At(0, 0, "Otherchar hits orc pawn for 50 points of damage."),
+            At(0, 2, "A giant spider hits orc pawn for 30 points of damage.")).Snapshot();
+
+        Assert.Equal(0, s.DamageDealt);
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    /// <summary>Once the pet announces itself, damage lands under its name — the generic
+    /// form must not fragment one pet's damage into two rows.</summary>
+    [Fact]
+    public void ANamedPetStillReportsUnderItsName()
+    {
+        var s = Replay(
+            At(0, 0, "Jibekn told you, 'Attacking orc pawn Master.'"),
+            At(0, 2, "Jibekn hits orc pawn for 12 points of damage.")).Snapshot();
+
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Jibekn)");
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name == "Pet");
+    }
+
     // ---- cast analytics ----
 
     [Fact]

@@ -66,7 +66,13 @@ Header: session DPS (+ live fight DPS while fighting). Details:
   10 s accumulate real spacing, an isolated hit counts ~2.5 s). Sort bar:
   total/dps/hits/avg — the bar behind each row is proportional to whichever column
   is sorted.
-  Pet damage appears as "Pet (Name)". A charm cast in flight (`You begin casting
+  Pet damage appears as "Pet (Name)", or plain "Pet" when the game names it generically
+  (`Your pet hits …`) — that form needs no prior identification, since nothing but your own
+  pet is ever called "Your pet". **Known gap:** a summoned pet that is never given an
+  attack order emits no `Attacking … Master.` line, so if the game also names it by its own
+  name in combat lines, its damage goes uncredited until you order an attack. Run with
+  `EQBUDDY_CCLOG=1` to capture the real pet chatter and close this properly.
+  A charm cast in flight (`You begin casting
   <charm>.` followed by `<creature> blinks.`) confirms the pet outright; a blink with no
   charm cast behind it stays provisional as "Pet? (Name)" until a "Master" tell confirms
   it. An interrupted or fizzled charm claims nothing, and `Your <charm> spell has worn

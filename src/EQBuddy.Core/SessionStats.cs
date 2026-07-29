@@ -566,9 +566,21 @@ public sealed class SessionStats
         agg.MaxTargets = Math.Max(agg.MaxTargets, burst.Targets.Count);
     }
 
-    private bool IsPet(string name) =>
-        _petName is not null &&
-        string.Equals(LogParser.Normalize(name), _petName, StringComparison.OrdinalIgnoreCase);
+    /// <summary>The game sometimes refers to the pet generically instead of by name —
+    /// confirmed in real logs by "Your pet's Tangling Weeds spell has worn off.". Nothing
+    /// but your own pet is ever called this, so it needs no prior identification: it works
+    /// for a summoned pet that has never been given an attack order, which is the one case
+    /// the "Attacking … Master." line can't cover.</summary>
+    private const string GenericPetName = "Your pet";
+
+    private bool IsPet(string name)
+    {
+        var normalized = LogParser.Normalize(name);
+        if (string.Equals(normalized, GenericPetName, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return _petName is not null &&
+            string.Equals(normalized, _petName, StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>A "Master" tell proves the pet is ours — upgrade any provisional damage.</summary>
     private void ConfirmPet(string name)
@@ -593,7 +605,10 @@ public sealed class SessionStats
     {
         _damageDealt += amount;
         if (kind == DamageKind.Melee) _meleeDamage += amount; else _spellDamage += amount;
-        var label = _petConfirmed ? $"Pet ({_petName})" : $"Pet? ({_petName})";
+        // No name yet means this arrived via the generic "Your pet" form — still certainly
+        // ours, so it gets the confirmed label rather than the provisional one.
+        var label = _petName is null ? "Pet"
+            : _petConfirmed ? $"Pet ({_petName})" : $"Pet? ({_petName})";
         if (amount > _maxHit) { _maxHit = amount; _maxHitDesc = $"{label} on {target}"; }
         // Pet crit annotations aren't in third-party log lines, so pet crits stay 0.
         Ability(_damageBySource, label).Add(t, amount);

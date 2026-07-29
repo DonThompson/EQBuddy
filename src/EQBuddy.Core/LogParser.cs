@@ -167,17 +167,24 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your (?<spell>.+?) spell is interrupted\.$")]
     private static partial Regex CastInterruptedRx();
 
-    // Wording of the crowd-control *landing* lines ("X is mesmerized") is unconfirmed
-    // against a real EQ Legends log, so we ship no regex for them. Instead, unmatched
-    // lines that look like CC land in the debug sink during play so the real text can be
-    // captured and turned into a proper pattern (with a fixture) in a later release.
-    [GeneratedRegex(@"mesmeriz|stunned|rooted|charmed|enthrall|entranc|pacif|lulled|snared",
+    // Lines we suspect are meaningful but whose exact EQ Legends wording we haven't seen.
+    // Rather than ship guessed regexes that silently never match, unmatched lines that
+    // look interesting go to the debug sink during play, so the real text can be captured
+    // and turned into a proper pattern with a fixture behind it.
+    //
+    //  - crowd-control landing lines ("X is mesmerized")
+    //  - pet chatter other than "Attacking … Master.", which is the only pet-identifying
+    //    line we currently parse. A summoned pet that is never given an attack order emits
+    //    it, so its damage goes uncredited — every other pet command response is a
+    //    candidate for closing that gap.
+    [GeneratedRegex(@"mesmeriz|stunned|rooted|charmed|enthrall|entranc|pacif|lulled|snared|Master|your pet|my pet",
         RegexOptions.IgnoreCase)]
-    private static partial Regex CrowdControlCandidateRx();
+    private static partial Regex UnmatchedCandidateRx();
 
-    /// <summary>Opt-in sink for unmatched lines that look like crowd-control effects.
-    /// Wired up by the host only when debug capture is enabled; null in normal runs.</summary>
-    public static Action<string>? CrowdControlCandidateSink { get; set; }
+    /// <summary>Opt-in sink for unmatched lines that look like crowd-control effects or
+    /// pet chatter. Wired up by the host only when debug capture is enabled; null in
+    /// normal runs.</summary>
+    public static Action<string>? UnmatchedCandidateSink { get; set; }
 
     // Third-party combat (group members, the player's pet, nearby fights):
     // "Orc centurion hits Lizzid for 4 points of damage." / "Lizzid tries to frenzy on orc centurion, but misses!"
@@ -412,7 +419,7 @@ public static partial class LogParser
                 return new ZoneEvent(ts, zone);
         }
 
-        if (CrowdControlCandidateSink is { } sink && CrowdControlCandidateRx().IsMatch(msg))
+        if (UnmatchedCandidateSink is { } sink && UnmatchedCandidateRx().IsMatch(msg))
         {
             try { sink(msg); } catch { /* debug capture must never break parsing */ }
         }

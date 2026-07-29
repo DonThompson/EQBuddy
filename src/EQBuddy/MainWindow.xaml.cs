@@ -120,19 +120,19 @@ public partial class MainWindow : Window
 
     public AppSettings Settings => _settings;
     /// <summary>
-    /// EQBUDDY_CCLOG=1: append log lines that look like crowd-control effects but that no
-    /// pattern matched, to %AppData%\EQBuddy\cc-candidates.txt. The wording of the CC
-    /// landing lines ("X is mesmerized") is still unconfirmed for EQ Legends, so rather
-    /// than ship guessed regexes we capture the real text during play and turn it into
-    /// proper patterns — with fixtures — in a later release. Distinct lines only, capped,
-    /// so a long session can't fill the disk.
+    /// EQBUDDY_CCLOG=1: append log lines we suspect are meaningful but couldn't match, to
+    /// %AppData%\EQBuddy\cc-candidates.txt — crowd-control landing lines and pet chatter.
+    /// Both have unconfirmed EQ Legends wording, so rather than ship guessed regexes that
+    /// silently never fire, we capture the real text during play and turn it into proper
+    /// patterns — with fixtures — in a later release. Distinct lines only, capped, so a
+    /// long session can't fill the disk.
     /// </summary>
     private static void StartCrowdControlCapture()
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var path = Core.AppPaths.File("cc-candidates.txt");
         var gate = new object();
-        LogParser.CrowdControlCandidateSink = msg =>
+        LogParser.UnmatchedCandidateSink = msg =>
         {
             lock (gate)
             {
