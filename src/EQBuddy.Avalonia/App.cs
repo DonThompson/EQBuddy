@@ -31,6 +31,11 @@ public sealed class App : Application
             args.SetObserved();
         };
 
+        // Applied before MainWindow is constructed so the saved theme is already live
+        // for the very first frame (mirrors the WPF app's App.xaml.cs).
+        try { AppTheme.Apply(Core.AppSettings.Load().Theme); }
+        catch (Exception ex) { LogError(ex); }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.MainWindow = new MainWindow();
 

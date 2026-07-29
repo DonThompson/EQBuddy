@@ -42,7 +42,7 @@ public sealed class AlertWindow : Window
         };
         Content = new Border
         {
-            Background = new SolidColorBrush(Color.FromArgb(0xF0, 0x1E, 0x1A, 0x14)),
+            Background = AppTheme.BgBrush,
             BorderBrush = AppTheme.AccentBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),

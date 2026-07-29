@@ -4,24 +4,96 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
 internal static class AppTheme
 {
-    public static readonly IBrush PanelBrush = Brush("#26FFFFFF");
-    public static readonly IBrush PanelHoverBrush = Brush("#33FFD98C");
-    public static readonly IBrush BorderBrush = Brush("#66C9A227");
-    public static readonly IBrush TextBrush = Brush("#FFEDE4D3");
-    public static readonly IBrush DimBrush = Brush("#FF9C927F");
-    public static readonly IBrush AccentBrush = Brush("#FFE3B341");
-    public static readonly IBrush GoodBrush = Brush("#FF7FBF5F");
-    public static readonly IBrush BadBrush = Brush("#FFD9634F");
-    public static readonly IBrush WarnBrush = Brush("#FFE0A030");
-    public static readonly IBrush BgBrush = Brush("#F21C1917");
+    // Every theme color is a single, never-replaced SolidColorBrush instance. Controls
+    // hold a reference to these (not a copy), so Apply() mutating .Color repaints
+    // everything already on screen — Avalonia brushes raise Invalidated on change, no
+    // resource-dictionary lookup or rebuild required. Values must stay in sync with the
+    // WPF app's Themes/*.xaml palettes (see Palette below) — same keys, same hex.
+    public static readonly SolidColorBrush BgBrush = new();
+    public static readonly SolidColorBrush PanelBrush = new();
+    public static readonly SolidColorBrush PanelHoverBrush = new();
+    public static readonly SolidColorBrush BorderBrush = new();
+    public static readonly SolidColorBrush TextBrush = new();
+    public static readonly SolidColorBrush DimBrush = new();
+    public static readonly SolidColorBrush AccentBrush = new();
+    public static readonly SolidColorBrush GoodBrush = new();
+    public static readonly SolidColorBrush BadBrush = new();
+    public static readonly SolidColorBrush WarnBrush = new();
+    public static readonly SolidColorBrush PopupBrush = new();
+    public static readonly SolidColorBrush ComboBoxBrush = new();
+    public static readonly SolidColorBrush GoodWashBrush = new();
+    public static readonly SolidColorBrush WarnWashBrush = new();
 
-    public static IBrush BgWithOpacity(double opacity) =>
-        new SolidColorBrush(Color.FromArgb((byte)(Math.Clamp(opacity, 0.15, 1.0) * 255), 0x1C, 0x19, 0x17));
+    private sealed record Palette(
+        string Bg, string Panel, string PanelHover, string Border, string Text, string Dim,
+        string Accent, string Good, string Bad, string Warn, string Popup, string ComboBox,
+        string GoodWash, string WarnWash);
+
+    private static readonly Dictionary<string, Palette> Palettes = new()
+    {
+        ["ParchmentBrass"] = new("#F21C1917", "#26FFFFFF", "#33FFD98C", "#66C9A227", "#FFEDE4D3",
+            "#FF9C927F", "#FFE3B341", "#FF7FBF5F", "#FFD9634F", "#FFE0A030", "#FF262119",
+            "#FF2A251F", "#337FBF5F", "#33E0A030"),
+        ["BlueGrey"] = new("#F2181C21", "#26FFFFFF", "#335C8AC2", "#665C7A99", "#FFE4E9EF",
+            "#FF8B96A3", "#FF5FA8D3", "#FF6FBF7F", "#FFD9634F", "#FFE0A030", "#FF20242B",
+            "#FF242830", "#336FBF7F", "#33E0A030"),
+        ["Turquoise"] = new("#F2131C1C", "#26FFFFFF", "#3340C7B8", "#6629A99A", "#FFE0F2EF",
+            "#FF87A6A0", "#FF3FCFBE", "#FF6FBF7F", "#FFD9634F", "#FFE0A030", "#FF16211F",
+            "#FF1A2725", "#336FBF7F", "#33E0A030"),
+        ["Redish"] = new("#F21F1615", "#26FFFFFF", "#33D96A55", "#66B34A3D", "#FFF2E2DE",
+            "#FFA88A83", "#FFE0654A", "#FF7FBF5F", "#FFD9345F", "#FFE0A030", "#FF251815",
+            "#FF291C18", "#337FBF5F", "#33E0A030"),
+        ["Grey"] = new("#F21A1A1A", "#26FFFFFF", "#33BFBFBF", "#66808080", "#FFEAEAEA",
+            "#FF9C9C9C", "#FFC0C0C0", "#FF7FBF5F", "#FFD9634F", "#FFE0A030", "#FF232323",
+            "#FF272727", "#337FBF5F", "#33E0A030"),
+        ["Solarized"] = new("#F2FDF6E3", "#14002B36", "#33268BD2", "#66586E75", "#FF657B83",
+            "#FF93A1A1", "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FFEEE8D5",
+            "#FFEEE8D5", "#33859900", "#33CB4B16"),
+        ["SolarizedDark"] = new("#F2002B36", "#26FFFFFF", "#33268BD2", "#66586E75", "#FF839496",
+            "#FF586E75", "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FF073642",
+            "#FF0A3C48", "#33859900", "#33CB4B16"),
+    };
+
+    static AppTheme() => Apply("ParchmentBrass");
+
+    /// <summary>Repaints every control holding one of the brushes above. An unrecognized
+    /// key (e.g. from an older settings.json) falls back to the first theme rather than
+    /// throwing — same behavior as the WPF app's ThemeManager.</summary>
+    public static void Apply(string themeKey)
+    {
+        var key = ThemeCatalog.Themes[ThemeCatalog.IndexOf(themeKey)].Key;
+        var p = Palettes[key];
+        BgBrush.Color = Color.Parse(p.Bg);
+        PanelBrush.Color = Color.Parse(p.Panel);
+        PanelHoverBrush.Color = Color.Parse(p.PanelHover);
+        BorderBrush.Color = Color.Parse(p.Border);
+        TextBrush.Color = Color.Parse(p.Text);
+        DimBrush.Color = Color.Parse(p.Dim);
+        AccentBrush.Color = Color.Parse(p.Accent);
+        GoodBrush.Color = Color.Parse(p.Good);
+        BadBrush.Color = Color.Parse(p.Bad);
+        WarnBrush.Color = Color.Parse(p.Warn);
+        PopupBrush.Color = Color.Parse(p.Popup);
+        ComboBoxBrush.Color = Color.Parse(p.ComboBox);
+        GoodWashBrush.Color = Color.Parse(p.GoodWash);
+        WarnWashBrush.Color = Color.Parse(p.WarnWash);
+    }
+
+    // Tint comes from the current theme's BgBrush rather than a fixed color, so this
+    // still reads right after a theme switch — only the alpha is opacity's to control.
+    // Returns a fresh brush each call (opacity is a slider, not a theme), so callers that
+    // want it to track a live theme switch must re-invoke this after AppTheme.Apply.
+    public static IBrush BgWithOpacity(double opacity)
+    {
+        var c = BgBrush.Color;
+        return new SolidColorBrush(Color.FromArgb((byte)(Math.Clamp(opacity, 0.15, 1.0) * 255), c.R, c.G, c.B));
+    }
 
     public static Button IconButton(AppIcon icon, string tip)
     {

@@ -23,6 +23,7 @@ public sealed class OptionsWindow : Window
     private readonly CheckBox _truncateCheck = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly CheckBox _tutorialCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly CheckBox _pinChipsCheck = new() { Margin = new Thickness(0, 6, 0, 0) };
+    private readonly ComboBox _themeCombo = new() { Width = 130, FontSize = 12 };
     private readonly ComboBox _windowCombo = new() { Width = 90, FontSize = 12 };
     private readonly ComboBox _soundCombo = new() { Width = 120, FontSize = 12 };
     private readonly TextBlock _soundFileNote = AppTheme.DimText("");
@@ -100,6 +101,10 @@ public sealed class OptionsWindow : Window
             _main.PersistSettings();
         };
 
+        foreach (var label in OptionsViewModel.ThemeLabels) _themeCombo.Items.Add(label);
+        _themeCombo.SelectedIndex = ThemeCatalog.IndexOf(main.Settings.Theme);
+        _themeCombo.SelectionChanged += OnThemeChanged;
+
         foreach (var m in (int[])[5, 15, 30]) _windowCombo.Items.Add($"{m} min");
         _windowCombo.SelectedIndex = main.Settings.RecentWindowMinutes switch { 5 => 0, 30 => 2, _ => 1 };
         _windowCombo.SelectionChanged += (_, _) =>
@@ -146,6 +151,8 @@ public sealed class OptionsWindow : Window
         close.Click += (_, _) => Close();
         title.Children.Add(close);
         panel.Children.Add(title);
+
+        panel.Children.Add(Row("Theme", _themeCombo, new Thickness(0, 0, 0, 12)));
 
         AddSlider(panel, "Widget size", _scaleLabel, _scaleSlider);
         AddSlider(panel, "Background see-through", _bgOpacityLabel, _bgOpacitySlider,
@@ -334,6 +341,15 @@ public sealed class OptionsWindow : Window
         BuildCardsEditor();
     }
 
+    private void OnThemeChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || _themeCombo.SelectedIndex < 0) return;
+        _main.Settings.Theme = ThemeCatalog.Themes[_themeCombo.SelectedIndex].Key;
+        _main.PersistSettings();
+        AppTheme.Apply(_main.Settings.Theme);
+        _main.RefreshTheme();
+    }
+
     private async void OnSoundChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (!_ready) return;
@@ -375,7 +391,7 @@ public sealed class OptionsWindow : Window
         {
             Text = text,
             FontSize = 12,
-            Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x25, 0x1F)),
+            Background = AppTheme.ComboBoxBrush,
             Foreground = AppTheme.TextBrush,
             BorderBrush = AppTheme.BorderBrush,
             Padding = new Thickness(4, 2),
