@@ -6,8 +6,10 @@ using System.Text.Json;
 
 namespace EQBuddy.Core;
 
-/// <summary>SetupPath is null for web (GitHub) updates — the banner links to the release page instead of installing.</summary>
-public sealed record UpdateInfo(Version Latest, string? SetupPath);
+/// <summary>SetupPath is a local file ready to install as-is (the OneDrive path). DownloadUrl
+/// is set instead for a GitHub-sourced update — StageForInstall fetches it over HTTP first,
+/// then installs the same way. Both null means no update is available.</summary>
+public sealed record UpdateInfo(Version Latest, string? SetupPath, string? DownloadUrl = null, string? Sha256Url = null);
 
 /// <summary>
 /// Local-first update checker: looks for a newer EQBuddySetup.exe in the family's
@@ -21,11 +23,19 @@ public static class UpdateChecker
     private const string GitHubLatestApi = "https://api.github.com/repos/DranakCorps-bot/EQBuddy/releases/latest";
     public const string GitHubLatestPage = "https://github.com/DranakCorps-bot/EQBuddy/releases/latest";
 
-    private static readonly HttpClient Http = CreateClient();
+    /// <summary>Probing the releases API: a short timeout, because this runs unprompted at
+    /// startup and every 6 h, and a slow answer should just mean "no update this time".</summary>
+    private static readonly HttpClient Http = CreateClient(TimeSpan.FromSeconds(15));
 
-    private static HttpClient CreateClient()
+    /// <summary>Fetching the installer itself. HttpClient.Timeout covers the whole response
+    /// body, not just the headers, so the probe's 15 s would abort a ~45 MB download on any
+    /// connection slower than ~25 Mbps — i.e. most of them. This one is generous instead;
+    /// the user has clicked the banner and is watching a "downloading…" message.</summary>
+    private static readonly HttpClient Downloads = CreateClient(TimeSpan.FromMinutes(10));
+
+    private static HttpClient CreateClient(TimeSpan timeout)
     {
-        var c = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        var c = new HttpClient { Timeout = timeout };
         c.DefaultRequestHeaders.UserAgent.ParseAdd("EQBuddy-Updater");
         return c;
     }
@@ -90,15 +100,36 @@ public static class UpdateChecker
 
     public static bool IsNewer(UpdateInfo info) => info.Latest > CurrentVersion;
 
-    /// <summary>Latest released version tag on GitHub, or null if unreachable/unparseable.</summary>
-    public static async Task<Version?> CheckGitHubAsync()
+    /// <summary>Latest GitHub release, including the installer asset's download URL when
+    /// the release publishes one (SetupName, optionally with a sibling .sha256 for
+    /// integrity checking) — null if unreachable, unparseable, or no installer is attached
+    /// (e.g. a release that only ships the Linux tarball).</summary>
+    public static async Task<UpdateInfo?> CheckGitHubAsync()
     {
         try
         {
             var json = await Http.GetStringAsync(GitHubLatestApi);
             using var doc = JsonDocument.Parse(json);
             var tag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-            return Version.TryParse(tag.TrimStart('v', 'V'), out var v) ? Normalize(v) : null;
+            if (!Version.TryParse(tag.TrimStart('v', 'V'), out var v)) return null;
+
+            string? downloadUrl = null, sha256Url = null;
+            foreach (var asset in doc.RootElement.GetProperty("assets").EnumerateArray())
+            {
+                var name = asset.GetProperty("name").GetString() ?? "";
+                var url = asset.GetProperty("browser_download_url").GetString();
+                if (name.Equals(SetupName, StringComparison.OrdinalIgnoreCase)) downloadUrl = url;
+                else if (name.Equals(SetupName + ".sha256", StringComparison.OrdinalIgnoreCase)) sha256Url = url;
+            }
+
+            // Fail closed: an installer we can't verify is not one we'll download and run
+            // on the user's behalf. Dropping the URL (rather than the whole update) leaves
+            // the banner offering the release page, so the user still learns an update
+            // exists and can fetch it deliberately. release.ps1 always publishes the hash,
+            // so in practice this only fires on a hand-made or half-uploaded release.
+            if (sha256Url is null) downloadUrl = null;
+
+            return new UpdateInfo(Normalize(v), SetupPath: null, downloadUrl, sha256Url);
         }
         catch
         {
@@ -107,27 +138,55 @@ public static class UpdateChecker
     }
 
     /// <summary>
-    /// Copy the setup out of OneDrive into %TEMP% (forces hydration of cloud-only files,
-    /// and survives OneDrive sync touching the original), then return the staged path.
-    /// When a sibling "EQBuddySetup.exe.sha256" exists (published by the release script),
-    /// the staged copy must match it — a corrupted or tampered installer is never run.
+    /// Stage the installer into %TEMP% and return its path, ready to run. From OneDrive
+    /// this is a local copy (forces hydration of cloud-only files, and survives OneDrive
+    /// sync touching the original); from GitHub it's an HTTP download of the release
+    /// asset. Either way, when a sibling "EQBuddySetup.exe.sha256" is published alongside
+    /// it, the staged copy must match it — a corrupted or tampered installer is never run.
     /// </summary>
-    public static string StageForInstall(UpdateInfo info)
+    public static async Task<string> StageForInstall(UpdateInfo info)
     {
-        if (info.SetupPath is null)
-            throw new InvalidOperationException("Web updates are installed via the browser, not staged.");
         var staged = Path.Combine(Path.GetTempPath(), SetupName);
-        File.Copy(info.SetupPath, staged, overwrite: true);
+        string? expected;
 
-        var shaFile = info.SetupPath + ".sha256";
-        if (File.Exists(shaFile))
+        if (info.SetupPath is { } localPath)
         {
-            var expected = File.ReadAllText(shaFile).Trim();
-            using var stream = File.OpenRead(staged);
-            var actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
+            File.Copy(localPath, staged, overwrite: true);
+            var shaFile = localPath + ".sha256";
+            expected = File.Exists(shaFile) ? File.ReadAllText(shaFile).Trim() : null;
+        }
+        else if (info.DownloadUrl is { } url)
+        {
+            // Downloaded installers are never run unverified — CheckGitHubAsync already
+            // withholds the URL when no hash is published, and this is the backstop for a
+            // hand-built UpdateInfo.
+            if (info.Sha256Url is not { } shaUrl)
+                throw new InvalidOperationException("Refusing to stage a download with no published SHA-256.");
+            expected = (await Downloads.GetStringAsync(shaUrl)).Trim();
+
+            // Streamed to disk rather than buffered: the installer is ~45 MB and there's no
+            // reason to hold it in memory.
+            await using var source = await Downloads.GetStreamAsync(url);
+            await using var file = File.Create(staged);
+            await source.CopyToAsync(file);
+        }
+        else
+        {
+            throw new InvalidOperationException("Nothing to stage: no local setup path or download URL.");
+        }
+
+        if (expected is not null)
+        {
+            string actual;
+            using (var stream = File.OpenRead(staged))
+                actual = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
             if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+            {
+                // Don't leave a rejected installer lying in %TEMP% for someone to run by hand.
+                try { File.Delete(staged); } catch { /* best effort */ }
                 throw new InvalidOperationException(
                     $"Update installer failed integrity check (expected {expected[..12]}…, got {actual[..12]}…).");
+            }
         }
         return staged;
     }
