@@ -1,0 +1,98 @@
+namespace EQBuddy.UI.Shared;
+
+/// <summary>
+/// The colors behind every theme, as data rather than per-UI resources.
+///
+/// Both UIs build their brushes from this one table: WPF composes a ResourceDictionary at
+/// runtime and swaps it into Application.Resources, Avalonia mutates its brush singletons.
+/// They used to hold separate copies — XAML dictionaries on one side, a hex table on the
+/// other — which nothing kept in step, so a theme tweak could silently reach only one UI.
+///
+/// A theme is a full set of <see cref="Keys"/>: partial palettes aren't allowed, because a
+/// missing key resolves to nothing and paints an invisible control rather than failing
+/// loudly. <c>ThemePaletteTests</c> enforces that, and that every value parses.
+/// </summary>
+public static class ThemePalettes
+{
+    /// <summary>Brush resource keys, in declaration order; <see cref="Values"/> rows follow
+    /// this order. The names are the WPF resource keys, which the Avalonia side maps onto
+    /// its own brush singletons — it deliberately implements a subset (it doesn't style
+    /// scrollbar thumbs or toggle highlights), and simply ignores keys it has no brush for.</summary>
+    public static readonly string[] Keys =
+    [
+        "BgBrush", "PanelBrush", "PanelHoverBrush", "BorderBrush", "TextBrush", "DimBrush",
+        "AccentBrush", "GoodBrush", "BadBrush", "WarnBrush", "PopupBrush", "ComboBoxBrush",
+        "ToggleHighlightBrush", "ScrollThumbBrush", "ScrollThumbHoverBrush",
+        "GoodWashBrush", "WarnWashBrush",
+    ];
+
+    /// <summary>Hex values per theme key, each row in <see cref="Keys"/> order. #AARRGGBB —
+    /// the alpha matters: panel and wash colors are deliberately translucent so the game
+    /// shows through, and the backgrounds carry the widget's own see-through alpha.</summary>
+    private static readonly Dictionary<string, string[]> Values = new()
+    {
+        // Dark parchment-and-brass fantasy — the original EQBuddy look, and the default.
+        ["ParchmentBrass"] =
+        [
+            "#F21C1917", "#26FFFFFF", "#33FFD98C", "#66C9A227", "#FFEDE4D3", "#FF9C927F",
+            "#FFE3B341", "#FF7FBF5F", "#FFD9634F", "#FFE0A030", "#FF262119", "#FF2A251F",
+            "#33E3B341", "#40FFD98C", "#8CFFD98C", "#337FBF5F", "#33E0A030",
+        ],
+        // Cool dark slate/blue-grey.
+        ["BlueGrey"] =
+        [
+            "#F2181C21", "#26FFFFFF", "#335C8AC2", "#665C7A99", "#FFE4E9EF", "#FF8B96A3",
+            "#FF5FA8D3", "#FF6FBF7F", "#FFD9634F", "#FFE0A030", "#FF20242B", "#FF242830",
+            "#335C8AC2", "#405C8AC2", "#8C5C8AC2", "#336FBF7F", "#33E0A030",
+        ],
+        ["Turquoise"] =
+        [
+            "#F2131C1C", "#26FFFFFF", "#3340C7B8", "#6629A99A", "#FFE0F2EF", "#FF87A6A0",
+            "#FF3FCFBE", "#FF6FBF7F", "#FFD9634F", "#FFE0A030", "#FF16211F", "#FF1A2725",
+            "#3340C7B8", "#4040C7B8", "#8C40C7B8", "#336FBF7F", "#33E0A030",
+        ],
+        ["Redish"] =
+        [
+            "#F21F1615", "#26FFFFFF", "#33D96A55", "#66B34A3D", "#FFF2E2DE", "#FFA88A83",
+            "#FFE0654A", "#FF7FBF5F", "#FFD9345F", "#FFE0A030", "#FF251815", "#FF291C18",
+            "#33D96A55", "#40D96A55", "#8CD96A55", "#337FBF5F", "#33E0A030",
+        ],
+        ["Grey"] =
+        [
+            "#F21A1A1A", "#26FFFFFF", "#33BFBFBF", "#66808080", "#FFEAEAEA", "#FF9C9C9C",
+            "#FFC0C0C0", "#FF7FBF5F", "#FFD9634F", "#FFE0A030", "#FF232323", "#FF272727",
+            "#33BFBFBF", "#40BFBFBF", "#8CBFBFBF", "#337FBF5F", "#33E0A030",
+        ],
+        // Solarized Light — Ethan Schoonover's base3/base2/base01/base00 scale. The only
+        // light theme, and so the one that catches any color still hardcoded dark.
+        // Body text is base01 (#586E75), Solarized's "emphasized" tone, not the usual body
+        // base00 (#657B83): base00 on base3 measures 4.1:1, under WCAG AA, and this is 11px
+        // text over a moving game. ThemePaletteTests enforces the 4.5:1 floor.
+        ["Solarized"] =
+        [
+            "#F2FDF6E3", "#14002B36", "#33268BD2", "#66586E75", "#FF586E75", "#FF93A1A1",
+            "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FFEEE8D5", "#FFEEE8D5",
+            "#33268BD2", "#40586E75", "#8C586E75", "#33859900", "#33CB4B16",
+        ],
+        ["SolarizedDark"] =
+        [
+            "#F2002B36", "#26FFFFFF", "#33268BD2", "#66586E75", "#FF839496", "#FF586E75",
+            "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FF073642", "#FF0A3C48",
+            "#33268BD2", "#40268BD2", "#8C268BD2", "#33859900", "#33CB4B16",
+        ],
+    };
+
+    /// <summary>Theme keys that have a palette — the same set, and order, as
+    /// <see cref="ThemeCatalog.Themes"/>.</summary>
+    public static IEnumerable<string> DefinedThemes => Values.Keys;
+
+    /// <summary>Key → hex for one theme. An unrecognized theme falls back to the first
+    /// entry in <see cref="ThemeCatalog"/> rather than throwing, so an older or
+    /// hand-edited settings.json still paints something.</summary>
+    public static IEnumerable<(string Key, string Hex)> For(string themeKey)
+    {
+        var resolved = ThemeCatalog.Themes[ThemeCatalog.IndexOf(themeKey)].Key;
+        var row = Values[resolved];
+        for (var i = 0; i < Keys.Length; i++) yield return (Keys[i], row[i]);
+    }
+}
