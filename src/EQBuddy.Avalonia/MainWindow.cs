@@ -32,8 +32,8 @@ public sealed class MainWindow : Window
     private readonly Ellipse _statusDot = Dot();
     private readonly TextBlock _charLabel = AppTheme.DimText("looking for a character...");
     private readonly ScrollViewer _sectionScroll = new();
-    private readonly Border _logBanner = Banner(AppTheme.WarnBrush);
-    private readonly Border _updateBanner = Banner(AppTheme.GoodBrush);
+    private readonly Border _logBanner = Banner(AppTheme.WarnWashBrush);
+    private readonly Border _updateBanner = Banner(AppTheme.GoodWashBrush);
     private readonly TextBlock _updateText = new() { FontSize = 12, Foreground = AppTheme.GoodBrush, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly TextBlock _zoneText = AppTheme.DimText("-");
     private readonly TextBlock _sessionText = AppTheme.DimText("session 0:00");
@@ -583,6 +583,17 @@ public sealed class MainWindow : Window
     }
 
     private void ApplyBackgroundOpacity(double opacity) => _root.Background = AppTheme.BgWithOpacity(opacity);
+
+    /// <summary>Re-applies visual state that AppTheme.Apply's brush mutation can't reach
+    /// on its own: BgWithOpacity returns a fresh, non-live brush each call, and stat rows
+    /// built from AccentBarBrush() bake in a color snapshot rather than a live reference.
+    /// Everything else (borders, banners, headings) repaints on its own because it holds
+    /// a reference to the same AppTheme brush instance that just got mutated.</summary>
+    public void RefreshTheme()
+    {
+        ApplyBackgroundOpacity(_settings.BackgroundOpacity);
+        RefreshUi();
+    }
 
     private async void OnChooseLogFolder(object? sender, EventArgs e)
     {
@@ -1456,9 +1467,12 @@ public sealed class MainWindow : Window
         VerticalAlignment = VerticalAlignment.Center,
     };
 
+    // Takes an already-translucent wash brush (AppTheme.GoodWashBrush/WarnWashBrush)
+    // directly rather than deriving one, so a live theme switch repaints it — the brush
+    // reference is the same instance AppTheme.Apply mutates in place.
     private static Border Banner(IBrush brush) => new()
     {
-        Background = new SolidColorBrush(((SolidColorBrush)brush).Color, 0.20),
+        Background = brush,
         CornerRadius = new CornerRadius(6),
         Padding = new Thickness(8, 6),
         IsVisible = false,
