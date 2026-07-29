@@ -35,6 +35,9 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _watcher = new LogWatcher(_stats);
+        // Before any tailing: the initial full-log ingest has to know which text rules to
+        // watch for, or a Text rule would miss everything already in today's log.
+        _stats.RefreshTextPatterns(_settings.TrackedRules);
         _archiver = new SessionArchiver(_repo);
         // A 60-minute quiet gap ends a session — persist its final state to history.
         _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");

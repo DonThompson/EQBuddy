@@ -158,8 +158,12 @@ public sealed class LogWatcher : IDisposable
                     int end = nl > start && text[nl - 1] == '\r' ? nl - 1 : nl;
                     if (end > start)
                     {
-                        var evt = LogParser.Parse(text[start..end]);
+                        var line = text[start..end];
+                        var evt = LogParser.Parse(line);
                         if (evt is not null) _stats.Apply(evt);
+                        // Every line, parsed or not: a Text watch rule matches the line's
+                        // words, not whatever event we did or didn't make of it.
+                        _stats.ObserveRawLine(line);
                     }
                     start = nl + 1;
                 }

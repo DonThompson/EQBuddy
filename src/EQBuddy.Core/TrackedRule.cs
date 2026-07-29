@@ -19,6 +19,13 @@ public enum WatchKind
     /// <see cref="TrackedRule.SpellFilter"/> chooses between one named spell and a whole
     /// class of spells.</summary>
     SpellFade = 5,
+    /// <summary>Any log line containing the text — the escape hatch from WATCH-001's
+    /// structured-events rule. Everything else here matches a parsed event, which by
+    /// definition can only cover lines EQBuddy has a pattern for. Text rules exist for
+    /// lines nobody can pattern in advance: another player's raid-assist script announcing
+    /// a heal rotation, a server's custom emotes, a guild's own chat conventions.
+    /// Matches the message, never the "[Tue Jul 28 16:55:07 2026] " timestamp prefix.</summary>
+    Text = 6,
 }
 
 /// <summary>

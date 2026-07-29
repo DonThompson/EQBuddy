@@ -148,8 +148,30 @@ is applied exactly once. Everything about it is editable, and deleting it makes 
 deleted.
 
 Rules are defined in Options: **Kind** (Loot / Kill / Skill-up / Death / Milestone /
-Spell fade) + name + match text (case-insensitive substring; the name doubles as match
-text if the match box is empty; Death/Milestone match everything when empty).
+Spell fade / Log text) + name + match text (case-insensitive substring; the name doubles as
+match text if the match box is empty; Death/Milestone match everything when empty).
+
+**Log text** matches the raw line instead of a parsed event — the deliberate exception to
+WATCH-001. Every other kind can only fire on something EQBuddy has a pattern for, which is
+useless for lines nobody can pattern in advance: another player's raid-assist script calling
+a heal rotation, a server's custom emotes, a guild's own chat conventions (requested in
+[discussion #22](https://github.com/DranakCorps-bot/EQBuddy/discussions/22) for exactly the
+first case). Details worth knowing:
+
+- The `[Tue Jul 28 16:55:07 2026] ` prefix is **not** matched, so a pattern like `Jul`
+  doesn't hit every line in the log.
+- Lines are offered to text rules whether or not EQBuddy parsed them — a raid announcement
+  that also happens to be a line we understand still counts for both.
+- An empty pattern matches **nothing** here, unlike Death/Milestone where empty means
+  match-all. Match-all on raw text would alert on every line in the log.
+- Only lines matching an enabled text rule are retained, so with no text rules configured
+  this costs one length check per line and nothing is kept. A rule that is disabled, or
+  added mid-session, keeps nothing from while it wasn't watching — unlike the other kinds,
+  text rules can't recalculate history they never held.
+- Rows are keyed by the whole line, so a verbatim repeat groups with a count while a
+  different one gets its own row; long lines are trimmed to 64 characters for display.
+- Matched text does **not** count towards active-play time. Someone else's macro firing
+  while you stand in the bank isn't you playing.
 
 **Spell fade** matches "Your X spell has worn off (of Y)." and takes a second dropdown:
 - *By name…* — the original substring match against the spell name.

@@ -76,6 +76,13 @@ Watch rules & alerts:
   **Custom…**, **Default** to follow the shared choice, or **Off**. Give your charm-break
   rule one sound and your rare-drop rule another and you'll know what happened without
   looking away from the game. Picking a sound plays it straight away.
+- **Watch any text in the log.** Most rule kinds match things EQBuddy understands (loot,
+  kills, skill-ups, deaths, milestones, spells wearing off). The **Log text** kind matches
+  the raw line instead, so you can alert on anything at all — a raid-assist script calling
+  a Complete Heal chain, a server's custom emotes, your guild's own chat conventions.
+  Nothing EQBuddy has to recognise in advance. Empty match text matches nothing (a
+  match-everything text rule would alert on every line in the log), and lines are only kept
+  while a text rule is enabled and watching for them.
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 

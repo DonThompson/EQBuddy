@@ -199,6 +199,50 @@ public sealed class SessionStats
     /// ended via the inactivity gap — the hook for persisting it to history.</summary>
     public event Action<StatsSnapshot>? SessionEnding;
 
+    /// <summary>Text patterns from the enabled <see cref="WatchKind.Text"/> rules. Kept
+    /// current by <see cref="Snapshot"/>, so an edit in Options takes effect on the next
+    /// refresh a second later without the host having to push anything.</summary>
+    private string[] _textPatterns = [];
+
+    /// <summary>
+    /// Seed the text-rule prefilter before tailing starts. <see cref="Snapshot"/> keeps it
+    /// up to date afterwards, but the initial full-log ingest runs before the first
+    /// snapshot — without this, a text rule would silently ignore everything already in
+    /// today's log and only match lines written after startup.
+    /// </summary>
+    public void RefreshTextPatterns(IEnumerable<TrackedRule>? rules)
+    {
+        var patterns = rules is null ? [] : rules
+            .Where(r => r.Enabled && r.Kind == WatchKind.Text && r.EffectivePattern.Length > 0)
+            .Select(r => r.EffectivePattern)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        lock (_lock) _textPatterns = patterns;
+    }
+
+    /// <summary>
+    /// Offer a raw log line for <see cref="WatchKind.Text"/> matching. Called for every
+    /// line, parsed or not — a raid-assist announcement may well also be a line EQBuddy
+    /// understands, and text rules are about the text, not about what we made of it.
+    ///
+    /// Only lines matching an active pattern are kept, so with no text rules configured
+    /// this costs one array-length check per line and changes nothing else.
+    /// </summary>
+    public void ObserveRawLine(string line)
+    {
+        string[] patterns;
+        lock (_lock) patterns = _textPatterns;
+        if (patterns.Length == 0) return;
+        if (!LogParser.TrySplitLine(line, out var ts, out var msg)) return;
+
+        foreach (var pattern in patterns)
+        {
+            if (!msg.Contains(pattern, StringComparison.OrdinalIgnoreCase)) continue;
+            Apply(new RawLineEvent(ts, msg));
+            return;   // one event per line, however many rules it satisfies
+        }
+    }
+
     public void Apply(GameEvent e)
     {
         var rolled = false;
@@ -215,7 +259,11 @@ public sealed class SessionStats
             _lastEventTime = e.Time;
 
             _journal.Add(e);
-            _activeBuckets.Add(e.Time.Ticks / ActiveBucket.Ticks);
+            // A matched text line is not evidence you were playing — a raid-assist macro or
+            // a guild chat pattern fires just as happily while you're stood in the bank or
+            // away from the keyboard. Active-play buckets stay a record of your own actions.
+            if (e is not RawLineEvent)
+                _activeBuckets.Add(e.Time.Ticks / ActiveBucket.Ticks);
             if (++_journalAppendsSincePrune >= 512)
             {
                 _journalAppendsSincePrune = 0;
@@ -635,6 +683,11 @@ public sealed class SessionStats
     private static AbilityAgg Ability(Dictionary<string, AbilityAgg> d, string key) =>
         d.TryGetValue(key, out var a) ? a : d[key] = new AbilityAgg();
 
+    /// <summary>Matched log lines become row labels, and a raid announcement can be a
+    /// paragraph. Trim to something a 320px-wide card and a mini-dashboard chip can show.</summary>
+    private static string Ellipsize(string line, int max = 64) =>
+        line.Length <= max ? line : line[..(max - 1)].TrimEnd() + "…";
+
     /// <summary>A kill claims the xp/coin logged just before its kill line (EQL order);
     /// anything older than the window is dropped as uncorrelatable.</summary>
     private void ClaimPendingRewards(string target, DateTime killTime)
@@ -847,6 +900,16 @@ public sealed class SessionStats
             List<TrackedRuleResult> tracked = [];
             if (rules is not null)
             {
+                // Keep the ingest-side prefilter current with the rules we were just handed:
+                // ObserveRawLine only keeps lines one of these matches. Already holding
+                // _lock here, so this assigns directly rather than calling
+                // RefreshTextPatterns (which takes it).
+                _textPatterns = rules
+                    .Where(r => r.Enabled && r.Kind == WatchKind.Text && r.EffectivePattern.Length > 0)
+                    .Select(r => r.EffectivePattern)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
                 foreach (var rule in rules)
                 {
                     if (!rule.Enabled) continue;
@@ -871,6 +934,12 @@ public sealed class SessionStats
                             (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
                                 when SpellFadeMatches(rule, wo.Spell)
                                 => (wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell, 1),
+                            // Re-matched here rather than trusted from ingest: the journal
+                            // holds lines kept for ANY text rule, so each rule still has to
+                            // claim its own. The line itself is the item, so a raid script
+                            // repeating the same call groups into one row with a count.
+                            (WatchKind.Text, RawLineEvent raw) when rule.Matches(raw.Line)
+                                => (Ellipsize(raw.Line), 1),
                             _ => (null, 0),
                         };
                         if (item is null) continue;

@@ -250,6 +250,7 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         "Death",
         "Milestone",
         "Spell fade",
+        "Log text",
     ];
 
     /// <summary>Labels for the SpellFade class picker, in SpellFilter order. Kept short

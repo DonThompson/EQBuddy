@@ -225,6 +225,23 @@ public static partial class LogParser
             DateTimeStyles.None, out ts);
     }
 
+    /// <summary>Split a log line into its timestamp and message, without interpreting the
+    /// message. For consumers that want the raw text — <see cref="WatchKind.Text"/> watch
+    /// rules — rather than a parsed event.</summary>
+    public static bool TrySplitLine(string line, out DateTime ts, out string message)
+    {
+        ts = default;
+        message = "";
+        var m = LineRx().Match(line);
+        if (!m.Success) return false;
+        var raw = Regex.Replace(m.Groups["ts"].Value, @" {2,}", " ");
+        if (!DateTime.TryParseExact(raw, TsFormat, CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out ts))
+            return false;
+        message = m.Groups["msg"].Value;
+        return true;
+    }
+
     /// <summary>Parse one full log line. Returns null for lines we don't track.</summary>
     public static GameEvent? Parse(string line)
     {
