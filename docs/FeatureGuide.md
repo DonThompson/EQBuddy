@@ -266,7 +266,7 @@ preceded by `You have been knocked unconscious!`:
 | `You have been slain by Guard Dunil!` | a direct attack landed the killing blow | named |
 | `You died.` | observed when a damage-over-time tick finishes you | **nobody** |
 
-Only the first was parsed until 1.15.0, so DoT deaths went uncounted — found in a real log
+Only the first was parsed originally, so DoT deaths went uncounted — found in a real log
 (`eqlog_Hugzee`, four DoTs landing in the same second as the death). Since the plain form
 names nobody, the death is blamed on whatever last damaged you within 20 s, which for a DoT
 death is the caster of the finishing tick; with nothing to blame it reads "Something". The
