@@ -187,6 +187,22 @@ public class LogParserTests
         Assert.Equal("an orc thaumaturgist pet", e.Killer);
     }
 
+    /// <summary>EQ Legends' other death form, from eqlog_Hugzee 2026-07-29 15:59:01: when a
+    /// damage-over-time tick lands the killing blow the log says only "You died.", naming
+    /// nobody. Parsing just the "slain by" form meant those deaths vanished.</summary>
+    [Fact]
+    public void DeathWithNoKillerNamed()
+    {
+        var e = Parse<DeathEvent>("You died.");
+        Assert.Equal("", e.Killer);
+    }
+
+    /// <summary>Both death forms are preceded by this line, so parsing it too would count
+    /// every death twice.</summary>
+    [Fact]
+    public void KnockedUnconsciousIsNotItselfADeath() =>
+        Assert.Null(LogParser.Parse(Ts + "You have been knocked unconscious!"));
+
     // ---- loot, money, crafting ----
 
     [Fact]

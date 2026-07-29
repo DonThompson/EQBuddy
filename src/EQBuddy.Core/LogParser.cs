@@ -19,6 +19,10 @@ public static partial class LogParser
     [GeneratedRegex(@"^You have been slain by (?<killer>.+)!$")]
     private static partial Regex YouDiedRx();
 
+    // "You died." — the killer-less death form; see the note where this is matched.
+    [GeneratedRegex(@"^You died\.$")]
+    private static partial Regex YouDiedPlainRx();
+
     // You slash orc pawn for 10 points of damage. (Critical) / (Double Bow Shot) / etc.
     [GeneratedRegex(@"^You (?<verb>slash|hit|kick|bash|pierce|crush|punch|backstab|bite|claw|maul|gore|sting|strike|slice|cleave|smash|rend|slam|shoot|frenzy on|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex MeleeOutRx();
@@ -257,6 +261,17 @@ public static partial class LogParser
 
         if ((r = YouDiedRx().Match(msg)).Success)
             return new DeathEvent(ts, r.Groups["killer"].Value);
+
+        // EQ Legends logs two shapes for your own death, both preceded by "You have been
+        // knocked unconscious!":
+        //   "You have been slain by Guard Dunil!"  — a direct attack landed the killing blow
+        //   "You died."                            — no killer named
+        // Observed in real logs: the plain form is what a damage-over-time tick produces
+        // (eqlog_Hugzee 2026-07-29 15:59:01, four DoTs landing in the same second). Parsing
+        // only the first form meant DoT deaths went uncounted entirely. The unconscious line
+        // is deliberately NOT parsed — it precedes both, and would double-count.
+        if (YouDiedPlainRx().IsMatch(msg))
+            return new DeathEvent(ts, "");
 
         if ((r = YouSlainRx().Match(msg)).Success)
             return new KillEvent(ts, Normalize(r.Groups["target"].Value), "You");

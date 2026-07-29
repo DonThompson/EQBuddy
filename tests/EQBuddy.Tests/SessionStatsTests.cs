@@ -255,4 +255,56 @@ public class SessionStatsTests
         // 50% into level 6, earning 80% per 59 min → ~0.61h remaining
         Assert.InRange(s.HoursToLevel!.Value, 0.55, 0.68);
     }
+
+    // ---- deaths ----
+
+    /// <summary>Transcribed from eqlog_Hugzee 2026-07-29 15:59:01 — a death by
+    /// damage-over-time, where the log names no killer. Whatever last hurt us takes the
+    /// blame, which for a DoT death is the caster of the finishing tick.</summary>
+    [Fact]
+    public void ADeathWithNoNamedKillerBlamesTheLastAttacker()
+    {
+        var stats = Replay("Hugzee",
+            At(59, 0, "Orc oracle crushes YOU for 11 points of damage."),
+            At(59, 1, "You have taken 25 damage from Heat Blood by orc oracle."),
+            At(59, 1, "You have been knocked unconscious!"),
+            At(59, 1, "You died."));
+
+        var death = Assert.Single(stats.Snapshot().Deaths);
+        Assert.Equal("Orc oracle", death.Text);
+    }
+
+    /// <summary>When the log does name the killer, that wins — no guessing from damage.</summary>
+    [Fact]
+    public void ANamedKillerIsUsedAsIs()
+    {
+        var stats = Replay("Dranak",
+            At(59, 0, "Orc oracle crushes YOU for 11 points of damage."),
+            At(59, 1, "You have been knocked unconscious!"),
+            At(59, 1, "You have been slain by Guard Dunil!"));
+
+        Assert.Equal("Guard Dunil", Assert.Single(stats.Snapshot().Deaths).Text);
+    }
+
+    /// <summary>Nothing recent to blame — say so rather than showing an empty row.</summary>
+    [Fact]
+    public void ADeathWithNothingToBlameSaysSomething()
+    {
+        var stats = Replay("Hugzee",
+            At(0, 0, "Orc oracle crushes YOU for 11 points of damage."),
+            At(59, 0, "You died."));
+
+        Assert.Equal("Something", Assert.Single(stats.Snapshot().Deaths).Text);
+    }
+
+    /// <summary>One death, not two: the unconscious line precedes both death forms.</summary>
+    [Fact]
+    public void KnockedUnconsciousDoesNotDoubleCount()
+    {
+        var stats = Replay("Hugzee",
+            At(59, 1, "You have been knocked unconscious!"),
+            At(59, 1, "You died."));
+
+        Assert.Single(stats.Snapshot().Deaths);
+    }
 }

@@ -61,6 +61,12 @@ public sealed class SessionStats
     private long _damageTaken;
     private int _avoidedIncoming;
     private int _meleeHitsTaken;
+    /// <summary>Who hit us last, for blaming a "You died." that names no killer.</summary>
+    private (string Attacker, DateTime Time)? _lastDamageFrom;
+    /// <summary>How stale the last hit can be and still be blamed for a death. Generous
+    /// because the fatal blow may be a damage-over-time tick a few seconds behind the last
+    /// direct hit, and nothing else is competing for the blame.</summary>
+    private static readonly TimeSpan DeathBlameWindow = TimeSpan.FromSeconds(20);
     private readonly Dictionary<string, (int Count, long Total)> _damageByAttacker = new(StringComparer.OrdinalIgnoreCase);
 
     private long _healingDone; private int _healCount;
@@ -380,7 +386,16 @@ public sealed class SessionStats
                     TrackCombat(tm4.Time, canStart: false);
                     break;
                 case DeathEvent d:
-                    _deaths.Add((d.Time, d.Killer));
+                    // "You died." names nobody, so credit whatever last hurt us — for a
+                    // damage-over-time death that's the caster of the tick that finished the
+                    // job, which is the answer a player wants. Falls back to "Something"
+                    // rather than an empty string so the row, and any Death watch rule
+                    // matching on killer, still reads sensibly.
+                    _deaths.Add((d.Time, d.Killer.Length > 0
+                        ? d.Killer
+                        : _lastDamageFrom is { } src && d.Time - src.Time <= DeathBlameWindow
+                            ? src.Attacker
+                            : "Something"));
                     break;
                 case DamageDealtEvent dd:
                     _damageDealt += dd.Amount;
@@ -434,6 +449,7 @@ public sealed class SessionStats
                     TouchFight(dt.Attacker, dt.Time, dmgIn: dt.Amount);
                     var atk = _damageByAttacker.TryGetValue(dt.Attacker, out var a) ? a : (0, 0L);
                     _damageByAttacker[dt.Attacker] = (atk.Item1 + 1, atk.Item2 + dt.Amount);
+                    _lastDamageFrom = (dt.Attacker, dt.Time);
                     TrackCombat(dt.Time);
                     break;
                 case HealEvent { Outgoing: true } h:
@@ -808,6 +824,7 @@ public sealed class SessionStats
         _hitCount = _critCount = _missCount = 0; _maxHit = 0; _maxHitDesc = "";
         _damageBySource.Clear(); _petAbilities.Clear(); _specialHits.Clear();
         _damageTaken = 0; _avoidedIncoming = 0; _meleeHitsTaken = 0; _damageByAttacker.Clear();
+        _lastDamageFrom = null;
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
         _loot.Clear(); _lootCount = 0; _crafted.Clear();

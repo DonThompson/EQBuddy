@@ -258,6 +258,21 @@ next level (exact after a level-up this session, else an upper bound), level-ups
 Net faction standing per faction. Deaths (killer + time), zones visited with times,
 camp markers.
 
+**Both death forms are counted.** EQ Legends logs your death two different ways, each
+preceded by `You have been knocked unconscious!`:
+
+| Log line | When | Killer |
+| --- | --- | --- |
+| `You have been slain by Guard Dunil!` | a direct attack landed the killing blow | named |
+| `You died.` | observed when a damage-over-time tick finishes you | **nobody** |
+
+Only the first was parsed until 1.15.0, so DoT deaths went uncounted — found in a real log
+(`eqlog_Hugzee`, four DoTs landing in the same second as the death). Since the plain form
+names nobody, the death is blamed on whatever last damaged you within 20 s, which for a DoT
+death is the caster of the finishing tick; with nothing to blame it reads "Something". The
+`knocked unconscious` line is deliberately not parsed — it precedes both forms and would
+double every death.
+
 ## Mini mode
 
 Minimize (or `Ctrl+Shift+M`) collapses to a pill: status dot + starred stats (star
