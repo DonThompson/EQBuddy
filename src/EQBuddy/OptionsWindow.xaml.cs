@@ -281,6 +281,7 @@ public partial class OptionsWindow : Window
         Star(1.4);
         Auto("RuleBanner");
         Auto("RuleSound");
+        Auto("RuleDelay");
         Auto("RuleDelete");
         return grid;
     }
@@ -291,7 +292,7 @@ public partial class OptionsWindow : Window
 
         var header = RuleGrid();
         header.Margin = new Thickness(0, 2, 0, 2);
-        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2) };
+        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 5) };
         foreach (var (text, column) in headings)
         {
             var label = new System.Windows.Controls.TextBlock
@@ -426,6 +427,27 @@ public partial class OptionsWindow : Window
             System.Windows.Controls.Grid.SetColumn(sound, 4);
             row.Children.Add(sound);
 
+            // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
+            // Turns a rule into a cue: sound 2.5 s after a heal-chain call to say "cast
+            // now", or 25 s after a mez to say "recast before it breaks".
+            var delay = DarkBox(FormatDelay(rule.AlertDelaySeconds),
+                $"Seconds to wait before alerting (0 = at once, up to {EQBuddy.Core.TrackedRule.MaxAlertDelaySeconds:0}).\n" +
+                "Use it as a cue: 2.5 after a heal-chain call, or 25 into a 30s mez.\n" +
+                "The count updates immediately either way — only the alert waits.");
+            delay.Width = 34;
+            delay.Margin = new Thickness(4, 0, 0, 0);
+            delay.TextAlignment = TextAlignment.Right;
+            delay.LostFocus += (_, _) =>
+            {
+                // Unparseable means 0 rather than an error: the box is two characters wide
+                // and the failure is obvious the moment it snaps back.
+                rule.AlertDelaySeconds = double.TryParse(delay.Text.Trim(), out var v) ? v : 0;
+                delay.Text = FormatDelay(rule.AlertDelaySeconds);   // shows the clamp
+                _vm.Persist();
+            };
+            System.Windows.Controls.Grid.SetColumn(delay, 5);
+            row.Children.Add(delay);
+
             var del = new System.Windows.Controls.Button
             {
                 Content = "✕", Style = (Style)FindResource("IconButton"), FontSize = 11,
@@ -435,12 +457,17 @@ public partial class OptionsWindow : Window
                 _vm.RemoveRule(rule);
                 BuildRulesEditor();
             };
-            System.Windows.Controls.Grid.SetColumn(del, 5);
+            System.Windows.Controls.Grid.SetColumn(del, 6);
             row.Children.Add(del);
 
             RulesPanel.Children.Add(row);
         }
     }
+
+    /// <summary>Blank for "no delay" rather than a bare 0 — an empty box reads as "not
+    /// using this" where 0 invites wondering whether it means something.</summary>
+    private static string FormatDelay(double seconds) =>
+        seconds <= 0 ? "" : seconds.ToString("0.#");
 
     private System.Windows.Controls.Primitives.ToggleButton RuleToggle(
         string glyph, string tip, int column, bool initial, Action<bool> apply)

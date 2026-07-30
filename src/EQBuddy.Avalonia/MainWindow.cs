@@ -123,6 +123,9 @@ public sealed class MainWindow : Window
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
         _stats.TextMatched += OnTextMatched;
+        // An idle gap ended the session: anything still cued belongs to a fight that is
+        // long over.
+        _stats.SessionRolledOver += () => Dispatcher.UIThread.Post(_delayedAlerts.CancelAll);
         _archiver = new SessionArchiver(_repo);
         _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");
         Title = "EQBuddy";
@@ -918,16 +921,56 @@ public sealed class MainWindow : Window
                 if (!rule.Matches(raw.Line)) continue;
 
                 var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
-                var last = _ruleLastAlert.TryGetValue(name, out var la) ? la : DateTime.MinValue;
-                if (DateTime.Now - last < TextAlertCooldown) continue;
-                _ruleLastAlert[name] = DateTime.Now;
-
                 var line = raw.Line.Length <= 80 ? raw.Line : raw.Line[..79].TrimEnd() + "…";
-                if (rule.AlertBanner) AlertTile.ShowAlert($"★ {name}: {line}");
-                if (rule.AlertSound) PlayAlertSound();
+                AlertOrCue(rule, name, line, TextAlertCooldown);
             }
         });
     }
+
+    private readonly EQBuddy.UI.Shared.DelayedAlerts _delayedAlerts = new();
+
+    /// <summary>
+    /// Alert now, or set a cue for later when the rule asks for a delay
+    /// (<see cref="TrackedRule.AlertDelaySeconds"/>) — a complete-heal chain wants the sound
+    /// a couple of seconds *after* the call, and a mez wants it before the spell breaks.
+    ///
+    /// One dispatcher timer per cue rather than the periodic refresh, so a 2.5 s cue lands
+    /// at 2.5 s. The cooldown applies when the alert fires, not when it was scheduled: with
+    /// a delay set, what matters is how long since you last heard something.
+    /// </summary>
+    private void AlertOrCue(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
+    {
+        if (rule.AlertDelaySeconds <= 0)
+        {
+            FireAlert(rule, ruleName, label, cooldown);
+            return;
+        }
+        if (_delayedAlerts.Schedule(rule, ruleName, label, DateTime.Now) is not { } pending) return;
+
+        DispatcherTimer? timer = null;
+        timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(rule.AlertDelaySeconds) };
+        timer.Tick += (_, _) =>
+        {
+            timer!.Stop();
+            if (_delayedAlerts.Claim(pending))
+                FireAlert(pending.Rule, pending.RuleName, pending.Label, cooldown);
+        };
+        timer.Start();
+    }
+
+    private void FireAlert(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
+    {
+        var last = _ruleLastAlert.TryGetValue(ruleName, out var la) ? la : DateTime.MinValue;
+        if (DateTime.Now - last < cooldown) return;
+        _ruleLastAlert[ruleName] = DateTime.Now;
+
+        if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
+        if (rule.AlertSound) PlayAlertSound();
+    }
+
+    /// <summary>Deaths seen last refresh, so a new one can cancel pending cues — a reminder
+    /// to recast something is noise once you're dead.</summary>
+    private int _knownDeaths;
 
     private void ProcessTrackedAlerts(StatsSnapshot s)
     {
@@ -937,8 +980,12 @@ public sealed class MainWindow : Window
             _alertBaselinePath = _watcher.CurrentPath;
             _ruleBaseline.Clear();
             foreach (var r in s.Tracked) _ruleBaseline[r.Name] = r.TotalQuantity;
+            _delayedAlerts.CancelAll();   // cues belonged to the character we just left
+            _knownDeaths = s.Deaths.Count;
             return;
         }
+        if (s.Deaths.Count > _knownDeaths) _delayedAlerts.CancelAll();
+        _knownDeaths = s.Deaths.Count;
 
         foreach (var r in s.Tracked)
         {
@@ -957,12 +1004,9 @@ public sealed class MainWindow : Window
             // arrived (OnTextMatched). The baseline above still had to move so this rule
             // doesn't look like a fresh burst later.
             if (rule.Kind == WatchKind.Text) continue;
-            var last = _ruleLastAlert.TryGetValue(r.Name, out var la) ? la : DateTime.MinValue;
-            if (DateTime.Now - last < TimeSpan.FromSeconds(5)) continue;
-            _ruleLastAlert[r.Name] = DateTime.Now;
-            if (rule.AlertBanner)
-                AlertTile.ShowAlert($"★ {r.Name}: {r.LastItem ?? "match"}{(delta > 1 ? $" ×{delta}" : "")}");
-            if (rule.AlertSound) PlayAlertSound();
+            AlertOrCue(rule, r.Name,
+                $"{r.LastItem ?? "match"}{(delta > 1 ? $" ×{delta}" : "")}",
+                TimeSpan.FromSeconds(5));
         }
     }
 

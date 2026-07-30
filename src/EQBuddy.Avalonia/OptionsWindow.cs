@@ -214,7 +214,7 @@ public sealed class OptionsWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));
             row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(115)));
             row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 4; i++)   // banner, sound, delay, delete
                 row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
 
             var kind = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
@@ -246,6 +246,25 @@ public sealed class OptionsWindow : Window
             row.Children.Add(RuleToggle("B", "Banner alert on match", 3, rule.AlertBanner, v => rule.AlertBanner = v));
             row.Children.Add(RuleToggle("S", "Sound alert on match", 4, rule.AlertSound, v => rule.AlertSound = v));
 
+            // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
+            // Turns a rule into a cue: sound 2.5 s after a heal-chain call to say "cast
+            // now", or 25 s after a mez to say "recast before it breaks".
+            var delay = DarkBox(rule.AlertDelaySeconds > 0 ? rule.AlertDelaySeconds.ToString("0.#") : "",
+                $"Seconds to wait before alerting (0 = at once, up to {TrackedRule.MaxAlertDelaySeconds:0}). " +
+                "The count updates immediately either way — only the alert waits.");
+            delay.PlaceholderText = "0s";
+            delay.Width = 44;
+            delay.Margin = new Thickness(0, 0, 4, 0);
+            delay.TextAlignment = global::Avalonia.Media.TextAlignment.Right;
+            delay.LostFocus += (_, _) =>
+            {
+                rule.AlertDelaySeconds = double.TryParse((delay.Text ?? "").Trim(), out var v) ? v : 0;
+                delay.Text = rule.AlertDelaySeconds > 0 ? rule.AlertDelaySeconds.ToString("0.#") : "";
+                _main.PersistSettings();
+            };
+            Grid.SetColumn(delay, 5);
+            row.Children.Add(delay);
+
             var del = AppTheme.IconButton("x", "Delete rule");
             del.Click += (_, _) =>
             {
@@ -253,7 +272,7 @@ public sealed class OptionsWindow : Window
                 _main.PersistSettings();
                 BuildRulesEditor();
             };
-            Grid.SetColumn(del, 5);
+            Grid.SetColumn(del, 6);
             row.Children.Add(del);
             _rulesPanel.Children.Add(row);
         }

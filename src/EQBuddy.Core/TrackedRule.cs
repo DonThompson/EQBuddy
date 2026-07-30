@@ -74,6 +74,33 @@ public sealed class TrackedRule
     /// </summary>
     public string AlertSoundName { get; set; } = "";
 
+    /// <summary>
+    /// Hold the alert back this many seconds after the match, instead of firing at once.
+    /// 0 (the default) is the original behaviour, so nothing changes for existing rules.
+    ///
+    /// This turns a rule into a cue timer: match the call in a complete-heal chain and
+    /// sound at +2.5 s to say "cast now", or match your own mez cast and sound at +25 s to
+    /// say "recast before it breaks". Requested in discussion #22.
+    ///
+    /// Only the banner and sound wait — the count, rates and rows update on the match, as
+    /// they always did. To get both an immediate and a delayed alert, make two rules with
+    /// the same match text and different sounds; that also gets you a quiet "heard it" cue
+    /// and a loud "do it now" one, which a single rule couldn't.
+    /// </summary>
+    public double AlertDelaySeconds
+    {
+        get => _alertDelaySeconds;
+        // Clamped rather than validated: a hand-edited settings.json shouldn't be able to
+        // park an alert five hours in the future, or schedule one in the past.
+        set => _alertDelaySeconds = Math.Clamp(value, 0, MaxAlertDelaySeconds);
+    }
+    private double _alertDelaySeconds;
+
+    /// <summary>Two minutes. Comfortably past the longest thing anyone has asked to be
+    /// reminded about (a 30 s mez), and short enough that a pending cue still belongs to
+    /// the fight that started it.</summary>
+    public const double MaxAlertDelaySeconds = 120;
+
     /// <summary>Rules whose name is a label rather than a pattern, so an empty pattern
     /// means "match everything of this kind" instead of falling back to the name. A
     /// SpellFade rule filtered by class needs no match text either.</summary>

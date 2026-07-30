@@ -83,6 +83,12 @@ Watch rules & alerts:
   Nothing EQBuddy has to recognise in advance. Empty match text matches nothing (a
   match-everything text rule would alert on every line in the log), and lines are only kept
   while a text rule is enabled and watching for them.
+- **Delay an alert to turn it into a cue.** Each rule has a *delay* box (0–120 s). Match the
+  call in a complete-heal chain and sound 2.5 s later to say "cast now"; match your own DoT
+  or mez cast and sound 25 s later to say "recast it". Only the alert waits — counts update
+  immediately. Want both? Make two rules with the same match text and different sounds: a
+  quiet "heard it" now, a loud "do it now" later. Cues are dropped if you die or the session
+  ends, because a reminder to cast something is noise once you're dead.
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 

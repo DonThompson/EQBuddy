@@ -39,6 +39,9 @@ public partial class MainWindow : Window
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
         _stats.TextMatched += OnTextMatched;
+        // An idle gap ended the session: anything still cued belongs to a fight that is
+        // long over.
+        _stats.SessionRolledOver += () => Dispatcher.BeginInvoke(_delayedAlerts.CancelAll);
         _archiver = new SessionArchiver(_repo);
         // A 60-minute quiet gap ends a session — persist its final state to history.
         _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");
@@ -661,20 +664,54 @@ public partial class MainWindow : Window
             {
                 if (!rule.Enabled || rule.Kind != WatchKind.Text) continue;
                 if (!rule.Matches(raw.Line)) continue;
-
                 var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
-                var last = _ruleLastAlert.TryGetValue(name, out var la) ? la : DateTime.MinValue;
-                if (DateTime.Now - last < TextAlertCooldown) continue;
-                _ruleLastAlert[name] = DateTime.Now;
-
-                if (rule.AlertBanner)
-                    AlertTile.ShowAlert($"★ {name}: {Trim(raw.Line)}");
-                if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
-                    PlayAlertSound(sound);
+                AlertOrCue(rule, name, Trim(raw.Line), TextAlertCooldown);
             }
         });
 
         static string Trim(string line) => line.Length <= 80 ? line : line[..79].TrimEnd() + "…";
+    }
+
+    private readonly EQBuddy.UI.Shared.DelayedAlerts _delayedAlerts = new();
+
+    /// <summary>
+    /// Alert now, or set a cue for later when the rule asks for a delay
+    /// (<see cref="TrackedRule.AlertDelaySeconds"/>) — a complete-heal chain wants the sound
+    /// a couple of seconds *after* the call, and a mez wants it before the spell breaks.
+    ///
+    /// The wait uses a one-shot dispatcher timer per cue rather than the 1 s UI refresh, so
+    /// a 2.5 s cue lands at 2.5 s and not somewhere in the following second. The cooldown is
+    /// applied when the alert actually fires, not when it was scheduled: with a delay set,
+    /// what matters is how long since you last *heard* something.
+    /// </summary>
+    private void AlertOrCue(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
+    {
+        if (rule.AlertDelaySeconds <= 0)
+        {
+            FireAlert(rule, ruleName, label, cooldown);
+            return;
+        }
+        if (_delayedAlerts.Schedule(rule, ruleName, label, DateTime.Now) is not { } pending) return;
+
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(rule.AlertDelaySeconds) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (_delayedAlerts.Claim(pending))
+                FireAlert(pending.Rule, pending.RuleName, pending.Label, cooldown);
+        };
+        timer.Start();
+    }
+
+    private void FireAlert(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
+    {
+        var last = _ruleLastAlert.TryGetValue(ruleName, out var la) ? la : DateTime.MinValue;
+        if (DateTime.Now - last < cooldown) return;
+        _ruleLastAlert[ruleName] = DateTime.Now;
+
+        if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
+        if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
+            PlayAlertSound(sound);
     }
 
     private void ProcessTrackedAlerts(StatsSnapshot s)
@@ -685,8 +722,11 @@ public partial class MainWindow : Window
             _alertBaselinePath = _watcher.CurrentPath;
             _ruleBaseline.Clear();
             foreach (var r in s.Tracked) _ruleBaseline[r.Name] = r.TotalQuantity;
+            _delayedAlerts.CancelAll();   // cues belonged to the character we just left
+            _knownDeaths = s.Deaths.Count;
             return;
         }
+        CancelStaleCues(s);
 
         foreach (var r in s.Tracked)
         {
@@ -707,14 +747,25 @@ public partial class MainWindow : Window
             // doesn't look like a fresh burst later.
             if (rule.Kind == WatchKind.Text) continue;
 
-            var last = _ruleLastAlert.TryGetValue(r.Name, out var la) ? la : DateTime.MinValue;
-            if (DateTime.Now - last < TimeSpan.FromSeconds(5)) continue;   // ALERT-008 cooldown
-            _ruleLastAlert[r.Name] = DateTime.Now;
+            AlertOrCue(rule, r.Name,
+                $"{r.LastItem ?? "match"}{(delta > 1 ? $" ×{delta}" : "")}",
+                TimeSpan.FromSeconds(5));   // ALERT-008 cooldown
+        }
+    }
 
-            if (rule.AlertBanner)
-                AlertTile.ShowAlert($"★ {r.Name}: {r.LastItem ?? "match"}{(delta > 1 ? $" ×{delta}" : "")}");
-            if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
-                PlayAlertSound(sound);
+    /// <summary>Deaths seen last refresh, so a new one can cancel pending cues — a reminder
+    /// to recast something is noise once you're dead.</summary>
+    private int _knownDeaths;
+
+    /// <summary>Drop cues that have outlived the situation that scheduled them: the session
+    /// rolled over on an idle gap, the widget followed a different character, or you died.</summary>
+    private void CancelStaleCues(StatsSnapshot s)
+    {
+        if (s.Deaths.Count != _knownDeaths)
+        {
+            var died = s.Deaths.Count > _knownDeaths;
+            _knownDeaths = s.Deaths.Count;
+            if (died) _delayedAlerts.CancelAll();
         }
     }
 

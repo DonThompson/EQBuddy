@@ -219,6 +219,31 @@ total, per-item breakdown, per-hour rates (wall-clock + active-time), last-match
 Rules are evaluated over the whole session journal, so editing a rule mid-session
 recalculates history, and alerts never fire during startup ingest or character switch.
 
+**Delay (per rule, 0–120 s).** Holds the alert back that many seconds after the match, so a
+rule becomes a *cue* rather than a notification. Requested in
+[discussion #22](https://github.com/DranakCorps-bot/EQBuddy/discussions/22): match the call
+in a complete-heal chain and sound at **+2.5 s** to say "cast now", or match your own mez
+cast and sound at **+25 s** to say "recast before it breaks". 0 (an empty box) is the
+original immediate behaviour, so nothing changes for rules that don't set it.
+
+- **Only the alert waits.** The count, rates and rows update on the match, as always.
+- **For both an immediate and a delayed alert, make two rules** with the same match text and
+  different sounds — a quiet "heard it" at 0 s and a loud "do it now" at 2.5 s. One rule has
+  one sound, so this is strictly better than a toggle would have been.
+- **Accuracy:** the cue inherits the detection latency as a bias, not jitter. A 3 s cue
+  measured at 3,093 ms end to end — the ~93 ms is the same detection cost described under
+  *Alert latency* above. Dial 2.4 if you want 2.5. Log timestamps are 1-second resolution,
+  so there's nothing to correct against; cues are scheduled from when the line was *seen*.
+- **Overlapping cues are normal** — a chain announces repeatedly and each call gets its own,
+  capped at 8 in flight per rule so a chatty pattern can't queue a wall of sounds.
+- **Cues are abandoned** when they stop making sense: you died, the session rolled over on an
+  idle gap, or the widget followed a different character. Being told to cast something while
+  dead is worse than silence.
+- The cooldown applies when the alert **fires**, not when it was scheduled — with a delay
+  set, what matters is how long since you last heard something.
+- The duration has to come from you: EQ Legends never logs how long a spell lasts, so a
+  25 s reminder will be wrong once the spell is upgraded.
+
 **Alerts:** 🔔 banner + a **per-rule sound**, 5 s per-rule cooldown. Each rule's sound box
 offers `Off` (silent), `Default` (follow the shared choice), any built-in, or `Custom…`
 for that rule's own `.wav`/`.mp3` — the point being that you learn what happened from the
