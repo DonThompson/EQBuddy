@@ -149,7 +149,17 @@ deleted.
 
 Rules are defined in Options: **Kind** (Loot / Kill / Skill-up / Death / Milestone /
 Spell fade / Log text) + name + match text (case-insensitive substring; the name doubles as
-match text if the match box is empty; Death/Milestone match everything when empty).
+match text if the match box is empty; Death/Milestone match everything when empty) + an
+optional per-rule **delay**.
+
+**Options → Watch rules → "Show examples"** expands a worked example for every kind, plus the
+handful of rules that explain most confusion (match text is a substring, not a whole name;
+Kind decides what the text is matched against; empty means "all of them" for some kinds and
+"nothing" for Log text). Collapsed by default, remembered per install
+(`ShowWatchGuide`). The content lives in `EQBuddy.UI.Shared.WatchGuide` so both UIs show the
+same thing, and `WatchGuideTests` checks the examples still describe rules the app can
+actually build — including that every `WatchKind` has one, which is how the missing Skill-up
+example was caught.
 
 **Log text** matches the raw line instead of a parsed event — the deliberate exception to
 WATCH-001. Every other kind can only fire on something EQBuddy has a pattern for, which is

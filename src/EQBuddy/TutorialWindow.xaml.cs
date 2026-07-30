@@ -48,9 +48,13 @@ public partial class TutorialWindow : Window
             "EQBuddy starts with one rule already on: when any of your crowd-control spells " +
             "breaks — charm, mez, root, lull or stun — you get a banner and a sound. Turn " +
             "either off, or delete the rule, in ⚙ Options → Watch rules. Add your own to " +
-            "watch Loot ('mote'), Kills, Skill-ups, Deaths, Milestones, or one named spell. " +
-            "Matches count on the 🎯 Tracked card with per-hour rates. The banner tile is " +
-            "click-through and movable — drag it while Options is open.",
+            "watch Loot ('mote'), Kills, Skill-ups, Deaths, Milestones, spells wearing off, " +
+            "or any text in the log at all. Match text is a substring, so 'mote' catches " +
+            "every tier. Set a Delay and the alert lands that many seconds later, which " +
+            "turns a rule into a cue — 'recast that DoT now'. Matches count on the 🎯 Watch " +
+            "card with per-hour rates. The banner tile is click-through and movable — drag " +
+            "it while Options is open. Not sure what to type? Options → Watch rules → " +
+            "Show examples has a worked one for every kind.",
             "t-watch.png"),
 
         new("Mini mode & hotkeys",

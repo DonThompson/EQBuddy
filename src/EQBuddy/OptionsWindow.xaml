@@ -4,8 +4,12 @@
         Title="EQBuddy Options" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
-        MinWidth="272" MaxWidth="900"
+        MinWidth="390" MaxWidth="900"
         WindowStartupLocation="Manual">
+    <!-- MinWidth was 272, which predated the rule editor's later columns (spell-class
+         picker, per-rule sound, delay): below ~390 the Name and Match boxes collapse to a
+         character or two. Raising it also widens installs whose saved OptionsWidth was the
+         old 340 default, since the width is clamped to MinWidth when the window opens. -->
     <!-- Custom chrome (WindowStyle=None + AllowsTransparency) has no native resize
          border, so width is driven by the drag handles on both edges below.
          SizeToContent stays on Height, but MaxHeight is clamped at runtime to the work
@@ -91,8 +95,20 @@
 
             <TextBlock Text="Watch rules" FontSize="12" FontWeight="SemiBold"
                        Foreground="{DynamicResource AccentBrush}" Margin="0,14,0,2"/>
-            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a substring, e.g. 'mote' or 'Befriend'. 🔔 shows a banner; the sound box picks this rule's own sound, so you can tell what happened by ear — 'Default' follows the shared choice below, 'Off' stays silent, 'Custom…' takes your own .wav/.mp3."
+            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, your spells wearing off, or any text in the log. Match is a case-insensitive substring, e.g. 'mote'. Spell fade rules can pick a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) instead of a named spell, needing no match text. Delay holds the alert back that many seconds so it lands as a cue. 🔔 shows a banner; the sound box picks this rule's own sound, so you can tell what happened by ear — 'Default' follows the shared choice below, 'Off' stays silent, 'Custom…' takes your own .wav/.mp3."
                        Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+            <!-- Collapsed by default: the examples answer the questions people actually ask
+                 (is "Mote" enough? why isn't my rule matching?) but they're a wall of text
+                 for anyone who already knows. -->
+            <Button x:Name="GuideToggle" HorizontalAlignment="Left" Margin="0,4,0,0"
+                    Style="{StaticResource IconButton}" FontSize="11"
+                    Content="▸ Show examples"
+                    ToolTip="Worked examples for every rule kind"
+                    Click="OnGuideToggled"/>
+            <Border x:Name="GuidePanel" Visibility="Collapsed" Margin="0,4,0,2"
+                    Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="8,6">
+                <StackPanel x:Name="GuideContent"/>
+            </Border>
             <!-- Shared-size scope so the header row's Auto columns track the rule rows'. -->
             <StackPanel x:Name="RulesPanel" Margin="0,4,0,0" Grid.IsSharedSizeScope="True"/>
             <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource IconButton}"

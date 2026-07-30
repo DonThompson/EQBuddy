@@ -49,6 +49,9 @@ public partial class OptionsWindow : Window
         BuildCardsEditor();
         HotkeyNote.Text = _vm.HotkeyNote;
 
+        // Restore the examples panel without persisting — this isn't the user changing it.
+        ApplyGuideOpen(_main.Settings.ShowWatchGuide, persist: false);
+
         UpdateLabels();
         _ready = true;
 
@@ -110,6 +113,56 @@ public partial class OptionsWindow : Window
     private void OnPinChipsChanged(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.PinWatchChips = PinChipsCheck.IsChecked == true;
+    }
+
+    /// <summary>Show or hide the worked examples, remembering the choice. Content is built on
+    /// first expand rather than at construction — most people never open it.</summary>
+    private void OnGuideToggled(object sender, RoutedEventArgs e) =>
+        ApplyGuideOpen(GuidePanel.Visibility != Visibility.Visible, persist: true);
+
+    private void ApplyGuideOpen(bool open, bool persist)
+    {
+        GuideToggle.Content = open ? "▾ Hide examples" : "▸ Show examples";
+        GuidePanel.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        if (open && GuideContent.Children.Count == 0) BuildGuide();
+        if (persist)
+        {
+            _main.Settings.ShowWatchGuide = open;
+            _vm.Persist();
+        }
+    }
+
+    private void BuildGuide()
+    {
+        System.Windows.Controls.TextBlock Line(
+            string text, double size, System.Windows.Media.Brush brush, double top, bool bold = false) => new()
+        {
+            Text = text, FontSize = size, Foreground = brush,
+            TextWrapping = System.Windows.TextWrapping.Wrap,
+            Margin = new Thickness(0, top, 0, 0),
+            FontWeight = bold ? System.Windows.FontWeights.SemiBold : System.Windows.FontWeights.Normal,
+        };
+
+        var accent = (System.Windows.Media.Brush)FindResource("AccentBrush");
+        var text = (System.Windows.Media.Brush)FindResource("TextBrush");
+        var dim = (System.Windows.Media.Brush)FindResource("DimBrush");
+
+        GuideContent.Children.Add(Line("How matching works", 11, accent, 0, bold: true));
+        foreach (var basic in WatchGuide.Basics)
+            GuideContent.Children.Add(Line("• " + basic, 11, dim, 2));
+
+        GuideContent.Children.Add(Line("Examples", 11, accent, 8, bold: true));
+        foreach (var ex in WatchGuide.Examples)
+        {
+            // Kind · name · what to type, then what it gets you. Two lines per example reads
+            // better than a table in a panel this narrow.
+            var match = ex.Match.Length > 0 ? $"Match \"{ex.Match}\"" : "no match text";
+            var delay = ex.Delay.Length > 0 ? $" · Delay {ex.Delay}" : "";
+            GuideContent.Children.Add(Line(
+                $"{OptionsViewModel.KindNames[(int)ex.Kind]} · \"{ex.Name}\" · {match}{delay}",
+                11, text, 8));
+            GuideContent.Children.Add(Line(ex.What, 11, dim, 1));
+        }
     }
 
     private void OnWindowChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -335,7 +388,7 @@ public partial class OptionsWindow : Window
             var spellFilter = new System.Windows.Controls.ComboBox
             {
                 FontSize = 11,
-                MinWidth = 122,
+                MinWidth = 104,
                 Margin = new Thickness(4, 0, 0, 0),
                 ToolTip = "Watch one named spell, or a whole class of spells",
             };
@@ -387,7 +440,7 @@ public partial class OptionsWindow : Window
             var sound = new System.Windows.Controls.ComboBox
             {
                 FontSize = 11,
-                MinWidth = 84,
+                MinWidth = 76,
                 Margin = new Thickness(4, 0, 0, 0),
                 ToolTip = "Sound for this rule — pick a different one per rule to tell them apart by ear",
             };
@@ -434,7 +487,7 @@ public partial class OptionsWindow : Window
                 $"Seconds to wait before alerting (0 = at once, up to {EQBuddy.Core.TrackedRule.MaxAlertDelaySeconds:0}).\n" +
                 "Use it as a cue: 2.5 after a heal-chain call, or 25 into a 30s mez.\n" +
                 "The count updates immediately either way — only the alert waits.");
-            delay.Width = 34;
+            delay.Width = 30;
             delay.Margin = new Thickness(4, 0, 0, 0);
             delay.TextAlignment = TextAlignment.Right;
             delay.LostFocus += (_, _) =>

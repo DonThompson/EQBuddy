@@ -28,6 +28,15 @@ public sealed class OptionsWindow : Window
     private readonly ComboBox _soundCombo = new() { Width = 120, FontSize = 12 };
     private readonly TextBlock _soundFileNote = AppTheme.DimText("");
     private readonly StackPanel _rulesPanel = new() { Margin = new Thickness(0, 4, 0, 0) };
+    private readonly Button _guideToggle = AppTheme.IconButton("> Show examples", "Worked examples for every rule kind");
+    private readonly Border _guidePanel = new()
+    {
+        IsVisible = false,
+        Margin = new Thickness(0, 4, 0, 2),
+        Background = AppTheme.PanelBrush,
+        CornerRadius = new CornerRadius(6),
+        Padding = new Thickness(8, 6),
+    };
     private readonly StackPanel _cardsPanel = new();
     private bool _ready;
 
@@ -131,6 +140,8 @@ public sealed class OptionsWindow : Window
 
         BuildRulesEditor();
         BuildCardsEditor();
+        // Restore before _ready so this doesn't count as the user changing it.
+        ToggleGuide(main.Settings.ShowWatchGuide, persist: false);
         UpdateLabels();
         _ready = true;
     }
@@ -169,7 +180,14 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(AppTheme.DimText("The Last Xm figures on Combat, Kills, Money, and Progress."));
 
         panel.Children.Add(Heading("Watch rules", new Thickness(0, 14, 0, 2)));
-        panel.Children.Add(AppTheme.DimText("Watch loot, kills, skill-ups, deaths, milestones, or your spells wearing off. Spell fade rules pick either one named spell or a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) — a class needs no match text and keeps working as you level into new spells. Otherwise match is a case-insensitive substring, e.g. 'mote' or 'Befriend'; when empty, the display name is used. B shows a banner and S plays a sound."));
+        panel.Children.Add(AppTheme.DimText("Watch loot, kills, skill-ups, deaths, milestones, your spells wearing off, or any text in the log. Match is a case-insensitive substring, e.g. 'mote'; when empty, the display name is used. Spell fade rules can pick a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) instead of a named spell, needing no match text. Delay holds the alert back that many seconds so it lands as a cue. B shows a banner and S plays a sound."));
+
+        // Collapsed by default — the examples answer the questions people actually ask, and
+        // are noise for anyone who already knows the answers.
+        _guideToggle.Click += (_, _) => ToggleGuide(!_guidePanel.IsVisible, persist: true);
+        panel.Children.Add(_guideToggle);
+        panel.Children.Add(_guidePanel);
+
         panel.Children.Add(_rulesPanel);
         var add = AppTheme.IconButton("+ Add watch rule", "Add watch rule");
         add.HorizontalAlignment = HorizontalAlignment.Left;
@@ -202,6 +220,47 @@ public sealed class OptionsWindow : Window
             new Thickness(0, 14, 0, 0)));
         panel.Children.Add(AppTheme.DimText("Size also scales all text. Changes apply instantly and are saved.",
             new Thickness(0, 8, 0, 0)));
+        return panel;
+    }
+
+    /// <summary>Show or hide the worked examples, remembering the choice. Built on first
+    /// expand rather than up front — most people never open it.</summary>
+    private void ToggleGuide(bool open, bool persist)
+    {
+        _guidePanel.IsVisible = open;
+        _guideToggle.Content = open ? "v Hide examples" : "> Show examples";
+        if (open && _guidePanel.Child is null) _guidePanel.Child = BuildGuide();
+        if (persist && _ready)
+        {
+            _main.Settings.ShowWatchGuide = open;
+            _main.PersistSettings();
+        }
+    }
+
+    private static Control BuildGuide()
+    {
+        var panel = new StackPanel();
+        TextBlock Line(string text, IBrush brush, double top, bool bold = false) => new()
+        {
+            Text = text, FontSize = 11, Foreground = brush, TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, top, 0, 0),
+            FontWeight = bold ? FontWeight.SemiBold : FontWeight.Normal,
+        };
+
+        panel.Children.Add(Line("How matching works", AppTheme.AccentBrush, 0, bold: true));
+        foreach (var basic in WatchGuide.Basics)
+            panel.Children.Add(Line("- " + basic, AppTheme.DimBrush, 2));
+
+        panel.Children.Add(Line("Examples", AppTheme.AccentBrush, 8, bold: true));
+        foreach (var ex in WatchGuide.Examples)
+        {
+            var match = ex.Match.Length > 0 ? $"Match \"{ex.Match}\"" : "no match text";
+            var delay = ex.Delay.Length > 0 ? $" - Delay {ex.Delay}" : "";
+            panel.Children.Add(Line(
+                $"{OptionsViewModel.KindNames[(int)ex.Kind]} - \"{ex.Name}\" - {match}{delay}",
+                AppTheme.TextBrush, 8));
+            panel.Children.Add(Line(ex.What, AppTheme.DimBrush, 1));
+        }
         return panel;
     }
 

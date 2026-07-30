@@ -28,7 +28,7 @@ public sealed class AppSettings
     /// <summary>Options window width, dragged by its right edge. Wide enough by default
     /// that the watch-rule row (kind + name + spell class + match text + toggles) fits
     /// without clipping.</summary>
-    public double OptionsWidth { get; set; } = 340;
+    public double OptionsWidth { get; set; } = 420;
     /// <summary>Default rolling window for "recent" rates, in minutes (5/15/30).</summary>
     public int RecentWindowMinutes { get; set; } = 15;
     /// <summary>Alert sound: a built-in name (Ding, Notify, Chimes, Chord, Tada,
@@ -41,6 +41,10 @@ public sealed class AppSettings
     /// chips (replaces per-rule Pinned, which is kept for settings compatibility
     /// and migrated on load).</summary>
     public bool PinWatchChips { get; set; }
+    /// <summary>Whether the watch-rule examples panel in Options is expanded. Remembered so
+    /// someone still learning the feature doesn't have to reopen it every time, and someone
+    /// who doesn't need it never sees it again.</summary>
+    public bool ShowWatchGuide { get; set; }
     /// <summary>Show the quick tour at every launch. Turned off by the tutorial's
     /// "Never show again" button or the Options checkbox. While on, the startup
     /// janitor defers log truncation — the tour's first page is its consent question.</summary>
