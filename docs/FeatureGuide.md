@@ -229,8 +229,10 @@ total, per-item breakdown, per-hour rates (wall-clock + active-time), last-match
 Rules are evaluated over the whole session journal, so editing a rule mid-session
 recalculates history, and alerts never fire during startup ingest or character switch.
 
-**Delay (per rule, 0–120 s).** Holds the alert back that many seconds after the match, so a
-rule becomes a *cue* rather than a notification. Requested in
+**Delay (per rule, up to 30 minutes).** Holds the alert back after the match, so a rule
+becomes a *cue* rather than a notification. Entered in seconds by default, with `m` for
+minutes — `2.5`, `25`, `8m`, `1:30` — and shown back as minutes when it's a whole number of
+them, so an `8m` rule still reads `8m` rather than `480`. Requested in
 [discussion #22](https://github.com/DranakCorps-bot/EQBuddy/discussions/22): match the call
 in a complete-heal chain and sound at **+2.5 s** to say "cast now", or match your own mez
 cast and sound at **+25 s** to say "recast before it breaks". 0 (an empty box) is the
@@ -246,9 +248,17 @@ original immediate behaviour, so nothing changes for rules that don't set it.
   so there's nothing to correct against; cues are scheduled from when the line was *seen*.
 - **Overlapping cues are normal** — a chain announces repeatedly and each call gets its own,
   capped at 8 in flight per rule so a chatty pattern can't queue a wall of sounds.
-- **Cues are abandoned** when they stop making sense: you died, the session rolled over on an
-  idle gap, or the widget followed a different character. Being told to cast something while
-  dead is worse than silence.
+- **Delay works on every rule kind**, not just Log text. Kill + `8m` is a camp timer: kill
+  the placeholder, get told when it's due back.
+- **Cues are abandoned** when they stop making sense — but what "stops making sense" depends
+  on the length, because the two uses are different:
+  - **Combat cues (≤ 60 s)** — "cast now", "recast before it breaks" — are dropped **when you
+    die**. Landing one on your corpse is noise.
+  - **Longer cues (> 60 s)** — respawn and camp timers — **survive your death**, because
+    dying has no bearing on when a mob pops. Losing an eight-minute timer to a dirt nap
+    would defeat the purpose.
+  - **Both** are dropped when the session rolls over on an idle gap or the widget follows a
+    different character: a timer from the camp you left isn't yours any more.
 - The cooldown applies when the alert **fires**, not when it was scheduled — with a delay
   set, what matters is how long since you last heard something.
 - The duration has to come from you: EQ Legends never logs how long a spell lasts, so a

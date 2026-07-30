@@ -765,7 +765,8 @@ public partial class MainWindow : Window
         {
             var died = s.Deaths.Count > _knownDeaths;
             _knownDeaths = s.Deaths.Count;
-            if (died) _delayedAlerts.CancelAll();
+            // Combat cues only: a respawn timer doesn't care that you died.
+            if (died) _delayedAlerts.CancelCombatCues();
         }
     }
 

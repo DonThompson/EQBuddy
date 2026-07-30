@@ -27,7 +27,7 @@ public static class WatchGuide
         "Kind decides what the text is matched against. A Loot pattern will never match if Kind is left on Kill.",
         "Death, Milestone, and class-filtered Spell fade rules need no match text at all — empty means \"all of them\".",
         "Log text is the exception: it matches raw log lines, and an empty pattern matches nothing rather than everything.",
-        "Delay holds the alert back that many seconds, turning a rule into a cue. Counts still update immediately.",
+        "Delay holds the alert back, turning a rule into a cue. Seconds by default; add m for minutes (8m), up to 30 minutes.",
         "For an immediate and a delayed alert on the same trigger, make two rules with the same Match and different sounds.",
         "The card shows the current session only, and a session ends after 60 minutes of no log activity.",
     ];
@@ -40,6 +40,8 @@ public static class WatchGuide
             "Any item with Crushbone in the name, however it was looted."),
         new(WatchKind.Kill, "Taskmasters", "taskmaster", "",
             "Kills by you or your pet whose name contains it."),
+        new(WatchKind.Kill, "Respawn", "placeholder", "8m",
+            "A camp timer: kill the placeholder, get told 8 minutes later. Delay works on any kind, not just Log text, and a timer this long survives your death — dying doesn't change when a mob pops."),
         new(WatchKind.SkillUp, "Smithing", "Blacksmithing", "",
             "Fires when that skill goes up — useful while grinding a trade skill. Match the skill's name, not what you made."),
         new(WatchKind.Death, "My deaths", "", "",

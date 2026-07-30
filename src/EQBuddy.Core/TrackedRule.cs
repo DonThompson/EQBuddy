@@ -96,10 +96,23 @@ public sealed class TrackedRule
     }
     private double _alertDelaySeconds;
 
-    /// <summary>Two minutes. Comfortably past the longest thing anyone has asked to be
-    /// reminded about (a 30 s mez), and short enough that a pending cue still belongs to
-    /// the fight that started it.</summary>
-    public const double MaxAlertDelaySeconds = 120;
+    /// <summary>Thirty minutes. Started at two, which was sized for the combat cues the
+    /// feature was requested for (a 2.5 s heal-chain call, a 25 s mez) — then testers used
+    /// it for respawn timers, where eight minutes is unremarkable and the old cap silently
+    /// clamped them down to two. Spawn timers are the natural ceiling on how far ahead
+    /// anyone wants to be reminded.</summary>
+    public const double MaxAlertDelaySeconds = 30 * 60;
+
+    /// <summary>Cues at or under this are about the fight in front of you — "cast now",
+    /// "recast before it breaks" — and are abandoned when you die, because being told to
+    /// cast something while dead is noise. Longer ones are about the world (a respawn), and
+    /// dying has no bearing on when a mob pops, so they survive.</summary>
+    public const double CombatCueSeconds = 60;
+
+    /// <summary>Whether this rule's cue belongs to the current fight rather than the world.
+    /// See <see cref="CombatCueSeconds"/>.</summary>
+    [JsonIgnore]
+    public bool IsCombatCue => AlertDelaySeconds > 0 && AlertDelaySeconds <= CombatCueSeconds;
 
     /// <summary>Rules whose name is a label rather than a pattern, so an empty pattern
     /// means "match everything of this kind" instead of falling back to the name. A

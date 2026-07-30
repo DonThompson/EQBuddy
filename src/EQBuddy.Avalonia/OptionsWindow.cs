@@ -308,17 +308,18 @@ public sealed class OptionsWindow : Window
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
             // Turns a rule into a cue: sound 2.5 s after a heal-chain call to say "cast
             // now", or 25 s after a mez to say "recast before it breaks".
-            var delay = DarkBox(rule.AlertDelaySeconds > 0 ? rule.AlertDelaySeconds.ToString("0.#") : "",
-                $"Seconds to wait before alerting (0 = at once, up to {TrackedRule.MaxAlertDelaySeconds:0}). " +
-                "The count updates immediately either way — only the alert waits.");
+            var delay = DarkBox(DelayText.Format(rule.AlertDelaySeconds),
+                "Wait this long before alerting (empty = at once, up to 30 minutes). " +
+                "Seconds by default; add m for minutes - 2.5, 25, 8m, 1:30. " +
+                "The count updates immediately either way - only the alert waits.");
             delay.PlaceholderText = "0s";
-            delay.Width = 44;
+            delay.Width = 48;
             delay.Margin = new Thickness(0, 0, 4, 0);
             delay.TextAlignment = global::Avalonia.Media.TextAlignment.Right;
             delay.LostFocus += (_, _) =>
             {
-                rule.AlertDelaySeconds = double.TryParse((delay.Text ?? "").Trim(), out var v) ? v : 0;
-                delay.Text = rule.AlertDelaySeconds > 0 ? rule.AlertDelaySeconds.ToString("0.#") : "";
+                rule.AlertDelaySeconds = DelayText.Parse(delay.Text);
+                delay.Text = DelayText.Format(rule.AlertDelaySeconds);
                 _main.PersistSettings();
             };
             Grid.SetColumn(delay, 5);

@@ -137,6 +137,57 @@ public class DelayedAlertTests
         Assert.True(alerts.Claim(fresh));
     }
 
+    // ---- what dying cancels ----
+
+    /// <summary>Dying drops the cue that says "cast now" — landing it on your corpse is
+    /// noise.</summary>
+    [Fact]
+    public void DyingCancelsCombatCues()
+    {
+        var alerts = new DelayedAlerts();
+        var pending = alerts.Schedule(Rule(2.5), "chain", "CH --> Tank", T0)!;
+
+        alerts.CancelCombatCues();
+
+        Assert.False(alerts.Claim(pending));
+    }
+
+    /// <summary>But not a respawn timer. Dying has no bearing on when a mob pops, and losing
+    /// an eight-minute timer because you took a dirt nap is worse than useless — testers use
+    /// these to camp.</summary>
+    [Fact]
+    public void DyingLeavesLongTimersAlone()
+    {
+        var alerts = new DelayedAlerts();
+        var respawn = alerts.Schedule(Rule(8 * 60), "spawn", "PH down", T0)!;
+
+        alerts.CancelCombatCues();
+
+        Assert.True(alerts.Claim(respawn));
+    }
+
+    /// <summary>Ending the session or switching character drops everything — a respawn timer
+    /// from the camp you left isn't yours any more.</summary>
+    [Fact]
+    public void CancelAllTakesLongTimersToo()
+    {
+        var alerts = new DelayedAlerts();
+        var respawn = alerts.Schedule(Rule(8 * 60), "spawn", "PH down", T0)!;
+
+        alerts.CancelAll();
+
+        Assert.False(alerts.Claim(respawn));
+    }
+
+    [Theory]
+    [InlineData(2.5, true)]
+    [InlineData(60, true)]      // on the boundary, still a fight cue
+    [InlineData(61, false)]
+    [InlineData(480, false)]
+    [InlineData(0, false)]      // no delay at all is not a cue
+    public void CombatCueBoundary(double seconds, bool expected) =>
+        Assert.Equal(expected, new TrackedRule { AlertDelaySeconds = seconds }.IsCombatCue);
+
     // ---- the setting itself ----
 
     [Fact]
@@ -158,4 +209,53 @@ public class DelayedAlertTests
     [Fact]
     public void TheRangeCoversAMezRecastWarning() =>
         Assert.Equal(25, new TrackedRule { AlertDelaySeconds = 25 }.AlertDelaySeconds);
+
+    /// <summary>The cap was two minutes, sized for combat cues, and silently clamped a
+    /// tester's eight-minute respawn timer down to two. Spawn timers are the real ceiling.</summary>
+    [Fact]
+    public void TheRangeCoversARespawnTimer()
+    {
+        Assert.Equal(480, new TrackedRule { AlertDelaySeconds = 480 }.AlertDelaySeconds);
+        Assert.Equal(30 * 60, new TrackedRule { AlertDelaySeconds = 30 * 60 }.AlertDelaySeconds);
+    }
+
+    // ---- reading and writing the delay box ----
+
+    [Theory]
+    [InlineData("2.5", 2.5)]
+    [InlineData("25", 25)]
+    [InlineData("", 0)]
+    [InlineData("   ", 0)]
+    [InlineData("8m", 480)]
+    [InlineData("8 m", 480)]
+    [InlineData("8min", 480)]
+    [InlineData("8 minutes", 480)]
+    [InlineData("8M", 480)]
+    [InlineData("30s", 30)]
+    [InlineData("1:30", 90)]
+    [InlineData("10:00", 600)]
+    [InlineData("nonsense", 0)]
+    public void DelayTextParses(string input, double expected) =>
+        Assert.Equal(expected, DelayText.Parse(input));
+
+    /// <summary>Whole minutes come back as minutes, so an "8m" respawn rule still reads "8m"
+    /// next time it's opened rather than "480".</summary>
+    [Theory]
+    [InlineData(0, "")]
+    [InlineData(2.5, "2.5")]
+    [InlineData(25, "25")]
+    [InlineData(90, "90")]
+    [InlineData(480, "8m")]
+    [InlineData(1800, "30m")]
+    public void DelayTextFormats(double seconds, string expected) =>
+        Assert.Equal(expected, DelayText.Format(seconds));
+
+    /// <summary>What the user types survives a round trip through the box.</summary>
+    [Theory]
+    [InlineData("8m")]
+    [InlineData("2.5")]
+    [InlineData("25")]
+    [InlineData("30m")]
+    public void DelayTextRoundTrips(string typed) =>
+        Assert.Equal(DelayText.Parse(typed), DelayText.Parse(DelayText.Format(DelayText.Parse(typed))));
 }

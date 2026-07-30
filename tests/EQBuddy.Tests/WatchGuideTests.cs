@@ -37,14 +37,16 @@ public class WatchGuideTests
         }
     }
 
-    /// <summary>Delays shown in the guide must be values the setting will actually keep —
-    /// an example the app silently clamps is a lie.</summary>
+    /// <summary>Delays shown in the guide must be exactly what someone can type into the box:
+    /// parsed by the same code the box uses, and kept as-is by the setting. An example the
+    /// app silently clamps, or can't read back, is a lie.</summary>
     [Fact]
     public void ExampleDelaysSurviveTheSetting()
     {
         foreach (var ex in WatchGuide.Examples.Where(e => e.Delay.Length > 0))
         {
-            Assert.True(double.TryParse(ex.Delay, out var seconds), $"\"{ex.Delay}\" is not a number");
+            var seconds = DelayText.Parse(ex.Delay);
+            Assert.True(seconds > 0, $"\"{ex.Delay}\" doesn't parse to a delay");
             Assert.Equal(seconds, new TrackedRule { AlertDelaySeconds = seconds }.AlertDelaySeconds);
         }
     }
