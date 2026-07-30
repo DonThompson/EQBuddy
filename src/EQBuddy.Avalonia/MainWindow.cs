@@ -1201,8 +1201,7 @@ public sealed class MainWindow : Window
         Task.Run(async () =>
         {
             var folder = UpdateChecker.FindUpdateFolder(_settings.UpdateFolder);
-            var info = folder is null ? null : UpdateChecker.Check(folder);
-            info ??= await UpdateChecker.CheckGitHubAsync();
+            var info = await UpdateChecker.FindBestAsync(_settings.UpdateFolder);
             Dispatcher.UIThread.Post(() =>
             {
                 if (_installingUpdate) return;

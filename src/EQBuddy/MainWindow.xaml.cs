@@ -957,11 +957,10 @@ public partial class MainWindow : Window
     {
         Task.Run(async () =>
         {
-            // Local (OneDrive) update folder is authoritative when present; otherwise
-            // fall back to the GitHub Releases feed for public installs.
+            // Best of the shared folder and the GitHub feed. A local folder with a genuine
+            // update short-circuits the network; a stale one no longer hides a release.
             var folder = UpdateChecker.FindUpdateFolder(_settings.UpdateFolder);
-            var info = folder is null ? null : UpdateChecker.Check(folder);
-            info ??= await UpdateChecker.CheckGitHubAsync();
+            var info = await UpdateChecker.FindBestAsync(_settings.UpdateFolder);
 
             Dispatcher.Invoke(() =>
             {

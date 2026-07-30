@@ -100,6 +100,39 @@ public static class UpdateChecker
 
     public static bool IsNewer(UpdateInfo info) => info.Latest > CurrentVersion;
 
+    /// <summary>
+    /// The best update available from either source: the shared folder when one is
+    /// configured or discoverable, and the GitHub release feed.
+    ///
+    /// Local-first used to mean "if a local folder answered at all, don't ask GitHub", which
+    /// had a hole big enough to hide a whole release: a synced-but-stale EQBuddySetup.exe is
+    /// a perfectly good answer, just not a new one, and it stopped the fallback from ever
+    /// running. Someone whose OneDrive hadn't caught up simply never heard about the
+    /// release. Local still wins when it genuinely has the newer build — installing from a
+    /// file already on disk beats a 45 MB download — but it no longer gets to veto.
+    /// </summary>
+    public static async Task<UpdateInfo?> FindBestAsync(string? configuredFolder)
+    {
+        var folder = FindUpdateFolder(configuredFolder);
+        var local = folder is null ? null : Check(folder);
+
+        // A local folder holding a genuine update is the cheapest possible install: take it
+        // and skip the network entirely, which is the point of the family/LAN channel.
+        if (local is not null && IsNewer(local)) return local;
+
+        return PickBest(local, await CheckGitHubAsync());
+    }
+
+    /// <summary>Whichever source offers the higher version; local wins a tie, since it needs
+    /// no download. Split out from <see cref="FindBestAsync"/> so the choice is testable
+    /// without a network or a synced folder.</summary>
+    public static UpdateInfo? PickBest(UpdateInfo? local, UpdateInfo? web)
+    {
+        if (local is null) return web;
+        if (web is null) return local;
+        return web.Latest > local.Latest ? web : local;
+    }
+
     /// <summary>Latest GitHub release, including the installer asset's download URL when
     /// the release publishes one (SetupName, optionally with a sibling .sha256 for
     /// integrity checking) — null if unreachable, unparseable, or no installer is attached

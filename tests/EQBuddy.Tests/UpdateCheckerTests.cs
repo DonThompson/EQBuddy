@@ -14,6 +14,43 @@ public class UpdateCheckerTests : IDisposable
 
     private UpdateInfo Info => new(new Version(9, 9, 9), SetupPath);
 
+    // ---- choosing between the shared folder and the GitHub feed ----
+
+    private static UpdateInfo Local(int minor) => new(new Version(1, minor, 0), "C:\\setup.exe");
+    private static UpdateInfo Web(int minor) =>
+        new(new Version(1, minor, 0), null, "https://example/EQBuddySetup.exe", "https://example/EQBuddySetup.exe.sha256");
+
+    /// <summary>The bug this exists to prevent: a synced-but-stale local installer is a
+    /// perfectly good answer, just not a new one. It used to stop the GitHub feed from being
+    /// consulted at all, so a family member whose OneDrive hadn't caught up never heard about
+    /// the release — and a restart didn't help, because startup took the same path.</summary>
+    [Fact]
+    public void AStaleLocalFolderDoesNotHideANewerRelease() =>
+        Assert.Equal(new Version(1, 15, 0), UpdateChecker.PickBest(Local(14), Web(15))!.Latest);
+
+    /// <summary>When the local folder has the newer build, install from disk — no reason to
+    /// download 45 MB that's already sitting there.</summary>
+    [Fact]
+    public void ANewerLocalFolderWins()
+    {
+        var best = UpdateChecker.PickBest(Local(16), Web(15))!;
+        Assert.Equal(new Version(1, 16, 0), best.Latest);
+        Assert.NotNull(best.SetupPath);
+    }
+
+    /// <summary>Ties go local, for the same reason.</summary>
+    [Fact]
+    public void ATieGoesToTheLocalFolder() =>
+        Assert.NotNull(UpdateChecker.PickBest(Local(15), Web(15))!.SetupPath);
+
+    [Fact]
+    public void EitherSourceAloneIsUsed()
+    {
+        Assert.Equal(new Version(1, 15, 0), UpdateChecker.PickBest(null, Web(15))!.Latest);
+        Assert.Equal(new Version(1, 15, 0), UpdateChecker.PickBest(Local(15), null)!.Latest);
+        Assert.Null(UpdateChecker.PickBest(null, null));
+    }
+
     [Fact]
     public async Task StagesWithoutHashFile()
     {
