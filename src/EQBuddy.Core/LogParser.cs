@@ -23,6 +23,13 @@ public static partial class LogParser
     [GeneratedRegex(@"^You died\.$")]
     private static partial Regex YouDiedPlainRx();
 
+    // "You will now use Round Kick instead of Kick while attacking."
+    // "You will now use Slam instead of Bash while attacking."
+    // The substituted attack keeps logging under the original verb, so this line is the only
+    // evidence that "You kick …" now means Round Kick.
+    [GeneratedRegex(@"^You will now use (?<ability>.+?) instead of (?<replaced>.+?) while attacking\.$")]
+    private static partial Regex SkillSubstitutionRx();
+
     // You slash orc pawn for 10 points of damage. (Critical) / (Double Bow Shot) / etc.
     [GeneratedRegex(@"^You (?<verb>slash|hit|kick|bash|pierce|crush|punch|backstab|bite|claw|maul|gore|sting|strike|slice|cleave|smash|rend|slam|shoot|frenzy on|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex MeleeOutRx();
@@ -396,6 +403,9 @@ public static partial class LogParser
 
         if ((r = SkillUpRx().Match(msg)).Success)
             return new SkillUpEvent(ts, r.Groups["skill"].Value, int.Parse(r.Groups["value"].Value));
+
+        if ((r = SkillSubstitutionRx().Match(msg)).Success)
+            return new SkillSubstitutionEvent(ts, r.Groups["ability"].Value, r.Groups["replaced"].Value);
 
         if ((r = FactionRx().Match(msg)).Success)
             return new FactionEvent(ts, r.Groups["faction"].Value, int.Parse(r.Groups["delta"].Value));

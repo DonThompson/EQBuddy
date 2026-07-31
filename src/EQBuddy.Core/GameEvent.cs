@@ -34,6 +34,10 @@ public record ItemDestroyedEvent(DateTime Time, string Item, int Count) : GameEv
 public record SpellWornOffEvent(DateTime Time, string Spell, string Target, bool Pet = false) : GameEvent(Time);
 public record LevelEvent(DateTime Time, int Level) : GameEvent(Time);
 public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(Time);
+/// <summary>"You will now use Round Kick instead of Kick while attacking." — an ability that
+/// takes over a basic attack. The damage still logs under the old verb ("You kick …"), so
+/// this line is the only thing that says the hits are now Round Kick rather than Kick.</summary>
+public record SkillSubstitutionEvent(DateTime Time, string Ability, string Replaced) : GameEvent(Time);
 public record FactionEvent(DateTime Time, string Faction, int Delta) : GameEvent(Time);
 public record ZoneEvent(DateTime Time, string Zone) : GameEvent(Time);
 public record CraftEvent(DateTime Time, string Item) : GameEvent(Time);

@@ -51,6 +51,18 @@ public sealed class SessionStats
     private long _damageDealt, _meleeDamage, _spellDamage;
     private int _hitCount, _critCount, _missCount;
     private int _maxHit; private string _maxHitDesc = "";
+    /// <summary>Basic attack skill → the ability that has taken it over ("Kick" → "Round
+    /// Kick"), learned from the game's own announcement. Deliberately survives session
+    /// resets: which abilities a character has is a fact about the character, not about the
+    /// session, and the announcement is logged once when the ability is earned — possibly
+    /// days before the session you're looking at.</summary>
+    private readonly Dictionary<string, string> _skillAliases = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>What a melee hit should be filed under: the ability that replaced the skill,
+    /// or the skill itself.</summary>
+    private string SkillName(string skill) =>
+        _skillAliases.TryGetValue(skill, out var ability) ? ability : skill;
+
     private readonly Dictionary<string, AbilityAgg> _damageBySource = new(StringComparer.OrdinalIgnoreCase);
     /// <summary>What the pet is doing, split out of its single "Pet (Name)" damage row.
     /// Keyed by ability alone, not by pet: swapping charms keeps one readable list, and the
@@ -423,8 +435,12 @@ public sealed class SessionStats
                         if (dd.Note is { } note && note is not ("Critical" or "Crippling Blow"))
                             Bump(_specialHits, note);
                     }
-                    if (dd.Amount > _maxHit) { _maxHit = dd.Amount; _maxHitDesc = $"{dd.Source} on {dd.Target}"; }
-                    Ability(_damageBySource, dd.Source).Add(dd.Time, dd.Amount, dd.Critical);
+                    // Melee hits are filed under the ability that took the skill over, when
+                    // the game has told us about one — "You kick …" is Round Kick from the
+                    // moment it says so, and the log never mentions it again.
+                    var source = dd.Kind == DamageKind.Melee ? SkillName(dd.Source) : dd.Source;
+                    if (dd.Amount > _maxHit) { _maxHit = dd.Amount; _maxHitDesc = $"{source} on {dd.Target}"; }
+                    Ability(_damageBySource, source).Add(dd.Time, dd.Amount, dd.Critical);
                     TrackCombat(dd.Time, dd.Amount);
                     TouchFight(dd.Target, dd.Time, dmgOut: dd.Amount);
                     if (_currentStance is { } st1)
@@ -546,6 +562,11 @@ public sealed class SessionStats
                 case SkillUpEvent su:
                     var sk = _skills.TryGetValue(su.Skill, out var skv) ? skv : (0, 0);
                     _skills[su.Skill] = (sk.Item1 + 1, Math.Max(sk.Item2, su.Value));
+                    break;
+                case SkillSubstitutionEvent sub:
+                    // Hits already recorded under the old skill stay there — they really were
+                    // plain kicks. Everything from here is the ability that replaced it.
+                    _skillAliases[sub.Replaced] = sub.Ability;
                     break;
                 case FactionEvent f:
                     var fv = _faction.TryGetValue(f.Faction, out var fcur) ? fcur : (0, 0);
