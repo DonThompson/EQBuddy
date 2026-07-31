@@ -303,7 +303,54 @@ public sealed class OptionsWindow : Window
             row.Children.Add(pattern);
 
             row.Children.Add(RuleToggle("B", "Banner alert on match", 3, rule.AlertBanner, v => rule.AlertBanner = v));
-            row.Children.Add(RuleToggle("S", "Sound alert on match", 4, rule.AlertSound, v => rule.AlertSound = v));
+
+            // Per-rule sound, replacing the old on/off toggle. Telling rules apart by ear is
+            // the entire point — and it matters most for delayed alerts, where the usual
+            // setup is two rules on one match ("heard it" now, "cast now" later) that are
+            // indistinguishable if they share a sound.
+            var sound = new ComboBox
+            {
+                FontSize = 11,
+                MinWidth = 86,
+                Margin = new Thickness(0, 0, 4, 0),
+            };
+            foreach (var choice in AlertSoundCatalog.RuleChoices) sound.Items.Add(choice);
+            sound.SelectedIndex = AlertSoundCatalog.RuleChoiceIndex(rule);
+            ToolTip.SetTip(sound, AlertSoundCatalog.IsCustom(rule.AlertSoundName) && rule.AlertSoundName.Length > 0
+                ? $"Custom: {rule.AlertSoundName}"
+                : "Sound for this rule - pick a different one per rule to tell them apart by ear");
+            sound.SelectionChanged += async (_, _) =>
+            {
+                if (!_ready || sound.SelectedIndex < 0) return;
+                if (AlertSoundCatalog.ApplyRuleChoice(rule, sound.SelectedIndex))
+                {
+                    var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                    {
+                        Title = $"Choose a sound for \"{(rule.Name.Length > 0 ? rule.Name : rule.Pattern)}\"",
+                        AllowMultiple = false,
+                        FileTypeFilter = [new FilePickerFileType("Sound files") { Patterns = ["*.wav", "*.mp3", "*.ogg"] }],
+                    });
+                    if (picked.FirstOrDefault()?.TryGetLocalPath() is { } path)
+                    {
+                        rule.AlertSoundName = path;
+                        ToolTip.SetTip(sound, $"Custom: {path}");
+                    }
+                    else
+                    {
+                        // Cancelled — snap back to what the rule already had.
+                        _ready = false;
+                        sound.SelectedIndex = AlertSoundCatalog.RuleChoiceIndex(rule);
+                        _ready = true;
+                        return;
+                    }
+                }
+                _main.PersistSettings();
+                // Play it straight away, so picking a sound is a decision you can hear.
+                if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
+                    _main.PlayAlertSound(preview);
+            };
+            Grid.SetColumn(sound, 4);
+            row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
             // Turns a rule into a cue: sound 2.5 s after a heal-chain call to say "cast

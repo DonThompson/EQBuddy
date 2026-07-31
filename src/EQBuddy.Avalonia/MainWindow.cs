@@ -1040,7 +1040,8 @@ public sealed class MainWindow : Window
         _ruleLastAlert[ruleName] = DateTime.Now;
 
         if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
-        if (rule.AlertSound) PlayAlertSound();
+        if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
+            PlayAlertSound(sound);
     }
 
     /// <summary>Deaths seen last refresh, so a new one can cancel pending cues — a reminder
@@ -1339,11 +1340,18 @@ public sealed class MainWindow : Window
         ("Alarm", "alarm-clock-elapsed.oga"),
     ];
 
-    internal void PlayAlertSound()
+    internal void PlayAlertSound() => PlayAlertSound(_settings.AlertSound);
+
+    /// <summary>
+    /// Play a specific sound: a built-in name, or the full path of a custom file. The
+    /// argument exists so per-rule sounds work — the point of giving each rule its own sound
+    /// is telling them apart by ear, which a single shared sound can't do.
+    /// </summary>
+    internal void PlayAlertSound(string choiceOrPath)
     {
         try
         {
-            var choice = _settings.AlertSound switch
+            var choice = choiceOrPath switch
             {
                 "Asterisk" or "" => "Ding",
                 "Beep" => "Chord",
