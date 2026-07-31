@@ -61,8 +61,13 @@ public sealed class TrackedRule
     /// every other kind.</summary>
     public SpellFilter SpellFilter { get; set; } = SpellFilter.ByName;
     public bool Enabled { get; set; } = true;
-    /// <summary>Pinned rules get a chip in the mini dashboard.</summary>
-    public bool Pinned { get; set; }
+    /// <summary>
+    /// Show this rule as a chip in the mini dashboard. Defaults to on, because chips used to
+    /// show every enabled rule: a new rule that silently never appears — with no hint that a
+    /// pin exists — reads as the feature being broken. The pin is there to take rules *out*
+    /// of a crowded mini bar, not to opt each one in.
+    /// </summary>
+    public bool Pinned { get; set; } = true;
     public bool AlertBanner { get; set; } = true;
     public bool AlertSound { get; set; }
     /// <summary>

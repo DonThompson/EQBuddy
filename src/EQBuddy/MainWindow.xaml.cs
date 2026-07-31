@@ -53,11 +53,19 @@ public partial class MainWindow : Window
         if (!_settings.PinWatchChips && _settings.TrackedRules.Any(r => r.Pinned))
             _settings.PinWatchChips = true;
         // Chips became per-rule again. Someone who had them on was seeing every enabled rule,
-        // so pin them all rather than silently emptying their mini bar; they can now
-        // unpick the ones they don't want.
-        else if (_settings.PinWatchChips && !_settings.TrackedRules.Any(r => r.Pinned))
-            foreach (var rule in _settings.TrackedRules.Where(r => r.Enabled))
-                rule.Pinned = true;
+        // so pin what they already had rather than silently emptying their mini bar. Once
+        // only — gated on a flag so deliberately unpinning every rule isn't undone next launch.
+        if (!_settings.WatchPinsMigrated)
+        {
+            // Not conditioned on "nothing is pinned": AppSettings.Load may already have
+            // added the built-in CC-broke rule, which is pinned by default, and that made
+            // this pass skip itself and leave the user's own rules invisible.
+            if (_settings.PinWatchChips)
+                foreach (var rule in _settings.TrackedRules.Where(r => r.Enabled))
+                    rule.Pinned = true;
+            _settings.WatchPinsMigrated = true;
+            _settings.Save();
+        }
 
         if (_settings.LogFolder is { } saved && !System.IO.Directory.Exists(saved))
             _settings.LogFolder = null; // stale saved path (game moved) — re-detect

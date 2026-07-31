@@ -41,6 +41,10 @@ public sealed class AppSettings
     /// then per-rule (<see cref="TrackedRule.Pinned"/>): showing every enabled rule was
     /// all-or-nothing, and a mini bar with eight chips on it isn't a mini bar.</summary>
     public bool PinWatchChips { get; set; }
+    /// <summary>Whether the one-time "pin everything you were already seeing" pass has run.
+    /// A flag rather than inferring it from "nothing is pinned", so deliberately unpinning
+    /// every rule isn't undone at the next launch.</summary>
+    public bool WatchPinsMigrated { get; set; }
     /// <summary>Whether the watch-rule examples panel in Options is expanded. Remembered so
     /// someone still learning the feature doesn't have to reopen it every time, and someone
     /// who doesn't need it never sees it again.</summary>
