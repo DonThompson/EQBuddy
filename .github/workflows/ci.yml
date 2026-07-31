@@ -21,6 +21,12 @@ jobs:
       - name: Run tests
         run: dotnet test tests/EQBuddy.Tests/EQBuddy.Tests.csproj -c Release --no-build --logger "console;verbosity=normal"
 
+      # Renders the Avalonia widget headlessly. It is the Linux UI, but it needs no display
+      # server, so running it here too catches breakage on the machine most changes are
+      # written on rather than waiting for the Linux job.
+      - name: Run Avalonia render tests
+        run: dotnet test tests/EQBuddy.Avalonia.Tests/EQBuddy.Avalonia.Tests.csproj -c Release --no-build --logger "console;verbosity=normal"
+
   build-avalonia-linux:
     runs-on: ubuntu-latest
     steps:
@@ -34,3 +40,5 @@ jobs:
         run: |
           dotnet build src/EQBuddy.Avalonia/EQBuddy.Avalonia.csproj -c Release
           dotnet test tests/EQBuddy.Tests/EQBuddy.Tests.csproj -c Release
+          # The one that would have caught a Linux UI that builds but doesn't draw.
+          dotnet test tests/EQBuddy.Avalonia.Tests/EQBuddy.Avalonia.Tests.csproj -c Release
