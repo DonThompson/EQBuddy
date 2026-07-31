@@ -47,6 +47,13 @@ public sealed class MainWindow : Window
     private readonly TextBlock _factionHeader = AppTheme.StatValue("-");
     private readonly TextBlock _miscHeader = AppTheme.StatValue("0 deaths");
     private readonly TextBlock _combatSummary = AppTheme.DimText("");
+    // The fight in front of you, above the session aggregate — see ShowLastFight.
+    private readonly TextBlock _combatFightLabel = AppTheme.Heading("Last fight");
+    private readonly TextBlock _combatFightText = AppTheme.DimText("");
+    private readonly TextBlock _combatSessionLabel = AppTheme.Heading("Session so far");
+    private readonly TextBlock _healFightLabel = AppTheme.Heading("Last fight");
+    private readonly TextBlock _healFightText = AppTheme.DimText("");
+    private readonly TextBlock _healSessionLabel = AppTheme.Heading("Session so far");
     private readonly TextBlock _healingSummary = AppTheme.DimText("");
     private readonly TextBlock _killsSummary = AppTheme.DimText("");
     private readonly TextBlock _moneySummary = AppTheme.DimText("");
@@ -391,6 +398,10 @@ public sealed class MainWindow : Window
     private Control BuildCombatSection()
     {
         var panel = new StackPanel();
+        _combatFightText.Margin = new Thickness(0, 1, 0, 4);
+        panel.Children.Add(_combatFightLabel);
+        panel.Children.Add(_combatFightText);
+        panel.Children.Add(_combatSessionLabel);
         _combatSummary.Margin = new Thickness(0, 2, 0, 4);
         panel.Children.Add(_combatSummary);
         panel.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits,
@@ -413,6 +424,10 @@ public sealed class MainWindow : Window
     private Control BuildHealingSection()
     {
         var panel = new StackPanel();
+        _healFightText.Margin = new Thickness(0, 1, 0, 4);
+        panel.Children.Add(_healFightLabel);
+        panel.Children.Add(_healFightText);
+        panel.Children.Add(_healSessionLabel);
         _healingSummary.Margin = new Thickness(0, 2, 0, 4);
         panel.Children.Add(_healingSummary);
         var sort = SortHeader("Heals cast", out _healSortTotal, out _healSortHits, out _healSortAvg,
@@ -712,6 +727,7 @@ public sealed class MainWindow : Window
             var incomingSwings = s.AvoidedIncoming + s.MeleeHitsTaken;
             var avoidance = incomingSwings > 0 ? (double)s.AvoidedIncoming / incomingSwings * 100 : 0;
             var combatTime = TimeSpan.FromSeconds(s.CombatSeconds);
+            ShowLastFight(s, _combatFightLabel, _combatFightText, _combatSessionLabel, healing: false);
             _combatSummary.Text =
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) - {acc:0}% accuracy\n" +
@@ -743,6 +759,7 @@ public sealed class MainWindow : Window
         _healingHeader.Text = s.Hps > 0 ? $"{s.Hps:0.#} hps" : $"{s.HealingDone:N0} healed";
         if (_sections["healing"].IsExpanded)
         {
+            ShowLastFight(s, _healFightLabel, _healFightText, _healSessionLabel, healing: true);
             _healingSummary.Text = $"Done {s.HealingDone:N0} - received {s.HealingReceived:N0}" +
                 (s.Recent is { Hps: > 0 } rh ? $"\nLast {(int)rh.Window.TotalMinutes}m: {rh.Hps:0.#} hps" : "") +
                 (s.RegenTicks > 0 ? $"\n{s.RegenTicks} regen/hymn ticks (game logs no amounts for these)" : "");
@@ -971,6 +988,26 @@ public sealed class MainWindow : Window
     /// <summary>Deaths seen last refresh, so a new one can cancel pending cues — a reminder
     /// to recast something is noise once you're dead.</summary>
     private int _knownDeaths;
+
+    /// <summary>The "Last fight" line above a card's session totals, and the "Session so far"
+    /// heading that separates the two. Hidden until there's been a fight.</summary>
+    private static void ShowLastFight(StatsSnapshot s, TextBlock label, TextBlock text,
+        TextBlock sessionLabel, bool healing)
+    {
+        if (s.LastFight is not { } f)
+        {
+            label.IsVisible = text.IsVisible = sessionLabel.IsVisible = false;
+            return;
+        }
+        label.IsVisible = text.IsVisible = sessionLabel.IsVisible = true;
+        label.Text = f.InProgress ? "Current fight" : "Last fight";
+        text.Text = healing
+            ? $"{f.Name} - {f.Healed:N0} healed - {f.Hps:0.#} hps over {f.DurationSeconds:0}s"
+              + (f.InProgress ? " (fighting)" : "")
+            : $"{f.Name} - {f.DamageOut:N0} dmg - {f.Dps:0.#} dps over {f.DurationSeconds:0}s"
+              + $" - took {f.DamageIn:N0}"
+              + (f.InProgress ? " (fighting)" : f.Outcome == "Killed" ? "" : $" - {f.Outcome}");
+    }
 
     private void ProcessTrackedAlerts(StatsSnapshot s)
     {

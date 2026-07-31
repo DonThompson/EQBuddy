@@ -412,6 +412,7 @@ public partial class MainWindow : Window
             var avoidance = incomingSwings > 0
                 ? (double)s.AvoidedIncoming / incomingSwings * 100 : 0;
             var combatTime = TimeSpan.FromSeconds(s.CombatSeconds);
+            ShowLastFight(s, CombatFightLabel, CombatFightText, CombatSessionLabel, healing: false);
             CombatSummary.Text =
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
@@ -465,6 +466,7 @@ public partial class MainWindow : Window
         HealingHeader.Text = s.Hps > 0 ? $"{s.Hps:0.#} hps" : $"{s.HealingDone:N0} healed";
         if (HealingSection.IsExpanded)
         {
+            ShowLastFight(s, HealFightLabel, HealFightText, HealSessionLabel, healing: true);
             HealingSummary.Text =
                 $"Done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
                 (s.Recent is { Hps: > 0 } rh
@@ -712,6 +714,31 @@ public partial class MainWindow : Window
         if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
             PlayAlertSound(sound);
+    }
+
+    /// <summary>
+    /// The "Last fight" line above a card's session totals, and the "Session so far" heading
+    /// that then separates the two. Both stay hidden until there's been a fight — a heading
+    /// over nothing is worse than no heading.
+    /// </summary>
+    private static void ShowLastFight(StatsSnapshot s, System.Windows.Controls.TextBlock label,
+        System.Windows.Controls.TextBlock text, System.Windows.Controls.TextBlock sessionLabel, bool healing)
+    {
+        if (s.LastFight is not { } f)
+        {
+            label.Visibility = text.Visibility = sessionLabel.Visibility = Visibility.Collapsed;
+            return;
+        }
+        label.Visibility = text.Visibility = sessionLabel.Visibility = Visibility.Visible;
+        // "Fighting" while it's still running, so a duration that keeps growing reads as
+        // in-progress rather than as a fight that took a suspiciously long time.
+        label.Text = f.InProgress ? "Current fight" : "Last fight";
+        text.Text = healing
+            ? $"{f.Name} — {f.Healed:N0} healed · {f.Hps:0.#} hps over {f.DurationSeconds:0}s"
+              + (f.InProgress ? " (fighting)" : "")
+            : $"{f.Name} — {f.DamageOut:N0} dmg · {f.Dps:0.#} dps over {f.DurationSeconds:0}s"
+              + $" · took {f.DamageIn:N0}"
+              + (f.InProgress ? " (fighting)" : f.Outcome == "Killed" ? "" : $" · {f.Outcome}");
     }
 
     private void ProcessTrackedAlerts(StatsSnapshot s)

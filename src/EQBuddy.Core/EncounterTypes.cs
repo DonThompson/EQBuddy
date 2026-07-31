@@ -3,7 +3,17 @@ namespace EQBuddy.Core;
 /// <summary>A finalized fight against one creature (ENCOUNTER-*).</summary>
 public sealed record EncounterInfo(
     string Name, DateTime Start, double DurationSeconds,
-    long DamageOut, long DamageIn, double Dps, string Outcome);
+    long DamageOut, long DamageIn, double Dps, string Outcome, long Healed = 0);
+
+/// <summary>
+/// The fight to show at the top of the Combat and Healing cards: the one you're in if you're
+/// in one, otherwise the last one that finished. <see cref="InProgress"/> says which, because
+/// the numbers mean different things — a fight still running has no final duration, and its
+/// DPS is a running figure rather than a result.
+/// </summary>
+public sealed record LastFightInfo(
+    string Name, double DurationSeconds, long DamageOut, long DamageIn, long Healed,
+    double Dps, double Hps, string Outcome, bool InProgress);
 
 public sealed record MobLoot(string Item, int Count, double? DropRatePct);
 

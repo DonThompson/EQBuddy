@@ -137,8 +137,14 @@ public sealed class SessionStats
     private sealed class ActiveFight
     {
         public DateTime Start, Last;
-        public long DmgOut, DmgIn;
+        public long DmgOut, DmgIn, Healed;
     }
+
+    /// <summary>The fight healing is currently credited to. Heals name a target, not a
+    /// creature, so there's nothing in the line tying one to the fight it belongs to — the
+    /// only honest link is "whatever you were fighting at the time". Heals cast between
+    /// pulls belong to no fight and count only towards the session.</summary>
+    private string? _healingFight;
     private sealed class MobAgg
     {
         public int Kills, Encounters;
@@ -471,6 +477,9 @@ public sealed class SessionStats
                 case HealEvent { Outgoing: true } h:
                     _healingDone += h.Amount; _healCount++;
                     Ability(_healsBySpell, h.Spell).Add(h.Time, h.Amount);
+                    // Credited to the fight you were in, if any — see _healingFight.
+                    if (_healingFight is { } hf && _activeFights.TryGetValue(hf, out var hFight))
+                        hFight.Healed += h.Amount;
                     if (h.Spell != "Unknown") _spells.Learn(h.Spell, SpellCategory.Heal);
                     // Self-heals appear as "You healed <own name>" — count as received too.
                     if (_characterName is { } me &&
@@ -759,18 +768,44 @@ public sealed class SessionStats
         f.Last = t;
         f.DmgOut += dmgOut;
         f.DmgIn += dmgIn;
+        _healingFight = target;
     }
 
     private void FinalizeFight(string target, DateTime t, string outcome)
     {
         if (!_activeFights.Remove(target, out var f)) return;
+        if (_healingFight == target) _healingFight = null;   // heals after this belong to no fight
         var dur = Math.Max(1, ((outcome == "Killed" ? t : f.Last) - f.Start).TotalSeconds);
         _encounters.Add(new EncounterInfo(target, f.Start, dur, f.DmgOut, f.DmgIn,
-            f.DmgOut / dur, outcome));
+            f.DmgOut / dur, outcome, f.Healed));
         if (_encounters.Count > 300) _encounters.RemoveRange(0, 100);
         var mob = Mob(target);
         mob.Encounters++;
         mob.FightSeconds += dur;
+    }
+
+    /// <summary>
+    /// The fight worth showing at the top of the card: the one in progress, or the last one
+    /// that finished. "In progress" wins because while you're swinging that's the fight you
+    /// care about; its duration and rates are running figures, which is why the caller is
+    /// told which kind it got.
+    ///
+    /// Several fights can be open at once (an add, a nearby pull) — the most recently touched
+    /// one is the one you're actually engaged with.
+    /// </summary>
+    private LastFightInfo? BuildLastFight()
+    {
+        if (_activeFights.Count > 0)
+        {
+            var (name, f) = _activeFights.MaxBy(kv => kv.Value.Last);
+            var dur = Math.Max(1, (f.Last - f.Start).TotalSeconds);
+            return new LastFightInfo(name, dur, f.DmgOut, f.DmgIn, f.Healed,
+                f.DmgOut / dur, f.Healed / dur, "Fighting", InProgress: true);
+        }
+        if (_encounters.Count == 0) return null;
+        var e = _encounters[^1];
+        return new LastFightInfo(e.Name, e.DurationSeconds, e.DamageOut, e.DamageIn, e.Healed,
+            e.Dps, e.Healed / Math.Max(1, e.DurationSeconds), e.Outcome, InProgress: false);
     }
 
     private void SweepStaleFights(DateTime now)
@@ -865,6 +900,7 @@ public sealed class SessionStats
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
+        _healingFight = null;
         _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
         _currentStance = null; _stanceAgg.Clear();
     }
@@ -1105,6 +1141,7 @@ public sealed class SessionStats
                 Recent = recent,
                 Tracked = tracked,
                 Markers = _markers.Select(m => new TimedDetail(m.Time, m.Label)).ToList(),
+                LastFight = BuildLastFight(),
                 RecentEncounters = _encounters.TakeLast(8).Reverse().ToList(),
                 EncounterCount = _encounters.Count,
                 Mobs = _mobs.OrderByDescending(kv => kv.Value.Kills)
@@ -1238,6 +1275,9 @@ public sealed class StatsSnapshot
     public RecentRates? Recent { get; init; }
     public List<TrackedRuleResult> Tracked { get; init; } = [];
     public List<TimedDetail> Markers { get; init; } = [];
+    /// <summary>The fight in progress, or the last one that finished; null before the first
+    /// fight of the session. Shown above the session totals on Combat and Healing.</summary>
+    public LastFightInfo? LastFight { get; init; }
     public List<EncounterInfo> RecentEncounters { get; init; } = [];
     public int EncounterCount { get; init; }
     public List<MobSummary> Mobs { get; init; } = [];
