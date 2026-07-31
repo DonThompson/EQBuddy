@@ -5,7 +5,12 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="True" ResizeMode="NoResize">
 
-    <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
+    <!-- WindowStyle=None + AllowsTransparency means there's no native resize border, so
+         ResizeGrip below drives UiScale (not Width/Height directly) from drag distance —
+         SizeToContent="WidthAndHeight" then grows or shrinks the window to fit the
+         rescaled content, the same way the Options "Widget size" slider already does. -->
+    <Grid>
+    <Border x:Name="RootBorderElement" Background="{DynamicResource BgBrush}" CornerRadius="10"
             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
         <Border.ContextMenu>
@@ -382,4 +387,16 @@
             </StackPanel>
         </StackPanel>
     </Border>
+
+    <!-- Bottom-right resize grip. Only visible in full mode — the mini dashboard has its
+         own compact width and isn't meant to be stretched. -->
+    <Thumb x:Name="ResizeGrip" Width="14" Height="14" Margin="0,0,2,2"
+           HorizontalAlignment="Right" VerticalAlignment="Bottom"
+           Cursor="SizeNWSE" ToolTip="Drag to resize (scales text and everything else with it)"
+           DragStarted="OnResizeGripStarted" DragDelta="OnResizeGripDelta">
+        <Thumb.Template>
+            <ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent"/></ControlTemplate>
+        </Thumb.Template>
+    </Thumb>
+    </Grid>
 </Window>

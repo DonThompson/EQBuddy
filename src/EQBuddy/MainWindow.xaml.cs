@@ -195,6 +195,53 @@ public partial class MainWindow : Window
             ? null
             : new System.Windows.Media.ScaleTransform(scale, scale);
 
+    // Resize-grip state captured at drag start. The window has no native resize border
+    // (WindowStyle=None), and SizeToContent="WidthAndHeight" means setting Width/Height
+    // directly wouldn't stick anyway — so the grip drives UiScale instead, and the window
+    // grows or shrinks to fit as SizeToContent re-measures the rescaled content. Deriving
+    // the drag distance from the cursor's absolute position each frame, rather than
+    // accumulating DragDelta, avoids feedback jitter as the window resizes under the
+    // cursor mid-drag.
+    private double _resizeCursorX, _resizeCursorY, _resizeStartScale, _resizeStartWidth, _resizeStartHeight;
+
+    private void OnResizeGripStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+    {
+        _resizeCursorX = CursorX();
+        _resizeCursorY = CursorY();
+        _resizeStartScale = _settings.UiScale;
+        _resizeStartWidth = ActualWidth;
+        _resizeStartHeight = ActualHeight;
+    }
+
+    private void OnResizeGripDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+    {
+        if (_resizeStartWidth < 1 || _resizeStartHeight < 1) return;
+        // Average the two axes so a diagonal drag from the corner feels like one motion
+        // rather than the width or height alone dominating.
+        var widthFactor = 1 + (CursorX() - _resizeCursorX) / _resizeStartWidth;
+        var heightFactor = 1 + (CursorY() - _resizeCursorY) / _resizeStartHeight;
+        SetUiScale(_resizeStartScale * (widthFactor + heightFactor) / 2);
+    }
+
+    /// <summary>Cursor position in device-independent units (the space Width/Height live in).</summary>
+    private double CursorX()
+    {
+        Native.GetCursorPos(out var p);
+        return p.X * DipScale().X;
+    }
+
+    private double CursorY()
+    {
+        Native.GetCursorPos(out var p);
+        return p.Y * DipScale().Y;
+    }
+
+    private (double X, double Y) DipScale()
+    {
+        var m = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformFromDevice;
+        return m is { } t ? (t.M11, t.M22) : (1.0, 1.0);
+    }
+
     public void SetWindowOpacity(double opacity)
     {
         _settings.Opacity = Math.Clamp(opacity, 0.3, 1.0);
@@ -267,8 +314,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private System.Windows.Controls.Border RootBorder() =>
-        (System.Windows.Controls.Border)Content;
+    private System.Windows.Controls.Border RootBorder() => RootBorderElement;
 
     private void OnChooseLogFolder(object sender, RoutedEventArgs e)
     {
@@ -952,6 +998,7 @@ public partial class MainWindow : Window
         _settings.Minimized = mini;
         MiniRoot.Visibility = mini ? Visibility.Visible : Visibility.Collapsed;
         NormalRoot.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
+        ResizeGrip.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         _settings.Save();
         if (mini) UpdateMiniChips(_stats.Snapshot());
     }
@@ -1246,6 +1293,12 @@ public partial class MainWindow : Window
         public static extern int SetWindowLong(IntPtr hWnd, int index, int value);
         public const int GwlExstyle = -20;
         public const int WsExTransparent = 0x20;
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public struct Point { public int X, Y; }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool GetCursorPos(out Point point);
     }
 
     /// <summary>
