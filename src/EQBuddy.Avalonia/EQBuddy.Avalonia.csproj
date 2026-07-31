@@ -26,4 +26,10 @@
                       Link="Assets\tutorial\%(Filename)%(Extension)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The headless render tests drive the real widget, which means reaching internals
+         (AppTheme, the snapshot-render hook). Test-only: nothing else references this. -->
+    <InternalsVisibleTo Include="EQBuddy.Avalonia.Tests" />
+  </ItemGroup>
+
 </Project>

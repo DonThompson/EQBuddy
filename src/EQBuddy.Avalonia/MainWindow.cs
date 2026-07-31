@@ -760,6 +760,18 @@ public sealed class MainWindow : Window
         RefreshExpandedSections(s);
     }
 
+    /// <summary>Paint a snapshot into the cards, without the timer-driven housekeeping
+    /// RefreshUi also does (character rescan, update check, log janitor). Exists so the
+    /// headless render tests can exercise the code path every refresh takes — which is where
+    /// a card that mis-formats or dereferences null actually breaks — without a log folder,
+    /// a network, or a five-second wait.</summary>
+    internal void RenderSnapshotForTest(StatsSnapshot s)
+    {
+        ApplySessionSubsections();
+        RefreshExpandedSections(s);
+        RenderTracked(s);
+    }
+
     private void RefreshExpandedSections(StatsSnapshot s)
     {
         RefreshOptionalSectionVisibility(s);
