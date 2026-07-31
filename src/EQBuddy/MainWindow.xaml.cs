@@ -729,15 +729,21 @@ public partial class MainWindow : Window
     /// </summary>
     private void OnTextMatched(RawLineEvent raw)
     {
-        if (!_watcher.InitialIngestDone) return;
+        // During the startup re-read of the log, immediate alerts stay suppressed — nobody
+        // wants a burst of banners for things that happened an hour ago. Delayed cues are
+        // different: a respawn timer set four minutes ago is still running, and losing it
+        // because the app restarted is exactly when you needed it. So a cue whose due time
+        // is still in the future gets scheduled for the time it has left.
+        var ingesting = !_watcher.InitialIngestDone;
         Dispatcher.BeginInvoke(() =>
         {
             foreach (var rule in _settings.TrackedRules)
             {
                 if (!rule.Enabled || rule.Kind != WatchKind.Text) continue;
                 if (!rule.Matches(raw.Line)) continue;
+                if (ingesting && rule.AlertDelaySeconds <= 0) continue;
                 var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
-                AlertOrCue(rule, name, Trim(raw.Line), TextAlertCooldown);
+                AlertOrCue(rule, name, Trim(raw.Line), TextAlertCooldown, raw.Time);
             }
         });
 
@@ -756,16 +762,23 @@ public partial class MainWindow : Window
     /// applied when the alert actually fires, not when it was scheduled: with a delay set,
     /// what matters is how long since you last *heard* something.
     /// </summary>
-    private void AlertOrCue(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
+    /// <param name="matchTime">When the line was written, not when we read it. Cues are
+    /// scheduled from this, so one recovered from the log at startup fires with the time it
+    /// has left rather than restarting its whole delay.</param>
+    private void AlertOrCue(TrackedRule rule, string ruleName, string label, TimeSpan cooldown,
+        DateTime? matchTime = null)
     {
         if (rule.AlertDelaySeconds <= 0)
         {
             FireAlert(rule, ruleName, label, cooldown);
             return;
         }
-        if (_delayedAlerts.Schedule(rule, ruleName, label, DateTime.Now) is not { } pending) return;
+        var from = matchTime ?? DateTime.Now;
+        var remaining = from.AddSeconds(rule.AlertDelaySeconds) - DateTime.Now;
+        if (remaining <= TimeSpan.Zero) return;   // already due — the moment has passed
+        if (_delayedAlerts.Schedule(rule, ruleName, label, from) is not { } pending) return;
 
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(rule.AlertDelaySeconds) };
+        var timer = new DispatcherTimer { Interval = remaining };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
@@ -856,10 +869,14 @@ public partial class MainWindow : Window
         if (!_watcher.InitialIngestDone) return;
         if (_alertBaselinePath != _watcher.CurrentPath)
         {
+            // First run isn't a character switch — it's the baseline being set for the first
+            // time. Cancelling here wiped cues recovered from the log seconds earlier, which
+            // is precisely the restart case they exist for.
+            var switchedCharacter = _alertBaselinePath is not null;
             _alertBaselinePath = _watcher.CurrentPath;
             _ruleBaseline.Clear();
             foreach (var r in s.Tracked) _ruleBaseline[r.Name] = r.TotalQuantity;
-            _delayedAlerts.CancelAll();   // cues belonged to the character we just left
+            if (switchedCharacter) _delayedAlerts.CancelAll();   // cues belonged to who we left
             _knownDeaths = s.Deaths.Count;
             return;
         }
@@ -1028,15 +1045,6 @@ public partial class MainWindow : Window
     {
         MiniChips.Children.Clear();
         var selected = MiniStatOrder.Where(_settings.MiniStats.Contains).ToList();
-        if (selected.Count == 0)
-        {
-            MiniChips.Children.Add(new TextBlock
-            {
-                Text = "☆ star stats in full view", FontSize = 12,
-                Foreground = (Brush)FindResource("DimBrush"), VerticalAlignment = VerticalAlignment.Center,
-            });
-            return;
-        }
         foreach (var key in selected)
         {
             var text = key switch
@@ -1084,6 +1092,16 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 0, 12, 0),
             });
         }
+
+        // The hint belongs at the end, and only when there's genuinely nothing to show. It
+        // used to return early when no stats were starred, which meant someone who pinned
+        // watch rules but starred nothing got the hint instead of their chips.
+        if (MiniChips.Children.Count == 0)
+            MiniChips.Children.Add(new TextBlock
+            {
+                Text = "☆ star stats in full view", FontSize = 12,
+                Foreground = (Brush)FindResource("DimBrush"), VerticalAlignment = VerticalAlignment.Center,
+            });
     }
 
 

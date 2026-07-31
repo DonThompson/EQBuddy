@@ -1001,17 +1001,21 @@ public sealed class MainWindow : Window
     /// </summary>
     private void OnTextMatched(RawLineEvent raw)
     {
-        if (!_watcher.InitialIngestDone) return;
+        // Immediate alerts stay suppressed during the startup re-read, but a delayed cue
+        // whose due time is still ahead is recovered with the time it has left — losing a
+        // running respawn timer to an app restart is exactly when you needed it.
+        var ingesting = !_watcher.InitialIngestDone;
         Dispatcher.UIThread.Post(() =>
         {
             foreach (var rule in _settings.TrackedRules)
             {
                 if (!rule.Enabled || rule.Kind != WatchKind.Text) continue;
                 if (!rule.Matches(raw.Line)) continue;
+                if (ingesting && rule.AlertDelaySeconds <= 0) continue;
 
                 var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
                 var line = raw.Line.Length <= 80 ? raw.Line : raw.Line[..79].TrimEnd() + "…";
-                AlertOrCue(rule, name, line, TextAlertCooldown);
+                AlertOrCue(rule, name, line, TextAlertCooldown, raw.Time);
             }
         });
     }
@@ -1027,17 +1031,22 @@ public sealed class MainWindow : Window
     /// at 2.5 s. The cooldown applies when the alert fires, not when it was scheduled: with
     /// a delay set, what matters is how long since you last heard something.
     /// </summary>
-    private void AlertOrCue(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
+    private void AlertOrCue(TrackedRule rule, string ruleName, string label, TimeSpan cooldown,
+        DateTime? matchTime = null)
     {
         if (rule.AlertDelaySeconds <= 0)
         {
             FireAlert(rule, ruleName, label, cooldown);
             return;
         }
-        if (_delayedAlerts.Schedule(rule, ruleName, label, DateTime.Now) is not { } pending) return;
+        // Scheduled from when the line was written, not when we read it.
+        var from = matchTime ?? DateTime.Now;
+        var remaining = from.AddSeconds(rule.AlertDelaySeconds) - DateTime.Now;
+        if (remaining <= TimeSpan.Zero) return;
+        if (_delayedAlerts.Schedule(rule, ruleName, label, from) is not { } pending) return;
 
         DispatcherTimer? timer = null;
-        timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(rule.AlertDelaySeconds) };
+        timer = new DispatcherTimer { Interval = remaining };
         timer.Tick += (_, _) =>
         {
             timer!.Stop();
@@ -1093,10 +1102,13 @@ public sealed class MainWindow : Window
         if (!_watcher.InitialIngestDone) return;
         if (_alertBaselinePath != _watcher.CurrentPath)
         {
+            // First run isn't a character switch — cancelling here wiped cues recovered from
+            // the log seconds earlier, which is the restart case they exist for.
+            var switchedCharacter = _alertBaselinePath is not null;
             _alertBaselinePath = _watcher.CurrentPath;
             _ruleBaseline.Clear();
             foreach (var r in s.Tracked) _ruleBaseline[r.Name] = r.TotalQuantity;
-            _delayedAlerts.CancelAll();   // cues belonged to the character we just left
+            if (switchedCharacter) _delayedAlerts.CancelAll();
             _knownDeaths = s.Deaths.Count;
             return;
         }
@@ -1156,11 +1168,6 @@ public sealed class MainWindow : Window
     {
         _miniChips.Children.Clear();
         var selected = MiniStatOrder.Where(_settings.MiniStats.Contains).ToList();
-        if (selected.Count == 0)
-        {
-            _miniChips.Children.Add(AppTheme.DimText("* star stats in full view"));
-            return;
-        }
         foreach (var key in selected)
         {
             var text = key switch
@@ -1207,6 +1214,11 @@ public sealed class MainWindow : Window
                 Margin = new Thickness(0, 0, 12, 0),
             });
         }
+
+        // Only when there is genuinely nothing to show — it used to return early when no
+        // stats were starred, hiding pinned watch chips behind the hint.
+        if (_miniChips.Children.Count == 0)
+            _miniChips.Children.Add(AppTheme.DimText("* star stats in full view"));
     }
 
     private static string FormatEta(double hours) => hours >= 1
