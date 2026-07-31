@@ -37,9 +37,9 @@ public sealed class AppSettings
     /// <summary>Position of the floating alert tile; NaN = above the widget.</summary>
     public double AlertLeft { get; set; } = double.NaN;
     public double AlertTop { get; set; } = double.NaN;
-    /// <summary>One pin for the whole watch group: show all enabled rules as mini
-    /// chips (replaces per-rule Pinned, which is kept for settings compatibility
-    /// and migrated on load).</summary>
+    /// <summary>Master switch for watch chips in the mini dashboard. Which rules appear is
+    /// then per-rule (<see cref="TrackedRule.Pinned"/>): showing every enabled rule was
+    /// all-or-nothing, and a mini bar with eight chips on it isn't a mini bar.</summary>
     public bool PinWatchChips { get; set; }
     /// <summary>Whether the watch-rule examples panel in Options is expanded. Remembered so
     /// someone still learning the feature doesn't have to reopen it every time, and someone

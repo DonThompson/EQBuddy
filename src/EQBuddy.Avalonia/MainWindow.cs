@@ -156,6 +156,11 @@ public sealed class MainWindow : Window
         // Migration: any old per-rule pin enables the replacement group pin.
         if (!_settings.PinWatchChips && _settings.TrackedRules.Any(r => r.Pinned))
             _settings.PinWatchChips = true;
+        // Chips became per-rule again: someone who had them on was seeing every enabled rule,
+        // so pin them all rather than silently emptying their mini bar.
+        else if (_settings.PinWatchChips && !_settings.TrackedRules.Any(r => r.Pinned))
+            foreach (var rule in _settings.TrackedRules.Where(r => r.Enabled))
+                rule.Pinned = true;
 
         if (_settings.LogFolder is { } saved && !Directory.Exists(saved))
             _settings.LogFolder = null;
@@ -1170,19 +1175,25 @@ public sealed class MainWindow : Window
                 Margin = new Thickness(0, 0, 12, 0),
             });
         }
+        // Per-rule pins, not every enabled rule: a mini bar with eight chips isn't a mini bar.
+        var due = _delayedAlerts.NextDueByRule(DateTime.Now);
         foreach (var rule in _settings.PinWatchChips
-                     ? _settings.TrackedRules.Where(r => r.Enabled)
+                     ? _settings.TrackedRules.Where(r => r.Enabled && r.Pinned)
                      : [])
         {
             var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
             var result = s.Tracked.FirstOrDefault(t =>
                 string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+            // While a cue is counting down, when it fires is the only thing worth the space.
+            var counting = due.TryGetValue(name, out var at);
             _miniChips.Children.Add(new TextBlock
             {
-                Text = $"Target {name} {result?.TotalQuantity ?? 0}",
+                Text = counting
+                    ? $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}"
+                    : $"Target {name} {result?.TotalQuantity ?? 0}",
                 FontSize = 13,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = AppTheme.AccentBrush,
+                Foreground = counting ? AppTheme.WarnBrush : AppTheme.AccentBrush,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 12, 0),
             });

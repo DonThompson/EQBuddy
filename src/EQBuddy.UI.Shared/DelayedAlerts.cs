@@ -44,6 +44,25 @@ public sealed class DelayedAlerts
 
     public int InFlight => _inFlight.Values.Sum();
 
+    /// <summary>When each rule's next cue is due, for showing a live countdown. Keyed by rule
+    /// name; a rule with several cues in flight reports the soonest, since that's the one
+    /// about to matter. Cancelled generations are dropped — a countdown that keeps ticking
+    /// after you died would be worse than none.</summary>
+    private readonly List<PendingAlert> _pending = [];
+
+    public IReadOnlyDictionary<string, DateTime> NextDueByRule(DateTime now)
+    {
+        _pending.RemoveAll(a => a.DueAt <= now || !IsLive(a));
+        var due = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        foreach (var a in _pending)
+            if (!due.TryGetValue(a.RuleName, out var soonest) || a.DueAt < soonest)
+                due[a.RuleName] = a.DueAt;
+        return due;
+    }
+
+    private bool IsLive(PendingAlert a) =>
+        a.Generation == _generation && (!a.IsCombatCue || a.CombatGeneration == _combatGeneration);
+
     /// <summary>Claim a slot for a delayed alert. Null when this rule already has
     /// <see cref="MaxInFlightPerRule"/> waiting, in which case the match is simply not
     /// cued — the count still moved, and the alert the user cares about is the one already
@@ -53,8 +72,10 @@ public sealed class DelayedAlerts
         var count = _inFlight.TryGetValue(ruleName, out var c) ? c : 0;
         if (count >= MaxInFlightPerRule) return null;
         _inFlight[ruleName] = count + 1;
-        return new PendingAlert(_generation, _combatGeneration, rule.IsCombatCue,
+        var pending = new PendingAlert(_generation, _combatGeneration, rule.IsCombatCue,
             rule, ruleName, label, now.AddSeconds(rule.AlertDelaySeconds));
+        _pending.Add(pending);
+        return pending;
     }
 
     /// <summary>Called when a cue's timer goes off. False means it was cancelled while
@@ -76,6 +97,7 @@ public sealed class DelayedAlerts
         _generation++;
         _combatGeneration++;
         _inFlight.Clear();
+        _pending.Clear();
     }
 
     /// <summary>

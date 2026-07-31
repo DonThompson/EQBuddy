@@ -250,6 +250,10 @@ original immediate behaviour, so nothing changes for rules that don't set it.
   capped at 8 in flight per rule so a chatty pattern can't queue a wall of sounds.
 - **Delay works on every rule kind**, not just Log text. Kill + `8m` is a camp timer: kill
   the placeholder, get told when it's due back.
+- **A cue in flight shows a live countdown** — on the rule's heading in the Watch card, and on
+  its mini-dashboard chip (`⏳ Respawn 7:54`), refreshed every second. While something is
+  counting down that's what the chip shows instead of its match count, because when it fires
+  is the only thing you want from it. A rule with several cues pending shows the soonest.
 - **Cues are abandoned** when they stop making sense — but what "stops making sense" depends
   on the length, because the two uses are different:
   - **Combat cues (≤ 60 s)** — "cast now", "recast before it breaks" — are dropped **when you
@@ -263,6 +267,11 @@ original immediate behaviour, so nothing changes for rules that don't set it.
   set, what matters is how long since you last heard something.
 - The duration has to come from you: EQ Legends never logs how long a spell lasts, so a
   25 s reminder will be wrong once the spell is upgraded.
+
+**📌 per rule** puts that rule on the mini dashboard. The Options checkbox is the master
+switch for chips; the pin on each rule row decides which ones appear, so a busy rule list
+doesn't turn the mini bar into a wall. Installs that had chips on before this was per-rule
+get every enabled rule pinned, matching what they already saw.
 
 **Alerts:** 🔔 banner + a **per-rule sound**, 5 s per-rule cooldown. Each rule's sound box
 offers `Off` (silent), `Default` (follow the shared choice), any built-in, or `Custom…`

@@ -52,6 +52,12 @@ public partial class MainWindow : Window
         // Migration: any per-rule pin from older versions turns on the group pin.
         if (!_settings.PinWatchChips && _settings.TrackedRules.Any(r => r.Pinned))
             _settings.PinWatchChips = true;
+        // Chips became per-rule again. Someone who had them on was seeing every enabled rule,
+        // so pin them all rather than silently emptying their mini bar; they can now
+        // unpick the ones they don't want.
+        else if (_settings.PinWatchChips && !_settings.TrackedRules.Any(r => r.Pinned))
+            foreach (var rule in _settings.TrackedRules.Where(r => r.Enabled))
+                rule.Pinned = true;
 
         if (_settings.LogFolder is { } saved && !System.IO.Directory.Exists(saved))
             _settings.LogFolder = null; // stale saved path (game moved) — re-detect
@@ -643,15 +649,22 @@ public partial class MainWindow : Window
         if (!TrackedSection.IsExpanded) return;
 
         TrackedPanel.Children.Clear();
+        var dueByRule = _delayedAlerts.NextDueByRule(DateTime.Now);
         foreach (var r in s.Tracked)
         {
             var head = new Grid { Margin = new Thickness(0, 4, 0, 0) };
             head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            // A rule with a cue counting down says so in its heading, so you can watch the
+            // respawn timer you set without opening Options to remember what it was.
+            var counting = dueByRule.TryGetValue(r.Name, out var dueAt);
             head.Children.Add(new TextBlock
             {
-                Text = r.Name.ToUpperInvariant(), FontSize = 11, FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("AccentBrush"),
+                Text = counting
+                    ? $"{r.Name.ToUpperInvariant()} ⏳ {EQBuddy.UI.Shared.Countdown.Format(dueAt - DateTime.Now)}"
+                    : r.Name.ToUpperInvariant(),
+                FontSize = 11, FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource(counting ? "WarnBrush" : "AccentBrush"),
             });
             var rate = new TextBlock
             {
@@ -1039,24 +1052,32 @@ public partial class MainWindow : Window
             });
         }
 
-        // One pin for the whole watch group: chips for every enabled rule (TRACK-006).
+        // Per-rule pins: only the rules you picked (📌 in Options), not every enabled one.
+        // The master toggle still gates the lot, so turning chips off is one click.
+        var due = _delayedAlerts.NextDueByRule(DateTime.Now);
         foreach (var rule in _settings.PinWatchChips
-                     ? _settings.TrackedRules.Where(r => r.Enabled)
+                     ? _settings.TrackedRules.Where(r => r.Enabled && r.Pinned)
                      : [])
         {
             var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
             var result = s.Tracked.FirstOrDefault(t =>
                 string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+            // A rule with a cue in flight shows time remaining instead of its count: while
+            // something is counting down, when it fires is the only thing you want to know.
+            var text = due.TryGetValue(name, out var at)
+                ? $"⏳ {name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}"
+                : $"🎯 {name} {result?.TotalQuantity ?? 0}";
             MiniChips.Children.Add(new TextBlock
             {
-                Text = $"🎯 {name} {result?.TotalQuantity ?? 0}",
+                Text = text,
                 FontSize = 13, FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("AccentBrush"),
+                Foreground = (Brush)FindResource(due.ContainsKey(name) ? "WarnBrush" : "AccentBrush"),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 12, 0),
             });
         }
     }
+
 
     private static string FormatEta(double hours) => hours >= 1
         ? $"~{(int)hours}h {(int)((hours - (int)hours) * 60)}m"

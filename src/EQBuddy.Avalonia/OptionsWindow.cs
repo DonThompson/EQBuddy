@@ -273,7 +273,7 @@ public sealed class OptionsWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));
             row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(115)));
             row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            for (var i = 0; i < 4; i++)   // banner, sound, delay, delete
+            for (var i = 0; i < 5; i++)   // pin, banner, sound, delay, delete
                 row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
 
             var kind = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
@@ -302,7 +302,9 @@ public sealed class OptionsWindow : Window
             Grid.SetColumn(pattern, 2);
             row.Children.Add(pattern);
 
-            row.Children.Add(RuleToggle("B", "Banner alert on match", 3, rule.AlertBanner, v => rule.AlertBanner = v));
+            row.Children.Add(RuleToggle("P", "Show this rule as a chip in the mini dashboard", 3,
+                rule.Pinned, v => rule.Pinned = v));
+            row.Children.Add(RuleToggle("B", "Banner alert on match", 4, rule.AlertBanner, v => rule.AlertBanner = v));
 
             // Per-rule sound, replacing the old on/off toggle. Telling rules apart by ear is
             // the entire point — and it matters most for delayed alerts, where the usual
@@ -349,7 +351,7 @@ public sealed class OptionsWindow : Window
                 if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
                     _main.PlayAlertSound(preview);
             };
-            Grid.SetColumn(sound, 4);
+            Grid.SetColumn(sound, 5);
             row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
@@ -369,7 +371,7 @@ public sealed class OptionsWindow : Window
                 delay.Text = DelayText.Format(rule.AlertDelaySeconds);
                 _main.PersistSettings();
             };
-            Grid.SetColumn(delay, 5);
+            Grid.SetColumn(delay, 6);
             row.Children.Add(delay);
 
             var del = AppTheme.IconButton("x", "Delete rule");
@@ -379,7 +381,7 @@ public sealed class OptionsWindow : Window
                 _main.PersistSettings();
                 BuildRulesEditor();
             };
-            Grid.SetColumn(del, 6);
+            Grid.SetColumn(del, 7);
             row.Children.Add(del);
             _rulesPanel.Children.Add(row);
         }

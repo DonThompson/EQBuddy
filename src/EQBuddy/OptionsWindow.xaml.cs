@@ -332,6 +332,7 @@ public partial class OptionsWindow : Window
         Auto("RuleKind");
         Star(1);
         Star(1.4);
+        Auto("RulePin");
         Auto("RuleBanner");
         Auto("RuleSound");
         Auto("RuleDelay");
@@ -345,7 +346,7 @@ public partial class OptionsWindow : Window
 
         var header = RuleGrid();
         header.Margin = new Thickness(0, 2, 0, 2);
-        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 5) };
+        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 6) };
         foreach (var (text, column) in headings)
         {
             var label = new System.Windows.Controls.TextBlock
@@ -431,7 +432,10 @@ public partial class OptionsWindow : Window
                 _vm.Persist();
             };
 
-            row.Children.Add(RuleToggle("🔔", "Banner alert on match", 3, rule.AlertBanner,
+            row.Children.Add(RuleToggle("📌", "Show this rule as a chip in the mini dashboard", 3,
+                rule.Pinned, v => rule.Pinned = v));
+
+            row.Children.Add(RuleToggle("🔔", "Banner alert on match", 4, rule.AlertBanner,
                 v => rule.AlertBanner = v));
 
             // Per-rule sound, so you can tell what happened from the audio alone.
@@ -477,7 +481,7 @@ public partial class OptionsWindow : Window
                 if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
                     _main.PlayAlertSound(preview);
             };
-            System.Windows.Controls.Grid.SetColumn(sound, 4);
+            System.Windows.Controls.Grid.SetColumn(sound, 5);
             row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
@@ -499,7 +503,7 @@ public partial class OptionsWindow : Window
                 delay.Text = DelayText.Format(rule.AlertDelaySeconds);   // shows any clamp
                 _vm.Persist();
             };
-            System.Windows.Controls.Grid.SetColumn(delay, 5);
+            System.Windows.Controls.Grid.SetColumn(delay, 6);
             row.Children.Add(delay);
 
             var del = new System.Windows.Controls.Button
@@ -511,7 +515,7 @@ public partial class OptionsWindow : Window
                 _vm.RemoveRule(rule);
                 BuildRulesEditor();
             };
-            System.Windows.Controls.Grid.SetColumn(del, 6);
+            System.Windows.Controls.Grid.SetColumn(del, 7);
             row.Children.Add(del);
 
             RulesPanel.Children.Add(row);
