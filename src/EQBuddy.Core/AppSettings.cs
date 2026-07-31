@@ -45,6 +45,14 @@ public sealed class AppSettings
     /// someone still learning the feature doesn't have to reopen it every time, and someone
     /// who doesn't need it never sees it again.</summary>
     public bool ShowWatchGuide { get; set; }
+    /// <summary>Which of the Combat/Healing subsections are expanded. Separate per card and
+    /// per section, because the reason to collapse one isn't the reason to collapse another:
+    /// a melee player may want the fight breakdown open and the session one shut, and a
+    /// healer the reverse. Default open — a new subsection nobody can see is a wasted one.</summary>
+    public bool ShowCombatFight { get; set; } = true;
+    public bool ShowCombatSession { get; set; } = true;
+    public bool ShowHealFight { get; set; } = true;
+    public bool ShowHealSession { get; set; } = true;
     /// <summary>Show the quick tour at every launch. Turned off by the tutorial's
     /// "Never show again" button or the Options checkbox. While on, the startup
     /// janitor defers log truncation — the tour's first page is its consent question.</summary>

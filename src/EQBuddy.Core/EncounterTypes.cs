@@ -13,7 +13,8 @@ public sealed record EncounterInfo(
 /// </summary>
 public sealed record LastFightInfo(
     string Name, double DurationSeconds, long DamageOut, long DamageIn, long Healed,
-    double Dps, double Hps, string Outcome, bool InProgress);
+    double Dps, double Hps, string Outcome, bool InProgress,
+    List<SourceDamage> ByAbility, List<SourceDamage> HealsBySpell);
 
 public sealed record MobLoot(string Item, int Count, double? DropRatePct);
 

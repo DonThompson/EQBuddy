@@ -402,6 +402,7 @@ public partial class MainWindow : Window
             + (s.AaGained > 0 ? $", +{s.AaGained} aa" : "");
         FactionHeader.Text = s.Faction.Count > 0 ? $"{s.Faction.Count} factions" : "—";
         MiscHeader.Text = $"{s.Deaths.Count} death{(s.Deaths.Count == 1 ? "" : "s")}";
+        ApplySessionSubsections();
 
         if (CombatSection.IsExpanded)
         {
@@ -412,7 +413,8 @@ public partial class MainWindow : Window
             var avoidance = incomingSwings > 0
                 ? (double)s.AvoidedIncoming / incomingSwings * 100 : 0;
             var combatTime = TimeSpan.FromSeconds(s.CombatSeconds);
-            ShowLastFight(s, CombatFightLabel, CombatFightText, CombatSessionLabel, healing: false);
+            ShowLastFight(s, CombatFightLabel, CombatFightBody, CombatFightText, CombatFightList,
+                healing: false, _settings.ShowCombatFight);
             CombatSummary.Text =
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
@@ -466,7 +468,8 @@ public partial class MainWindow : Window
         HealingHeader.Text = s.Hps > 0 ? $"{s.Hps:0.#} hps" : $"{s.HealingDone:N0} healed";
         if (HealingSection.IsExpanded)
         {
-            ShowLastFight(s, HealFightLabel, HealFightText, HealSessionLabel, healing: true);
+            ShowLastFight(s, HealFightLabel, HealFightBody, HealFightText, HealFightList,
+                healing: true, _settings.ShowHealFight);
             HealingSummary.Text =
                 $"Done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
                 (s.Recent is { Hps: > 0 } rh
@@ -721,24 +724,64 @@ public partial class MainWindow : Window
     /// that then separates the two. Both stay hidden until there's been a fight — a heading
     /// over nothing is worse than no heading.
     /// </summary>
-    private static void ShowLastFight(StatsSnapshot s, System.Windows.Controls.TextBlock label,
-        System.Windows.Controls.TextBlock text, System.Windows.Controls.TextBlock sessionLabel, bool healing)
+    private void ShowLastFight(StatsSnapshot s, System.Windows.Controls.Button label,
+        System.Windows.Controls.Panel body, System.Windows.Controls.TextBlock text,
+        System.Windows.Controls.ItemsControl list, bool healing, bool open)
     {
         if (s.LastFight is not { } f)
         {
-            label.Visibility = text.Visibility = sessionLabel.Visibility = Visibility.Collapsed;
+            label.Visibility = body.Visibility = Visibility.Collapsed;
             return;
         }
-        label.Visibility = text.Visibility = sessionLabel.Visibility = Visibility.Visible;
-        // "Fighting" while it's still running, so a duration that keeps growing reads as
+        label.Visibility = Visibility.Visible;
+        body.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        // "Current" while it's still running, so a duration that keeps growing reads as
         // in-progress rather than as a fight that took a suspiciously long time.
-        label.Text = f.InProgress ? "Current fight" : "Last fight";
+        label.Content = $"{(open ? "▾" : "▸")} {(f.InProgress ? "Current fight" : "Last fight")}";
+        if (!open) return;
+
+        // Rates within the fight use the fight's own length, not session combat time —
+        // "what did this pull actually do" is the whole point of the section.
+        var rows = healing ? f.HealsBySpell : f.ByAbility;
+        FillBreakdown(list, rows, healing ? _healSort : _dmgOutSort,
+            f.DurationSeconds, healing ? "hps" : "dps");
         text.Text = healing
             ? $"{f.Name} — {f.Healed:N0} healed · {f.Hps:0.#} hps over {f.DurationSeconds:0}s"
               + (f.InProgress ? " (fighting)" : "")
             : $"{f.Name} — {f.DamageOut:N0} dmg · {f.Dps:0.#} dps over {f.DurationSeconds:0}s"
               + $" · took {f.DamageIn:N0}"
               + (f.InProgress ? " (fighting)" : f.Outcome == "Killed" ? "" : $" · {f.Outcome}");
+    }
+
+    /// <summary>Collapse handlers for the Combat/Healing subsections. Each remembers its own
+    /// state: the reason to shut the fight breakdown isn't the reason to shut the session
+    /// one, and a card that reopens everything on restart isn't really collapsible.</summary>
+    private void OnToggleCombatFight(object sender, RoutedEventArgs e) =>
+        ToggleSubsection(v => _settings.ShowCombatFight = v, _settings.ShowCombatFight);
+
+    private void OnToggleCombatSession(object sender, RoutedEventArgs e) =>
+        ToggleSubsection(v => _settings.ShowCombatSession = v, _settings.ShowCombatSession);
+
+    private void OnToggleHealFight(object sender, RoutedEventArgs e) =>
+        ToggleSubsection(v => _settings.ShowHealFight = v, _settings.ShowHealFight);
+
+    private void OnToggleHealSession(object sender, RoutedEventArgs e) =>
+        ToggleSubsection(v => _settings.ShowHealSession = v, _settings.ShowHealSession);
+
+    private void ToggleSubsection(Action<bool> set, bool current)
+    {
+        set(!current);
+        _settings.Save();
+        RefreshUi();   // the next refresh applies visibility and rebuilds only what's shown
+    }
+
+    /// <summary>Session bodies are plain show/hide — their content is filled elsewhere.</summary>
+    private void ApplySessionSubsections()
+    {
+        CombatSessionLabel.Content = (_settings.ShowCombatSession ? "▾" : "▸") + " Session so far";
+        CombatSessionBody.Visibility = _settings.ShowCombatSession ? Visibility.Visible : Visibility.Collapsed;
+        HealSessionLabel.Content = (_settings.ShowHealSession ? "▾" : "▸") + " Session so far";
+        HealSessionBody.Visibility = _settings.ShowHealSession ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ProcessTrackedAlerts(StatsSnapshot s)

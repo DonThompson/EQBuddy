@@ -138,6 +138,10 @@ public sealed class SessionStats
     {
         public DateTime Start, Last;
         public long DmgOut, DmgIn, Healed;
+        /// <summary>Same breakdown as the session's, scoped to this fight — what actually
+        /// killed the thing in front of you, rather than what you've used all night.</summary>
+        public readonly Dictionary<string, AbilityAgg> ByAbility = new(StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, AbilityAgg> HealsBySpell = new(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>The fight healing is currently credited to. Heals name a target, not a
@@ -448,7 +452,11 @@ public sealed class SessionStats
                     if (dd.Amount > _maxHit) { _maxHit = dd.Amount; _maxHitDesc = $"{source} on {dd.Target}"; }
                     Ability(_damageBySource, source).Add(dd.Time, dd.Amount, dd.Critical);
                     TrackCombat(dd.Time, dd.Amount);
+                    // TouchFight first: it opens the fight, and the opening hit belongs in
+                    // that fight's breakdown as much as any later one.
                     TouchFight(dd.Target, dd.Time, dmgOut: dd.Amount);
+                    if (_activeFights.TryGetValue(dd.Target, out var hitFight))
+                        Ability(hitFight.ByAbility, source).Add(dd.Time, dd.Amount, dd.Critical);
                     if (_currentStance is { } st1)
                     {
                         var sv1 = _stanceAgg.TryGetValue(st1, out var stCur) ? stCur : (0.0, 0L);
@@ -479,7 +487,10 @@ public sealed class SessionStats
                     Ability(_healsBySpell, h.Spell).Add(h.Time, h.Amount);
                     // Credited to the fight you were in, if any — see _healingFight.
                     if (_healingFight is { } hf && _activeFights.TryGetValue(hf, out var hFight))
+                    {
                         hFight.Healed += h.Amount;
+                        Ability(hFight.HealsBySpell, h.Spell).Add(h.Time, h.Amount);
+                    }
                     if (h.Spell != "Unknown") _spells.Learn(h.Spell, SpellCategory.Heal);
                     // Self-heals appear as "You healed <own name>" — count as received too.
                     if (_characterName is { } me &&
@@ -778,6 +789,11 @@ public sealed class SessionStats
         var dur = Math.Max(1, ((outcome == "Killed" ? t : f.Last) - f.Start).TotalSeconds);
         _encounters.Add(new EncounterInfo(target, f.Start, dur, f.DmgOut, f.DmgIn,
             f.DmgOut / dur, outcome, f.Healed));
+        // Kept whole rather than folded into EncounterInfo: only the newest one is ever
+        // shown, and carrying a breakdown on all 300 retained encounters would be waste.
+        _lastFinishedFight = new LastFightInfo(target, dur, f.DmgOut, f.DmgIn, f.Healed,
+            f.DmgOut / dur, f.Healed / dur, outcome, InProgress: false,
+            Breakdown(f.ByAbility), Breakdown(f.HealsBySpell));
         if (_encounters.Count > 300) _encounters.RemoveRange(0, 100);
         var mob = Mob(target);
         mob.Encounters++;
@@ -795,18 +811,23 @@ public sealed class SessionStats
     /// </summary>
     private LastFightInfo? BuildLastFight()
     {
-        if (_activeFights.Count > 0)
-        {
-            var (name, f) = _activeFights.MaxBy(kv => kv.Value.Last);
-            var dur = Math.Max(1, (f.Last - f.Start).TotalSeconds);
-            return new LastFightInfo(name, dur, f.DmgOut, f.DmgIn, f.Healed,
-                f.DmgOut / dur, f.Healed / dur, "Fighting", InProgress: true);
-        }
-        if (_encounters.Count == 0) return null;
-        var e = _encounters[^1];
-        return new LastFightInfo(e.Name, e.DurationSeconds, e.DamageOut, e.DamageIn, e.Healed,
-            e.Dps, e.Healed / Math.Max(1, e.DurationSeconds), e.Outcome, InProgress: false);
+        if (_activeFights.Count == 0) return _lastFinishedFight;
+        var (name, f) = _activeFights.MaxBy(kv => kv.Value.Last);
+        var dur = Math.Max(1, (f.Last - f.Start).TotalSeconds);
+        return new LastFightInfo(name, dur, f.DmgOut, f.DmgIn, f.Healed,
+            f.DmgOut / dur, f.Healed / dur, "Fighting", InProgress: true,
+            Breakdown(f.ByAbility), Breakdown(f.HealsBySpell));
     }
+
+    /// <summary>The last fight that finished, kept whole so it can still be shown between
+    /// pulls. Null until the first fight ends.</summary>
+    private LastFightInfo? _lastFinishedFight;
+
+    private static List<SourceDamage> Breakdown(Dictionary<string, AbilityAgg> d) =>
+        d.OrderByDescending(kv => kv.Value.Total)
+            .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
+                kv.Value.Crits, kv.Value.ActiveSeconds))
+            .ToList();
 
     private void SweepStaleFights(DateTime now)
     {
@@ -900,7 +921,7 @@ public sealed class SessionStats
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
-        _healingFight = null;
+        _healingFight = null; _lastFinishedFight = null;
         _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
         _currentStance = null; _stanceAgg.Clear();
     }

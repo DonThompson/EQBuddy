@@ -122,12 +122,18 @@
                     <!-- The fight in front of you, before the session aggregate: mid-fight
                          that's the number you're reacting to, and a session average tells you
                          nothing about whether this pull is going badly. -->
-                    <TextBlock x:Name="CombatFightLabel" Text="Last fight" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
-                    <TextBlock x:Name="CombatFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
-                               Margin="0,1,0,4" Visibility="Collapsed"/>
-                    <TextBlock x:Name="CombatSessionLabel" Text="Session so far" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <Button x:Name="CombatFightLabel" Style="{StaticResource IconButton}" FontSize="11"
+                            HorizontalAlignment="Left" Content="▾ Last fight" Visibility="Collapsed"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatFight"/>
+                    <StackPanel x:Name="CombatFightBody" Visibility="Collapsed">
+                        <TextBlock x:Name="CombatFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                                   Margin="0,1,0,2"/>
+                        <ItemsControl x:Name="CombatFightList" Margin="0,0,0,4"/>
+                    </StackPanel>
+                    <Button x:Name="CombatSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
+                            HorizontalAlignment="Left" Content="▾ Session so far"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatSession"/>
+                    <StackPanel x:Name="CombatSessionBody">
                     <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
                         <TextBlock Text="Damage by attack" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
@@ -171,6 +177,7 @@
                     <TextBlock x:Name="StanceLabel" Text="By stance" FontSize="11" FontWeight="SemiBold"
                                Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="StanceList" Margin="0,2,0,0"/>
+                    </StackPanel>
                 </StackPanel>
             </Expander>
 
@@ -189,12 +196,18 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
-                    <TextBlock x:Name="HealFightLabel" Text="Last fight" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
-                    <TextBlock x:Name="HealFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
-                               Margin="0,1,0,4" Visibility="Collapsed"/>
-                    <TextBlock x:Name="HealSessionLabel" Text="Session so far" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <Button x:Name="HealFightLabel" Style="{StaticResource IconButton}" FontSize="11"
+                            HorizontalAlignment="Left" Content="▾ Last fight" Visibility="Collapsed"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealFight"/>
+                    <StackPanel x:Name="HealFightBody" Visibility="Collapsed">
+                        <TextBlock x:Name="HealFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                                   Margin="0,1,0,2"/>
+                        <ItemsControl x:Name="HealFightList" Margin="0,0,0,4"/>
+                    </StackPanel>
+                    <Button x:Name="HealSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
+                            HorizontalAlignment="Left" Content="▾ Session so far"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealSession"/>
+                    <StackPanel x:Name="HealSessionBody">
                     <TextBlock x:Name="HealingSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
                         <TextBlock x:Name="HealSpellsLabel" Text="Heals cast" FontSize="11" FontWeight="SemiBold"
@@ -216,6 +229,7 @@
                     <TextBlock x:Name="HealersLabel" Text="Healed by" FontSize="11" FontWeight="SemiBold"
                                Foreground="{DynamicResource GoodBrush}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="HealerList" Margin="0,2,0,0"/>
+                    </StackPanel>
                 </StackPanel>
             </Expander>
 
