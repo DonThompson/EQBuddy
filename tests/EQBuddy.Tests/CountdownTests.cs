@@ -19,11 +19,13 @@ public class CountdownTests
     public void APendingCueReportsWhenItIsDue()
     {
         var alerts = new DelayedAlerts();
-        alerts.Schedule(Rule(480, "Respawn"), "Respawn", "PH down", T0);
+        var rule = Rule(480, "Respawn");
+        alerts.Schedule(rule, "Respawn", "PH down", T0);
 
         var due = alerts.NextDueByRule(T0.AddSeconds(60));
 
-        Assert.Equal(T0.AddSeconds(480), due["Respawn"]);
+        // Keyed by the rule's id, not its name — two rules may share a name.
+        Assert.Equal(T0.AddSeconds(480), due[rule.Id]);
     }
 
     /// <summary>Several cues on one rule: the soonest is the one about to matter.</summary>
@@ -35,7 +37,7 @@ public class CountdownTests
         alerts.Schedule(rule, "Respawn", "first", T0);
         alerts.Schedule(rule, "Respawn", "second", T0.AddSeconds(30));
 
-        Assert.Equal(T0.AddSeconds(480), alerts.NextDueByRule(T0.AddSeconds(60))["Respawn"]);
+        Assert.Equal(T0.AddSeconds(480), alerts.NextDueByRule(T0.AddSeconds(60))[rule.Id]);
     }
 
     [Fact]

@@ -934,8 +934,10 @@ public sealed class MainWindow : Window
         _markersLabel.IsVisible = s.Markers.Count > 0;
     }
 
-    private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, DateTime> _ruleLastAlert = new(StringComparer.OrdinalIgnoreCase);
+    // Both keyed by TrackedRule.Id — a display name can be shared by two rules, and keying
+    // on it made same-named rules share baselines and cooldowns.
+    private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DateTime> _ruleLastAlert = new(StringComparer.Ordinal);
     private string? _alertBaselinePath;
 
     /// <summary>The floating alert tile, created on first use and owned by the widget.</summary>
@@ -1058,9 +1060,9 @@ public sealed class MainWindow : Window
 
     private void FireAlert(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
     {
-        var last = _ruleLastAlert.TryGetValue(ruleName, out var la) ? la : DateTime.MinValue;
+        var last = _ruleLastAlert.TryGetValue(rule.Id, out var la) ? la : DateTime.MinValue;
         if (DateTime.Now - last < cooldown) return;
-        _ruleLastAlert[ruleName] = DateTime.Now;
+        _ruleLastAlert[rule.Id] = DateTime.Now;
 
         if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
@@ -1107,7 +1109,7 @@ public sealed class MainWindow : Window
             var switchedCharacter = _alertBaselinePath is not null;
             _alertBaselinePath = _watcher.CurrentPath;
             _ruleBaseline.Clear();
-            foreach (var r in s.Tracked) _ruleBaseline[r.Name] = r.TotalQuantity;
+            foreach (var r in s.Tracked) _ruleBaseline[r.Id] = r.TotalQuantity;
             if (switchedCharacter) _delayedAlerts.CancelAll();
             _knownDeaths = s.Deaths.Count;
             return;
@@ -1118,16 +1120,15 @@ public sealed class MainWindow : Window
 
         foreach (var r in s.Tracked)
         {
-            var baseline = _ruleBaseline.TryGetValue(r.Name, out var b) ? b : 0;
+            var baseline = _ruleBaseline.TryGetValue(r.Id, out var b) ? b : 0;
             if (r.TotalQuantity <= baseline)
             {
-                _ruleBaseline[r.Name] = r.TotalQuantity;
+                _ruleBaseline[r.Id] = r.TotalQuantity;
                 continue;
             }
             var delta = r.TotalQuantity - baseline;
-            _ruleBaseline[r.Name] = r.TotalQuantity;
-            var rule = _settings.TrackedRules.FirstOrDefault(x =>
-                string.Equals(x.Name.Length > 0 ? x.Name : x.Pattern, r.Name, StringComparison.OrdinalIgnoreCase));
+            _ruleBaseline[r.Id] = r.TotalQuantity;
+            var rule = _settings.TrackedRules.FirstOrDefault(x => x.Id == r.Id);
             if (rule is null) continue;
             // Text rules already alerted from the ingest thread the moment the line
             // arrived (OnTextMatched). The baseline above still had to move so this rule
@@ -1198,10 +1199,9 @@ public sealed class MainWindow : Window
                      : [])
         {
             var name = rule.Name.Length > 0 ? rule.Name : rule.Pattern;
-            var result = s.Tracked.FirstOrDefault(t =>
-                string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase));
+            var result = s.Tracked.FirstOrDefault(t => t.Id == rule.Id);
             // While a cue is counting down, when it fires is the only thing worth the space.
-            var counting = due.TryGetValue(name, out var at);
+            var counting = due.TryGetValue(rule.Id, out var at);
             _miniChips.Children.Add(new TextBlock
             {
                 Text = counting

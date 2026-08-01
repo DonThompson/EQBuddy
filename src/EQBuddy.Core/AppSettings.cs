@@ -102,7 +102,12 @@ public sealed class AppSettings
             CoreLog.Error(ex); // corrupted settings — start fresh, but say so
             settings = new AppSettings();
         }
-        if (settings.ApplyDefaultRules()) settings.Save();
+        // Non-short-circuiting on purpose: rules saved before ids existed get theirs
+        // assigned at construction, and persisting them NOW is what makes the id stable
+        // across restarts rather than re-rolled every launch until some unrelated edit
+        // happens to save settings.
+        if (settings.ApplyDefaultRules() | settings.TrackedRules.Any(r => r.IdWasGenerated))
+            settings.Save();
         return settings;
     }
 

@@ -54,6 +54,33 @@ public enum SpellFilter
 /// </summary>
 public sealed class TrackedRule
 {
+    /// <summary>
+    /// Stable identity, distinct from <see cref="Name"/>. Everything that has to tell one
+    /// rule from another — alert cooldowns, the in-flight cue cap, countdowns, baselines,
+    /// matching a snapshot row back to its rule — keys on this, never on the name. Names
+    /// are labels and labels collide: two rules both called "Asaka" used to share one
+    /// cooldown, one cue budget and one countdown, purely because they shared a string.
+    ///
+    /// Generated on construction; the value from settings.json wins when there is one.
+    /// <see cref="IdWasGenerated"/> lets the loader notice pre-Id rules and persist their
+    /// new ids immediately, so an id survives restarts instead of being re-rolled each
+    /// launch until some other edit happens to save settings.
+    /// </summary>
+    public string Id
+    {
+        get => _id;
+        // Ignore null/empty rather than trust it: a hand-edited settings.json must not be
+        // able to give several rules the same "" id — that's the collision this exists
+        // to end.
+        set { if (!string.IsNullOrEmpty(value)) { _id = value; IdWasGenerated = false; } }
+    }
+    private string _id = Guid.NewGuid().ToString("N");
+
+    /// <summary>True until a stored id arrives from settings.json — i.e. this rule's id
+    /// exists only in memory and needs a save to become permanent.</summary>
+    [JsonIgnore]
+    public bool IdWasGenerated { get; private set; } = true;
+
     public string Name { get; set; } = "";
     public string Pattern { get; set; } = "";
     public WatchKind Kind { get; set; } = WatchKind.Loot;
@@ -156,6 +183,10 @@ public sealed class TrackedRule
             : IsMatchAllKind;
 }
 
+/// <param name="Id">The <see cref="TrackedRule.Id"/> this row was computed for, so UIs can
+/// map a row back to its rule without guessing by name. Defaults to "" because snapshots
+/// serialized into history.db before ids existed have no value to offer; display-only
+/// consumers never need it.</param>
 public sealed record TrackedRuleResult(
     string Name,
     int TotalQuantity,
@@ -164,4 +195,5 @@ public sealed record TrackedRuleResult(
     double PerActiveHour,
     DateTime? FirstMatch,
     DateTime? LastMatch,
-    string? LastItem);
+    string? LastItem,
+    string Id = "");

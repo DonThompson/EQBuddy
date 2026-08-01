@@ -5,7 +5,8 @@ namespace EQBuddy.UI.Shared;
 /// <summary>One alert waiting for its moment. Opaque to callers except for
 /// <see cref="DueAt"/>, which tells the host when to set its timer for. Carries the
 /// generations it was created in so cancellation can invalidate it without hunting down the
-/// host's timer — see <see cref="DelayedAlerts"/>.</summary>
+/// host's timer — see <see cref="DelayedAlerts"/>. <see cref="RuleName"/> is display text
+/// for the banner; identity is <see cref="Rule"/>.Id.</summary>
 public sealed record PendingAlert(
     int Generation, int CombatGeneration, bool IsCombatCue,
     TrackedRule Rule, string RuleName, string Label, DateTime DueAt);
@@ -35,7 +36,9 @@ public sealed class DelayedAlerts
     /// so dying can drop the "cast now" cues without touching a respawn timer.</summary>
     private int _combatGeneration;
 
-    private readonly Dictionary<string, int> _inFlight = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Keyed by <see cref="TrackedRule.Id"/>, not by name: two rules that share a
+    /// display name are still two rules, each with its own cue budget.</summary>
+    private readonly Dictionary<string, int> _inFlight = new(StringComparer.Ordinal);
 
     /// <summary>Per rule, because a chain announces repeatedly and each call is its own cue.
     /// A cap all the same: a pattern matching something chatty shouldn't be able to queue
@@ -44,19 +47,19 @@ public sealed class DelayedAlerts
 
     public int InFlight => _inFlight.Values.Sum();
 
-    /// <summary>When each rule's next cue is due, for showing a live countdown. Keyed by rule
-    /// name; a rule with several cues in flight reports the soonest, since that's the one
-    /// about to matter. Cancelled generations are dropped — a countdown that keeps ticking
-    /// after you died would be worse than none.</summary>
+    /// <summary>When each rule's next cue is due, for showing a live countdown. Keyed by
+    /// <see cref="TrackedRule.Id"/>; a rule with several cues in flight reports the soonest,
+    /// since that's the one about to matter. Cancelled generations are dropped — a countdown
+    /// that keeps ticking after you died would be worse than none.</summary>
     private readonly List<PendingAlert> _pending = [];
 
     public IReadOnlyDictionary<string, DateTime> NextDueByRule(DateTime now)
     {
         _pending.RemoveAll(a => a.DueAt <= now || !IsLive(a));
-        var due = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+        var due = new Dictionary<string, DateTime>(StringComparer.Ordinal);
         foreach (var a in _pending)
-            if (!due.TryGetValue(a.RuleName, out var soonest) || a.DueAt < soonest)
-                due[a.RuleName] = a.DueAt;
+            if (!due.TryGetValue(a.Rule.Id, out var soonest) || a.DueAt < soonest)
+                due[a.Rule.Id] = a.DueAt;
         return due;
     }
 
@@ -69,9 +72,9 @@ public sealed class DelayedAlerts
     /// on its way.</summary>
     public PendingAlert? Schedule(TrackedRule rule, string ruleName, string label, DateTime now)
     {
-        var count = _inFlight.TryGetValue(ruleName, out var c) ? c : 0;
+        var count = _inFlight.TryGetValue(rule.Id, out var c) ? c : 0;
         if (count >= MaxInFlightPerRule) return null;
-        _inFlight[ruleName] = count + 1;
+        _inFlight[rule.Id] = count + 1;
         var pending = new PendingAlert(_generation, _combatGeneration, rule.IsCombatCue,
             rule, ruleName, label, now.AddSeconds(rule.AlertDelaySeconds));
         _pending.Add(pending);
@@ -82,8 +85,8 @@ public sealed class DelayedAlerts
     /// waiting and must stay silent. Releases the slot either way.</summary>
     public bool Claim(PendingAlert alert)
     {
-        if (_inFlight.TryGetValue(alert.RuleName, out var c))
-            _inFlight[alert.RuleName] = Math.Max(0, c - 1);
+        if (_inFlight.TryGetValue(alert.Rule.Id, out var c))
+            _inFlight[alert.Rule.Id] = Math.Max(0, c - 1);
         if (alert.Generation != _generation) return false;
         return !alert.IsCombatCue || alert.CombatGeneration == _combatGeneration;
     }

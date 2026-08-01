@@ -1065,7 +1065,8 @@ public sealed class SessionStats
                             .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                         total / hours,
                         total / activeHours,
-                        first, last, lastItem));
+                        first, last, lastItem,
+                        rule.Id));
                 }
             }
 

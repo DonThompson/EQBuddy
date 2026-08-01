@@ -71,10 +71,44 @@ public class DelayedAlertTests
     public void TheCapIsPerRuleNotGlobal()
     {
         var alerts = new DelayedAlerts();
+        var chain = Rule();
         for (var i = 0; i < DelayedAlerts.MaxInFlightPerRule; i++)
-            alerts.Schedule(Rule(), "chain", "call", T0);
+            alerts.Schedule(chain, "chain", "call", T0);
 
         Assert.NotNull(alerts.Schedule(Rule(25), "mez", "recast", T0));
+    }
+
+    /// <summary>Two rules sharing a display name are still two rules. The budget is keyed
+    /// by the rule's id, so filling one "Asaka" rule's slots must not silence the other —
+    /// same-named rules used to share one cap, one cooldown and one countdown purely
+    /// because everything was keyed by the name string.</summary>
+    [Fact]
+    public void SameNamedRulesHaveSeparateBudgets()
+    {
+        var alerts = new DelayedAlerts();
+        var first = Rule();
+        var second = Rule();   // same Name/Pattern, distinct Id
+        for (var i = 0; i < DelayedAlerts.MaxInFlightPerRule; i++)
+            alerts.Schedule(first, "chain", "call", T0);
+
+        Assert.Null(alerts.Schedule(first, "chain", "capped", T0));
+        Assert.NotNull(alerts.Schedule(second, "chain", "independent", T0));
+    }
+
+    /// <summary>Countdowns are reported per id too: each same-named rule shows its own
+    /// next-due time rather than both collapsing onto whichever cue is soonest.</summary>
+    [Fact]
+    public void SameNamedRulesCountDownIndependently()
+    {
+        var alerts = new DelayedAlerts();
+        var quick = Rule(5);
+        var slow = Rule(480);
+        alerts.Schedule(quick, "Asaka", "spotted", T0);
+        alerts.Schedule(slow, "Asaka", "respawn", T0);
+
+        var due = alerts.NextDueByRule(T0);
+        Assert.Equal(T0.AddSeconds(5), due[quick.Id]);
+        Assert.Equal(T0.AddSeconds(480), due[slow.Id]);
     }
 
     /// <summary>Firing a cue frees its slot, so a long session of a repeating chain doesn't
