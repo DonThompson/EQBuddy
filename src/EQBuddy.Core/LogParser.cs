@@ -31,7 +31,9 @@ public static partial class LogParser
     private static partial Regex SkillSubstitutionRx();
 
     // You slash orc pawn for 10 points of damage. (Critical) / (Double Bow Shot) / etc.
-    [GeneratedRegex(@"^You (?<verb>slash|hit|kick|bash|pierce|crush|punch|backstab|bite|claw|maul|gore|sting|strike|slice|cleave|smash|rend|slam|shoot|frenzy on|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
+    // "reave"/"smite" found 2026-08-01 by unmatched-line analysis (third-party form,
+    // eqlog_Hugzee: "Lizzid reaves orc legionnaire for 7 points of damage.", 1,381 lines).
+    [GeneratedRegex(@"^You (?<verb>slash|hit|kick|bash|pierce|crush|punch|backstab|bite|claw|maul|gore|sting|strike|slice|cleave|smash|rend|slam|shoot|reave|smite|frenzy on|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex MeleeOutRx();
 
     // You try to slash orc pawn, but miss! / but orc pawn dodges! (Riposte)
@@ -54,6 +56,11 @@ public static partial class LogParser
     [GeneratedRegex(@"^(?<attacker>.+?) hit you for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.$", RegexOptions.IgnoreCase)]
     private static partial Regex SchoolHitInRx();
 
+    // You hurt yourself for 12 points.  — HP-cost casting (348 lines in one Dranak necro
+    // session), falls, drowning. Always "points", even for 1.
+    [GeneratedRegex(@"^You hurt yourself for (?<dmg>\d+) points?\.$")]
+    private static partial Regex SelfHurtRx();
+
     // You have taken 1 damage from Rabies by Gynok Moltor.
     [GeneratedRegex(@"^You have taken (?<dmg>\d+) damage from (?<spell>.+?) by (?<attacker>.+?)\.$")]
     private static partial Regex DotInRx();
@@ -68,7 +75,7 @@ public static partial class LogParser
     private static partial Regex ThirdSchoolRx();
 
     // Orc centurion hits YOU for 4 points of damage.
-    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|frenzies on) YOU for (?<dmg>\d+) points? of damage\.(?: \([^)]+\))?$")]
+    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|reaves|smites|frenzies on) YOU for (?<dmg>\d+) points? of damage\.(?: \([^)]+\))?$")]
     private static partial Regex MeleeInRx();
 
     // Orc centurion tries to hit YOU, but misses! / but YOU dodge! (Riposte)
@@ -80,7 +87,9 @@ public static partial class LogParser
     private static partial Regex NonMeleeInRx();
 
     // You healed Kaybek for 10 hit points by Lifespike. / You healed Kaybek for 7 (10) hit points by Lifespike.
-    [GeneratedRegex(@"^You healed (?<target>.+?) for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
+    // Heal-over-time ticks say "healed X over time for N" (eqlog_Hugzee: "Xephira healed
+    // Spamwagon over time for 11 hit points by Budding Heal.") — same event, one extra phrase.
+    [GeneratedRegex(@"^You healed (?<target>.+?)(?: over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
     private static partial Regex HealOutRx();
 
     // You have been healed for 30 hit points. / Someone healed you...
@@ -104,7 +113,9 @@ public static partial class LogParser
     private static partial Regex VendorSaleRx();
 
     // Aamilea healed you for 56 hit points by Light Healing.
-    [GeneratedRegex(@"^(?<healer>.+?) healed you for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
+    // HoT ticks: "Aenari healed you over time for 8 hit points by Echoing Light." — 223
+    // such lines in one week of eqlog_Hugzee were invisible, undercounting healing received.
+    [GeneratedRegex(@"^(?<healer>.+?) healed you(?: over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
     private static partial Regex HealInByRx();
 
     // A willowisp resisted your Denon's Disruptive Discord!
@@ -161,6 +172,12 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your faction standing with (?<faction>.+?) has been adjusted by (?<delta>-?\d+)\.$")]
     private static partial Regex FactionRx();
 
+    // Your faction standing with Emerald Warriors could not possibly get any better.
+    // The at-the-cap form — thousands of these in family logs, where farmed factions
+    // "stopped moving" with no explanation on the Faction card.
+    [GeneratedRegex(@"^Your faction standing with (?<faction>.+?) could not possibly get any (?:better|worse)\.$")]
+    private static partial Regex FactionCappedRx();
+
     [GeneratedRegex(@"^You have entered (?<zone>.+)\.$")]
     private static partial Regex ZoneRx();
 
@@ -203,7 +220,7 @@ public static partial class LogParser
     // "Orc centurion has taken 1 damage from Disease Cloud by Lizzid."
     // The trailing note is the same annotation your own hits carry — "Lizzid slashes orc
     // centurion for 13 points of damage. (Critical)" — so pets DO report crits.
-    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
+    [GeneratedRegex(@"^(?<attacker>.+?) (?<verb>hits|slashes|kicks|bashes|pierces|crushes|punches|backstabs|bites|claws|mauls|gores|stings|strikes|slices|cleaves|smashes|rends|slams|shoots|reaves|smites|frenzies on) (?<target>.+?) for (?<dmg>\d+) points? of damage\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex ThirdMeleeRx();
 
     [GeneratedRegex(@"^(?<attacker>.+?) tries to \w+(?: on)? .+?, but .+!(?: \([^)]+\))?$")]
@@ -301,6 +318,10 @@ public static partial class LogParser
         if ((r = DotInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
                 int.Parse(r.Groups["dmg"].Value), Melee: false);
+
+        if ((r = SelfHurtRx().Match(msg)).Success)
+            return new DamageTakenEvent(ts, "Yourself",
+                int.Parse(r.Groups["dmg"].Value), Melee: false, Self: true);
 
         if ((r = DamageShieldRx().Match(msg)).Success)
             return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),
@@ -409,6 +430,9 @@ public static partial class LogParser
 
         if ((r = FactionRx().Match(msg)).Success)
             return new FactionEvent(ts, r.Groups["faction"].Value, int.Parse(r.Groups["delta"].Value));
+
+        if ((r = FactionCappedRx().Match(msg)).Success)
+            return new FactionEvent(ts, r.Groups["faction"].Value, 0, Capped: true);
 
         if ((r = MergeRx().Match(msg)).Success)
             return new CraftEvent(ts, r.Groups["item"].Value);

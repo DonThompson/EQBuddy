@@ -117,7 +117,7 @@ public sealed class SessionStats
     private readonly List<(DateTime Time, int Level)> _levels = new();
 
     private readonly Dictionary<string, (int Ups, int Value)> _skills = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (int Hits, int Net)> _faction = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (int Hits, int Net, bool Capped)> _faction = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(DateTime Time, string Zone)> _zones = new();
     private int _fizzles, _resists;
 
@@ -471,6 +471,16 @@ public sealed class SessionStats
                     _avoidedIncoming++;
                     TrackCombat(m.Time);
                     break;
+                case DamageTakenEvent { Self: true } sdt:
+                    // HP-cost casting, falls, drowning. Counted as damage taken so the
+                    // Taken number is honest, but deliberately NOT a combat signal: no
+                    // combat window, no encounter — a swim across a lake is not a fight,
+                    // and a necromancer's own casting must not inflate combat seconds.
+                    _damageTaken += sdt.Amount;
+                    var selfAgg = _damageByAttacker.TryGetValue(sdt.Attacker, out var selfCur)
+                        ? selfCur : (0, 0L);
+                    _damageByAttacker[sdt.Attacker] = (selfAgg.Item1 + 1, selfAgg.Item2 + sdt.Amount);
+                    break;
                 case DamageTakenEvent dt:
                     // A "pet" attacking us means the charm broke — stop crediting it.
                     if (IsPet(dt.Attacker)) _petName = null;
@@ -589,8 +599,11 @@ public sealed class SessionStats
                     _skillAliases[sub.Replaced] = sub.Ability;
                     break;
                 case FactionEvent f:
-                    var fv = _faction.TryGetValue(f.Faction, out var fcur) ? fcur : (0, 0);
-                    _faction[f.Faction] = (fv.Item1 + 1, fv.Item2 + f.Delta);
+                    var fv = _faction.TryGetValue(f.Faction, out var fcur) ? fcur : (0, 0, false);
+                    // Capped is sticky for the session: standing pinned at the cap is why
+                    // the number stopped moving, and that's worth saying even if earlier
+                    // kills still adjusted it.
+                    _faction[f.Faction] = (fv.Item1 + 1, fv.Item2 + f.Delta, fv.Item3 || f.Capped);
                     break;
                 case ZoneEvent z:
                     if (_zones.Count == 0 || !string.Equals(_zones[^1].Zone, z.Zone, StringComparison.OrdinalIgnoreCase))
@@ -1147,7 +1160,7 @@ public sealed class SessionStats
                     .Select(kv => new SkillDetail(kv.Key, kv.Value.Ups, kv.Value.Value)).ToList(),
                 SkillUpTotal = _skills.Values.Sum(v => v.Ups),
                 Faction = _faction.OrderByDescending(kv => Math.Abs(kv.Value.Net))
-                    .Select(kv => new FactionDetail(kv.Key, kv.Value.Hits, kv.Value.Net)).ToList(),
+                    .Select(kv => new FactionDetail(kv.Key, kv.Value.Hits, kv.Value.Net, kv.Value.Capped)).ToList(),
                 Zones = _zones.Select(z => new TimedDetail(z.Time, z.Zone)).ToList(),
                 CurrentZone = _zones.Count > 0 ? _zones[^1].Zone : "",
                 Fizzles = _fizzles,
@@ -1206,7 +1219,10 @@ public record SourceDamage(string Name, int Hits, long Total, int Crits = 0, dou
 public record LootDetail(string Item, int Count, string LastSource);
 public record SkillDetail(string Skill, int Ups, int Value);
 public record SoldDetail(string Item, int Count, long Copper);
-public record FactionDetail(string Faction, int Hits, int Net);
+/// <param name="Capped">Standing hit the cap this session ("could not possibly get any
+/// better/worse"). Default false so history snapshots from before this existed deserialize
+/// unchanged.</param>
+public record FactionDetail(string Faction, int Hits, int Net, bool Capped = false);
 
 public sealed class StatsSnapshot
 {

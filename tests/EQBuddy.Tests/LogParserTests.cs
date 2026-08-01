@@ -35,6 +35,8 @@ public class LogParserTests
     [InlineData("You shoot orc centurion for 18 points of damage. (Double Bow Shot)", "Archery", "Orc centurion", 18, false)]
     [InlineData("You bash an orc legionnaire for 5 points of damage. (Riposte Critical)", "Bash", "Orc legionnaire", 5, true)]
     [InlineData("You crush Asaka L`Rei for 34 points of damage.", "Crush", "Asaka L`Rei", 34, false)]
+    [InlineData("You reave orc legionnaire for 7 points of damage.", "Reave", "Orc legionnaire", 7, false)]
+    [InlineData("You smite orc oracle for 26 points of damage.", "Smite", "Orc oracle", 26, false)]
     public void MeleeOut(string msg, string source, string target, int amount, bool crit)
     {
         var e = Parse<DamageDealtEvent>(msg);
@@ -90,6 +92,19 @@ public class LogParserTests
         Assert.Equal(attacker, e.Attacker);
         Assert.Equal(amount, e.Amount);
         Assert.Equal(melee, e.Melee);
+        Assert.False(e.Self);
+    }
+
+    /// <summary>HP-cost casting (a necro session logged 348 of these), falls, drowning.
+    /// Damage taken, but flagged Self so stats don't treat it as a fight. The game says
+    /// "points" even for 1.</summary>
+    [Theory]
+    [InlineData("You hurt yourself for 1 points.", 1)]
+    [InlineData("You hurt yourself for 27 points.", 27)]
+    public void SelfHurtIsDamageTakenButNotCombat(string msg, int amount)
+    {
+        var e = Parse<DamageTakenEvent>(msg);
+        Assert.Equal(("Yourself", amount, false, true), (e.Attacker, e.Amount, e.Melee, e.Self));
     }
 
     // ---- misses ----
@@ -137,6 +152,18 @@ public class LogParserTests
         Assert.Equal(("A puma", "Ghoul", 11), (e.Attacker, e.Target, e.Amount));
     }
 
+    /// <summary>"reaves" surfaced in unmatched-line analysis 2026-08-01 — 1,381 lines of a
+    /// party member's damage in one week of eqlog_Hugzee, all invisible to party stats.
+    /// "smites" appeared once in the same sweep.</summary>
+    [Theory]
+    [InlineData("Lizzid reaves orc legionnaire for 7 points of damage.", "Lizzid", "Orc legionnaire", 7, "Reave")]
+    [InlineData("Thordrynn smites orc oracle for 22 points of damage.", "Thordrynn", "Orc oracle", 22, "Smite")]
+    public void ThirdPartyReaveAndSmite(string msg, string attacker, string target, int amount, string skill)
+    {
+        var e = Parse<ThirdMeleeEvent>(msg);
+        Assert.Equal((attacker, target, amount, skill), (e.Attacker, e.Target, e.Amount, e.Skill));
+    }
+
     [Fact]
     public void ThirdPartySchoolSpell()
     {
@@ -158,6 +185,23 @@ public class LogParserTests
     {
         var e = Parse<HealEvent>("Aamilea healed you for 56 hit points by Light Healing.");
         Assert.Equal((56, "Light Healing", false, "Aamilea"), (e.Amount, e.Spell, e.Outgoing, e.Healer));
+    }
+
+    /// <summary>Heal-over-time ticks add "over time" mid-sentence but are otherwise the
+    /// same event. 223 received-HoT lines in one week of eqlog_Hugzee were invisible,
+    /// silently undercounting healing received.</summary>
+    [Fact]
+    public void HealOverTimeReceived()
+    {
+        var e = Parse<HealEvent>("Aenari healed you over time for 8 hit points by Echoing Light.");
+        Assert.Equal((8, "Echoing Light", false, "Aenari"), (e.Amount, e.Spell, e.Outgoing, e.Healer));
+    }
+
+    [Fact]
+    public void HealOverTimeCast()
+    {
+        var e = Parse<HealEvent>("You healed Spamwagon over time for 11 hit points by Budding Heal.");
+        Assert.Equal(("Spamwagon", 11, "Budding Heal", true), (e.Target, e.Amount, e.Spell, e.Outgoing));
     }
 
     [Fact]
@@ -280,7 +324,18 @@ public class LogParserTests
     public void Faction()
     {
         var e = Parse<FactionEvent>("Your faction standing with Crushbone Orcs has been adjusted by -1.");
-        Assert.Equal(("Crushbone Orcs", -1), (e.Faction, e.Delta));
+        Assert.Equal(("Crushbone Orcs", -1, false), (e.Faction, e.Delta, e.Capped));
+    }
+
+    /// <summary>The at-the-cap forms — thousands per week in family logs. Delta 0, but the
+    /// event explains why a farmed faction's number stopped moving.</summary>
+    [Theory]
+    [InlineData("Your faction standing with Emerald Warriors could not possibly get any better.", "Emerald Warriors")]
+    [InlineData("Your faction standing with Crushbone Orcs could not possibly get any worse.", "Crushbone Orcs")]
+    public void FactionAtTheCap(string msg, string faction)
+    {
+        var e = Parse<FactionEvent>(msg);
+        Assert.Equal((faction, 0, true), (e.Faction, e.Delta, e.Capped));
     }
 
     [Fact]

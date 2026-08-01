@@ -608,7 +608,7 @@ public partial class MainWindow : Window
 
         if (FactionSection.IsExpanded)
             FillList(FactionList, s.Faction.Select(f =>
-                (f.Faction, $"{(f.Net >= 0 ? "+" : "")}{f.Net}")),
+                (f.Faction, EQBuddy.UI.Shared.FactionFormat.Net(f))),
                 valueBrush: f => f.StartsWith('-') ? (Brush)FindResource("BadBrush") : (Brush)FindResource("GoodBrush"));
 
         RenderTracked(s);

@@ -22,6 +22,57 @@ public class SessionStatsTests
     private static string At(int mm, int ss, string msg) =>
         $"[Sat Jul 18 15:{mm:D2}:{ss:D2} 2026] {msg}";
 
+    /// <summary>"You hurt yourself" (HP-cost casting, falls, drowning) counts as damage
+    /// taken — but must not open a combat window or an encounter. A necro spending HP on
+    /// spells, or a long swim, is not a fight, and treating it as one dilutes DPS with
+    /// phantom combat seconds.</summary>
+    [Fact]
+    public void SelfDamageCountsButDoesNotStartCombat()
+    {
+        var s = Replay("Dranak",
+            At(0, 0, "You hurt yourself for 27 points."),
+            At(0, 2, "You hurt yourself for 27 points.")).Snapshot();
+
+        Assert.Equal(54, s.DamageTaken);
+        var self = Assert.Single(s.DamageByAttacker);
+        Assert.Equal("Yourself", self.Name);
+        Assert.Equal(54, self.Total);
+        Assert.Equal(0, s.CombatSeconds);
+        Assert.Empty(s.RecentEncounters);
+    }
+
+    /// <summary>Capped factions ("could not possibly get any better/worse") show up on the
+    /// Faction card as capped instead of silently not moving. Capped is sticky: a faction
+    /// that climbed earlier in the session and then hit the cap reports both.</summary>
+    [Fact]
+    public void FactionAtTheCapIsReportedAsCapped()
+    {
+        var s = Replay("Hugzee",
+            At(0, 0, "Your faction standing with Storm Guard has been adjusted by 2."),
+            At(0, 5, "Your faction standing with Storm Guard could not possibly get any better."),
+            At(0, 6, "Your faction standing with Crushbone Orcs could not possibly get any worse.")).Snapshot();
+
+        var storm = Assert.Single(s.Faction, f => f.Faction == "Storm Guard");
+        Assert.Equal((2, 2, true), (storm.Hits, storm.Net, storm.Capped));
+        var orcs = Assert.Single(s.Faction, f => f.Faction == "Crushbone Orcs");
+        Assert.Equal((1, 0, true), (orcs.Hits, orcs.Net, orcs.Capped));
+
+        Assert.Equal("+2 · maxed", EQBuddy.UI.Shared.FactionFormat.Net(storm));
+        Assert.Equal("maxed", EQBuddy.UI.Shared.FactionFormat.Net(orcs));
+        Assert.Equal("-1", EQBuddy.UI.Shared.FactionFormat.Net(new FactionDetail("Any", 1, -1)));
+    }
+
+    /// <summary>HoT ticks land in healing received like any other incoming heal.</summary>
+    [Fact]
+    public void HealOverTimeCountsAsHealingReceived()
+    {
+        var s = Replay("Hugzee",
+            At(0, 0, "Aenari healed you over time for 8 hit points by Echoing Light."),
+            At(0, 6, "Aenari healed you over time for 8 hit points by Echoing Light.")).Snapshot();
+
+        Assert.Equal(16, s.HealingReceived);
+    }
+
     [Fact]
     public void PetDamageAndKillsCreditedToPlayer()
     {

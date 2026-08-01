@@ -894,7 +894,7 @@ public sealed class MainWindow : Window
             FillList(_skillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
         }
         if (_sections["faction"].IsExpanded)
-            FillList(_factionList, s.Faction.Select(f => (f.Faction, $"{(f.Net >= 0 ? "+" : "")}{f.Net}")),
+            FillList(_factionList, s.Faction.Select(f => (f.Faction, EQBuddy.UI.Shared.FactionFormat.Net(f))),
                 valueBrush: f => f.StartsWith('-') ? AppTheme.BadBrush : AppTheme.GoodBrush);
         if (_sections["misc"].IsExpanded)
         {

@@ -11,7 +11,11 @@ public record DeathEvent(DateTime Time, string Killer) : GameEvent(Time);
 /// OverTime marks a damage-over-time tick, which the log distinguishes by line shape
 /// ("X has taken N damage from your Y.") rather than by spell name.</summary>
 public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageKind Kind, string Source, bool Critical, bool IsAux = false, string? Note = null, bool OverTime = false) : GameEvent(Time);
-public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee) : GameEvent(Time);
+/// <param name="Self">"You hurt yourself for N points." — HP-cost spellcasting (a
+/// necromancer's bread and butter), falls, drowning. Counts as damage taken, but must not
+/// open a combat window or an encounter: hurting yourself is not a fight, and a swim
+/// across a lake shouldn't dilute DPS with minutes of "combat".</param>
+public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee, bool Self = false) : GameEvent(Time);
 public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "") : GameEvent(Time);
 /// <summary>"Your wounds begin to heal." — a regen/hymn tick; the log gives no amount, so we can only count them.</summary>
@@ -38,7 +42,10 @@ public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(T
 /// takes over a basic attack. The damage still logs under the old verb ("You kick …"), so
 /// this line is the only thing that says the hits are now Round Kick rather than Kick.</summary>
 public record SkillSubstitutionEvent(DateTime Time, string Ability, string Replaced) : GameEvent(Time);
-public record FactionEvent(DateTime Time, string Faction, int Delta) : GameEvent(Time);
+/// <param name="Capped">"Your faction standing with X could not possibly get any
+/// better/worse." — the standing is pinned at the cap, so the kill changed nothing. Delta
+/// is 0, but the event still shows WHY a farmed faction isn't moving.</param>
+public record FactionEvent(DateTime Time, string Faction, int Delta, bool Capped = false) : GameEvent(Time);
 public record ZoneEvent(DateTime Time, string Zone) : GameEvent(Time);
 public record CraftEvent(DateTime Time, string Item) : GameEvent(Time);
 public record FizzleEvent(DateTime Time, string Spell = "") : GameEvent(Time);
