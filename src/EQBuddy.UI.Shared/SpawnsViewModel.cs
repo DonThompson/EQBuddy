@@ -2,6 +2,9 @@ using EQBuddy.Core;
 
 namespace EQBuddy.UI.Shared;
 
+/// <summary>One chicklet in the minimized spawn-countdown stack.</summary>
+public sealed record SpawnChip(string Zone, string Name, string CountdownText, bool IsDue, string Detail);
+
 /// <summary>One row in the Spawns window, ready to render.</summary>
 public sealed record SpawnRow(
     string Zone,
@@ -189,6 +192,23 @@ public sealed class SpawnsViewModel
 
     /// <summary>Any countdown still running (or lingering as due) for this server.</summary>
     public bool HasActiveTimers(DateTime now) => _timers.Snapshot(now).Count > 0;
+
+    /// <summary>One chicklet per running countdown, every zone on this server, soonest
+    /// first. The minimized face of the feature: name + countdown, nothing else — the
+    /// full zone list is a double-click away.</summary>
+    public List<SpawnChip> Chips(DateTime now)
+    {
+        return _timers.Snapshot(now).Select(t =>
+        {
+            var text = t.DueAt is { } due
+                ? SpawnDurationText.Countdown(due - now)
+                : $"killed {SpawnDurationText.Format((now - t.KilledAt).TotalSeconds)} ago";
+            var detail = t.DueAt is { } d
+                ? $"{t.Zone} — due {d:t}. Double-click for the zone list; click a due chip to dismiss it."
+                : $"{t.Zone} — no respawn time known (set one in the zone list). Double-click to open it.";
+            return new SpawnChip(t.Zone, t.Name, text, t.IsDue(now), detail);
+        }).ToList();
+    }
 
     /// <summary>Timers that crossed into "due" since the last call, for rows whose alert
     /// toggle is on. The first call after launch primes silently: a camp that came due

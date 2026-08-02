@@ -111,10 +111,12 @@ public sealed class SpawnCatalog
     public static double? EffectiveSeconds(SpawnZone zone, SpawnEntry entry) =>
         entry.RespawnSeconds ?? zone.NamedDefaultSeconds;
 
-    /// <summary>Case-insensitive name equality that shrugs off leading articles and a
-    /// trailing plural: catalog names are wiki titles ("a froglok ghoul lord"), kill
-    /// lines arrive normalized ("froglok ghoul lord"), and placeholder notes are
-    /// sometimes plural ("orc centurions").</summary>
+    /// <summary>Case-insensitive name equality that shrugs off leading articles, a
+    /// trailing plural, and name punctuation: catalog names are wiki titles
+    /// ("a froglok ghoul lord"), kill lines arrive normalized ("froglok ghoul lord"),
+    /// placeholder notes are sometimes plural ("orc centurions") — and wikis routinely
+    /// drop the EQ backtick (wiki "Skeleton Lrodd" vs the log's "Skeleton L`rodd",
+    /// found by David mid-camp), which must never cost anyone a timer.</summary>
     public static bool NameMatches(string catalogName, string killedName)
     {
         if (catalogName.Length == 0 || killedName.Length == 0) return false;
@@ -124,7 +126,7 @@ public sealed class SpawnCatalog
 
         static string Fold(string s)
         {
-            s = s.Trim();
+            s = s.Trim().Replace("`", "").Replace("'", "");
             foreach (var article in (string[])["a ", "an ", "the "])
                 if (s.Length > article.Length && s.StartsWith(article, StringComparison.OrdinalIgnoreCase))
                 { s = s[article.Length..]; break; }

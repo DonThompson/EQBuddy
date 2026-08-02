@@ -97,15 +97,17 @@ Watch rules & alerts:
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
 Spawn timers (on by default):
-- Kill a named — or its known **placeholder** — and the 🕒 **Spawns window pops up**
-  counting down the respawn, and follows you zone to zone (pick another zone from the
-  dropdown to plan ahead; Follow snaps back when you actually zone). Countdowns start
-  from the log, exactly like everything else EQBuddy tracks, survive an app restart,
-  and ▶ starts one by hand for camps you arrived at late ("died 5m ago").
-- **The window only shows when there's something to count**: it appears on a kill,
-  closes itself when the last timer runs out, and ✕ hides it until the next kill.
-  Open it any time via right-click → **Spawn timers…**; turn tracking off entirely
-  with **Track spawns** in the menu or ⚙ Options.
+- Kill a named — or its known **placeholder** — and a small **countdown chicklet**
+  appears: `⏳ Asaka L`Rei 3:12`. Chicklets stack, drag anywhere as one, keep counting
+  **every timer you have running in any zone**, survive an app restart, and flip to a
+  **DUE** badge at zero (plus the alert banner, and a sound if you pick one) until you
+  click them away.
+- **Double-click a chicklet** (or right-click → **Spawn timers…**) for the full zone
+  list, which follows you zone to zone (pick another zone from the dropdown to plan
+  ahead; Follow snaps back when you actually zone). Every respawn time is editable in
+  place, ▶ starts a timer by hand for camps you arrived at late ("died 5m ago"), and
+  **+** adds named the catalog doesn't know. Turn tracking off with **Track spawns**
+  in the menu or ⚙ Options.
 - EQ Legends' difficulty tiers ("Befallen 4 (Refined)") resolve to their base zone's
   named list automatically.
 - Ships with **840+ named across 118 classic zones**, seeded from the

@@ -328,7 +328,14 @@ public partial class MainWindow : Window
 
     private OptionsWindow? _optionsWindow;
 
-    private bool _hadSpawnTimers;
+    private SpawnChipsWindow? _chipsWindow;
+
+    private void CloseChips()
+    {
+        if (_chipsWindow is not { IsLoaded: true } cw) { _chipsWindow = null; return; }
+        _chipsWindow = null;
+        cw.Close();   // saves the stack position on the way out
+    }
 
     private void OnTrackSpawns(object sender, RoutedEventArgs e) =>
         SetTrackSpawns(TrackSpawnsItem.IsChecked);
@@ -337,27 +344,26 @@ public partial class MainWindow : Window
 
     /// <summary>Single switch for the spawn-timer feature: the setting, the menu check,
     /// and the Options checkbox stay in lockstep whichever of them the user touched.
-    /// Arming does not open the window — kills do (see RefreshUi) — but if countdowns
-    /// are already running, arming shows them immediately rather than making the user
-    /// wait for the next death.</summary>
+    /// Arming opens nothing — the chicklet stack appears from the next tick if timers
+    /// are running; the full window only ever opens on demand.</summary>
     internal void SetTrackSpawns(bool on)
     {
         _settings.TrackSpawns = on;
         _settings.Save();
         TrackSpawnsItem.IsChecked = on;
         if (_optionsWindow is { IsLoaded: true } ow) ow.SyncTrackSpawns(on);
-        if (on)
+        if (!on)
         {
-            if (_spawnsVm.HasActiveTimers(DateTime.Now)) ShowSpawnsWindow();
-        }
-        else if (_spawnsWindow is { } w)
-        {
-            _spawnsWindow = null;   // cleared first so Closed handling can't loop
-            if (w.IsLoaded) w.Close();
+            CloseChips();
+            if (_spawnsWindow is { } w)
+            {
+                _spawnsWindow = null;   // cleared first so Closed handling can't loop
+                if (w.IsLoaded) w.Close();
+            }
         }
     }
 
-    private void ShowSpawnsWindow(string? zone = null)
+    internal void ShowSpawnsWindow(string? zone = null)
     {
         if (_spawnsWindow is { IsLoaded: true })
         {
@@ -468,18 +474,28 @@ public partial class MainWindow : Window
                     PlayAlertSound(_settings.SpawnSound);
             }
 
-            // Pop-on-kill: a new countdown (fresh kill, or one recovered from the log at
-            // startup) opens the window on that timer's zone — even if the user hid it,
-            // because a new kill is new information. When the last timer drains away the
-            // window goes with it; the 0→0 case never closes a window someone opened by
-            // hand to browse or start timers manually.
-            var started = _spawnsVm.ConsumeNewTimers(DateTime.Now);
-            if (started.Count > 0)
-                ShowSpawnsWindow(started[^1].Zone);
-            var timersRunning = _spawnsVm.HasActiveTimers(DateTime.Now);
-            if (!timersRunning && _hadSpawnTimers && _spawnsWindow is { IsLoaded: true } sw)
-                sw.Close();
-            _hadSpawnTimers = timersRunning;
+            // Chicklets are the ambient face of spawn tracking: the stack exists exactly
+            // while timers do and the full window is closed. No pop-open of the full
+            // window, ever — it lives behind a double-click (David's design).
+            var hasTimers = _spawnsVm.HasActiveTimers(DateTime.Now);
+            var fullOpen = _spawnsWindow is { IsLoaded: true };
+            if (hasTimers && !fullOpen)
+            {
+                if (_chipsWindow is not { IsLoaded: true })
+                {
+                    _chipsWindow = new SpawnChipsWindow(this, _spawnsVm);
+                    _chipsWindow.Show();
+                }
+                _chipsWindow.RefreshChips(DateTime.Now);
+            }
+            else
+            {
+                CloseChips();
+            }
+        }
+        else
+        {
+            CloseChips();
         }
 
         // Every 5s: re-check which character's log is growing and follow them.

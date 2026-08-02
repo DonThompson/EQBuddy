@@ -94,6 +94,10 @@ public sealed class AppSettings
     /// <summary>Sound when a spawn timer hits zero: "Off" (default — the banner alone),
     /// a built-in name, or a custom file path. The banner always shows for alerting rows.</summary>
     public string SpawnSound { get; set; } = "Off";
+    /// <summary>Position of the spawn-chicklet stack; NaN = a default spot near the
+    /// top-left, clear of the widget's home edge.</summary>
+    public double SpawnChipsLeft { get; set; } = double.NaN;
+    public double SpawnChipsTop { get; set; } = double.NaN;
 
     private static string FilePath => AppPaths.File("settings.json");
 

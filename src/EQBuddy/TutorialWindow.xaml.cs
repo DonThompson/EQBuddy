@@ -58,16 +58,16 @@ public partial class TutorialWindow : Window
             "t-watch.png"),
 
         new("Spawn timers",
-            "Kill a named mob — or the placeholder that spawns in its spot — and the 🕒 " +
-            "Spawns window pops up counting down its respawn, following you zone to zone. " +
-            "Press ▶ on a row for camps you arrived at late ('died 5m ago'). It comes " +
-            "loaded with community respawn times for the classic zones, but those are " +
-            "player lore, not gospel: every duration is editable right in the row, your " +
-            "edits stick through updates, and + adds named the list doesn't know. When a " +
-            "timer hits zero you get a banner (and a sound if you pick one). The window " +
-            "hides itself when the last timer runs out; ✕ hides it until the next kill. " +
-            "Right-click → Spawn timers… opens it any time, and Track spawns in ⚙ Options " +
-            "turns the whole thing off.",
+            "Kill a named mob — or the placeholder that spawns in its spot — and a small " +
+            "countdown chicklet appears: ⏳ Asaka L`Rei 3:12. Chicklets stack, drag " +
+            "anywhere as one, and keep counting every timer you have running in any " +
+            "zone. At zero a chicklet turns DUE (with a banner, and a sound if you pick " +
+            "one) and stays until you click it away. Double-click any chicklet — or " +
+            "right-click → Spawn timers… — for the full zone list, which follows you " +
+            "zone to zone: every respawn time is editable right in the row (the shipped " +
+            "times are community lore, not gospel), ▶ starts a timer by hand for camps " +
+            "you arrived at late, and + adds named the list doesn't know. Track spawns " +
+            "in ⚙ Options turns the whole thing off.",
             null),
 
         new("Mini mode & hotkeys",

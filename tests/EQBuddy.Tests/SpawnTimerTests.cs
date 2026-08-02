@@ -90,6 +90,8 @@ public class SpawnTimerTests
     [InlineData("orc centurions", "orc centurion", true)]              // plural note
     [InlineData("Lady Vox", "lady vox", true)]                         // case
     [InlineData("a froglok ghoul lord", "froglok ghoul", false)]       // prefix is not a match
+    [InlineData("Skeleton Lrodd", "Skeleton L`rodd", true)]            // wikis drop the EQ backtick
+    [InlineData("Asaka LRei", "Asaka L`Rei", true)]
     [InlineData("", "anything", false)]
     public void NameMatchingIsForgivingButNotFuzzy(string catalogName, string killed, bool expected) =>
         Assert.Equal(expected, SpawnCatalog.NameMatches(catalogName, killed));
@@ -334,6 +336,31 @@ public class SpawnTimerTests
         Assert.Single(vm.ConsumeNewTimers(T0.AddMinutes(6)));           // re-kill = new information
 
         Assert.True(vm.HasActiveTimers(T0.AddMinutes(7)));
+    }
+
+    /// <summary>Chicklets: every running timer on the server, soonest first, regardless
+    /// of zone — a Befallen camp timer keeps its chip while you bank elsewhere.</summary>
+    [Fact]
+    public void ChipsSpanZonesSortSoonestFirstAndFlagDue()
+    {
+        var (vm, timers, _) = Vm();
+        timers.Apply(new ZoneEvent(T0, "Lower Guk"));
+        timers.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));          // 27 min
+        timers.Apply(new ZoneEvent(T0.AddMinutes(1), "Permafrost Keep"));
+        timers.Apply(new KillEvent(T0.AddMinutes(1), "Lady Vox", "You"));      // 7 days
+
+        var chips = vm.Chips(T0.AddMinutes(2));
+        Assert.Equal(2, chips.Count);
+        Assert.Equal("a froglok ghoul lord", chips[0].Name);   // soonest first
+        Assert.Equal("Lady Vox", chips[1].Name);
+        Assert.All(chips, c => Assert.False(c.IsDue));
+
+        var later = vm.Chips(T0.AddMinutes(40));               // ghoul lord now due
+        Assert.True(later[0].IsDue);
+        Assert.False(later[1].IsDue);
+
+        vm.ClearTimer("Lower Guk", "a froglok ghoul lord");    // click-away on a due chip
+        Assert.Equal("Lady Vox", Assert.Single(vm.Chips(T0.AddMinutes(41))).Name);
     }
 
     [Fact]

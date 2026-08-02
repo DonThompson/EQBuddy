@@ -90,7 +90,7 @@
                 <TextBlock Text="🕒 Track spawns (named respawn timers)" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
-            <TextBlock Text="Kill a named — or its placeholder — and the Spawns window pops up counting down its respawn, following you zone to zone. ✕ hides it until the next kill; it also closes itself when the last timer runs out. Every duration is editable in place (the shipped times are community lore) and your edits survive updates. Open it any time via right-click → Spawn timers…"
+            <TextBlock Text="Kill a named — or its placeholder — and a small countdown chicklet appears (⏳ Asaka L`Rei 3:12). Chicklets stack, drag anywhere as one, show every timer you have running in any zone, and flip to DUE until clicked away. Double-click one (or right-click → Spawn timers…) for the full zone list, which follows you zone to zone; every duration there is editable in place and your edits survive updates."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
             <Grid Margin="0,12,0,0">

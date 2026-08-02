@@ -368,19 +368,21 @@ double every death.
 
 ## Spawns window (Track Spawns)
 
-**On by default, pop-on-kill** (`TrackSpawns`, default true). The window stays hidden
-until a countdown exists: it pops when a named (or placeholder) death starts one —
-including timers recovered from the log at startup — closes itself when the last
-timer drains away, and ✕ merely hides it until the next kill (1.20.0 parked it on
-screen all session and made ✕ disable the feature; David vetoed both). Right-click →
-**Spawn timers…** opens it on demand; **Track spawns** (menu or ⚙ Options checkbox,
-kept in lockstep via `MainWindow.SetTrackSpawns`) disarms the feature entirely. The
-0→0 case never auto-closes a window someone opened by hand to browse or start manual
-timers. Alerts and the pop logic run from MainWindow's shared 1 s tick
-(`ConsumeDueAlerts` / `ConsumeNewTimers`), so a hidden window can't silence a camp.
-Note `ConsumeNewTimers` deliberately does NOT prime at startup (recovered countdowns
-should pop the window) while `ConsumeDueAlerts` does (a camp that expired while the
-app was closed should not bang the banner).
+**On by default, chicklets first** (`TrackSpawns`, default true; the shape is David's
+design, arrived at over three iterations — always-open was noise, pop-the-full-window
+was still too much). The ambient face of the feature is `SpawnChipsWindow`: one small
+chip per running countdown (`⏳ Asaka L`Rei 3:12`), stacked vertically, the whole
+stack draggable as one (position persisted in `SpawnChipsLeft/Top`). The stack shows
+**every timer on the server regardless of zone** — a Befallen camp timer keeps its
+chip while you bank in WC — sorted soonest-first. At zero a chip flips to a
+warn-colored **DUE** and a single click acknowledges it (clears the timer); a
+double-click on any chip opens the full zone window on that chip's zone. The stack
+exists exactly while timers do and the full window is closed; MainWindow's shared 1 s
+tick drives refresh, visibility, and the due alerts (`ConsumeDueAlerts` primes at
+startup so a camp that expired while the app was closed doesn't bang the banner).
+The **full window never opens by itself**: double-click a chip or right-click →
+**Spawn timers…**. **Track spawns** (menu / ⚙ Options checkbox, in lockstep via
+`MainWindow.SetTrackSpawns`) disarms everything.
 
 **Zone following** reacts to zone *changes*, not ticks: browsing another zone's list
 mid-camp survives until you actually zone. Manual zone picks no longer untick Follow —
