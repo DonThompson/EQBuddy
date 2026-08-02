@@ -60,9 +60,12 @@ Log cleanup (automatic, optional):
 - Because logging is always on, EQBuddy empties any character log that has been quiet
   for 60+ minutes (a finished play session), so files never grow across sessions.
   Cleanup runs at EQBuddy startup and every 10 minutes — but never while the game is open.
-- If you keep your logs (to upload to another parser, for example), turn off
-  **"Auto-empty finished-session logs"** in ⚙ Options — EQBuddy then never touches your
-  log files, but they'll grow forever, so clean them up yourself occasionally.
+- If you keep your logs — because you also run **GINA or GamParse**, or upload to
+  another parser — turn off **"Auto-empty finished-session logs"** in ⚙ Options; EQBuddy
+  then never touches your log files (they'll grow forever, so clean them up yourself
+  occasionally). Cleanup also stands down automatically whenever the game, GINA, or
+  GamParse is running, so those tools' log positions are never yanked out from under
+  them.
 
 Watch rules & alerts:
 - ⚙ Options → **Watch rules**: add simple match texts (e.g. `mote`) — the 🎯 Tracked

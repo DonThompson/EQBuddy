@@ -560,8 +560,13 @@ Inno Setup's `/SILENT`, which has no meaning there.
 
 `Log=1` is forced in `eqclient.ini` ([Defaults] section only, byte-preserving
 elsewhere) whenever the game isn't running. With auto-empty ON, logs quiet for
-60+ min are truncated at startup/every 10 min (never while the game runs). OFF =
-logs are never touched (uploader-friendly), which the history dedup makes safe.
+60+ min are truncated at startup/every 10 min — never while the game runs, and
+(since the Reddit "this breaks GINA" report, 2026-08-02) **never while GINA or
+GamParse is running either** (`EqConfig.IsLogReaderRunning`): those tools keep a
+byte offset into the log, and emptying the file under them leaves that offset past
+end-of-file, silently killing their triggers until restart. Reading never conflicts
+— only truncation ever did. OFF = logs are never touched (uploader/GINA-friendly),
+which the history dedup makes safe.
 
 ## Known limitations
 

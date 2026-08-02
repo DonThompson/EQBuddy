@@ -76,7 +76,7 @@
                 <TextBlock Text="Auto-empty finished-session logs" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
-            <TextBlock Text="Turn off if you upload your log files elsewhere — they will grow forever, so clean them up yourself occasionally."
+            <TextBlock Text="Turn off if you use GINA/GamParse or upload your log files elsewhere — they will grow forever, so clean them up yourself occasionally. (Cleanup already stands down whenever the game, GINA, or GamParse is running.)"
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
             <CheckBox x:Name="TutorialCheck" Margin="0,10,0,0"

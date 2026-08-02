@@ -14,6 +14,20 @@ public static class EqConfig
 {
     public static bool IsGameRunning() => Process.GetProcessesByName("eqgame").Length > 0;
 
+    /// <summary>
+    /// Other tools that tail the same eqlog files (COMPAT-001). GINA keeps a byte
+    /// offset into the log; emptying the file under it leaves that offset past
+    /// end-of-file and GINA silently stops firing triggers until restarted — reported
+    /// on Reddit as "this breaks GINA" (2026-08-02). Reading never conflicts; only our
+    /// truncation does, so it stands down while any of these is running, same as it
+    /// does for the game itself. GamParse gets the same courtesy for the same reason.
+    /// </summary>
+    private static readonly string[] KnownLogReaders = ["GINA", "GamParse"];
+
+    /// <summary>A log-tailing tool (GINA, GamParse) is running right now.</summary>
+    public static bool IsLogReaderRunning() =>
+        KnownLogReaders.Any(name => Process.GetProcessesByName(name).Length > 0);
+
     /// <summary>eqclient.ini lives in the install root, one level above Logs.</summary>
     public static string? FindClientIni(string logFolder)
     {
@@ -87,7 +101,7 @@ public static class EqConfig
     /// </summary>
     public static int TruncateStaleLogs(string logFolder, TimeSpan staleAfter, bool ignoreGameCheck = false)
     {
-        if (!ignoreGameCheck && IsGameRunning()) return 0;
+        if (!ignoreGameCheck && (IsGameRunning() || IsLogReaderRunning())) return 0;
         if (!Directory.Exists(logFolder)) return 0;
         int truncated = 0;
         foreach (var f in Directory.EnumerateFiles(logFolder, "eqlog_*.txt"))
