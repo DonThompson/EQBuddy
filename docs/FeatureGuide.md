@@ -91,7 +91,12 @@ Header: session DPS (+ live fight DPS while fighting). Details:
   so charm swaps stay one readable list — the per-pet totals are the rows above. The
   section is hidden when no pet damage was seen. A generic bucket ("Melee"/"Spell") catches
   any attack whose verb the mapping doesn't recognise, so nothing is lost.
-- **Damage taken from** per attacker (total · hits · avg).
+- **Damage taken from** per attacker (total · hits · avg). Self-inflicted damage
+  (`You hurt yourself for 27 points.` — HP-cost casting, falls, drowning) counts here
+  under a **"Yourself"** row, but is flagged `Self` and deliberately opens **no combat
+  window and no encounter**: a swim across a lake is not a fight, and a necromancer's
+  own casting must not inflate combat seconds (348 such lines in one real necro session
+  would have wrecked the DPS denominator).
 - **Recent fights** — last 8 encounters: creature, duration, per-fight DPS, with a
   bar comparing each fight's DPS to the hottest recent fight. A fight opens on
   damage, closes on the kill line or a 20 s timeout ("· ?" marks timeouts).
@@ -118,6 +123,13 @@ same breakdown as Combat: `total · ×casts · avg · hps` per row, sortable by
 total/hps/casts/avg with the bar following the sort; per-spell hps = that spell's
 healing ÷ total time in combat (burst rate in the tooltip). Who healed you,
 regen/hymn tick counts (no amounts — the log gives none).
+
+**Heal-over-time ticks are counted, both directions.** `Aenari healed you over time
+for 8 hit points by Echoing Light.` credits healing received (and the healer), and
+`You healed X over time for N…` credits healing done, same as a direct heal — these
+carry real amounts, unlike hymn/regen ticks. One week of a real cleric-adjacent log
+had 223 received-HoT lines that were previously invisible, so pre-1.19 sessions
+understate healing received wherever a druid or cleric ran HoTs.
 
 ### Kills card
 Header: your kills (+ group kills). Details: per-creature counts, kills/hour +
@@ -151,6 +163,19 @@ Rules are defined in Options: **Kind** (Loot / Kill / Skill-up / Death / Milesto
 Spell fade / Log text) + name + match text (case-insensitive substring; the name doubles as
 match text if the match box is empty; Death/Milestone match everything when empty) + an
 optional per-rule **delay**.
+
+**Two rules can share a name.** Every rule carries a persisted `Id` (generated at
+construction; rules saved before ids existed get one on first load and it is written
+back immediately, so identity is stable across restarts). Alert cooldowns, the 8-cue
+in-flight cap, countdowns, alert baselines, and snapshot-row-to-rule matching are all
+keyed by id, never by display name — so "Asaka" alerting on sight and "Asaka" running
+a respawn timer are fully independent rules. An empty id in a hand-edited
+settings.json is regenerated rather than trusted, since several rules sharing `""`
+would recreate exactly the collision ids exist to end. Covered by `RuleIdentityTests`.
+
+**Verify (shared names):** two rules with identical names, one immediate and one with a
+2 m delay → separate Watch rows, countdown only on the delayed one, separate mini
+chips, and the countdown survives an app restart.
 
 **Options → Watch rules → "Show examples"** expands a worked example for every kind, plus the
 handful of rules that explain most confusion (match text is a substring, not a whole name;
@@ -309,8 +334,15 @@ next level (exact after a level-up this session, else an upper bound), level-ups
 **time-in-level**, skill-ups per skill.
 
 ### Faction / Travels & Deaths cards
-Net faction standing per faction. Deaths (killer + time), zones visited with times,
-camp markers.
+Net faction standing per faction. A standing at the cap shows **maxed** — the game
+says `Your faction standing with X could not possibly get any better.` and EQBuddy
+passes that on rather than letting a farmed faction look stuck (a faction that moved
+earlier in the session and then capped shows `+120 · maxed`). The formatting lives in
+`EQBuddy.UI.Shared.FactionFormat` so both UIs say it the same way. Deaths
+(killer + time), zones visited with times, camp markers.
+
+**Verify:** append a faction-cap line for a faction with no prior hits → row appears
+as `maxed`; append gain lines then the cap line → `+N · maxed`.
 
 **Both death forms are counted.** EQ Legends logs your death two different ways, each
 preceded by `You have been knocked unconscious!`:
