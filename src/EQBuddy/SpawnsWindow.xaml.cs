@@ -208,7 +208,7 @@ public partial class SpawnsWindow : Window
         var combo = new ComboBox
         {
             FontSize = 10, Width = 66, Margin = new Thickness(4, 0, 0, 0),
-            ToolTip = "Sound for this named — Default is the Options alert sound, same as watch rules",
+            ToolTip = "Sound for this named — Default is Alarm",
         };
         foreach (var item in (string[])["Default", "Off", .. EQBuddy.UI.Shared.AlertSoundCatalog.Names, "Custom…"])
             combo.Items.Add(item);

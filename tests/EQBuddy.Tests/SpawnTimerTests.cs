@@ -402,20 +402,21 @@ public class SpawnTimerTests
         Assert.Equal("Lady Vox", Assert.Single(vm.Chips(T0.AddMinutes(41))).Name);
     }
 
-    /// <summary>Per-named due sounds, watch-rule style: "" follows the shared choice,
-    /// "Off" silences one named even when the shared choice is audible, and a named
-    /// with its own sound plays even while the shared choice is Off.</summary>
+    /// <summary>Per-named due sounds: "Default" maps to Alarm (a camp popping is the
+    /// most time-critical thing the app announces — David's call, deliberately NOT the
+    /// Options alert sound); "Off" silences one named; anything else is that named's
+    /// own built-in or file.</summary>
     [Theory]
-    [InlineData("", "Off", null)]           // nothing chosen anywhere
-    [InlineData("", "Ding", "Ding")]        // follows shared
-    [InlineData("Off", "Ding", null)]       // opted out individually
-    [InlineData("Alarm", "Off", "Alarm")]   // opted in individually
-    [InlineData(@"C:\sounds\vox.mp3", "Ding", @"C:\sounds\vox.mp3")]
-    public void PerNamedSoundResolution(string own, string shared, string? expected)
+    [InlineData(null, "Alarm")]             // untouched: Default = Alarm
+    [InlineData("", "Alarm")]               // explicit Default pick: same
+    [InlineData("Off", null)]               // opted out individually
+    [InlineData("Chimes", "Chimes")]        // own pick wins
+    [InlineData(@"C:\sounds\vox.mp3", @"C:\sounds\vox.mp3")]
+    public void PerNamedSoundResolution(string? own, string? expected)
     {
         var (vm, _, _) = Vm();
-        if (own.Length > 0) vm.SetSound("Lower Guk", "a froglok ghoul lord", own);
-        Assert.Equal(expected, vm.SoundFor("Lower Guk", "a froglok ghoul lord", shared));
+        if (own is not null) vm.SetSound("Lower Guk", "a froglok ghoul lord", own);
+        Assert.Equal(expected, vm.SoundFor("Lower Guk", "a froglok ghoul lord"));
     }
 
     /// <summary>The bell defaults OFF, matching watch-rule sounds — a due timer is
@@ -430,10 +431,10 @@ public class SpawnTimerTests
         timers.Apply(new KillEvent(T0.AddMinutes(1), "froglok ghoul lord", "You"));
         Assert.Empty(vm.ConsumeDueAlerts(T0.AddMinutes(1 + 28)));   // bell off by default
 
-        vm.SetSound("Lower Guk", "a froglok ghoul lord", "Alarm");  // picking a sound = bell on
+        vm.SetSound("Lower Guk", "a froglok ghoul lord", "Chimes");  // picking a sound = bell on
         timers.Apply(new KillEvent(T0.AddMinutes(40), "froglok ghoul lord", "You"));
         var due = vm.ConsumeDueAlerts(T0.AddMinutes(40 + 28));
         Assert.Single(due);
-        Assert.Equal("Alarm", vm.SoundFor("Lower Guk", "a froglok ghoul lord", "Ding"));
+        Assert.Equal("Chimes", vm.SoundFor("Lower Guk", "a froglok ghoul lord"));
     }
 }

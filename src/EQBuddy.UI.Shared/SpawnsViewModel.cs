@@ -149,16 +149,14 @@ public sealed class SpawnsViewModel
     }
 
     /// <summary>The sound to actually play when this named comes due, or null for
-    /// silence. Per-named choice wins; "" falls through to the shared setting. A named
-    /// with its own sound plays even while the shared choice is Off — opting one camp
-    /// in is the point of having the per-named picker.</summary>
-    public string? SoundFor(string zone, string name, string sharedChoice)
+    /// silence. "Default" maps to <see cref="SpawnOverride.DefaultSound"/> (Alarm) —
+    /// spawns deliberately do NOT follow the Options alert sound; a camp popping
+    /// deserves a louder default than a loot ding (David's call).</summary>
+    public string? SoundFor(string zone, string name)
     {
         var own = _overrides.Find(zone, name)?.SoundName ?? "";
-        var choice = own.Length > 0 ? own : sharedChoice;
-        return string.Equals(choice, "Off", StringComparison.OrdinalIgnoreCase) || choice.Length == 0
-            ? null
-            : choice;
+        var choice = own.Length > 0 ? own : SpawnOverride.DefaultSound;
+        return string.Equals(choice, "Off", StringComparison.OrdinalIgnoreCase) ? null : choice;
     }
 
     /// <summary>▶ — the player marks the kill themselves; <paramref name="agoText"/>

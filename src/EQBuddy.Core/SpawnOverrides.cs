@@ -13,10 +13,16 @@ public sealed class SpawnOverride
     /// watch rules' per-rule 🔊 — the chicklet flipping to DUE is always there; the bell
     /// opts this camp into being heard too.</summary>
     public bool Alert { get; set; }
-    /// <summary>This named's own due sound: "" follows the window's shared choice,
-    /// "Off" stays silent, else a built-in name or a custom file path — the same scheme
-    /// watch rules use, and for the same reason: you learn WHICH camp popped without
-    /// looking away from the game.</summary>
+    /// <summary>What "Default" MEANS for spawn sounds: Alarm (David's call). A camp
+    /// popping is the most time-critical thing this app announces, and the gentle
+    /// watch-rule ding undersells it — so spawns get their own fixed default rather
+    /// than following the Options alert sound.</summary>
+    public const string DefaultSound = "Alarm";
+
+    /// <summary>This named's own due sound: "" (the default) maps to
+    /// <see cref="DefaultSound"/>, "Off" stays silent, else a built-in name or a
+    /// custom file path — per-named so you learn WHICH camp popped without looking
+    /// away from the game.</summary>
     public string SoundName { get; set; } = "";
     /// <summary>True for named the player added themselves (not in the catalog) —
     /// zones change, wikis lag, and a family member camping something undocumented

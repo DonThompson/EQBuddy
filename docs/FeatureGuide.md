@@ -421,15 +421,16 @@ catalog can't eat anyone's corrections. Custom named (player-added) live there t
   convention — deliberately different from rule delays, where bare = seconds), `90s`,
   `8m`, `12h`, `3d`, `3d 12h`, `6:40` (m:ss), `1:00:00`.
 
-**Alerts:** sound-only — the chicklet's DUE badge is the visual. Per-named, exactly
-the watch-rule scheme (unified after David found "Default" meaning silence): 🔔 opts a
-named in (default OFF, like a rule's 🔊), its sound picker offers **Default** (the
-Options alert sound — the same one watch rules follow), **Off**, built-ins, and
-**Custom…**; picking a concrete sound flips the bell on by itself. There is no
-spawn-specific shared sound any more (`AppSettings.SpawnSound` is dead, kept only for
-settings round-trip). The view model primes on first look so a timer that expired
-while the app was closed shows as due but never re-alerts at startup; only live
-transitions fire.
+**Alerts:** sound-only — the chicklet's DUE badge is the visual. Per-named: 🔔 opts a
+named in (default OFF, like a watch rule's 🔊); its sound picker offers **Default**
+(which maps to **Alarm** — spawns deliberately do NOT follow the Options alert sound,
+because a camp popping deserves a louder default than a loot ding; both David's
+calls, arrived at across two field tests — an earlier spawn-specific shared picker
+defaulting to Off made "Default" mean silence, which read as broken), **Off**,
+built-ins, and **Custom…**; picking a concrete sound flips the bell on by itself.
+`AppSettings.SpawnSound` is dead, kept only for settings round-trip. The view model
+primes on first look so a timer that expired while the app was closed shows as due
+but never re-alerts at startup; only live transitions fire.
 
 **Verify:** isolated profile, fixture log with `You have entered The Ruins of Old
 Guk.` and NO kills → window does NOT open at launch. Append `You have slain a froglok
