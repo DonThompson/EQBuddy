@@ -21,6 +21,8 @@
                 <MenuItem Header="Quick tutorial…" Click="OnTutorial"/>
                 <MenuItem Header="Drop camp marker" Click="OnCampMarker"/>
                 <MenuItem Header="Session history…" Click="OnHistory"/>
+                <MenuItem x:Name="TrackSpawnsItem" Header="Track spawns (named respawn timers)"
+                          IsCheckable="True" Click="OnTrackSpawns"/>
                 <Separator/>
                 <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>
                 <MenuItem Header="Auto-detect log folder" Click="OnAutoDetectLogFolder"/>

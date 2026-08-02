@@ -366,6 +366,50 @@ death is the caster of the finishing tick; with nothing to blame it reads "Somet
 `knocked unconscious` line is deliberately not parsed — it precedes both forms and would
 double every death.
 
+## Spawns window (Track Spawns)
+
+Right-click → **Track spawns** (persisted `TrackSpawns`). The window *is* the on-state:
+it opens whenever the setting is on (including at launch) and closing it turns the
+setting off — there is no tracking-but-hidden mode. Alerts fire from MainWindow's
+shared 1 s tick, not from the window, so they can't be lost to window lifetime.
+
+**The catalog** (`EQBuddy.Core/Data/SpawnCatalog.json`, embedded): 118 zones, 843
+named, built from eqlwiki.com (the EQ Legends community wiki — authoritative where it
+has data) with classic-EQ sources (p99 wiki, Allakhazam) filling gaps. Per entry:
+respawn seconds (null = undocumented → zone's `namedDefaultSeconds` → null means the
+player must supply one), variance, placeholder, source, note (surfaced as the row
+tooltip). **Player edits never touch the catalog** — they live in
+`<appdata>/spawn-overrides.json` (`SpawnOverrides`), so a release that refreshes the
+catalog can't eat anyone's corrections. Custom named (player-added) live there too.
+
+**Timers** (`SpawnTimers`, fed by `LogWatcher.Spawns` alongside SessionStats):
+- A `KillEvent` matching a named **or its placeholder** starts the countdown, using
+  the log's own timestamp — so the startup replay re-derives running countdowns, the
+  same way delayed watch cues recover. Longer timers (raid targets outliving the log)
+  survive via `<appdata>/spawn-timers.json`.
+- Matching is **zone-gated** (names repeat across zones; the current zone comes from
+  "You have entered" lines) and **per-server** (`server|zone|name` keys). No zone seen
+  yet = no automatic matching; ▶ is the fallback, not a guess.
+- Replays are idempotent and an older kill never rewinds a newer timer. A repeat kill
+  restarts the clock.
+- Due timers linger visibly ("due", warn-colored) for one respawn cycle (clamped
+  1–24 h), then drop — the cycle almost certainly ran unseen.
+- Durations parse via `SpawnDurationText`: bare number = **minutes** (wiki
+  convention — deliberately different from rule delays, where bare = seconds), `90s`,
+  `8m`, `12h`, `3d`, `3d 12h`, `6:40` (m:ss), `1:00:00`.
+
+**Alerts:** banner always (for rows whose 🔔 is on — default on), sound only if one is
+chosen in the window's dropdown (default Off). The view model primes on first look so
+a timer that expired while the app was closed shows as due but never re-alerts at
+startup; only live transitions fire.
+
+**Verify:** isolated profile with a fixture log containing `You have entered The Ruins
+of Old Guk.` + `You have slain a froglok ghoul lord!` stamped 27 min ago → window
+opens on launch (TrackSpawns=true), shows the countdown at ~1 min, flips to "due" with
+a banner at zero. Append a kill live → its countdown appears within ~2 s, rows
+re-sort soonest-first. Restart → countdowns unchanged (log replay + persist file).
+Pick another zone by hand → Follow unticks itself; re-tick to resume following.
+
 ## Mini mode
 
 Minimize (or `Ctrl+Shift+M`) collapses to a pill: status dot + starred stats (star
@@ -492,6 +536,11 @@ logs are never touched (uploader-friendly), which the history dedup makes safe.
 ## Known limitations
 
 - Invocations produce no known log lines — unparsed until evidence exists.
+- The Spawns window is WPF-only so far (Avalonia parity: issue #5); Core/UI.Shared
+  hold all the logic, so the port is a thin view.
+- Spawn durations are community lore (eqlwiki flags its own timer pages as
+  under-review); the edit box exists precisely because the defaults will be wrong
+  somewhere.
 - Hymn/regen ticks have no amounts in the log — counts only.
 - Multi-mob fight attribution is heuristic; timeouts marked "?".
 - Per-ability DPS = contribution over combat time (no cast timing in the log).

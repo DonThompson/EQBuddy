@@ -36,6 +36,11 @@ public sealed class LogWatcher : IDisposable
     public bool InitialIngestDone { get; private set; }
     public Exception? LastError { get; private set; }
 
+    /// <summary>Optional second consumer of the parsed event stream. Spawn timers ride
+    /// the same replay-then-tail pipeline as stats, which is what lets a restart
+    /// re-derive running countdowns from the log's own timestamps.</summary>
+    public SpawnTimers? Spawns { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -112,6 +117,7 @@ public sealed class LogWatcher : IDisposable
             var charInfo = CharacterLog.FromPath(path);
             _stats.CharacterName = charInfo?.Character;
             _stats.ServerName = charInfo?.Server;
+            if (Spawns is { } sp) sp.Server = charInfo?.Server ?? "";
             _offset = 0;
             _remainder.Clear();
             InitialIngestDone = false;
@@ -165,7 +171,11 @@ public sealed class LogWatcher : IDisposable
                     {
                         var line = text[start..end];
                         var evt = LogParser.Parse(line);
-                        if (evt is not null) _stats.Apply(evt);
+                        if (evt is not null)
+                        {
+                            _stats.Apply(evt);
+                            Spawns?.Apply(evt);
+                        }
                         // Every line, parsed or not: a Text watch rule matches the line's
                         // words, not whatever event we did or didn't make of it.
                         _stats.ObserveRawLine(line);

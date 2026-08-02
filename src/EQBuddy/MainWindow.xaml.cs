@@ -24,6 +24,10 @@ public partial class MainWindow : Window
     private DateTime _upToDateNoticeUntil = DateTime.MinValue;
     private bool _installingUpdate;
 
+    private readonly SpawnTimers _spawnTimers;
+    private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
+    private SpawnsWindow? _spawnsWindow;
+
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "loot", "money", "xp", "deaths"];
 
     private enum StatSort { Total, Hits, Avg, Rate }
@@ -35,6 +39,13 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _watcher = new LogWatcher(_stats);
+        // Spawn timers ride the watcher's event stream — wired before the first Select so
+        // the startup replay re-derives countdowns from kills already in the log.
+        var spawnCatalog = SpawnCatalog.LoadEmbedded();
+        var spawnOverrides = SpawnOverrides.Load(AppPaths.File("spawn-overrides.json"));
+        _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
+        _watcher.Spawns = _spawnTimers;
+        _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
@@ -133,6 +144,10 @@ public partial class MainWindow : Window
                 m.Placement = System.Windows.Controls.Primitives.PlacementMode.Left;
                 m.IsOpen = true;
             };
+
+        TrackSpawnsItem.IsChecked = _settings.TrackSpawns;
+        if (_settings.TrackSpawns)
+            Loaded += (_, _) => ShowSpawnsWindow();
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
@@ -303,6 +318,38 @@ public partial class MainWindow : Window
 
     private OptionsWindow? _optionsWindow;
 
+    private void OnTrackSpawns(object sender, RoutedEventArgs e) =>
+        SetTrackSpawns(TrackSpawnsItem.IsChecked);
+
+    /// <summary>Single switch for the spawn-timer feature: the setting, the menu check,
+    /// and the window stay in lockstep whichever of them the user touched.</summary>
+    internal void SetTrackSpawns(bool on)
+    {
+        _settings.TrackSpawns = on;
+        _settings.Save();
+        TrackSpawnsItem.IsChecked = on;
+        if (on)
+        {
+            ShowSpawnsWindow();
+        }
+        else if (_spawnsWindow is { } w)
+        {
+            _spawnsWindow = null;   // cleared first so the window's ✕ path can't loop
+            if (w.IsLoaded) w.Close();
+        }
+    }
+
+    private void ShowSpawnsWindow()
+    {
+        if (_spawnsWindow is { IsLoaded: true })
+        {
+            _spawnsWindow.Activate();
+            return;
+        }
+        _spawnsWindow = new SpawnsWindow(this, _spawnsVm);
+        _spawnsWindow.Show();
+    }
+
     private void OnOptions(object sender, RoutedEventArgs e)
     {
         if (_optionsWindow is { IsLoaded: true })
@@ -390,6 +437,16 @@ public partial class MainWindow : Window
 
     private void RefreshUi()
     {
+        // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
+        // off the shared tick so an accidentally-closed window can't silence a camp.
+        if (_settings.TrackSpawns)
+            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
+            {
+                AlertTile.ShowAlert($"⏰ {due.Name} due — {due.Zone}");
+                if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
+                    PlayAlertSound(_settings.SpawnSound);
+            }
+
         // Every 5s: re-check which character's log is growing and follow them.
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))
         {

@@ -94,6 +94,23 @@ Watch rules & alerts:
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
+Spawn timers (Track Spawns):
+- Right-click → **Track spawns** opens a second window of **named-mob respawn
+  countdowns for the zone you're in** (it follows your zone automatically; pick any
+  zone from the dropdown to plan ahead — that pauses following until you re-tick
+  *Follow*). Kill a named — or its known **placeholder** — and its countdown starts
+  from the log, exactly like everything else EQBuddy tracks. ▶ starts one by hand for
+  camps you arrived at late ("died 5m ago"), and countdowns survive an app restart.
+- Ships with **840+ named across 118 classic zones**, seeded from the
+  [EQ Legends community wiki](https://eqlwiki.com) with classic-EQ references filling
+  gaps. These are community numbers, not game data: **every duration is editable in
+  place** (`22` = minutes, `90s`, `12h`, `3d`, `6:40`), your edits persist through
+  updates, and you can add named the catalog doesn't know. Named with no documented
+  timer fall back to their zone's default cycle.
+- When a countdown hits zero the row flips to **due** and the alert banner fires
+  (per-named 🔔 toggle; optional sound, off by default). A timer that expired while
+  EQBuddy was closed shows as due without re-alerting at startup.
+
 Encounters, mob farming, and stances:
 - Combat shows your **recent fights** (creature, duration, per-fight DPS) and, when your
   class uses stances, a **By stance** breakdown of damage, combat time, and DPS with the

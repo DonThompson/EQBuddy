@@ -74,6 +74,20 @@ public sealed class AppSettings
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
 
+    // ---- spawn timers (the Spawns window) ----
+    /// <summary>Track named-mob spawn timers; the Spawns window opens whenever this is on.</summary>
+    public bool TrackSpawns { get; set; }
+    public double SpawnLeft { get; set; } = double.NaN;
+    public double SpawnTop { get; set; } = double.NaN;
+    /// <summary>Follow the zone the log says the player is in; off = stay on the zone
+    /// picked in the window's dropdown.</summary>
+    public bool SpawnFollowZone { get; set; } = true;
+    /// <summary>Last manually-picked zone, for when SpawnFollowZone is off.</summary>
+    public string SpawnZone { get; set; } = "";
+    /// <summary>Sound when a spawn timer hits zero: "Off" (default — the banner alone),
+    /// a built-in name, or a custom file path. The banner always shows for alerting rows.</summary>
+    public string SpawnSound { get; set; } = "Off";
+
     private static string FilePath => AppPaths.File("settings.json");
 
     // NaN is a legitimate value here ("not placed yet" window positions), and the
