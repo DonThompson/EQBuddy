@@ -43,7 +43,7 @@
     {
       "zone": "Befallen",
       "logZoneName": "Befallen",
-      "namedDefaultSeconds": 400,
+      "namedDefaultSeconds": 270,
       "named": [
         {
           "name": "Boondin Babbinsbort",
@@ -452,11 +452,11 @@
         },
         {
           "name": "Corflunk",
-          "respawnSeconds": 720,
+          "respawnSeconds": 420,
           "variance": "~12 minutes",
           "placeholder": "spawn point (-2083",
           "source": "eqlwiki",
-          "note": "goblin camp near Cauldron entrance; PH spawn point (-2083, -194)"
+          "note": "goblin camp near Cauldron entrance; PH spawn point (-2083, -194) — timer audited 2026-08-02"
         },
         {
           "name": "Glubbsink",
@@ -1532,11 +1532,11 @@
         },
         {
           "name": "Jetsam",
-          "respawnSeconds": 150,
+          "respawnSeconds": 120,
           "variance": "approximate",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": ""
+          "note": "timer audited 2026-08-02"
         },
         {
           "name": "Squallslither",
@@ -1793,11 +1793,11 @@
       "named": [
         {
           "name": "Gorenaire",
-          "respawnSeconds": 576000,
+          "respawnSeconds": 604800,
           "variance": "7 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "Wandering frost dragon; eqlwiki lists her but no timer"
+          "note": "Wandering frost dragon; eqlwiki lists her but no timer — timer audited 2026-08-02"
         },
         {
           "name": "a mountain giant patriarch",
@@ -2187,11 +2187,11 @@
       "named": [
         {
           "name": "Severilous",
-          "respawnSeconds": 576000,
+          "respawnSeconds": 604800,
           "variance": "7 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "Timer from p99; eqlwiki confirms wandering dragon on lower level around (2500, 3500), no timer"
+          "note": "Timer from p99; eqlwiki confirms wandering dragon on lower level around (2500, 3500), no timer — timer audited 2026-08-02"
         },
         {
           "name": "Engorged Soulsipper",
@@ -2316,7 +2316,7 @@
     {
       "zone": "Erudin Palace",
       "logZoneName": "Erudin Palace",
-      "namedDefaultSeconds": 1500,
+      "namedDefaultSeconds": 1440,
       "named": []
     },
     {
@@ -2414,11 +2414,11 @@
         },
         {
           "name": "Torklar Battlemaster",
-          "respawnSeconds": 1320,
+          "respawnSeconds": 7200,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "20% chance, basement; cleric quest mob"
+          "note": "20% chance, basement; cleric quest mob — timer audited 2026-08-02"
         },
         {
           "name": "a lesser blade fiend",
@@ -3460,7 +3460,7 @@
     {
       "zone": "Highpass Hold",
       "logZoneName": "Highpass Hold",
-      "namedDefaultSeconds": 1320,
+      "namedDefaultSeconds": 300,
       "named": [
         {
           "name": "Dyllin Starsine",
@@ -4157,11 +4157,11 @@
       "named": [
         {
           "name": "Venril Sathir",
-          "respawnSeconds": 230400,
+          "respawnSeconds": 259200,
           "variance": "3 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "Timer from p99; eqlwiki confirms mob @ (-91, -778) but gives no timer; room area 14"
+          "note": "Timer from p99; eqlwiki confirms mob @ (-91, -778) but gives no timer; room area 14 — timer audited 2026-08-02"
         },
         {
           "name": "Venril Sathir Remains",
@@ -6394,11 +6394,11 @@
       "named": [
         {
           "name": "Trakanon",
-          "respawnSeconds": 230400,
+          "respawnSeconds": 259200,
           "variance": "3 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "Timer from p99; eqlwiki confirms mob on second level open cavern, no timer"
+          "note": "Timer from p99; eqlwiki confirms mob on second level open cavern, no timer — timer audited 2026-08-02"
         },
         {
           "name": "Emperor Chottal",
@@ -6783,11 +6783,11 @@
         },
         {
           "name": "a dracoliche",
-          "respawnSeconds": 216000,
+          "respawnSeconds": 604800,
           "variance": "3 days with 12 hour variance?",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Variance itself marked uncertain on eqlwiki Respawn Timers page; zone page lists as 'Dracoliche' (dragon skeleton, not undead), small hitbox, Deadly Lifetap"
+          "note": "Variance itself marked uncertain on eqlwiki Respawn Timers page; zone page lists as 'Dracoliche' (dragon skeleton, not undead), small hitbox, Deadly Lifetap — timer audited 2026-08-02"
         },
         {
           "name": "Fright",
@@ -6989,19 +6989,19 @@
       "named": [
         {
           "name": "Innoruuk",
-          "respawnSeconds": 216000,
+          "respawnSeconds": 259200,
           "variance": "3 days with 12 hour variance",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Plane ruler; Deity Wizard raid boss"
+          "note": "Plane ruler; Deity Wizard raid boss — timer audited 2026-08-02"
         },
         {
           "name": "Maestro of Rancor",
-          "respawnSeconds": 230400,
+          "respawnSeconds": 259200,
           "variance": "3 Days (+/- 8 Hours)",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Vampire Bard raid boss in The Organ Hall"
+          "note": "Vampire Bard raid boss in The Organ Hall — timer audited 2026-08-02"
         },
         {
           "name": "Hand of the Maestro",
@@ -7021,11 +7021,11 @@
         },
         {
           "name": "Magi P`Tasa",
-          "respawnSeconds": 216000,
+          "respawnSeconds": 259200,
           "variance": "3 Days +/- 12 Hours",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Vampire Magician miniboss"
+          "note": "Vampire Magician miniboss — timer audited 2026-08-02"
         },
         {
           "name": "Master of Spite",
@@ -8083,11 +8083,11 @@
       "named": [
         {
           "name": "Talendor",
-          "respawnSeconds": 576000,
+          "respawnSeconds": 604800,
           "variance": "7 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "Timer from p99; eqlwiki confirms wandering dragon, no timer given; sees invis"
+          "note": "Timer from p99; eqlwiki confirms wandering dragon, no timer given; sees invis — timer audited 2026-08-02"
         },
         {
           "name": "Eldrig the Old",
@@ -10300,11 +10300,11 @@
       "named": [
         {
           "name": "Faydedar",
-          "respawnSeconds": 576000,
+          "respawnSeconds": 604800,
           "variance": "7 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "Timer from p99; also a triggered version @ (-11770, -2115) via Dolgin Codslayer (druid epic); trigger fails if natural spawn is up"
+          "note": "Timer from p99; also a triggered version @ (-11770, -2115) via Dolgin Codslayer (druid epic); trigger fails if natural spawn is up — timer audited 2026-08-02"
         },
         {
           "name": "Halara",
@@ -11063,19 +11063,19 @@
       "named": [
         {
           "name": "Phara Dar",
-          "respawnSeconds": 576000,
+          "respawnSeconds": 604800,
           "variance": "7 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "p99 timer; eqlwiki confirms mob, no timer data; magic resistant; lair portal to Plane of Sky Isle 1"
+          "note": "p99 timer; eqlwiki confirms mob, no timer data; magic resistant; lair portal to Plane of Sky Isle 1 — timer audited 2026-08-02"
         },
         {
           "name": "Hoshkar",
-          "respawnSeconds": 576000,
+          "respawnSeconds": 604800,
           "variance": "7 days +/- 8 hours",
           "placeholder": "",
           "source": "classic",
-          "note": "p99 timer; eqlwiki confirms mob, no timer data; disease resistant"
+          "note": "p99 timer; eqlwiki confirms mob, no timer data; disease resistant — timer audited 2026-08-02"
         },
         {
           "name": "Druushk",
@@ -11656,27 +11656,27 @@
         },
         {
           "name": "An ogre guard (Karana)",
-          "respawnSeconds": 1320,
+          "respawnSeconds": 1080,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "22 min per zone page; levels 20-27, Ogre Shrine camp (map loc 18); camp mob, semi-generic"
+          "note": "22 min per zone page; levels 20-27, Ogre Shrine camp (map loc 18); camp mob, semi-generic — timer audited 2026-08-02"
         },
         {
           "name": "An Ogre Shaman",
-          "respawnSeconds": 1320,
+          "respawnSeconds": 1080,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "22 min per zone page; levels 20-27, Ogre Shrine camp (map loc 18); camp mob, semi-generic"
+          "note": "22 min per zone page; levels 20-27, Ogre Shrine camp (map loc 18); camp mob, semi-generic — timer audited 2026-08-02"
         },
         {
           "name": "An Ogre Priestess",
-          "respawnSeconds": 1320,
+          "respawnSeconds": 1080,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Ogre Shrine camp (map loc 18); camp mob, semi-generic; 22-min camp cycle assumed same as guards"
+          "note": "Ogre Shrine camp (map loc 18); camp mob, semi-generic; 22-min camp cycle assumed same as guards — timer audited 2026-08-02"
         },
         {
           "name": "Linaya Sowlin",

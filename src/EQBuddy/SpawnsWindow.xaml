@@ -45,7 +45,7 @@
         </ScrollViewer>
 
         <StackPanel Grid.Row="3" Margin="16,4,16,14">
-            <TextBlock Text="Kill a named (or its placeholder) and its countdown starts from the log. ▶ starts one by hand — type how long ago it died first (5m, 90s) or leave empty for now. Edit any duration; your edits survive updates."
+            <TextBlock Text="Kill a named (or its placeholder) and its countdown starts from the log. ▶ starts one by hand — type how long ago it died first (5m, 90s) or leave empty for now. We captured the respawn times we could from community sources; if what you see in game disagrees, just type over the duration — your number wins and survives updates."
                        FontSize="10" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,6"/>
             <Grid>
                 <Grid.ColumnDefinitions>

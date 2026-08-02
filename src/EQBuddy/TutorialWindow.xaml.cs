@@ -64,10 +64,12 @@ public partial class TutorialWindow : Window
             "zone. At zero a chicklet turns DUE (with a sound, if you pick one) and " +
             "stays until you click it away. Double-click any chicklet — or " +
             "right-click → Spawn timers… — for the full zone list, which follows you " +
-            "zone to zone: every respawn time is editable right in the row (the shipped " +
-            "times are community lore, not gospel), ▶ starts a timer by hand for camps " +
-            "you arrived at late, and + adds named the list doesn't know. Track spawns " +
-            "in ⚙ Options turns the whole thing off.",
+            "zone to zone. We captured the respawn times we could from community " +
+            "sources, but they're player lore, not gospel: if you notice a discrepancy " +
+            "in game, type over the duration right in the row — your number wins and " +
+            "survives updates. ▶ starts a timer by hand for camps you arrived at late, " +
+            "and + adds named the list doesn't know. Track spawns in ⚙ Options turns " +
+            "the whole thing off.",
             null),
 
         new("Mini mode & hotkeys",
