@@ -368,16 +368,29 @@ double every death.
 
 ## Spawns window (Track Spawns)
 
-**On by default** (`TrackSpawns`, default true — the window is the feature's front
-door, and a default-off window behind a right-click menu is a feature nobody's family
-finds). Toggled by right-click → **Track spawns**, the ⚙ Options checkbox, or simply
-closing the window — all three route through `MainWindow.SetTrackSpawns` so the
-setting, the menu check, the Options checkbox, and the window move together. The
-window *is* the on-state: it opens whenever the setting is on (including at launch)
-and closing it turns the setting off — there is no tracking-but-hidden mode. Alerts
-fire from MainWindow's shared 1 s tick, not from the window, so they can't be lost to
-window lifetime. The quick tutorial gained a "Spawn timers" page, since every new
-install now meets the window.
+**On by default, pop-on-kill** (`TrackSpawns`, default true). The window stays hidden
+until a countdown exists: it pops when a named (or placeholder) death starts one —
+including timers recovered from the log at startup — closes itself when the last
+timer drains away, and ✕ merely hides it until the next kill (1.20.0 parked it on
+screen all session and made ✕ disable the feature; David vetoed both). Right-click →
+**Spawn timers…** opens it on demand; **Track spawns** (menu or ⚙ Options checkbox,
+kept in lockstep via `MainWindow.SetTrackSpawns`) disarms the feature entirely. The
+0→0 case never auto-closes a window someone opened by hand to browse or start manual
+timers. Alerts and the pop logic run from MainWindow's shared 1 s tick
+(`ConsumeDueAlerts` / `ConsumeNewTimers`), so a hidden window can't silence a camp.
+Note `ConsumeNewTimers` deliberately does NOT prime at startup (recovered countdowns
+should pop the window) while `ConsumeDueAlerts` does (a camp that expired while the
+app was closed should not bang the banner).
+
+**Zone following** reacts to zone *changes*, not ticks: browsing another zone's list
+mid-camp survives until you actually zone. Manual zone picks no longer untick Follow —
+1.20.0 unticked it on a selection event the user never made and following silently
+died (found on David's machine: `SpawnFollowZone: false`, `SpawnZone: ""` — a
+combination no user action produces). Empty selections are ignored outright, and a
+one-time repair (`SpawnFollowRepaired`) restores the default for anyone the bug
+touched. EQ Legends difficulty tiers — log zone names like `Befallen 1 (Awakened)`,
+`Befallen 4 (Refined)` (D0–D4: Awakened/Adaptive/Fused/Refined) — resolve to their
+base catalog zone via containment plus `StripTierVariant`.
 
 **The catalog** (`EQBuddy.Core/Data/SpawnCatalog.json`, embedded): 118 zones, 843
 named, built from eqlwiki.com (the EQ Legends community wiki — authoritative where it
@@ -409,12 +422,12 @@ chosen in the window's dropdown (default Off). The view model primes on first lo
 a timer that expired while the app was closed shows as due but never re-alerts at
 startup; only live transitions fire.
 
-**Verify:** isolated profile with a fixture log containing `You have entered The Ruins
-of Old Guk.` + `You have slain a froglok ghoul lord!` stamped 27 min ago → window
-opens on launch (TrackSpawns=true), shows the countdown at ~1 min, flips to "due" with
-a banner at zero. Append a kill live → its countdown appears within ~2 s, rows
-re-sort soonest-first. Restart → countdowns unchanged (log replay + persist file).
-Pick another zone by hand → Follow unticks itself; re-tick to resume following.
+**Verify:** isolated profile, fixture log with `You have entered The Ruins of Old
+Guk.` and NO kills → window does NOT open at launch. Append `You have slain a froglok
+ghoul lord!` → window pops within ~2 s on Lower Guk with the countdown running. ✕ it,
+append another kill → it pops again. Clear the timer (✕ on the row) → the window
+closes itself. `You have entered Befallen 1 (Awakened).` must select Befallen; picking
+another zone by hand must NOT untick Follow, and zoning afterwards snaps back.
 
 ## Mini mode
 

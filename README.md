@@ -97,14 +97,17 @@ Watch rules & alerts:
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
 Spawn timers (on by default):
-- The 🕒 **Spawns window** shows **named-mob respawn countdowns for the zone you're
-  in** (it follows your zone automatically; pick any zone from the dropdown to plan
-  ahead — that pauses following until you re-tick *Follow*). Kill a named — or its
-  known **placeholder** — and its countdown starts from the log, exactly like
-  everything else EQBuddy tracks. ▶ starts one by hand for camps you arrived at late
-  ("died 5m ago"), and countdowns survive an app restart.
-- **Closing the window turns the feature off**; bring it back with right-click →
-  **Track spawns** or the checkbox in ⚙ Options.
+- Kill a named — or its known **placeholder** — and the 🕒 **Spawns window pops up**
+  counting down the respawn, and follows you zone to zone (pick another zone from the
+  dropdown to plan ahead; Follow snaps back when you actually zone). Countdowns start
+  from the log, exactly like everything else EQBuddy tracks, survive an app restart,
+  and ▶ starts one by hand for camps you arrived at late ("died 5m ago").
+- **The window only shows when there's something to count**: it appears on a kill,
+  closes itself when the last timer runs out, and ✕ hides it until the next kill.
+  Open it any time via right-click → **Spawn timers…**; turn tracking off entirely
+  with **Track spawns** in the menu or ⚙ Options.
+- EQ Legends' difficulty tiers ("Befallen 4 (Refined)") resolve to their base zone's
+  named list automatically.
 - Ships with **840+ named across 118 classic zones**, seeded from the
   [EQ Legends community wiki](https://eqlwiki.com) with classic-EQ references filling
   gaps. These are community numbers, not game data: **every duration is editable in

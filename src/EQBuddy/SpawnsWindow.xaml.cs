@@ -10,10 +10,13 @@ namespace EQBuddy;
 
 /// <summary>
 /// The Spawns window (SPAWN-004): named-mob respawn countdowns for one zone at a time,
-/// fed by <see cref="SpawnsViewModel"/>. Opens whenever "Track spawns" is on and closing
-/// it turns the setting off — the window *is* the feature's on-state, there is no
-/// tracking-but-hidden mode to wonder about. Alerts fire from MainWindow's shared tick,
-/// not here, so they don't depend on this window's lifetime quirks.
+/// fed by <see cref="SpawnsViewModel"/>. While "Track spawns" is armed the window stays
+/// HIDDEN until a countdown exists — it pops when a named (or placeholder) death starts
+/// one, including timers recovered from the log at startup — and MainWindow closes it
+/// again when the last timer runs out. ✕ only hides it; the next kill brings it back.
+/// David's call (2026-08-02): a tracker parked on screen all session is noise, a tracker
+/// that appears because something died is information. Alerts fire from MainWindow's
+/// shared tick, not here, so they don't depend on this window's lifetime.
 /// </summary>
 public partial class SpawnsWindow : Window
 {
@@ -29,7 +32,9 @@ public partial class SpawnsWindow : Window
     private List<SpawnRow> _rows = [];
     private bool _syncingZone;
 
-    public SpawnsWindow(MainWindow main, SpawnsViewModel vm)
+    /// <summary><paramref name="initialZone"/>: the zone whose kill popped the window,
+    /// so it opens showing the timer that summoned it.</summary>
+    public SpawnsWindow(MainWindow main, SpawnsViewModel vm, string? initialZone = null)
     {
         InitializeComponent();
         _main = main;
@@ -52,9 +57,10 @@ public partial class SpawnsWindow : Window
             SoundCombo.Items.IndexOf(AlertSoundCatalog.Normalize(_settings.SpawnSound)));
         _syncingSound = false;
 
-        SelectZone(_settings.SpawnFollowZone
-            ? _vm.CurrentZoneName ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? "")
-            : FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));
+        SelectZone(initialZone
+            ?? (_settings.SpawnFollowZone ? _vm.CurrentZoneName : null)
+            ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));
+        _lastFollowedZone = _vm.CurrentZoneName;
 
         _tick = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _tick.Tick += (_, _) => RefreshRows();
@@ -82,11 +88,19 @@ public partial class SpawnsWindow : Window
         _syncingZone = false;
     }
 
+    /// <summary>The zone Follow last snapped to. Following reacts to zone CHANGES, not to
+    /// every tick — so browsing another zone's list mid-camp survives until you actually
+    /// zone, instead of the dropdown yanking itself back every second.</summary>
+    private string? _lastFollowedZone;
+
     private void RefreshRows()
     {
         // Follow the player: the log's zone lines drive the dropdown while Follow is on.
-        if (_settings.SpawnFollowZone && _vm.CurrentZoneName is { } here && here != SelectedZone)
-            SelectZone(here);
+        if (_settings.SpawnFollowZone && _vm.CurrentZoneName is { } here && here != _lastFollowedZone)
+        {
+            _lastFollowedZone = here;
+            if (here != SelectedZone) SelectZone(here);
+        }
 
         var zone = SelectedZone;
         TitleText.Text = zone.Length > 0 ? $"🕒 Spawns — {zone}" : "🕒 Spawns";
@@ -241,18 +255,17 @@ public partial class SpawnsWindow : Window
         if (e.ChangedButton == MouseButton.Left && e.OriginalSource is not TextBox) DragMove();
     }
 
-    private void OnClose(object sender, RoutedEventArgs e) => _main.SetTrackSpawns(false);
+    // ✕ hides the window; tracking stays armed and the next kill re-opens it. Turning
+    // the feature off lives in the menu and Options, deliberately elsewhere.
+    private void OnClose(object sender, RoutedEventArgs e) => Close();
 
     private void OnZonePicked(object sender, SelectionChangedEventArgs e)
     {
         if (_syncingZone) return;
+        // A null/empty selection can arrive from WPF teardown paths, not from the user —
+        // 1.20.0 let one of those persist state and silently killed zone-following.
+        if (SelectedZone.Length == 0) return;
         _settings.SpawnZone = SelectedZone;
-        // Picking a zone by hand is a statement of intent — stop following until re-ticked.
-        if (_settings.SpawnFollowZone && SelectedZone != _vm.CurrentZoneName)
-        {
-            _settings.SpawnFollowZone = false;
-            FollowCheck.IsChecked = false;
-        }
         _settings.Save();
         _signature = "";
         RefreshRows();

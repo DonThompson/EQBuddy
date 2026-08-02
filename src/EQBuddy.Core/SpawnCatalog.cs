@@ -80,14 +80,31 @@ public sealed class SpawnCatalog
         return new SpawnCatalog { Zones = file?.Zones ?? [] };
     }
 
-    /// <summary>The catalog zone the given log zone name refers to, or null.</summary>
-    public SpawnZone? FindZone(string zoneName) =>
+    /// <summary>The catalog zone the given log zone name refers to, or null. EQ Legends
+    /// runs instanced tier variants — "Befallen 1 (Awakened)", "Clan Crushbone 2
+    /// (Adaptive)" — which resolve to their base zone (observed in eqlog_Hugzee
+    /// 2026-08-02). The variant's own named differ from classic; until the catalog
+    /// learns them, resolving to the base zone at least keeps Follow and manual timers
+    /// working there.</summary>
+    public SpawnZone? FindZone(string zoneName)
+    {
         // Exact/log-name matches beat containment so "Qeynos" resolves to Qeynos, not
         // Qeynos Hills.
-        Zones.FirstOrDefault(z =>
-            string.Equals(z.Zone, zoneName, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(z.LogZoneName, zoneName, StringComparison.OrdinalIgnoreCase))
-        ?? Zones.FirstOrDefault(z => z.MatchesZoneName(zoneName));
+        var found = Zones.FirstOrDefault(z =>
+                string.Equals(z.Zone, zoneName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(z.LogZoneName, zoneName, StringComparison.OrdinalIgnoreCase))
+            ?? Zones.FirstOrDefault(z => z.MatchesZoneName(zoneName));
+        if (found is not null) return found;
+
+        var baseName = StripTierVariant(zoneName);
+        return baseName == zoneName ? null : FindZone(baseName);
+    }
+
+    /// <summary>"Befallen 1 (Awakened)" → "Befallen"; anything without the trailing
+    /// tier pattern comes back unchanged.</summary>
+    public static string StripTierVariant(string zoneName) =>
+        System.Text.RegularExpressions.Regex
+            .Replace(zoneName, @"\s+\d+(\s*\([^)]*\))?$", "").Trim();
 
     /// <summary>Effective respawn seconds for an entry in a zone: the entry's own timer,
     /// else the zone default, else null (unknown — the player has to supply one).</summary>

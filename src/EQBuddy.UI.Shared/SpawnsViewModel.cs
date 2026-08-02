@@ -169,6 +169,27 @@ public sealed class SpawnsViewModel
         _timers.Clear(zone, name);
     }
 
+    // Timer starts the window-popping caller has already reacted to. Unlike _alerted
+    // there is no startup priming: countdowns recovered from the log SHOULD pop the
+    // window at launch — they are exactly "a named has been killed".
+    private readonly HashSet<string> _poppedTimers = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Timers not yet reported to the caller — new kills, and recovered
+    /// countdowns on the first call after launch. Drives the pop-on-kill window: a
+    /// re-kill restarts a timer with a new kill time and pops again; an unchanged
+    /// timer never re-pops.</summary>
+    public List<SpawnTimerState> ConsumeNewTimers(DateTime now)
+    {
+        var fresh = new List<SpawnTimerState>();
+        foreach (var t in _timers.Snapshot(now))
+            if (_poppedTimers.Add($"{t.Zone}|{t.Name}|{t.KilledAt:O}"))
+                fresh.Add(t);
+        return fresh;
+    }
+
+    /// <summary>Any countdown still running (or lingering as due) for this server.</summary>
+    public bool HasActiveTimers(DateTime now) => _timers.Snapshot(now).Count > 0;
+
     /// <summary>Timers that crossed into "due" since the last call, for rows whose alert
     /// toggle is on. The first call after launch primes silently: a camp that came due
     /// while the app was closed shows as due but doesn't bang the banner on startup.</summary>

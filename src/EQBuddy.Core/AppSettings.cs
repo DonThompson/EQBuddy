@@ -85,6 +85,10 @@ public sealed class AppSettings
     /// <summary>Follow the zone the log says the player is in; off = stay on the zone
     /// picked in the window's dropdown.</summary>
     public bool SpawnFollowZone { get; set; } = true;
+    /// <summary>One-time repair (1.20.1): 1.20.0 could untick SpawnFollowZone on a
+    /// selection event the user never made, so following silently died. The auto-untick
+    /// is gone; this restores the default once for anyone the bug touched.</summary>
+    public bool SpawnFollowRepaired { get; set; }
     /// <summary>Last manually-picked zone, for when SpawnFollowZone is off.</summary>
     public string SpawnZone { get; set; } = "";
     /// <summary>Sound when a spawn timer hits zero: "Off" (default — the banner alone),

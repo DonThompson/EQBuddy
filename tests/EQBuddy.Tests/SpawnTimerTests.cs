@@ -63,6 +63,28 @@ public class SpawnTimerTests
         Assert.NotNull(cat.FindZone("Lower Guk"));
     }
 
+    /// <summary>EQ Legends runs difficulty-tier instances of a zone — the log says
+    /// "Befallen 1 (Awakened)" or "Befallen 4 (Refined)" (both observed in
+    /// eqlog_Hugzee). They resolve to the base zone so Follow and kill matching keep
+    /// working there.</summary>
+    [Theory]
+    [InlineData("Befallen 1 (Awakened)", "Befallen")]
+    [InlineData("Befallen 4 (Refined)", "Befallen")]
+    [InlineData("Befallen 2", "Befallen")]
+    public void DifficultyTierZonesResolveToTheirBase(string logZone, string expected)
+    {
+        var cat = SpawnCatalog.LoadEmbedded();
+        Assert.Equal(expected, cat.FindZone(logZone)?.Zone);
+    }
+
+    [Theory]
+    [InlineData("Befallen 1 (Awakened)", "Befallen")]
+    [InlineData("Clan Crushbone 2 (Adaptive)", "Clan Crushbone")]
+    [InlineData("Befallen", "Befallen")]
+    [InlineData("Solusek's Eye", "Solusek's Eye")]   // no tier suffix — unchanged
+    public void TierVariantStrippingIsConservative(string input, string expected) =>
+        Assert.Equal(expected, SpawnCatalog.StripTierVariant(input));
+
     [Theory]
     [InlineData("a froglok ghoul lord", "froglok ghoul lord", true)]   // article
     [InlineData("orc centurions", "orc centurion", true)]              // plural note
@@ -292,6 +314,26 @@ public class SpawnTimerTests
         var due = vm.ConsumeDueAlerts(T0.AddMinutes(70 + 28));
         Assert.Equal("a froglok ghoul lord", Assert.Single(due).Name);
         Assert.Empty(vm.ConsumeDueAlerts(T0.AddMinutes(70 + 29)));
+    }
+
+    /// <summary>ConsumeNewTimers drives the pop-on-kill window: recovered timers pop at
+    /// startup (unlike due ALERTS, which prime silently), each kill pops once, and a
+    /// re-kill pops again because it carries a new kill time.</summary>
+    [Fact]
+    public void NewTimersReportOnceIncludingThoseRecoveredAtStartup()
+    {
+        var (vm, timers, _) = Vm();
+        timers.Apply(new ZoneEvent(T0, "Lower Guk"));
+        timers.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));   // "recovered" during ingest
+
+        var first = vm.ConsumeNewTimers(T0.AddMinutes(1));
+        Assert.Equal("a froglok ghoul lord", Assert.Single(first).Name);
+        Assert.Empty(vm.ConsumeNewTimers(T0.AddMinutes(2)));            // unchanged — no re-pop
+
+        timers.Apply(new KillEvent(T0.AddMinutes(5), "froglok ghoul lord", "You"));
+        Assert.Single(vm.ConsumeNewTimers(T0.AddMinutes(6)));           // re-kill = new information
+
+        Assert.True(vm.HasActiveTimers(T0.AddMinutes(7)));
     }
 
     [Fact]

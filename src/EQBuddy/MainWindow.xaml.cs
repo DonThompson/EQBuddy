@@ -146,8 +146,18 @@ public partial class MainWindow : Window
             };
 
         TrackSpawnsItem.IsChecked = _settings.TrackSpawns;
-        if (_settings.TrackSpawns)
-            Loaded += (_, _) => ShowSpawnsWindow();
+        // No auto-open here: the window pops from RefreshUi when a countdown exists —
+        // including ones recovered from the log during startup ingest. A tracker parked
+        // on screen with nothing to say was the 1.20.0 behaviour, and it was noise.
+
+        // One-time repair (1.20.1): 1.20.0 could untick zone-following on a selection
+        // event the user never made. The auto-untick is gone; restore the default once.
+        if (!_settings.SpawnFollowRepaired)
+        {
+            _settings.SpawnFollowZone = true;
+            _settings.SpawnFollowRepaired = true;
+            _settings.Save();
+        }
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
@@ -318,11 +328,18 @@ public partial class MainWindow : Window
 
     private OptionsWindow? _optionsWindow;
 
+    private bool _hadSpawnTimers;
+
     private void OnTrackSpawns(object sender, RoutedEventArgs e) =>
         SetTrackSpawns(TrackSpawnsItem.IsChecked);
 
+    private void OnSpawnsWindow(object sender, RoutedEventArgs e) => ShowSpawnsWindow();
+
     /// <summary>Single switch for the spawn-timer feature: the setting, the menu check,
-    /// and the window stay in lockstep whichever of them the user touched.</summary>
+    /// and the Options checkbox stay in lockstep whichever of them the user touched.
+    /// Arming does not open the window — kills do (see RefreshUi) — but if countdowns
+    /// are already running, arming shows them immediately rather than making the user
+    /// wait for the next death.</summary>
     internal void SetTrackSpawns(bool on)
     {
         _settings.TrackSpawns = on;
@@ -331,24 +348,26 @@ public partial class MainWindow : Window
         if (_optionsWindow is { IsLoaded: true } ow) ow.SyncTrackSpawns(on);
         if (on)
         {
-            ShowSpawnsWindow();
+            if (_spawnsVm.HasActiveTimers(DateTime.Now)) ShowSpawnsWindow();
         }
         else if (_spawnsWindow is { } w)
         {
-            _spawnsWindow = null;   // cleared first so the window's ✕ path can't loop
+            _spawnsWindow = null;   // cleared first so Closed handling can't loop
             if (w.IsLoaded) w.Close();
         }
     }
 
-    private void ShowSpawnsWindow()
+    private void ShowSpawnsWindow(string? zone = null)
     {
         if (_spawnsWindow is { IsLoaded: true })
         {
             _spawnsWindow.Activate();
             return;
         }
-        _spawnsWindow = new SpawnsWindow(this, _spawnsVm);
-        _spawnsWindow.Show();
+        var w = new SpawnsWindow(this, _spawnsVm, zone);
+        w.Closed += (_, _) => { if (ReferenceEquals(_spawnsWindow, w)) _spawnsWindow = null; };
+        _spawnsWindow = w;
+        w.Show();
     }
 
     private void OnOptions(object sender, RoutedEventArgs e)
@@ -439,14 +458,29 @@ public partial class MainWindow : Window
     private void RefreshUi()
     {
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
-        // off the shared tick so an accidentally-closed window can't silence a camp.
+        // off the shared tick so a hidden window can't silence a camp.
         if (_settings.TrackSpawns)
+        {
             foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
             {
                 AlertTile.ShowAlert($"⏰ {due.Name} due — {due.Zone}");
                 if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
                     PlayAlertSound(_settings.SpawnSound);
             }
+
+            // Pop-on-kill: a new countdown (fresh kill, or one recovered from the log at
+            // startup) opens the window on that timer's zone — even if the user hid it,
+            // because a new kill is new information. When the last timer drains away the
+            // window goes with it; the 0→0 case never closes a window someone opened by
+            // hand to browse or start timers manually.
+            var started = _spawnsVm.ConsumeNewTimers(DateTime.Now);
+            if (started.Count > 0)
+                ShowSpawnsWindow(started[^1].Zone);
+            var timersRunning = _spawnsVm.HasActiveTimers(DateTime.Now);
+            if (!timersRunning && _hadSpawnTimers && _spawnsWindow is { IsLoaded: true } sw)
+                sw.Close();
+            _hadSpawnTimers = timersRunning;
+        }
 
         // Every 5s: re-check which character's log is growing and follow them.
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))

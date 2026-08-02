@@ -22,7 +22,7 @@
             <TextBlock x:Name="TitleText" Text="🕒 Spawns" FontWeight="Bold" FontSize="14"
                        Foreground="{DynamicResource AccentBrush}"/>
             <Button Style="{StaticResource IconButton}" Content="&#x2715;"
-                    ToolTip="Close (turns spawn tracking off)"
+                    ToolTip="Hide — the window returns when the next named dies (turn tracking off in Options or the right-click menu)"
                     HorizontalAlignment="Right" Click="OnClose"/>
         </Grid>
 
