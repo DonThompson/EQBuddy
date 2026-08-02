@@ -71,11 +71,11 @@
         },
         {
           "name": "Skeleton L`rodd",
-          "respawnSeconds": null,
+          "respawnSeconds": 267,
           "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "100% @ (-332, -42), level 11-13; alcove west of well; eqlwiki page title Skeleton L`rodd, infobox 'skeleton Lrodd'"
+          "source": "observed",
+          "note": "100% @ (-332, -42), level 11-13; alcove west of well; eqlwiki page title Skeleton L`rodd, timer per David: similar to Asaka L`Rei (4:27)"
         },
         {
           "name": "an elf skeleton",
