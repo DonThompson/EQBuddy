@@ -23,6 +23,8 @@ page instead.
 | Full drill-down: damage per skill/spell/pet, recent fights with per-fight DPS, damage and DPS by stance | Watch rules (loot, kills, skill-ups…) with per-hour rates, per-creature farming stats, merchant sales |
 | ![Session history](docs/screenshots/history-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | Every session lands in a local, searchable history — notes, tags, compare, export | Background see-through — watch the game right through the widget |
+| ![Spawn timers](docs/screenshots/spawns-window.png) | ![Options](docs/screenshots/options-window.png) |
+| Spawn timers — kill a named (or its placeholder) and the respawn countdown starts from the log; every duration editable | Options — themes, watch rules with worked examples, spawn tracking, per-rule sounds |
 
 ## For players (install guide)
 

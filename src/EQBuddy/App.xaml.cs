@@ -69,6 +69,16 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // Every EQBuddy window but Session History is layered (AllowsTransparency), which
+        // WPF renders in software. The lone hardware-rendered window came up solid white —
+        // fully laid out per UI Automation, blank on screen — on a machine whose GPU path
+        // WPF stopped driving after a driver/OS update (2026-08-01: reproduced across app
+        // builds three months apart, cured by WPF's DisableHWAcceleration switch). One
+        // rendering path for everything: for a widget this size the cost is unmeasurable,
+        // and a History window that always paints beats a hardware path only one window
+        // ever used.
+        System.Windows.Media.RenderOptions.ProcessRenderMode =
+            System.Windows.Interop.RenderMode.SoftwareOnly;
         Core.CoreLog.Sink = LogError;
         if (!ClaimSingleInstance())
         {
