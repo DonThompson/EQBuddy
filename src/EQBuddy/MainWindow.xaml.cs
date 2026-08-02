@@ -467,19 +467,17 @@ public partial class MainWindow : Window
         // off the shared tick so a hidden window can't silence a camp.
         if (_settings.TrackSpawns)
         {
-            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
-            {
-                AlertTile.ShowAlert($"⏰ {due.Name} due — {due.Zone}");
+            // Sound only — no banner. The chip flipping to DUE is the visual, and a
+            // banner on top of it was double notification (David's call).
+            foreach (var _ in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
                 if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
                     PlayAlertSound(_settings.SpawnSound);
-            }
 
             // Chicklets are the ambient face of spawn tracking: the stack exists exactly
-            // while timers do and the full window is closed. No pop-open of the full
-            // window, ever — it lives behind a double-click (David's design).
+            // while timers do — including alongside the full window, which is a browser,
+            // not a replacement. No pop-open of the full window, ever (David's design).
             var hasTimers = _spawnsVm.HasActiveTimers(DateTime.Now);
-            var fullOpen = _spawnsWindow is { IsLoaded: true };
-            if (hasTimers && !fullOpen)
+            if (hasTimers)
             {
                 if (_chipsWindow is not { IsLoaded: true })
                 {

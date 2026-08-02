@@ -100,8 +100,7 @@ Spawn timers (on by default):
 - Kill a named — or its known **placeholder** — and a small **countdown chicklet**
   appears: `⏳ Asaka L`Rei 3:12`. Chicklets stack, drag anywhere as one, keep counting
   **every timer you have running in any zone**, survive an app restart, and flip to a
-  **DUE** badge at zero (plus the alert banner, and a sound if you pick one) until you
-  click them away.
+  **DUE** badge at zero (with a sound, if you pick one) until you click them away.
 - **Double-click a chicklet** (or right-click → **Spawn timers…**) for the full zone
   list, which follows you zone to zone (pick another zone from the dropdown to plan
   ahead; Follow snaps back when you actually zone). Every respawn time is editable in
@@ -116,9 +115,10 @@ Spawn timers (on by default):
   place** (`22` = minutes, `90s`, `12h`, `3d`, `6:40`), your edits persist through
   updates, and you can add named the catalog doesn't know. Named with no documented
   timer fall back to their zone's default cycle.
-- When a countdown hits zero the row flips to **due** and the alert banner fires
-  (per-named 🔔 toggle; optional sound, off by default). A timer that expired while
-  EQBuddy was closed shows as due without re-alerting at startup.
+- When a countdown hits zero the row and its chicklet flip to **due**, with an
+  optional sound (per-named 🔔 toggle; sound off by default — the chicklet is the
+  visual). A timer that expired while EQBuddy was closed shows as due without
+  re-alerting at startup.
 
 Encounters, mob farming, and stances:
 - Combat shows your **recent fights** (creature, duration, per-fight DPS) and, when your

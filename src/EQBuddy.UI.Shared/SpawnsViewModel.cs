@@ -212,7 +212,7 @@ public sealed class SpawnsViewModel
 
     /// <summary>Timers that crossed into "due" since the last call, for rows whose alert
     /// toggle is on. The first call after launch primes silently: a camp that came due
-    /// while the app was closed shows as due but doesn't bang the banner on startup.</summary>
+    /// while the app was closed shows as due but doesn't re-alert on startup.</summary>
     public List<SpawnTimerState> ConsumeDueAlerts(DateTime now)
     {
         var due = _timers.Snapshot(now).Where(t => t.IsDue(now)).ToList();

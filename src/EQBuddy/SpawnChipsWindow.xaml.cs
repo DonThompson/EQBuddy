@@ -15,7 +15,8 @@ namespace EQBuddy;
 /// running timer on the server regardless of zone: a Befallen camp timer keeps counting
 /// while you bank in West Commonlands, because a timer you set is a timer you care
 /// about. MainWindow's shared tick drives refresh and decides visibility — the stack
-/// appears whenever timers exist and the full window is closed.
+/// exists exactly while timers do, staying up alongside the full zone window too
+/// (dropping it while the browser was open lost the countdowns you cared about).
 /// </summary>
 public partial class SpawnChipsWindow : Window
 {

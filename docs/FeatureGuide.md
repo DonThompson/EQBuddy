@@ -378,8 +378,10 @@ chip while you bank in WC — sorted soonest-first. At zero a chip flips to a
 warn-colored **DUE** and a single click acknowledges it (clears the timer); a
 double-click on any chip opens the full zone window on that chip's zone. The stack
 exists exactly while timers do and the full window is closed; MainWindow's shared 1 s
-tick drives refresh, visibility, and the due alerts (`ConsumeDueAlerts` primes at
-startup so a camp that expired while the app was closed doesn't bang the banner).
+tick drives refresh, visibility, and the due sounds (`ConsumeDueAlerts` primes at
+startup so a camp that expired while the app was closed doesn't re-alert). Due
+notification is **sound-only** — the chip flipping to DUE is the visual, and a banner
+on top of it was double notification (David's call).
 The **full window never opens by itself**: double-click a chip or right-click →
 **Spawn timers…**. **Track spawns** (menu / ⚙ Options checkbox, in lockstep via
 `MainWindow.SetTrackSpawns`) disarms everything.
@@ -419,10 +421,10 @@ catalog can't eat anyone's corrections. Custom named (player-added) live there t
   convention — deliberately different from rule delays, where bare = seconds), `90s`,
   `8m`, `12h`, `3d`, `3d 12h`, `6:40` (m:ss), `1:00:00`.
 
-**Alerts:** banner always (for rows whose 🔔 is on — default on), sound only if one is
-chosen in the window's dropdown (default Off). The view model primes on first look so
-a timer that expired while the app was closed shows as due but never re-alerts at
-startup; only live transitions fire.
+**Alerts:** sound-only, and only for rows whose 🔔 is on (default on) with a sound
+chosen in the window's dropdown (default Off) — the chicklet's DUE badge is the
+visual. The view model primes on first look so a timer that expired while the app was
+closed shows as due but never re-alerts at startup; only live transitions fire.
 
 **Verify:** isolated profile, fixture log with `You have entered The Ruins of Old
 Guk.` and NO kills → window does NOT open at launch. Append `You have slain a froglok

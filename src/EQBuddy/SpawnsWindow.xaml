@@ -62,7 +62,7 @@
                         Style="{StaticResource IconButton}" ToolTip="Add" Click="OnAddCustom"/>
                 <ComboBox x:Name="SoundCombo" Grid.Column="3" Margin="10,0,0,0" FontSize="11"
                           SelectionChanged="OnSoundPicked"
-                          ToolTip="Sound when any timer here hits zero (the banner always shows)"/>
+                          ToolTip="Sound when a timer hits zero (the chicklet shows DUE either way)"/>
             </Grid>
         </StackPanel>
       </Grid>

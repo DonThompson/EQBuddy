@@ -188,7 +188,7 @@ public partial class SpawnsWindow : Window
             buttons.Children.Add(RowButton("▶", "Start the countdown from a kill you saw yourself",
                 () => { _vm.StartNow(row.Zone, row.Name, ago.Text); Kick(); }));
             var bell = RowButton(row.Alert ? "🔔" : "🔕",
-                "Alert (banner + sound) when this one comes due",
+                "Sound when this one comes due (pick the sound below; the chicklet shows DUE either way)",
                 () => { _vm.ToggleAlert(row.Zone, row.Name); Kick(); });
             bell.Opacity = row.Alert ? 1.0 : 0.45;
             buttons.Children.Add(bell);
