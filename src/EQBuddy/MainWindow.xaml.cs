@@ -469,9 +469,11 @@ public partial class MainWindow : Window
         {
             // Sound only — no banner. The chip flipping to DUE is the visual, and a
             // banner on top of it was double notification (David's call). Each named
-            // can carry its own sound so the ear knows which camp popped.
+            // can carry its own sound; "Default" follows the SAME Options alert sound
+            // watch rules use — a second spawn-specific "default" made Default mean
+            // silence, which read as broken (David, 1.23.0 field test).
             foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
-                if (_spawnsVm.SoundFor(due.Zone, due.Name, _settings.SpawnSound) is { } sound)
+                if (_spawnsVm.SoundFor(due.Zone, due.Name, _settings.AlertSound) is { } sound)
                     PlayAlertSound(sound);
 
             // Chicklets are the ambient face of spawn tracking: the stack exists exactly

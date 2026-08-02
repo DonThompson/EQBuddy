@@ -91,8 +91,9 @@ public sealed class AppSettings
     public bool SpawnFollowRepaired { get; set; }
     /// <summary>Last manually-picked zone, for when SpawnFollowZone is off.</summary>
     public string SpawnZone { get; set; } = "";
-    /// <summary>Sound when a spawn timer hits zero: "Off" (default — the banner alone),
-    /// a built-in name, or a custom file path. The banner always shows for alerting rows.</summary>
+    /// <summary>UNUSED since 1.23.0 (kept so older settings.json round-trips): spawn
+    /// "Default" now follows <see cref="AlertSound"/>, the same default watch rules use —
+    /// a second spawn-specific default made "Default" mean silence, which read as broken.</summary>
     public string SpawnSound { get; set; } = "Off";
     /// <summary>Position of the spawn-chicklet stack; NaN = a default spot near the
     /// top-left, clear of the widget's home edge.</summary>

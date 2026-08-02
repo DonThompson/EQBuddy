@@ -342,6 +342,7 @@ public class SpawnTimerTests
     public void DueAlertsFireOnceOnTheLiveTransitionAndNeverOnStartup()
     {
         var (vm, timers, _) = Vm();
+        vm.ToggleAlert("Lower Guk", "a froglok ghoul lord");   // bell on (default off)
         timers.Apply(new ZoneEvent(T0, "Lower Guk"));
         timers.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));
 
@@ -417,15 +418,22 @@ public class SpawnTimerTests
         Assert.Equal(expected, vm.SoundFor("Lower Guk", "a froglok ghoul lord", shared));
     }
 
+    /// <summary>The bell defaults OFF, matching watch-rule sounds — a due timer is
+    /// visible (chip flips to DUE) but silent until opted in. Picking a concrete
+    /// sound counts as opting in.</summary>
     [Fact]
-    public void RowsWithAlertToggledOffStayQuiet()
+    public void DueSoundsAreOptInAndPickingASoundOptsIn()
     {
         var (vm, timers, _) = Vm();
-        vm.ToggleAlert("Lower Guk", "a froglok ghoul lord");   // default on → off
         vm.ConsumeDueAlerts(T0);                               // prime
-
         timers.Apply(new ZoneEvent(T0, "Lower Guk"));
         timers.Apply(new KillEvent(T0.AddMinutes(1), "froglok ghoul lord", "You"));
-        Assert.Empty(vm.ConsumeDueAlerts(T0.AddMinutes(1 + 28)));
+        Assert.Empty(vm.ConsumeDueAlerts(T0.AddMinutes(1 + 28)));   // bell off by default
+
+        vm.SetSound("Lower Guk", "a froglok ghoul lord", "Alarm");  // picking a sound = bell on
+        timers.Apply(new KillEvent(T0.AddMinutes(40), "froglok ghoul lord", "You"));
+        var due = vm.ConsumeDueAlerts(T0.AddMinutes(40 + 28));
+        Assert.Single(due);
+        Assert.Equal("Alarm", vm.SoundFor("Lower Guk", "a froglok ghoul lord", "Ding"));
     }
 }

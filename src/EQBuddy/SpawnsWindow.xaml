@@ -52,7 +52,6 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="70"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="AddNameBox" Grid.Column="0" FontSize="11"
                          ToolTip="Add a named the catalog doesn't know (this zone)"/>
@@ -60,9 +59,6 @@
                          ToolTip="Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40"/>
                 <Button Grid.Column="2" Content="+" Margin="6,0,0,0" Padding="8,0"
                         Style="{StaticResource IconButton}" ToolTip="Add" Click="OnAddCustom"/>
-                <ComboBox x:Name="SoundCombo" Grid.Column="3" Margin="10,0,0,0" FontSize="11"
-                          SelectionChanged="OnSoundPicked"
-                          ToolTip="Default due sound — each named's own picker can override it (the chicklet shows DUE either way)"/>
             </Grid>
         </StackPanel>
       </Grid>

@@ -111,7 +111,7 @@ public sealed class SpawnsViewModel
 
         return new SpawnRow(zoneName, name, display,
             SpawnDurationText.Format(duration), countdown,
-            hasTimer, isDue, o?.Alert ?? true, o?.SoundName ?? "", o?.Custom ?? false, detail);
+            hasTimer, isDue, o?.Alert ?? false, o?.SoundName ?? "", o?.Custom ?? false, detail);
     }
 
     // ---- user actions ----
@@ -134,12 +134,17 @@ public sealed class SpawnsViewModel
         _overrides.Save();
     }
 
-    /// <summary>Set this named's own due sound: "" = follow the shared choice,
-    /// "Off" = silent, else a built-in name or custom file path.</summary>
+    /// <summary>Set this named's own due sound: "" = follow the Options alert sound,
+    /// "Off" = silent, else a built-in name or custom file path. Picking a concrete
+    /// sound also flips the bell on — choosing "Alarm" for a camp IS opting in to
+    /// hearing it, and making someone find the bell separately reads as broken.</summary>
     public void SetSound(string zone, string name, string soundNameOrPath)
     {
         var o = _overrides.GetOrAdd(zone, name);
         o.SoundName = soundNameOrPath;
+        if (soundNameOrPath.Length > 0
+            && !string.Equals(soundNameOrPath, "Off", StringComparison.OrdinalIgnoreCase))
+            o.Alert = true;
         _overrides.Save();
     }
 
@@ -245,7 +250,7 @@ public sealed class SpawnsViewModel
         {
             var key = $"{t.Zone}|{t.Name}|{t.KilledAt:O}";
             if (!_alerted.Add(key)) continue;
-            if (_primed && (_overrides.Find(t.Zone, t.Name)?.Alert ?? true))
+            if (_primed && (_overrides.Find(t.Zone, t.Name)?.Alert ?? false))
                 fresh.Add(t);
         }
         _primed = true;

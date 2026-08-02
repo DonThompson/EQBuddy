@@ -51,12 +51,6 @@ public partial class SpawnsWindow : Window
         foreach (var z in _vm.ZoneNames) ZoneCombo.Items.Add(z);
         FollowCheck.IsChecked = _settings.SpawnFollowZone;
 
-        foreach (var s in (string[])["Off", .. AlertSoundCatalog.Names]) SoundCombo.Items.Add(s);
-        _syncingSound = true;
-        SoundCombo.SelectedIndex = Math.Max(0,
-            SoundCombo.Items.IndexOf(AlertSoundCatalog.Normalize(_settings.SpawnSound)));
-        _syncingSound = false;
-
         SelectZone(initialZone
             ?? (_settings.SpawnFollowZone ? _vm.CurrentZoneName : null)
             ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));
@@ -188,7 +182,7 @@ public partial class SpawnsWindow : Window
             buttons.Children.Add(RowButton("▶", "Start the countdown from a kill you saw yourself",
                 () => { _vm.StartNow(row.Zone, row.Name, ago.Text); Kick(); }));
             var bell = RowButton(row.Alert ? "🔔" : "🔕",
-                "Alert when this one comes due (the chicklet shows DUE either way)",
+                "Sound when this one comes due — off by default, like watch-rule sounds (the chicklet shows DUE either way)",
                 () => { _vm.ToggleAlert(row.Zone, row.Name); Kick(); });
             bell.Opacity = row.Alert ? 1.0 : 0.45;
             buttons.Children.Add(bell);
@@ -214,7 +208,7 @@ public partial class SpawnsWindow : Window
         var combo = new ComboBox
         {
             FontSize = 10, Width = 66, Margin = new Thickness(4, 0, 0, 0),
-            ToolTip = "Sound for this named — Default follows the shared choice below",
+            ToolTip = "Sound for this named — Default is the Options alert sound, same as watch rules",
         };
         foreach (var item in (string[])["Default", "Off", .. EQBuddy.UI.Shared.AlertSoundCatalog.Names, "Custom…"])
             combo.Items.Add(item);
@@ -345,13 +339,4 @@ public partial class SpawnsWindow : Window
         }
     }
 
-    private bool _syncingSound;
-    private void OnSoundPicked(object sender, SelectionChangedEventArgs e)
-    {
-        if (_syncingSound || SoundCombo.SelectedItem is not string choice) return;
-        _settings.SpawnSound = choice;
-        _settings.Save();
-        if (!string.Equals(choice, "Off", StringComparison.OrdinalIgnoreCase))
-            _main.PlayAlertSound(choice);
-    }
 }
