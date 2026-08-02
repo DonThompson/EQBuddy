@@ -229,17 +229,18 @@ public class SpawnTimerTests
         Assert.Equal(timer.KilledAt.AddDays(3), Assert.Single(t.Snapshot(DateTime.Now)).DueAt);
     }
 
+    /// <summary>DUE shows for one minute, then the timer clears itself — if nobody
+    /// clicked it away, they've moved on and a stale DUE tells them nothing.</summary>
     [Fact]
-    public void DueTimersLingerThenDrop()
+    public void DueTimersShowForAMinuteThenDrop()
     {
         var t = Tracker();
         t.Apply(new ZoneEvent(T0, "Lower Guk"));
         t.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));    // 27 min timer
 
-        // Due but within the linger window (clamped to at least an hour): still shown.
-        Assert.Single(t.Snapshot(T0.AddMinutes(80)));   // 53 min past the 27-min due point
-        // An hour past due (linger = max(duration, 1h)): gone.
-        Assert.Empty(t.Snapshot(T0.AddSeconds(1620).AddHours(1).AddMinutes(1)));
+        var due = T0.AddSeconds(1620);
+        Assert.Single(t.Snapshot(due.AddSeconds(30)));    // DUE, within the minute
+        Assert.Empty(t.Snapshot(due.AddSeconds(61)));     // cleaned itself up
     }
 
     [Fact]
@@ -394,12 +395,12 @@ public class SpawnTimerTests
         Assert.Equal("Lady Vox", chips[1].Name);
         Assert.All(chips, c => Assert.False(c.IsDue));
 
-        var later = vm.Chips(T0.AddMinutes(40));               // ghoul lord now due
+        var later = vm.Chips(T0.AddSeconds(1620 + 30));        // ghoul lord due 30 s ago
         Assert.True(later[0].IsDue);
         Assert.False(later[1].IsDue);
 
         vm.ClearTimer("Lower Guk", "a froglok ghoul lord");    // click-away on a due chip
-        Assert.Equal("Lady Vox", Assert.Single(vm.Chips(T0.AddMinutes(41))).Name);
+        Assert.Equal("Lady Vox", Assert.Single(vm.Chips(T0.AddSeconds(1620 + 31))).Name);
     }
 
     /// <summary>Per-named due sounds: "Default" maps to Alarm (a camp popping is the

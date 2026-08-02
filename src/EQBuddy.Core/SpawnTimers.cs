@@ -126,9 +126,14 @@ public sealed class SpawnTimers
         }
     }
 
-    /// <summary>Current timers for this server, expired ones pruned. A due timer lingers
-    /// (one respawn cycle, clamped to 1–24 h) so "due" is visible rather than vanishing,
-    /// then drops — the cycle almost certainly ran without us seeing a kill.</summary>
+    /// <summary>How long a timer stays visible after coming due. One minute (David's
+    /// call): long enough to see DUE and react, short enough that a camp you walked
+    /// away from cleans up after itself instead of nagging.</summary>
+    public static readonly TimeSpan DueLinger = TimeSpan.FromSeconds(60);
+
+    /// <summary>Current timers for this server, expired ones pruned. A due timer shows
+    /// DUE for <see cref="DueLinger"/>, then drops on its own — if nobody clicked it
+    /// away within a minute, they've moved on.</summary>
     public List<SpawnTimerState> Snapshot(DateTime now)
     {
         lock (_lock)
@@ -151,8 +156,7 @@ public sealed class SpawnTimers
         if (t.DueAt is not { } due)
             // No duration known: the row only says "killed N ago" — keep it a day.
             return now - t.KilledAt > TimeSpan.FromHours(24);
-        var linger = TimeSpan.FromSeconds(Math.Clamp(t.DurationSeconds!.Value, 3600, 86400));
-        return now - due > linger;
+        return now - due > DueLinger;
     }
 
     private static string Key(string server, string zone, string name) => $"{server}|{zone}|{name}";

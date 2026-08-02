@@ -415,8 +415,9 @@ catalog can't eat anyone's corrections. Custom named (player-added) live there t
   yet = no automatic matching; ▶ is the fallback, not a guess.
 - Replays are idempotent and an older kill never rewinds a newer timer. A repeat kill
   restarts the clock.
-- Due timers linger visibly ("due", warn-colored) for one respawn cycle (clamped
-  1–24 h), then drop — the cycle almost certainly ran unseen.
+- Due timers show DUE (warn-colored) for **one minute**, then drop on their own
+  (`SpawnTimers.DueLinger`) — if nobody clicked it away, they've moved on, and a
+  stale DUE tells them nothing (David's call, replacing an earlier one-cycle linger).
 - Durations parse via `SpawnDurationText`: bare number = **minutes** (wiki
   convention — deliberately different from rule delays, where bare = seconds), `90s`,
   `8m`, `12h`, `3d`, `3d 12h`, `6:40` (m:ss), `1:00:00`.

@@ -79,11 +79,11 @@
         },
         {
           "name": "an elf skeleton",
-          "respawnSeconds": 400,
-          "variance": "eqlwiki 6m40s",
+          "respawnSeconds": null,
+          "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "55% @ (-665, -184), level 17-18, level 3; drops Thex Mallet piece"
+          "source": "observed",
+          "note": "55% @ (-665, -184), level 17-18, level 3; drops Thex Mallet piece; 400s claim was the pre-audit zone default — David reports it wrong, so it rides the corrected 4:30 zone clock"
         },
         {
           "name": "Gynok Moltor",

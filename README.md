@@ -100,7 +100,8 @@ Spawn timers (on by default):
 - Kill a named — or its known **placeholder** — and a small **countdown chicklet**
   appears: `⏳ Asaka L`Rei 3:12`. Chicklets stack, drag anywhere as one, keep counting
   **every timer you have running in any zone**, survive an app restart, and flip to a
-  **DUE** badge at zero (with a sound, if you pick one) until you click them away.
+  **DUE** badge at zero (with a sound, if that named's 🔔 is on) for one minute before
+  tidying themselves away — click sooner to dismiss.
 - **Double-click a chicklet** (or right-click → **Spawn timers…**) for the full zone
   list, which follows you zone to zone (pick another zone from the dropdown to plan
   ahead; Follow snaps back when you actually zone). Every respawn time is editable in

@@ -61,8 +61,9 @@ public partial class TutorialWindow : Window
             "Kill a named mob — or the placeholder that spawns in its spot — and a small " +
             "countdown chicklet appears: ⏳ Asaka L`Rei 3:12. Chicklets stack, drag " +
             "anywhere as one, and keep counting every timer you have running in any " +
-            "zone. At zero a chicklet turns DUE (with a sound, if you pick one) and " +
-            "stays until you click it away. Double-click any chicklet — or " +
+            "zone. At zero a chicklet turns DUE (with a sound, if its bell is on) for " +
+            "a minute, then clears itself — camps you walked away from tidy up on " +
+            "their own. Double-click any chicklet — or " +
             "right-click → Spawn timers… — for the full zone list, which follows you " +
             "zone to zone. We captured the respawn times we could from community " +
             "sources, but they're player lore, not gospel: if you notice a discrepancy " +
