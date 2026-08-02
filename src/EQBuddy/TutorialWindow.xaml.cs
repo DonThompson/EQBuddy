@@ -57,6 +57,18 @@ public partial class TutorialWindow : Window
             "Show examples has a worked one for every kind.",
             "t-watch.png"),
 
+        new("Spawn timers",
+            "The 🕒 Spawns window counts down named-mob respawns for the zone you're in. " +
+            "Kill a named — or the placeholder that spawns in its spot — and its timer " +
+            "starts automatically from the log; press ▶ on a row for camps you arrived at " +
+            "late ('died 5m ago'). It comes loaded with community respawn times for 118 " +
+            "classic zones, but those are player lore, not gospel: every duration is " +
+            "editable right in the row, your edits stick through updates, and + adds named " +
+            "the list doesn't know. When a timer hits zero you get a banner (and a sound if " +
+            "you pick one). Don't want it? Close the window — that turns it off until you " +
+            "re-tick it in ⚙ Options or the right-click menu.",
+            null),
+
         new("Mini mode & hotkeys",
             "Star ★ the stats you care about, then minimize: a tiny pill shows just those, " +
             "plus watch-rule chips. Global hotkeys: Ctrl+Shift+H hide/show · Ctrl+Shift+T " +

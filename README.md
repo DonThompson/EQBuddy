@@ -94,13 +94,15 @@ Watch rules & alerts:
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
-Spawn timers (Track Spawns):
-- Right-click → **Track spawns** opens a second window of **named-mob respawn
-  countdowns for the zone you're in** (it follows your zone automatically; pick any
-  zone from the dropdown to plan ahead — that pauses following until you re-tick
-  *Follow*). Kill a named — or its known **placeholder** — and its countdown starts
-  from the log, exactly like everything else EQBuddy tracks. ▶ starts one by hand for
-  camps you arrived at late ("died 5m ago"), and countdowns survive an app restart.
+Spawn timers (on by default):
+- The 🕒 **Spawns window** shows **named-mob respawn countdowns for the zone you're
+  in** (it follows your zone automatically; pick any zone from the dropdown to plan
+  ahead — that pauses following until you re-tick *Follow*). Kill a named — or its
+  known **placeholder** — and its countdown starts from the log, exactly like
+  everything else EQBuddy tracks. ▶ starts one by hand for camps you arrived at late
+  ("died 5m ago"), and countdowns survive an app restart.
+- **Closing the window turns the feature off**; bring it back with right-click →
+  **Track spawns** or the checkbox in ⚙ Options.
 - Ships with **840+ named across 118 classic zones**, seeded from the
   [EQ Legends community wiki](https://eqlwiki.com) with classic-EQ references filling
   gaps. These are community numbers, not game data: **every duration is editable in

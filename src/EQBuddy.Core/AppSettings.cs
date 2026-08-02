@@ -75,8 +75,11 @@ public sealed class AppSettings
     public string Theme { get; set; } = "ParchmentBrass";
 
     // ---- spawn timers (the Spawns window) ----
-    /// <summary>Track named-mob spawn timers; the Spawns window opens whenever this is on.</summary>
-    public bool TrackSpawns { get; set; }
+    /// <summary>Track named-mob spawn timers; the Spawns window opens whenever this is on.
+    /// Default ON (David's call): the window is the feature's front door, and a default-off
+    /// window behind a right-click menu is a feature nobody's family finds. Closing the
+    /// window opts out, and that sticks.</summary>
+    public bool TrackSpawns { get; set; } = true;
     public double SpawnLeft { get; set; } = double.NaN;
     public double SpawnTop { get; set; } = double.NaN;
     /// <summary>Follow the zone the log says the player is in; off = stay on the zone

@@ -85,6 +85,14 @@
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
 
+            <CheckBox x:Name="TrackSpawnsCheck" Margin="0,10,0,0"
+                      Checked="OnTrackSpawnsToggled" Unchecked="OnTrackSpawnsToggled">
+                <TextBlock Text="🕒 Track spawns (named respawn timers)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="A second window counts down named-mob respawns for the zone you're in. Kill a named — or its placeholder — and the timer starts from the log; ▶ starts one by hand. Ships with community times for 118 classic zones; every duration is editable in place and your edits survive updates. Closing the window is the same as unticking this."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
             <Grid Margin="0,12,0,0">
                 <TextBlock Text="Recent-rate window" FontSize="12"/>
                 <ComboBox x:Name="WindowCombo" HorizontalAlignment="Right" Width="90" FontSize="12"

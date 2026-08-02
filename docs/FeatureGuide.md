@@ -368,10 +368,16 @@ double every death.
 
 ## Spawns window (Track Spawns)
 
-Right-click → **Track spawns** (persisted `TrackSpawns`). The window *is* the on-state:
-it opens whenever the setting is on (including at launch) and closing it turns the
-setting off — there is no tracking-but-hidden mode. Alerts fire from MainWindow's
-shared 1 s tick, not from the window, so they can't be lost to window lifetime.
+**On by default** (`TrackSpawns`, default true — the window is the feature's front
+door, and a default-off window behind a right-click menu is a feature nobody's family
+finds). Toggled by right-click → **Track spawns**, the ⚙ Options checkbox, or simply
+closing the window — all three route through `MainWindow.SetTrackSpawns` so the
+setting, the menu check, the Options checkbox, and the window move together. The
+window *is* the on-state: it opens whenever the setting is on (including at launch)
+and closing it turns the setting off — there is no tracking-but-hidden mode. Alerts
+fire from MainWindow's shared 1 s tick, not from the window, so they can't be lost to
+window lifetime. The quick tutorial gained a "Spawn timers" page, since every new
+install now meets the window.
 
 **The catalog** (`EQBuddy.Core/Data/SpawnCatalog.json`, embedded): 118 zones, 843
 named, built from eqlwiki.com (the EQ Legends community wiki — authoritative where it

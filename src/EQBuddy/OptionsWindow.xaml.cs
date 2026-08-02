@@ -37,6 +37,7 @@ public partial class OptionsWindow : Window
         TruncateCheck.IsChecked = _vm.TruncateLogs;
         PinChipsCheck.IsChecked = _vm.PinWatchChips;
         TutorialCheck.IsChecked = _vm.ShowTutorial;
+        TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
 
         foreach (var choice in OptionsViewModel.WindowChoices) WindowCombo.Items.Add(choice);
         WindowCombo.SelectedIndex = _vm.RecentWindowIndex;
@@ -108,6 +109,23 @@ public partial class OptionsWindow : Window
     private void OnTutorialToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.ShowTutorial = TutorialCheck.IsChecked == true;
+    }
+
+    /// <summary>Called back by MainWindow.SetTrackSpawns so closing the Spawns window
+    /// (or toggling the menu) updates this checkbox while Options sits open.</summary>
+    internal void SyncTrackSpawns(bool on)
+    {
+        var wasReady = _ready;
+        _ready = false;
+        TrackSpawnsCheck.IsChecked = on;
+        _ready = wasReady;
+    }
+
+    private void OnTrackSpawnsToggled(object sender, RoutedEventArgs e)
+    {
+        // Routed through MainWindow, not the view model: the setting, the right-click
+        // menu check, and the window itself all have to move together.
+        if (_ready) _main.SetTrackSpawns(TrackSpawnsCheck.IsChecked == true);
     }
 
     private void OnPinChipsChanged(object sender, RoutedEventArgs e)

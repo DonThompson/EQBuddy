@@ -328,6 +328,7 @@ public partial class MainWindow : Window
         _settings.TrackSpawns = on;
         _settings.Save();
         TrackSpawnsItem.IsChecked = on;
+        if (_optionsWindow is { IsLoaded: true } ow) ow.SyncTrackSpawns(on);
         if (on)
         {
             ShowSpawnsWindow();
