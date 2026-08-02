@@ -109,7 +109,7 @@ public partial class SpawnsWindow : Window
         var now = DateTime.Now;
         _rows = _vm.RowsFor(zone, now);
         var signature = zone + "" + string.Join("",
-            _rows.Select(r => $"{r.DisplayName}|{r.HasActiveTimer}|{r.IsDue}|{r.DurationText}|{r.Alert}|{r.IsCustom}"));
+            _rows.Select(r => $"{r.DisplayName}|{r.HasActiveTimer}|{r.IsDue}|{r.DurationText}|{r.Alert}|{r.SoundName}|{r.IsCustom}"));
         if (signature != _signature)
         {
             // Never rebuild under someone's cursor — committing the edit refreshes anyway.
@@ -188,10 +188,11 @@ public partial class SpawnsWindow : Window
             buttons.Children.Add(RowButton("▶", "Start the countdown from a kill you saw yourself",
                 () => { _vm.StartNow(row.Zone, row.Name, ago.Text); Kick(); }));
             var bell = RowButton(row.Alert ? "🔔" : "🔕",
-                "Sound when this one comes due (pick the sound below; the chicklet shows DUE either way)",
+                "Alert when this one comes due (the chicklet shows DUE either way)",
                 () => { _vm.ToggleAlert(row.Zone, row.Name); Kick(); });
             bell.Opacity = row.Alert ? 1.0 : 0.45;
             buttons.Children.Add(bell);
+            buttons.Children.Add(BuildSoundPicker(row));
             if (row.HasActiveTimer)
                 buttons.Children.Add(RowButton("✕", "Forget this countdown",
                     () => { _vm.ClearTimer(row.Zone, row.Name); Kick(); }));
@@ -203,6 +204,61 @@ public partial class SpawnsWindow : Window
 
             RowsPanel.Children.Add(grid);
         }
+    }
+
+    /// <summary>This named's own due sound — the watch-rule scheme: Default follows the
+    /// shared choice at the bottom, Off silences just this one, Custom… takes a file.
+    /// Different camps with different sounds is how the ear knows which one popped.</summary>
+    private ComboBox BuildSoundPicker(SpawnRow row)
+    {
+        var combo = new ComboBox
+        {
+            FontSize = 10, Width = 66, Margin = new Thickness(4, 0, 0, 0),
+            ToolTip = "Sound for this named — Default follows the shared choice below",
+        };
+        foreach (var item in (string[])["Default", "Off", .. EQBuddy.UI.Shared.AlertSoundCatalog.Names, "Custom…"])
+            combo.Items.Add(item);
+        var isCustomFile = row.SoundName.Length > 0
+            && !string.Equals(row.SoundName, "Off", StringComparison.OrdinalIgnoreCase)
+            && !EQBuddy.UI.Shared.AlertSoundCatalog.Names.Contains(row.SoundName, StringComparer.OrdinalIgnoreCase);
+        combo.SelectedItem = row.SoundName.Length == 0 ? "Default"
+            : isCustomFile ? "Custom…"
+            : combo.Items.Cast<string>().First(i => string.Equals(i, row.SoundName, StringComparison.OrdinalIgnoreCase));
+        if (isCustomFile) combo.ToolTip = $"Custom: {row.SoundName}";
+
+        var ready = false;
+        combo.SelectionChanged += (_, _) =>
+        {
+            if (!ready || combo.SelectedItem is not string choice) return;
+            switch (choice)
+            {
+                case "Default":
+                    _vm.SetSound(row.Zone, row.Name, "");
+                    break;
+                case "Off":
+                    _vm.SetSound(row.Zone, row.Name, "Off");
+                    break;
+                case "Custom…":
+                    var dlg = new Microsoft.Win32.OpenFileDialog
+                    {
+                        Title = $"Choose a sound for \"{row.Name}\"",
+                        Filter = "Sound files (*.wav;*.mp3)|*.wav;*.mp3|All files (*.*)|*.*",
+                    };
+                    if (dlg.ShowDialog() == true)
+                    {
+                        _vm.SetSound(row.Zone, row.Name, dlg.FileName);
+                        _main.PlayAlertSound(dlg.FileName);
+                    }
+                    break;
+                default:
+                    _vm.SetSound(row.Zone, row.Name, choice);
+                    _main.PlayAlertSound(choice);   // hear it as you pick it
+                    break;
+            }
+            Kick();
+        };
+        ready = true;
+        return combo;
     }
 
     private void CommitDuration(TextBox box, SpawnRow row)

@@ -401,6 +401,22 @@ public class SpawnTimerTests
         Assert.Equal("Lady Vox", Assert.Single(vm.Chips(T0.AddMinutes(41))).Name);
     }
 
+    /// <summary>Per-named due sounds, watch-rule style: "" follows the shared choice,
+    /// "Off" silences one named even when the shared choice is audible, and a named
+    /// with its own sound plays even while the shared choice is Off.</summary>
+    [Theory]
+    [InlineData("", "Off", null)]           // nothing chosen anywhere
+    [InlineData("", "Ding", "Ding")]        // follows shared
+    [InlineData("Off", "Ding", null)]       // opted out individually
+    [InlineData("Alarm", "Off", "Alarm")]   // opted in individually
+    [InlineData(@"C:\sounds\vox.mp3", "Ding", @"C:\sounds\vox.mp3")]
+    public void PerNamedSoundResolution(string own, string shared, string? expected)
+    {
+        var (vm, _, _) = Vm();
+        if (own.Length > 0) vm.SetSound("Lower Guk", "a froglok ghoul lord", own);
+        Assert.Equal(expected, vm.SoundFor("Lower Guk", "a froglok ghoul lord", shared));
+    }
+
     [Fact]
     public void RowsWithAlertToggledOffStayQuiet()
     {

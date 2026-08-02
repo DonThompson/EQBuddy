@@ -468,10 +468,11 @@ public partial class MainWindow : Window
         if (_settings.TrackSpawns)
         {
             // Sound only — no banner. The chip flipping to DUE is the visual, and a
-            // banner on top of it was double notification (David's call).
-            foreach (var _ in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
-                if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
-                    PlayAlertSound(_settings.SpawnSound);
+            // banner on top of it was double notification (David's call). Each named
+            // can carry its own sound so the ear knows which camp popped.
+            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
+                if (_spawnsVm.SoundFor(due.Zone, due.Name, _settings.SpawnSound) is { } sound)
+                    PlayAlertSound(sound);
 
             // Chicklets are the ambient face of spawn tracking: the stack exists exactly
             // while timers do — including alongside the full window, which is a browser,

@@ -4,7 +4,7 @@
         Title="EQBuddy Spawns" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
-        Width="400" WindowStartupLocation="Manual">
+        Width="470" WindowStartupLocation="Manual">
     <!-- Same custom chrome as Options. Height auto-fits but is clamped to the work area
          at runtime; the body scrolls, the title row stays reachable. -->
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
@@ -62,7 +62,7 @@
                         Style="{StaticResource IconButton}" ToolTip="Add" Click="OnAddCustom"/>
                 <ComboBox x:Name="SoundCombo" Grid.Column="3" Margin="10,0,0,0" FontSize="11"
                           SelectionChanged="OnSoundPicked"
-                          ToolTip="Sound when a timer hits zero (the chicklet shows DUE either way)"/>
+                          ToolTip="Default due sound — each named's own picker can override it (the chicklet shows DUE either way)"/>
             </Grid>
         </StackPanel>
       </Grid>

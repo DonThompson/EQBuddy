@@ -9,9 +9,14 @@ public sealed class SpawnOverride
 {
     public double? RespawnSeconds { get; set; }
     public string? Placeholder { get; set; }
-    /// <summary>Alert (banner + optional sound) when this named's timer hits zero.
-    /// Default on — the window exists to tell you the camp is up.</summary>
+    /// <summary>Alert when this named's timer hits zero. Default on — the window exists
+    /// to tell you the camp is up.</summary>
     public bool Alert { get; set; } = true;
+    /// <summary>This named's own due sound: "" follows the window's shared choice,
+    /// "Off" stays silent, else a built-in name or a custom file path — the same scheme
+    /// watch rules use, and for the same reason: you learn WHICH camp popped without
+    /// looking away from the game.</summary>
+    public string SoundName { get; set; } = "";
     /// <summary>True for named the player added themselves (not in the catalog) —
     /// zones change, wikis lag, and a family member camping something undocumented
     /// shouldn't have to wait for a release.</summary>

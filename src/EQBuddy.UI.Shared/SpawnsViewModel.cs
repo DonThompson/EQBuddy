@@ -18,6 +18,8 @@ public sealed record SpawnRow(
     bool HasActiveTimer,
     bool IsDue,
     bool Alert,
+    /// <summary>This named's own due sound ("" = follow shared, "Off", name, or path).</summary>
+    string SoundName,
     bool IsCustom,
     /// <summary>Variance/source/note rolled into tooltip text; "" when there's nothing.</summary>
     string Detail);
@@ -109,7 +111,7 @@ public sealed class SpawnsViewModel
 
         return new SpawnRow(zoneName, name, display,
             SpawnDurationText.Format(duration), countdown,
-            hasTimer, isDue, o?.Alert ?? true, o?.Custom ?? false, detail);
+            hasTimer, isDue, o?.Alert ?? true, o?.SoundName ?? "", o?.Custom ?? false, detail);
     }
 
     // ---- user actions ----
@@ -130,6 +132,28 @@ public sealed class SpawnsViewModel
         var o = _overrides.GetOrAdd(zone, name);
         o.Alert = !o.Alert;
         _overrides.Save();
+    }
+
+    /// <summary>Set this named's own due sound: "" = follow the shared choice,
+    /// "Off" = silent, else a built-in name or custom file path.</summary>
+    public void SetSound(string zone, string name, string soundNameOrPath)
+    {
+        var o = _overrides.GetOrAdd(zone, name);
+        o.SoundName = soundNameOrPath;
+        _overrides.Save();
+    }
+
+    /// <summary>The sound to actually play when this named comes due, or null for
+    /// silence. Per-named choice wins; "" falls through to the shared setting. A named
+    /// with its own sound plays even while the shared choice is Off — opting one camp
+    /// in is the point of having the per-named picker.</summary>
+    public string? SoundFor(string zone, string name, string sharedChoice)
+    {
+        var own = _overrides.Find(zone, name)?.SoundName ?? "";
+        var choice = own.Length > 0 ? own : sharedChoice;
+        return string.Equals(choice, "Off", StringComparison.OrdinalIgnoreCase) || choice.Length == 0
+            ? null
+            : choice;
     }
 
     /// <summary>▶ — the player marks the kill themselves; <paramref name="agoText"/>
