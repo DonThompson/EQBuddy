@@ -104,6 +104,7 @@ public sealed class SpawnsViewModel
 
         var detail = entry is null ? "Added by you" : string.Join(" · ", new[]
         {
+            o is { Learned: true } ? "timer learned from your own kills" : "",
             entry.Variance.Length > 0 ? $"variance {entry.Variance}" : "",
             entry.Note,
             entry.Source.Length > 0 ? $"source: {entry.Source}" : "",
@@ -123,6 +124,7 @@ public sealed class SpawnsViewModel
         var seconds = SpawnDurationText.Parse(durationText);
         var o = _overrides.GetOrAdd(zone, name);
         o.RespawnSeconds = seconds;
+        o.Learned = false;   // typed by the player — outranks inference, forever
         _overrides.Save();
         _timers.SetDuration(zone, name, seconds);
     }

@@ -111,6 +111,9 @@ Spawn timers (on by default):
   place, ▶ starts a timer by hand for camps you arrived at late ("died 5m ago"), and
   **+** adds named the catalog doesn't know. Turn tracking off with **Track spawns**
   in the menu or ⚙ Options.
+- **Timers tighten themselves as you play**: re-kill a named sooner than its timer
+  claimed possible and EQBuddy adopts the observed gap (your own typed values are
+  never touched). The shipped catalog seeds the numbers; your kills correct them.
 - EQ Legends' difficulty tiers ("Befallen 4 (Refined)") resolve to their base zone's
   named list automatically.
 - Ships with **840+ named across 118 classic zones**, seeded from the
@@ -136,7 +139,10 @@ Encounters, mob farming, and stances:
   off — either one named spell or a whole class (**Any CC**, Charm, Mez, Root, Lull,
   Stun, **HoT**), which needs no match text and keeps working as you level into new
   spells. HoTs are recognised from their own tick lines, so the filter covers heals
-  EQBuddy has never seen before. A charm-break alert is on out of the box. Same counters, chips, and alerts for every kind.
+  EQBuddy has never seen before. **Buff fades count too**: EQBuddy knows the wear-off
+  flavor lines ("Your speed returns to normal." is your haste dropping) and fires
+  your fade rules even though the log never names the spell. A charm-break alert is
+  on out of the box. Same counters, chips, and alerts for every kind.
 - History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
   **Import log…** parses any old eqlog file into your session history.
 

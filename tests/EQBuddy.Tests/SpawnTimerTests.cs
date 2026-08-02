@@ -260,6 +260,52 @@ public class SpawnTimerTests
         finally { File.Delete(path); }
     }
 
+    /// <summary>Timers tighten themselves from play: a re-kill sooner than the timer
+    /// says is possible proves the respawn is at most that gap. Manual edits are never
+    /// touched, learning never loosens, and sub-90-second gaps are multi-spawn noise.</summary>
+    [Fact]
+    public void RekillsSoonerThanTheTimerTightenIt()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(TestCatalog(), overrides) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));                 // catalog: 1620s
+        t.Apply(new KillEvent(T0.AddMinutes(5), "froglok ghoul lord", "You"));   // back in 300s!
+
+        var o = overrides.Find("Lower Guk", "a froglok ghoul lord");
+        Assert.NotNull(o);
+        Assert.True(o!.Learned);
+        Assert.Equal(300, o.RespawnSeconds);
+        Assert.Equal(T0.AddMinutes(5).AddSeconds(300), Assert.Single(t.Snapshot(T0.AddMinutes(6))).DueAt);
+
+        // Better evidence keeps tightening…
+        t.Apply(new KillEvent(T0.AddMinutes(9), "froglok ghoul lord", "You"));   // 240s gap
+        Assert.Equal(240, overrides.Find("Lower Guk", "a froglok ghoul lord")!.RespawnSeconds);
+        // …but a slower pair of kills never loosens what was learned.
+        t.Apply(new KillEvent(T0.AddMinutes(29), "froglok ghoul lord", "You"));  // 1200s gap
+        Assert.Equal(240, overrides.Find("Lower Guk", "a froglok ghoul lord")!.RespawnSeconds);
+    }
+
+    [Fact]
+    public void LearningNeverOverridesAManualEditAndIgnoresNoiseGaps()
+    {
+        var overrides = new SpawnOverrides();
+        var timers = new SpawnTimers(TestCatalog(), overrides) { Server = "freeport" };
+        var vm = new SpawnsViewModel(TestCatalog(), overrides, timers);
+
+        vm.SetDuration("Lower Guk", "a froglok ghoul lord", "20m");   // the player's word
+        timers.Apply(new ZoneEvent(T0, "Lower Guk"));
+        timers.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));
+        timers.Apply(new KillEvent(T0.AddMinutes(5), "froglok ghoul lord", "You"));
+        Assert.Equal(1200, overrides.Find("Lower Guk", "a froglok ghoul lord")!.RespawnSeconds);
+        Assert.False(overrides.Find("Lower Guk", "a froglok ghoul lord")!.Learned);
+
+        // Fresh named, kills 60 s apart: multi-spawn noise, not a 60-second respawn.
+        timers.Apply(new KillEvent(T0.AddMinutes(10), "kor ghoul wizard", "You"));
+        timers.Apply(new KillEvent(T0.AddMinutes(11), "kor ghoul wizard", "You"));
+        Assert.Null(overrides.Find("Lower Guk", "the ghoul arch magi"));
+    }
+
     // ---- duration text ----
 
     [Theory]

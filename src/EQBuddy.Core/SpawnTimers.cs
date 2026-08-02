@@ -81,6 +81,7 @@ public sealed class SpawnTimers
                         && !Matches(placeholder, k.Target, fuzzy)) continue;
 
                     var duration = o?.RespawnSeconds ?? SpawnCatalog.EffectiveSeconds(zone, entry);
+                    duration = LearnFromRekill(zone.Zone, entry.Name, k.Time, duration);
                     Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration));
                     return;
                 }
@@ -98,6 +99,33 @@ public sealed class SpawnTimers
         static bool Matches(string catalogName, string killed, bool fuzzy) =>
             fuzzy ? SpawnCatalog.NameMatchesFuzzy(catalogName, killed)
                   : SpawnCatalog.NameMatches(catalogName, killed);
+    }
+
+    /// <summary>Re-kill gaps shorter than the learning floor are treated as multi-spawn
+    /// noise (several mobs sharing a name), not as evidence of a faster respawn.</summary>
+    public const double MinLearnSeconds = 90;
+
+    /// <summary>
+    /// Timers tighten themselves from play (requested by David after a Splitpaw player
+    /// reported 22-minute catalog timers against 2–5-minute Legends reality): killing
+    /// the same named again SOONER than its timer says is possible proves the respawn
+    /// is at most that gap, so the gap becomes a learned override. Manual edits are
+    /// never touched, learning never loosens, and learned values keep tightening as
+    /// better evidence arrives.
+    /// </summary>
+    private double? LearnFromRekill(string zone, string name, DateTime killedAt, double? currentDuration)
+    {
+        if (currentDuration is not { } d) return currentDuration;
+        if (!_timers.TryGetValue(Key(Server, zone, name), out var prev)) return currentDuration;
+        var gap = (killedAt - prev.KilledAt).TotalSeconds;
+        if (gap < MinLearnSeconds || gap >= d) return currentDuration;
+
+        var o = _overrides.GetOrAdd(zone, name);
+        if (o.RespawnSeconds is not null && !o.Learned) return currentDuration; // manual edit wins
+        o.RespawnSeconds = Math.Floor(gap);
+        o.Learned = true;
+        _overrides.Save();
+        return o.RespawnSeconds;
     }
 
     /// <summary>The ▶ button: the player saw (or heard about) the kill themselves.

@@ -793,18 +793,15 @@ public partial class MainWindow : Window
             head.Children.Add(rate);
             TrackedPanel.Children.Add(head);
 
-            foreach (var item in r.Items)
+            // The card leads with what just happened, not with everything that ever did
+            // (asked for by an enchanter drowning in an hour of mez targets): one
+            // "last:" line per rule, the full per-item breakdown behind a toggle.
+            if (r.LastMatch is { } lm && r.LastItem is { } li)
                 TrackedPanel.Children.Add(new TextBlock
                 {
-                    Text = $"{item.Name}   ×{item.Count}", FontSize = 12,
-                    Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(6, 1, 0, 0),
+                    Text = $"last: {li} · {FormatAge(DateTime.Now - lm)} ago", FontSize = 12,
+                    Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(6, 1, 0, 2),
                     TextTrimming = TextTrimming.CharacterEllipsis,
-                });
-            if (r.LastMatch is { } lm)
-                TrackedPanel.Children.Add(new TextBlock
-                {
-                    Text = $"last drop {FormatAge(DateTime.Now - lm)} ago", FontSize = 11,
-                    Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(6, 1, 0, 2),
                 });
             else
                 TrackedPanel.Children.Add(new TextBlock
@@ -812,8 +809,39 @@ public partial class MainWindow : Window
                     Text = "no matches yet", FontSize = 11,
                     Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(6, 1, 0, 2),
                 });
+
+            if (r.Items.Count > 1)
+            {
+                var expanded = _watchExpandedRules.Contains(r.Id);
+                if (expanded)
+                    foreach (var item in r.Items)
+                        TrackedPanel.Children.Add(new TextBlock
+                        {
+                            Text = $"{item.Name}   ×{item.Count}", FontSize = 12,
+                            Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(12, 1, 0, 0),
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                        });
+                var toggle = new TextBlock
+                {
+                    Text = expanded ? "▾ less" : $"▸ all {r.Items.Count} kinds",
+                    FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+                    Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(6, 0, 0, 2),
+                };
+                var id = r.Id;
+                toggle.MouseLeftButtonDown += (_, e) =>
+                {
+                    if (!_watchExpandedRules.Remove(id)) _watchExpandedRules.Add(id);
+                    RefreshUi();
+                    e.Handled = true;
+                };
+                TrackedPanel.Children.Add(toggle);
+            }
         }
     }
+
+    /// <summary>Rules whose full per-item breakdown is open on the Watch card.
+    /// Session-scoped on purpose: the collapsed "last:" view is the designed default.</summary>
+    private readonly HashSet<string> _watchExpandedRules = new(StringComparer.Ordinal);
 
     private static string FormatAge(TimeSpan age) => age.TotalMinutes < 1
         ? $"{Math.Max(0, (int)age.TotalSeconds)}s"

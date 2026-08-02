@@ -410,6 +410,11 @@ public static partial class LogParser
                 r.Groups["pct"].Success ? double.Parse(r.Groups["pct"].Value, CultureInfo.InvariantCulture) : 0,
                 r.Groups["party"].Success);
 
+        // Buff/HoT wear-off flavor lines never name their spell — the catalog does.
+        // Exact-message dictionary lookup: one hash probe per line, no regex cost.
+        if (FadeMessageCatalog.Default.Find(msg) is { } fade)
+            return new BuffFadeEvent(ts, fade.Label, fade.Spells);
+
         if ((r = PetSpellWornOffRx().Match(msg)).Success)
             return new SpellWornOffEvent(ts, r.Groups["spell"].Value,
                 r.Groups["target"].Success ? Normalize(r.Groups["target"].Value) : "", Pet: true);

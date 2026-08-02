@@ -28,6 +28,11 @@ public sealed class SpawnOverride
     /// zones change, wikis lag, and a family member camping something undocumented
     /// shouldn't have to wait for a release.</summary>
     public bool Custom { get; set; }
+    /// <summary>True when <see cref="RespawnSeconds"/> was tightened automatically from
+    /// an observed re-kill gap rather than typed by the player. Learned values may keep
+    /// tightening as more kills come in; a manual edit (Learned=false with a value) is
+    /// never touched — the player's word outranks the app's inference.</summary>
+    public bool Learned { get; set; }
 }
 
 /// <summary>

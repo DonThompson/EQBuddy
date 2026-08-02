@@ -663,6 +663,64 @@ public class SpellTrackingTests
         Assert.Contains(tracked.Items, i => i.Name == "Regeneration (Douglas)");
     }
 
+    // ---- buff/HoT wear-off flavor lines (the log names no spell; the catalog does) ----
+
+    /// <summary>The Reddit report that drove this: an enchanter's "Echoing Light" and
+    /// "Alacrity" fade rules never fired, because those spells fade with flavor text
+    /// ("The echo of healing fades away." / "Your speed returns to normal.") that
+    /// names nothing. The catalog maps message → candidate spells, so both ByName and
+    /// class-filter rules now fire.</summary>
+    [Fact]
+    public void HotFlavorFadeFiresTheHotClassFilter()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "HoT dropped", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.HealOverTime,
+        };
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "The echo of healing fades away.")
+        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+
+        Assert.Equal(1, tracked.TotalQuantity);
+        Assert.Contains(tracked.Items, i => i.Name == "Echoing Light");
+    }
+
+    [Fact]
+    public void HasteFlavorFadeFiresAByNameAlacrityRule()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "Haste dropped", Pattern = "Alacrity", Kind = WatchKind.SpellFade,
+        };
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "Your speed returns to normal.")
+        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+
+        Assert.Equal(1, tracked.TotalQuantity);
+        // The row shows the shared label — the log can't say WHICH haste it was.
+        Assert.Contains(tracked.Items, i => i.Name == "Haste");
+    }
+
+    [Fact]
+    public void FlavorFadesCountForAnySpellButNotForCcFilters()
+    {
+        var any = new TrackedRule
+        {
+            Name = "Anything dropped", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.AnySpell,
+        };
+        var cc = new TrackedRule
+        {
+            Name = "CC broke", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.AnyCrowdControl,
+        };
+        var s = Replay(
+            At(0, 0, "The spirit of wolf leaves you."),
+            At(0, 3, "Your speed returns to normal.")
+        ).Snapshot(recentWindow: null, rules: [any, cc]);
+
+        Assert.Equal(2, s.Tracked.First(t => t.Name == "Anything dropped").TotalQuantity);
+        Assert.Equal(0, s.Tracked.First(t => t.Name == "CC broke").TotalQuantity);
+    }
+
     [Fact]
     public void ByNameFilterKeepsTheOriginalSubstringBehaviour()
     {

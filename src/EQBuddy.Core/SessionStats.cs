@@ -1062,6 +1062,13 @@ public sealed class SessionStats
                             (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
                                 when SpellFadeMatches(rule, wo.Spell)
                                 => (wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell, 1),
+                            // Buff/HoT fades carry candidate spells (the log named
+                            // none); the rule fires if ANY candidate satisfies it, and
+                            // the row shows the catalog label ("Haste") since we can't
+                            // know which haste it was.
+                            (WatchKind.SpellFade, BuffFadeEvent bf)
+                                when bf.Spells.Any(sp => SpellFadeMatches(rule, sp))
+                                => (bf.Label, 1),
                             // Re-matched here rather than trusted from ingest: the journal
                             // holds lines kept for ANY text rule, so each rule still has to
                             // claim its own. The line itself is the item, so a raid script
