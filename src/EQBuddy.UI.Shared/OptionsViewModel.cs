@@ -266,6 +266,7 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         "Root",
         "Lull",
         "Stun",
+        "HoT",
     ];
     public IReadOnlyList<TrackedRule> Rules => _settings.TrackedRules;
 

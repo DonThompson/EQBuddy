@@ -89,7 +89,7 @@ public static partial class LogParser
     // You healed Kaybek for 10 hit points by Lifespike. / You healed Kaybek for 7 (10) hit points by Lifespike.
     // Heal-over-time ticks say "healed X over time for N" (eqlog_Hugzee: "Xephira healed
     // Spamwagon over time for 11 hit points by Budding Heal.") — same event, one extra phrase.
-    [GeneratedRegex(@"^You healed (?<target>.+?)(?: over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
+    [GeneratedRegex(@"^You healed (?<target>.+?)(?<hot> over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
     private static partial Regex HealOutRx();
 
     // You have been healed for 30 hit points. / Someone healed you...
@@ -115,7 +115,7 @@ public static partial class LogParser
     // Aamilea healed you for 56 hit points by Light Healing.
     // HoT ticks: "Aenari healed you over time for 8 hit points by Echoing Light." — 223
     // such lines in one week of eqlog_Hugzee were invisible, undercounting healing received.
-    [GeneratedRegex(@"^(?<healer>.+?) healed you(?: over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
+    [GeneratedRegex(@"^(?<healer>.+?) healed you(?<hot> over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
     private static partial Regex HealInByRx();
 
     // A willowisp resisted your Denon's Disruptive Discord!
@@ -357,7 +357,8 @@ public static partial class LogParser
         if ((r = HealOutRx().Match(msg)).Success)
             return new HealEvent(ts, r.Groups["target"].Value,
                 int.Parse(r.Groups["amount"].Value),
-                r.Groups["spell"].Success ? r.Groups["spell"].Value : "Unknown", Outgoing: true);
+                r.Groups["spell"].Success ? r.Groups["spell"].Value : "Unknown", Outgoing: true,
+                OverTime: r.Groups["hot"].Success);
 
         if ((r = HealInRx().Match(msg)).Success)
             return new HealEvent(ts, "You", int.Parse(r.Groups["amount"].Value), "Unknown", Outgoing: false);
@@ -368,7 +369,8 @@ public static partial class LogParser
         if ((r = HealInByRx().Match(msg)).Success)
             return new HealEvent(ts, "You", int.Parse(r.Groups["amount"].Value),
                 r.Groups["spell"].Success ? r.Groups["spell"].Value : "Unknown",
-                Outgoing: false, Healer: r.Groups["healer"].Value);
+                Outgoing: false, Healer: r.Groups["healer"].Value,
+                OverTime: r.Groups["hot"].Success);
 
         if ((r = AutoSellRx().Match(msg)).Success)
             return new AutoSellEvent(ts, r.Groups["item"].Value,

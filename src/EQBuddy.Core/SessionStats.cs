@@ -501,7 +501,8 @@ public sealed class SessionStats
                         hFight.Healed += h.Amount;
                         Ability(hFight.HealsBySpell, h.Spell).Add(h.Time, h.Amount);
                     }
-                    if (h.Spell != "Unknown") _spells.Learn(h.Spell, SpellCategory.Heal);
+                    if (h.Spell != "Unknown")
+                        _spells.Learn(h.Spell, h.OverTime ? SpellCategory.HealOverTime : SpellCategory.Heal);
                     // Self-heals appear as "You healed <own name>" — count as received too.
                     if (_characterName is { } me &&
                         string.Equals(h.Target, me, StringComparison.OrdinalIgnoreCase))
@@ -519,6 +520,11 @@ public sealed class SessionStats
                         var hv = _healsByHealer.TryGetValue(h.Healer, out var hc) ? hc : (0, 0L);
                         _healsByHealer[h.Healer] = (hv.Item1 + 1, hv.Item2 + h.Amount);
                     }
+                    // Incoming heals name the spell too ("healed you ... by Echoing
+                    // Light") — a HoT someone keeps on you teaches the catalog even if
+                    // you never cast one.
+                    if (h.Spell != "Unknown")
+                        _spells.Learn(h.Spell, h.OverTime ? SpellCategory.HealOverTime : SpellCategory.Heal);
                     break;
                 case RegenTickEvent:
                     _regenTicks++;

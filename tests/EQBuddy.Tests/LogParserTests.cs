@@ -185,6 +185,7 @@ public class LogParserTests
     {
         var e = Parse<HealEvent>("Aamilea healed you for 56 hit points by Light Healing.");
         Assert.Equal((56, "Light Healing", false, "Aamilea"), (e.Amount, e.Spell, e.Outgoing, e.Healer));
+        Assert.False(e.OverTime);
     }
 
     /// <summary>Heal-over-time ticks add "over time" mid-sentence but are otherwise the
@@ -195,6 +196,7 @@ public class LogParserTests
     {
         var e = Parse<HealEvent>("Aenari healed you over time for 8 hit points by Echoing Light.");
         Assert.Equal((8, "Echoing Light", false, "Aenari"), (e.Amount, e.Spell, e.Outgoing, e.Healer));
+        Assert.True(e.OverTime);   // the flag is what lets the catalog learn HoTs
     }
 
     [Fact]
@@ -202,6 +204,7 @@ public class LogParserTests
     {
         var e = Parse<HealEvent>("You healed Spamwagon over time for 11 hit points by Budding Heal.");
         Assert.Equal(("Spamwagon", 11, "Budding Heal", true), (e.Target, e.Amount, e.Spell, e.Outgoing));
+        Assert.True(e.OverTime);
     }
 
     [Fact]

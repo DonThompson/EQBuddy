@@ -50,6 +50,8 @@ public static class WatchGuide
             "Level-ups and ability points. Match text is ignored."),
         new(WatchKind.SpellFade, "Charm broke", "", "",
             "Set the class picker to Charm — no match text, and it keeps working as you level into new charm spells."),
+        new(WatchKind.SpellFade, "HoT dropped", "", "",
+            "Set the class picker to HoT — fires when a heal-over-time wears off, so you know to recast. Learned from the ticks themselves, so it covers spells EQBuddy has never seen before."),
         new(WatchKind.Text, "CH call heard", "CH -->", "",
             "Any log line containing the text, including lines EQBuddy doesn't otherwise understand — another player's raid-assist script, a server's custom emotes."),
         new(WatchKind.Text, "CAST NOW", "CH -->", "2.5",

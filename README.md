@@ -104,8 +104,9 @@ Encounters, mob farming, and stances:
 - Watch rules aren't just loot anymore: a rule can watch **Loot, Kills (creature name),
   Skill-ups, Deaths, Milestones** (levels/AA), or **SpellFade** — your spells wearing
   off — either one named spell or a whole class (**Any CC**, Charm, Mez, Root, Lull,
-  Stun), which needs no match text and keeps working as you level into new spells. A
-  charm-break alert is on out of the box. Same counters, chips, and alerts for every kind.
+  Stun, **HoT**), which needs no match text and keeps working as you level into new
+  spells. HoTs are recognised from their own tick lines, so the filter covers heals
+  EQBuddy has never seen before. A charm-break alert is on out of the box. Same counters, chips, and alerts for every kind.
 - History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
   **Import log…** parses any old eqlog file into your session history.
 

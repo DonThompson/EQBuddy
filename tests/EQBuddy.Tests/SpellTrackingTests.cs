@@ -608,6 +608,61 @@ public class SpellTrackingTests
             Replay(FadeLines).Snapshot(recentWindow: null, rules: [rule]).Tracked).TotalQuantity);
     }
 
+    /// <summary>A HoT teaches the catalog from its own tick line, so the class filter
+    /// covers spells no seed list ever heard of — the same observation trick DoTs use.</summary>
+    [Fact]
+    public void HotFilterMatchesASpellLearnedFromItsOwnTicks()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "HoT dropped", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.HealOverTime,
+        };
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "You healed Grimble over time for 12 hit points by Mending Winds."),
+            At(0, 18, "Your Mending Winds spell has worn off of Grimble."),
+            At(0, 20, "Your Befriend Animal spell has worn off of a puma.")   // charm, not HoT
+        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+
+        Assert.Equal(1, tracked.TotalQuantity);
+        Assert.Contains(tracked.Items, i => i.Name == "Mending Winds (Grimble)");
+    }
+
+    /// <summary>Someone else's HoT on you names the spell too — enough to classify it
+    /// before you ever cast one yourself.</summary>
+    [Fact]
+    public void IncomingHotTicksTeachTheCatalog()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "HoT dropped", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.HealOverTime,
+        };
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "Aenari healed you over time for 8 hit points by Celestial Elixir."),
+            At(0, 24, "Your Celestial Elixir spell has worn off of Douglas.")
+        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+
+        Assert.Equal(1, tracked.TotalQuantity);
+    }
+
+    /// <summary>The seed list covers the cold start: a fade arriving before any tick was
+    /// seen still classifies. A plain direct heal never matches the HoT filter.</summary>
+    [Fact]
+    public void SeededHotMatchesWithoutTicksAndDirectHealsNever()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "HoT dropped", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.HealOverTime,
+        };
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "Your Regeneration spell has worn off of Douglas."),      // seeded HoT, no tick seen
+            At(0, 2, "You healed Douglas for 50 hit points by Light Healing."), // teaches Heal, not HoT
+            At(0, 30, "Your Light Healing spell has worn off of Douglas.")
+        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+
+        Assert.Equal(1, tracked.TotalQuantity);
+        Assert.Contains(tracked.Items, i => i.Name == "Regeneration (Douglas)");
+    }
+
     [Fact]
     public void ByNameFilterKeepsTheOriginalSubstringBehaviour()
     {

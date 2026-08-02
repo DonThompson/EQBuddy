@@ -180,7 +180,7 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(AppTheme.DimText("The Last Xm figures on Combat, Kills, Money, and Progress."));
 
         panel.Children.Add(Heading("Watch rules", new Thickness(0, 14, 0, 2)));
-        panel.Children.Add(AppTheme.DimText("Watch loot, kills, skill-ups, deaths, milestones, your spells wearing off, or any text in the log. Match is a case-insensitive substring, e.g. 'mote'; when empty, the display name is used. Spell fade rules can pick a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun) instead of a named spell, needing no match text. Delay holds the alert back that many seconds so it lands as a cue. B shows a banner and S plays a sound."));
+        panel.Children.Add(AppTheme.DimText("Watch loot, kills, skill-ups, deaths, milestones, your spells wearing off, or any text in the log. Match is a case-insensitive substring, e.g. 'mote'; when empty, the display name is used. Spell fade rules can pick a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun, HoT) instead of a named spell, needing no match text. Delay holds the alert back that many seconds so it lands as a cue. B shows a banner and S plays a sound."));
 
         // Collapsed by default — the examples answer the questions people actually ask, and
         // are noise for anyone who already knows the answers.

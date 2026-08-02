@@ -248,6 +248,13 @@ served by an in-game trigger. EQBuddy is honest about being a log reader.
   via `SpellCatalog`, needing no match text at all. Ranks collapse onto the base name, so
   one rule covers `Befriend Animal` through `Befriend Animal V` and every CC spell the
   character learns later. A damage song wearing off does **not** trigger these.
+- *HoT* — heal-over-time spells, the "recast it" cue. Unlike CC (which produces no
+  numbers and needs a seed list), HoTs label themselves: their tick lines name the spell
+  (`…healed you over time for 8 hit points by Echoing Light.`), so the catalog learns
+  them by observation in both directions — your casts and heals landing on you. A small
+  seed (Echoing Light, Budding Heal — both log-verified — plus the classic
+  Regeneration/Chloroplast/Regrowth line) covers a fade arriving before the first tick
+  was seen. A direct heal wearing off does **not** trigger this filter.
 
 Entries show as "Spell (Target)". Each rule shows
 total, per-item breakdown, per-hour rates (wall-clock + active-time), last-match age.

@@ -46,6 +46,10 @@ public enum SpellFilter
     Root = 5,
     Lull = 6,
     Stun = 7,
+    /// <summary>Heals that tick over time. Fires when your HoT wears off a target —
+    /// the "recast it" moment. HoTs are learned from their own tick lines, so the rule
+    /// keeps up with new spells and ranks like the CC filters do.</summary>
+    HealOverTime = 8,
 }
 
 /// <summary>
@@ -164,6 +168,7 @@ public sealed class TrackedRule
         SpellFilter.Root => SpellCategory.Root,
         SpellFilter.Lull => SpellCategory.Lull,
         SpellFilter.Stun => SpellCategory.Stun,
+        SpellFilter.HealOverTime => SpellCategory.HealOverTime,
         _ => null,
     };
 

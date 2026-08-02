@@ -14,6 +14,10 @@ public enum SpellCategory
     Heal,
     DirectDamage,
     DamageOverTime,
+    /// <summary>A heal that ticks — "healed you over time for N hit points by X". Learned
+    /// from those ticks, which name the spell; distinct from Heal so a fade rule can watch
+    /// "my HoT dropped" without firing on every Light Healing.</summary>
+    HealOverTime,
 }
 
 /// <summary>
@@ -107,6 +111,15 @@ public sealed partial class SpellCatalog
             ["Color Shift"] = SpellCategory.Stun,
             ["Color Skew"] = SpellCategory.Stun,
             ["Scintillating Colors"] = SpellCategory.Stun,
+
+            // -- Heal over time --
+            // HoTs mostly self-label (their ticks name the spell), so this seed only
+            // covers the cold start: a fade arriving before the first tick was seen.
+            ["Echoing Light"] = SpellCategory.HealOverTime,  // verified: eqlog_Hugzee
+            ["Budding Heal"] = SpellCategory.HealOverTime,   // verified: eqlog_Hugzee
+            ["Regeneration"] = SpellCategory.HealOverTime,
+            ["Chloroplast"] = SpellCategory.HealOverTime,
+            ["Regrowth"] = SpellCategory.HealOverTime,
         };
 
     /// <summary>
@@ -211,6 +224,7 @@ public sealed partial class SpellCatalog
         SpellCategory.Heal => "Heal",
         SpellCategory.DirectDamage => "Direct damage",
         SpellCategory.DamageOverTime => "Damage over time",
+        SpellCategory.HealOverTime => "HoT",
         _ => "Unknown",
     };
 }
