@@ -120,18 +120,57 @@ public sealed class SpawnCatalog
     public static bool NameMatches(string catalogName, string killedName)
     {
         if (catalogName.Length == 0 || killedName.Length == 0) return false;
+        return Fold(catalogName).Equals(Fold(killedName), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Forgiving-but-bounded match for wiki typos (the Velious page spells Keljemor
+    /// "Leljemor"; suggested by David): edit distance ≤1 on the folded names, ≤2 from
+    /// twelve characters up, and never for names under six characters — "Red V" must
+    /// not match "Red X". Callers must prefer exact matches: fuzzy is the fallback,
+    /// checked only after every exact candidate has missed, so a typo'd catalog entry
+    /// can't steal a kill from a correct one.
+    /// </summary>
+    public static bool NameMatchesFuzzy(string catalogName, string killedName)
+    {
+        if (NameMatches(catalogName, killedName)) return true;
         var a = Fold(catalogName);
         var b = Fold(killedName);
-        return a.Equals(b, StringComparison.OrdinalIgnoreCase);
+        if (a.Length < 6 || b.Length < 6) return false;
+        var budget = Math.Max(a.Length, b.Length) >= 12 ? 2 : 1;
+        return WithinEditDistance(a.ToLowerInvariant(), b.ToLowerInvariant(), budget);
+    }
 
-        static string Fold(string s)
+    private static string Fold(string s)
+    {
+        s = s.Trim().Replace("`", "").Replace("'", "");
+        foreach (var article in (string[])["a ", "an ", "the "])
+            if (s.Length > article.Length && s.StartsWith(article, StringComparison.OrdinalIgnoreCase))
+            { s = s[article.Length..]; break; }
+        if (s.EndsWith('s') && !s.EndsWith("ss", StringComparison.Ordinal)) s = s[..^1];
+        return s;
+    }
+
+    /// <summary>Banded Levenshtein: true when edit distance ≤ <paramref name="max"/>.</summary>
+    private static bool WithinEditDistance(string a, string b, int max)
+    {
+        if (Math.Abs(a.Length - b.Length) > max) return false;
+        var prev = new int[b.Length + 1];
+        var cur = new int[b.Length + 1];
+        for (var j = 0; j <= b.Length; j++) prev[j] = j;
+        for (var i = 1; i <= a.Length; i++)
         {
-            s = s.Trim().Replace("`", "").Replace("'", "");
-            foreach (var article in (string[])["a ", "an ", "the "])
-                if (s.Length > article.Length && s.StartsWith(article, StringComparison.OrdinalIgnoreCase))
-                { s = s[article.Length..]; break; }
-            if (s.EndsWith('s') && !s.EndsWith("ss", StringComparison.Ordinal)) s = s[..^1];
-            return s;
+            cur[0] = i;
+            var rowMin = cur[0];
+            for (var j = 1; j <= b.Length; j++)
+            {
+                var cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                cur[j] = Math.Min(Math.Min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+                rowMin = Math.Min(rowMin, cur[j]);
+            }
+            if (rowMin > max) return false;   // the whole row exceeded the budget — bail
+            (prev, cur) = (cur, prev);
         }
+        return prev[b.Length] <= max;
     }
 }

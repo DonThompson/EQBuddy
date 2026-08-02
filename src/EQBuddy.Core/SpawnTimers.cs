@@ -69,26 +69,35 @@ public sealed class SpawnTimers
         {
             if (_currentZone is not { } zone) return;
 
-            foreach (var entry in zone.Named)
+            // Two passes: every exact candidate before any fuzzy one, so a typo'd
+            // catalog entry can never steal a kill from a correctly-spelled neighbour.
+            foreach (var fuzzy in (bool[])[false, true])
             {
-                var o = _overrides.Find(zone.Zone, entry.Name);
-                var placeholder = o?.Placeholder ?? entry.Placeholder;
-                if (!SpawnCatalog.NameMatches(entry.Name, k.Target)
-                    && !SpawnCatalog.NameMatches(placeholder, k.Target)) continue;
+                foreach (var entry in zone.Named)
+                {
+                    var o = _overrides.Find(zone.Zone, entry.Name);
+                    var placeholder = o?.Placeholder ?? entry.Placeholder;
+                    if (!Matches(entry.Name, k.Target, fuzzy)
+                        && !Matches(placeholder, k.Target, fuzzy)) continue;
 
-                var duration = o?.RespawnSeconds ?? SpawnCatalog.EffectiveSeconds(zone, entry);
-                Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration));
-                return;
-            }
+                    var duration = o?.RespawnSeconds ?? SpawnCatalog.EffectiveSeconds(zone, entry);
+                    Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration));
+                    return;
+                }
 
-            foreach (var (name, o) in _overrides.CustomFor(zone.Zone))
-            {
-                if (!SpawnCatalog.NameMatches(name, k.Target)
-                    && !SpawnCatalog.NameMatches(o.Placeholder ?? "", k.Target)) continue;
-                Upsert(new SpawnTimerState(Server, zone.Zone, name, k.Time, o.RespawnSeconds));
-                return;
+                foreach (var (name, o) in _overrides.CustomFor(zone.Zone))
+                {
+                    if (!Matches(name, k.Target, fuzzy)
+                        && !Matches(o.Placeholder ?? "", k.Target, fuzzy)) continue;
+                    Upsert(new SpawnTimerState(Server, zone.Zone, name, k.Time, o.RespawnSeconds));
+                    return;
+                }
             }
         }
+
+        static bool Matches(string catalogName, string killed, bool fuzzy) =>
+            fuzzy ? SpawnCatalog.NameMatchesFuzzy(catalogName, killed)
+                  : SpawnCatalog.NameMatches(catalogName, killed);
     }
 
     /// <summary>The ▶ button: the player saw (or heard about) the kill themselves.

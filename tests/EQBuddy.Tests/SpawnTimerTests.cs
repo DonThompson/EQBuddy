@@ -96,6 +96,44 @@ public class SpawnTimerTests
     public void NameMatchingIsForgivingButNotFuzzy(string catalogName, string killed, bool expected) =>
         Assert.Equal(expected, SpawnCatalog.NameMatches(catalogName, killed));
 
+    /// <summary>Fuzzy matching absorbs wiki typos (the Velious page spells Keljemor
+    /// "Leljemor") but stays bounded: short names never fuzz, and unrelated names
+    /// never collide.</summary>
+    [Theory]
+    [InlineData("Leljemor", "Keljemor", true)]          // one-letter wiki typo
+    [InlineData("Kriegara", "Krigara", true)]           // dropped letter
+    [InlineData("Red V", "Red X", false)]               // short names: exact only
+    [InlineData("Emperor Crush", "Ambassador D`Vinn", false)]
+    [InlineData("Gynok Moltor", "Gynok Molto", true)]   // truncated log capture
+    public void FuzzyMatchingToleratesTyposWithoutInventingThem(string a, string b, bool expected) =>
+        Assert.Equal(expected, SpawnCatalog.NameMatchesFuzzy(a, b));
+
+    [Fact]
+    public void ExactCatalogEntriesAlwaysBeatFuzzyOnes()
+    {
+        var catalog = new SpawnCatalog
+        {
+            Zones =
+            [
+                new SpawnZone
+                {
+                    Zone = "Testzone", NamedDefaultSeconds = 600,
+                    Named =
+                    [
+                        // The typo'd entry sits FIRST — order must not decide.
+                        new SpawnEntry { Name = "Gynok Molto" },
+                        new SpawnEntry { Name = "Gynok Moltor" },
+                    ],
+                },
+            ],
+        };
+        var t = new SpawnTimers(catalog, new SpawnOverrides()) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "Testzone"));
+        t.Apply(new KillEvent(T0, "Gynok Moltor", "You"));
+
+        Assert.Equal("Gynok Moltor", Assert.Single(t.Snapshot(T0)).Name);
+    }
+
     // ---- kill-driven timers ----
 
     [Fact]
