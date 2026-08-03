@@ -4569,11 +4569,11 @@
         },
         {
           "name": "kerran tiger spahi",
-          "respawnSeconds": null,
+          "respawnSeconds": 240,
           "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "lvl 20; Tiger Training Pit (map 5); drops Cat o' Nine Tails"
+          "source": "observed",
+          "note": "lvl 20; Tiger Training Pit (map 5); drops Cat o' Nine Tails; 4m per player report (issue #26), was riding the 17.75m zone default"
         },
         {
           "name": "Kerran chieftain",
