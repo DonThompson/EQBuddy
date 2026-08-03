@@ -55,6 +55,10 @@ public sealed class AppSettings
     /// healer the reverse. Default open — a new subsection nobody can see is a wasted one.</summary>
     public bool ShowCombatFight { get; set; } = true;
     public bool ShowCombatSession { get; set; } = true;
+    /// <summary>Pet abilities breakdown expanded on the Combat card. Default collapsed
+    /// (discussion #28): the pet's overall damage is already a row in the main list,
+    /// and a pet class fighting all session got a wall of ability rows for free.</summary>
+    public bool ShowPetAbilities { get; set; }
     public bool ShowHealFight { get; set; } = true;
     public bool ShowHealSession { get; set; } = true;
     /// <summary>Show the quick tour at every launch. Turned off by the tutorial's

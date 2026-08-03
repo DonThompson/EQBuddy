@@ -369,6 +369,14 @@ public partial class MainWindow : Window
         cw.Close();   // saves the stack position on the way out
     }
 
+    private void OnPetAbilitiesToggled(object sender, MouseButtonEventArgs e)
+    {
+        _settings.ShowPetAbilities = !_settings.ShowPetAbilities;
+        _settings.Save();
+        RefreshUi();
+        e.Handled = true;
+    }
+
     private void OnTrackSpawns(object sender, RoutedEventArgs e) =>
         SetTrackSpawns(TrackSpawnsItem.IsChecked);
 
@@ -639,8 +647,16 @@ public partial class MainWindow : Window
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             // Shares the damage sort bar above it — it's the same rows, one level down.
+            // Collapsed to one line by default (asked for in discussion #28 by a pet
+            // class drowning in rows): the pet's overall damage is already a row in the
+            // list above; the per-ability split is a click away.
             PetAbilityLabel.Visibility = s.PetAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillBreakdown(PetAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
+            PetAbilityLabel.Text = _settings.ShowPetAbilities
+                ? "▾ Pet abilities"
+                : $"▸ Pet abilities ({s.PetAbilities.Count})";
+            PetAbilityList.Visibility = _settings.ShowPetAbilities ? Visibility.Visible : Visibility.Collapsed;
+            if (_settings.ShowPetAbilities)
+                FillBreakdown(PetAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(DamageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             RecentFightsLabel.Visibility = s.RecentEncounters.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             RecentFightsList.Items.Clear();

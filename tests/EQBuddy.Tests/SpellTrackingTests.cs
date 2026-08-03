@@ -663,6 +663,45 @@ public class SpellTrackingTests
         Assert.Contains(tracked.Items, i => i.Name == "Regeneration (Douglas)");
     }
 
+    // ---- the direct charm-success line (eqlog_Hugzee, 2026-08-02) ----
+
+    /// <summary>"X has been charmed." claims the pet immediately — the "Attacking …
+    /// Master." tell can trail it by 9+ seconds, and damage in that window used to go
+    /// unattributed to the player.</summary>
+    [Fact]
+    public void TheCharmedLineClaimsThePetBeforeTheMasterTell()
+    {
+        var s = Replay(
+            At(0, 0, "You begin casting Charm."),
+            At(0, 2, "a greater skeleton has been charmed."),
+            // Damage lands BEFORE any Master tell — must already be credited.
+            At(0, 5, "A greater skeleton slashes Footman of V`Zher for 12 points of damage."),
+            At(0, 9, "A greater skeleton told you, 'Attacking Footman of V`Zher Master.'")
+        ).Snapshot();
+
+        var pet = s.DamageBySource.FirstOrDefault(d => d.Name.StartsWith("Pet ("));
+        Assert.NotNull(pet);
+        Assert.Equal(12, pet!.Total);
+    }
+
+    /// <summary>A cast still in flight when the charmed line lands is proven to be a
+    /// charm spell — even one no seed list ever heard of.</summary>
+    [Fact]
+    public void TheCharmedLineTeachesUnknownCharmSpells()
+    {
+        var rule = new TrackedRule
+        {
+            Name = "Charm broke", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.Charm,
+        };
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "You begin casting Entrance of Bones."),
+            At(0, 2, "a dread bone has been charmed."),
+            At(0, 40, "Your Entrance of Bones spell has worn off of a dread bone.")
+        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+
+        Assert.Equal(1, tracked.TotalQuantity);
+    }
+
     // ---- buff/HoT wear-off flavor lines (the log names no spell; the catalog does) ----
 
     /// <summary>The Reddit report that drove this: an enchanter's "Echoing Light" and

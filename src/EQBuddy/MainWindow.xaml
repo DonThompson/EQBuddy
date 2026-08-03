@@ -159,10 +159,11 @@
                         </StackPanel>
                     </Grid>
                     <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="PetAbilityLabel" Text="Pet abilities" FontSize="11" FontWeight="SemiBold"
+                    <TextBlock x:Name="PetAbilityLabel" Text="▸ Pet abilities" FontSize="11" FontWeight="SemiBold"
                                Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"
-                               ToolTip="What your pet is using, split out of its Pet row above"/>
-                    <ItemsControl x:Name="PetAbilityList" Margin="0,2,0,4"/>
+                               Cursor="Hand" MouseLeftButtonDown="OnPetAbilitiesToggled"
+                               ToolTip="What your pet is using, split out of its Pet row above — click to expand"/>
+                    <ItemsControl x:Name="PetAbilityList" Margin="0,2,0,4" Visibility="Collapsed"/>
                     <Grid>
                         <TextBlock Text="Damage taken from" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

@@ -336,6 +336,19 @@ public sealed class SessionStats
                     _lastKill = (k.Target, k.Time);
                     ClaimPendingRewards(k.Target, k.Time);
                     break;
+                case CharmedEvent ch:
+                    // The direct charm-success line: claim on the spot. The "Attacking …
+                    // Master." tell can trail this by 9+ seconds, and the charmed pet's
+                    // damage in that window used to sit unclaimed. A cast still in
+                    // flight is thereby proven to be a charm spell — learn it.
+                    // Deliberately NO TrackCombat: charming isn't fighting.
+                    if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink)
+                    {
+                        _spells.Learn(chCast.Spell, SpellCategory.Charm);
+                        _pendingCast = null;
+                    }
+                    ConfirmPet(LogParser.Normalize(ch.Name));
+                    break;
                 case PetClaimEvent pc:
                     // A blink that followed an unrecognised cast, now proven to be ours:
                     // that cast was a charm spell, so remember it for the rest of the run.

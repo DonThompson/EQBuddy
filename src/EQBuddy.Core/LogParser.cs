@@ -238,6 +238,13 @@ public static partial class LogParser
     [GeneratedRegex(@"^(?<name>.+?) blinks\.$")]
     private static partial Regex PetBlinkRx();
 
+    // "a greater skeleton has been charmed." — the DIRECT charm-success line (found in
+    // eqlog_Hugzee 2026-08-02, a Charm session in Befallen). Definitive where the blink
+    // is circumstantial, and it beats the "Attacking … Master." tell by up to 9 s —
+    // damage in that window used to go unattributed.
+    [GeneratedRegex(@"^(?<name>.+?) has been charmed\.$")]
+    private static partial Regex CharmedRx();
+
     [GeneratedRegex(@"^Your target resisted the (?<spell>.+?) spell\.$")]
     private static partial Regex ResistRx();
 
@@ -465,6 +472,9 @@ public static partial class LogParser
         // Pet announcement and third-party combat (checked last — specific patterns above win).
         if ((r = PetClaimRx().Match(msg)).Success)
             return new PetClaimEvent(ts, r.Groups["pet"].Value);
+
+        if ((r = CharmedRx().Match(msg)).Success)
+            return new CharmedEvent(ts, r.Groups["name"].Value);
 
         if ((r = PetBlinkRx().Match(msg)).Success)
             return new PetBlinkEvent(ts, r.Groups["name"].Value);

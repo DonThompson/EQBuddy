@@ -35,6 +35,9 @@ public record ItemDestroyedEvent(DateTime Time, string Item, int Count) : GameEv
 /// the caster. Fires whether the spell timed out or broke early.
 /// Pet=true is the "Your pet's X spell has worn off." form: the pet's spell, not yours,
 /// so it is excluded from spell-fade watch rules.</summary>
+/// <summary>"X has been charmed." — the direct charm-success line; a definitive pet
+/// claim, unlike the circumstantial blink.</summary>
+public record CharmedEvent(DateTime Time, string Name) : GameEvent(Time);
 public record SpellWornOffEvent(DateTime Time, string Spell, string Target, bool Pet = false) : GameEvent(Time);
 /// <summary>A buff/HoT wear-off flavor line ("The echo of healing fades away.") mapped
 /// through <see cref="FadeMessageCatalog"/>: the log names no spell, so the event
