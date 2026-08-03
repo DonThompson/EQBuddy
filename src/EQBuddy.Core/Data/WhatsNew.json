@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.25.1",
+    "date": "2026-08-03",
+    "highlights": [
+      "Spawn timers re-synced with the EQ Legends wiki, which is being actively corrected: Lower Guk now runs an 11-minute clock (was 28), Nektulos 6:00, Upper Guk 8:00, and Hadden is a 6-8 minute spawn, not 6 hours.",
+      "Named that were missing real timers got them: Equestrielle the Corrupted (60m, mist wolf placeholder), the Underbrush treants (~90s), Orc Chief (5m), Seahorse Matriarch (15m), Drelzna (18.5m).",
+      "22 more zones (mostly Kunark and the Planes) gained default respawn clocks — 109 of 119 zones now have one.",
+      "Remember: your own kills tighten any timer automatically, and anything you type in yourself always wins."
+    ]
+  },
+  {
     "version": "1.25.0",
     "date": "2026-08-03",
     "highlights": [
