@@ -106,15 +106,16 @@ public sealed class AlertWindow : Window
         var work = screen?.WorkingArea ?? new PixelRect(0, 0, 1920, 1080);
         var left = _settings.AlertLeft;
         var top = _settings.AlertTop;
-        if (double.IsNaN(left) || double.IsNaN(top))
+        // Checked against every screen, not clamped to the owner's: the old clamp
+        // yanked a tile parked on another monitor back every launch (WPF parity).
+        if (!ScreenGuard.OnScreen(this, left, top, 140, 44))
         {
-            left = _owner.Position.X;
-            top = _owner.Position.Y - 64;
+            // First use, or the saved monitor is gone: just above the widget.
+            left = Math.Clamp(_owner.Position.X, work.X, work.Right - 140);
+            top = Math.Clamp(_owner.Position.Y - 64, work.Y, work.Bottom - 44);
         }
 
-        Position = new PixelPoint(
-            (int)Math.Clamp(left, work.X, work.Right - 140),
-            (int)Math.Clamp(top, work.Y, work.Bottom - 44));
+        Position = new PixelPoint((int)left, (int)top);
     }
 
     private void OnDrag(object? sender, PointerPressedEventArgs e)

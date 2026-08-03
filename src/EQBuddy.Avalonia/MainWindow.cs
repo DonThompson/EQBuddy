@@ -635,7 +635,9 @@ public sealed class MainWindow : Window
 
     private void RestorePosition()
     {
-        if (!double.IsNaN(_settings.WindowLeft))
+        // A spot saved on a monitor that's since gone would put the widget in the
+        // void; keep the default position instead (parity with the WPF guard).
+        if (ScreenGuard.OnScreen(this, _settings.WindowLeft, _settings.WindowTop, Width, Height))
             Position = new PixelPoint((int)_settings.WindowLeft, (int)_settings.WindowTop);
     }
 

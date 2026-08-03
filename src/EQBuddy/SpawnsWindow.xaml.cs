@@ -44,7 +44,8 @@ public partial class SpawnsWindow : Window
         MaxHeight = SystemParameters.WorkArea.Height - 40;
         BodyScroll.MaxHeight = SystemParameters.WorkArea.Height - 220;
 
-        if (!double.IsNaN(_settings.SpawnLeft)) { Left = _settings.SpawnLeft; Top = _settings.SpawnTop; }
+        if (ScreenGuard.OnScreen(_settings.SpawnLeft, _settings.SpawnTop, Width, Height))
+        { Left = _settings.SpawnLeft; Top = _settings.SpawnTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = 80; }
 
         _vm.RefreshZoneList();

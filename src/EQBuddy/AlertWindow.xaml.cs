@@ -66,14 +66,17 @@ public partial class AlertWindow : Window
     {
         var wa = SystemParameters.WorkArea;
         double left = _settings.AlertLeft, top = _settings.AlertTop;
-        if (double.IsNaN(left) || double.IsNaN(top))
+        // Checked against the whole virtual screen: the old primary-only clamp yanked
+        // an alert tile deliberately parked on a second monitor back every launch.
+        if (!ScreenGuard.OnScreen(left, top, 140, 44))
         {
-            // First use: just above the widget, falling back to the top-right corner.
-            left = Owner?.Left ?? (wa.Right - 400);
-            top = (Owner?.Top ?? 110) - 64;
+            // First use, or the saved monitor is gone: just above the widget,
+            // falling back to the top-right corner.
+            left = Math.Clamp(Owner?.Left ?? (wa.Right - 400), wa.Left, wa.Right - 140);
+            top = Math.Clamp((Owner?.Top ?? 110) - 64, wa.Top, wa.Bottom - 44);
         }
-        Left = Math.Clamp(left, wa.Left, wa.Right - 140);
-        Top = Math.Clamp(top, wa.Top, wa.Bottom - 44);
+        Left = left;
+        Top = top;
     }
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
