@@ -684,22 +684,27 @@ public class SpellTrackingTests
         Assert.Equal(12, pet!.Total);
     }
 
-    /// <summary>A cast still in flight when the charmed line lands is proven to be a
-    /// charm spell — even one no seed list ever heard of.</summary>
+    /// <summary>The charmed line names no caster and is bystander-visible (12 of 43 in
+    /// the source log were other players' charms — David's catch): without one of OUR
+    /// casts in flight it must claim nothing.</summary>
     [Fact]
-    public void TheCharmedLineTeachesUnknownCharmSpells()
+    public void SomeoneElsesCharmNeverClaimsAPet()
     {
-        var rule = new TrackedRule
-        {
-            Name = "Charm broke", Kind = WatchKind.SpellFade, SpellFilter = SpellFilter.Charm,
-        };
-        var tracked = Assert.Single(Replay(
-            At(0, 0, "You begin casting Entrance of Bones."),
-            At(0, 2, "a dread bone has been charmed."),
-            At(0, 40, "Your Entrance of Bones spell has worn off of a dread bone.")
-        ).Snapshot(recentWindow: null, rules: [rule]).Tracked);
+        var s = Replay(
+            At(0, 0, "a Teir`Dal rogue has been charmed."),   // no own cast anywhere
+            At(0, 5, "A Teir`Dal rogue slashes a gnoll for 12 points of damage.")
+        ).Snapshot();
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
 
-        Assert.Equal(1, tracked.TotalQuantity);
+        // Even with an own cast in flight, anything not KNOWN to be a charm doesn't
+        // claim — Hugzee spams Heroic Leap (unknown category), and one leap coinciding
+        // with a bystander's charm must not steal the pet or poison the catalog.
+        var s2 = Replay(
+            At(0, 0, "You begin casting Heroic Leap I."),
+            At(0, 2, "a Teir`Dal rogue has been charmed."),
+            At(0, 5, "A Teir`Dal rogue slashes a gnoll for 12 points of damage.")
+        ).Snapshot();
+        Assert.DoesNotContain(s2.DamageBySource, d => d.Name.StartsWith("Pet"));
     }
 
     // ---- buff/HoT wear-off flavor lines (the log names no spell; the catalog does) ----

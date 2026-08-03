@@ -337,17 +337,24 @@ public sealed class SessionStats
                     ClaimPendingRewards(k.Target, k.Time);
                     break;
                 case CharmedEvent ch:
-                    // The direct charm-success line: claim on the spot. The "Attacking …
-                    // Master." tell can trail this by 9+ seconds, and the charmed pet's
-                    // damage in that window used to sit unclaimed. A cast still in
-                    // flight is thereby proven to be a charm spell — learn it.
+                    // The direct charm-success line — but it names NO caster and is
+                    // bystander-visible (12 of 43 in eqlog_Hugzee had no own cast near
+                    // them: other players charming nearby; David called this before it
+                    // shipped wrong). Worse, "unknown cast in flight" is no proof of
+                    // ownership either: Hugzee spams Heroic Leap (unknown to the
+                    // catalog), and one leap coinciding with a bystander's charm would
+                    // both steal the pet AND teach the catalog that Heroic Leap is a
+                    // charm. So this line claims ONLY behind a cast already KNOWN to be
+                    // a charm — where it beats the "Attacking … Master." tell by up to
+                    // 9 s of otherwise-unclaimed damage. Unknown charm spells still get
+                    // learned via the Master tell, which is caster-only and unspoofable.
                     // Deliberately NO TrackCombat: charming isn't fighting.
-                    if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink)
+                    if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink
+                        && _spells.Classify(chCast.Spell) == SpellCategory.Charm)
                     {
-                        _spells.Learn(chCast.Spell, SpellCategory.Charm);
                         _pendingCast = null;
+                        ConfirmPet(LogParser.Normalize(ch.Name));
                     }
-                    ConfirmPet(LogParser.Normalize(ch.Name));
                     break;
                 case PetClaimEvent pc:
                     // A blink that followed an unrecognised cast, now proven to be ours:
