@@ -49,6 +49,7 @@ public partial class HistoryWindow : Window
         if (_vm.SelectedDetail is { } d)
         {
             DetailText.Text = d.HeaderText;
+            RenderDpsGraph(d.Timeline);
             BreakdownRows.FillRows(this, DamageVisualList, d.DamageRows);
             DamageVisualLabel.Visibility = d.DamageRows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             BreakdownRows.FillRows(this, HealVisualList, d.HealRows);
@@ -59,11 +60,47 @@ public partial class HistoryWindow : Window
         else
         {
             DetailText.Text = _vm.DetailText;
+            RenderDpsGraph(null);
             DamageVisualList.Items.Clear();
             HealVisualList.Items.Clear();
             DamageVisualLabel.Visibility = HealVisualLabel.Visibility = Visibility.Collapsed;
             DetailRest.Visibility = Visibility.Collapsed;
         }
+    }
+
+    private IReadOnlyList<Core.TimelinePoint>? _graphTimeline;
+
+    /// <summary>Draws the DPS-over-time polyline. Sessions archived before the timeline
+    /// existed have no points and show no graph — a flat fake line would be a lie.</summary>
+    private void RenderDpsGraph(IReadOnlyList<Core.TimelinePoint>? timeline)
+    {
+        _graphTimeline = timeline;
+        DpsGraphCanvas.Children.Clear();
+        var width = DpsGraphCanvas.ActualWidth > 0 ? DpsGraphCanvas.ActualWidth : 300;
+        var graph = timeline is null
+            ? null
+            : HistoryPresentation.BuildDpsGraph(timeline, width, DpsGraphCanvas.Height - 8);
+        var visible = graph is not null ? Visibility.Visible : Visibility.Collapsed;
+        DpsGraphLabel.Visibility = DpsGraphBorder.Visibility = visible;
+        if (graph is null) return;
+
+        DpsGraphLabel.Text = $"DPS over time — peak {graph.PeakDps:0.#}/s " +
+            $"({graph.Start:h:mm tt}–{graph.End:h:mm tt}, per minute)";
+        var line = new System.Windows.Shapes.Polyline
+        {
+            Stroke = (System.Windows.Media.Brush)FindResource("AccentBrush"),
+            StrokeThickness = 1.5,
+            StrokeLineJoin = System.Windows.Media.PenLineJoin.Round,
+        };
+        foreach (var (x, y) in graph.Points)
+            line.Points.Add(new System.Windows.Point(x, y + 4));   // 4px breathing room top/bottom
+        DpsGraphCanvas.Children.Add(line);
+    }
+
+    private void OnGraphSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // Redraw at the real width once layout settles (and on window resize).
+        if (_graphTimeline is { } t && e.NewSize.Width > 0) RenderDpsGraph(t);
     }
 
     private void OnFilterChanged(object sender, SelectionChangedEventArgs e)

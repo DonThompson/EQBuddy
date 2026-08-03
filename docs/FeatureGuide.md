@@ -481,8 +481,16 @@ Deaths. Intended use: "since I set up camp here" bookkeeping.
 ## Options window
 
 **Theme** picker: Parchment & Brass (the original look, and the default so upgrades don't
-change appearance), Blue Grey, Turquoise, Redish, Grey, Solarized, Solarized Dark. Both
-UIs offer all seven, and the saved `Theme` setting round-trips between them.
+change appearance), Blue Grey, Turquoise, Redish, Grey, Solarized, Solarized Dark, High
+Contrast (near-opaque background and pure white text — the translucency that makes the
+other themes pretty is what washes them out over a bright game scene), and Custom colors.
+Both UIs offer all of them, and the saved `Theme` setting round-trips between them.
+
+Custom colors: the user picks background, text, and accent (swatches or hex) and
+`EQBuddy.UI.Shared.CustomTheme` derives the other fourteen keys, auto-correcting the
+text color until it clears the same 4.5:1 contrast floor the built-ins are tested to.
+The three colors are edited in the WPF app's Options only; the Avalonia app applies
+whatever `CustomThemeBg/Text/Accent` hold in settings.json (editor parity: Don's lane).
 
 The colors live once, as data, in `EQBuddy.UI.Shared.ThemePalettes` — 17 brush keys per
 theme. WPF composes those into a `ResourceDictionary` at runtime and swaps it into
@@ -609,6 +617,9 @@ which the history dedup makes safe.
 - Invocations produce no known log lines — unparsed until evidence exists.
 - The Spawns window is WPF-only so far (Avalonia parity: issue #5); Core/UI.Shared
   hold all the logic, so the port is a thin view.
+- The History DPS-over-time graph and the Custom-theme color editor are WPF-only;
+  the timeline data and derived palette live in Core/UI.Shared, so both are thin
+  views to port (the Avalonia app already *applies* stored custom colors).
 - Spawn durations are community lore (eqlwiki flags its own timer pages as
   under-review); the edit box exists precisely because the defaults will be wrong
   somewhere.

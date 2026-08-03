@@ -78,6 +78,13 @@ public sealed class AppSettings
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
 
+    /// <summary>The three colors behind the "Custom" theme (#RRGGBB); the rest of its
+    /// palette is derived in EQBuddy.UI.Shared.CustomTheme. Null until first edited —
+    /// the seed colors apply.</summary>
+    public string? CustomThemeBg { get; set; }
+    public string? CustomThemeText { get; set; }
+    public string? CustomThemeAccent { get; set; }
+
     /// <summary>The newest version whose "What's new" notes this install has shown.
     /// Empty on installs from before the feature: those get just the current version's
     /// notes once (if the tutorial was already done — a fresh install skips notes

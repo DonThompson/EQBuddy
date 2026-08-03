@@ -49,6 +49,9 @@ public sealed class SessionStats
     private const double IsolatedHitSeconds = 2.5;
 
     private long _damageDealt, _meleeDamage, _spellDamage;
+    // Damage per minute-of-day bucket (key = ticks / TicksPerMinute), for the History
+    // window's DPS-over-time graph. Bounded by session length: 60-min gaps reset it.
+    private readonly Dictionary<long, long> _damageTimeline = new();
     private int _hitCount, _critCount, _missCount;
     private int _maxHit; private string _maxHitDesc = "";
     /// <summary>Basic attack skill → the ability that has taken it over ("Kick" → "Round
@@ -441,6 +444,7 @@ public sealed class SessionStats
                     break;
                 case DamageDealtEvent dd:
                     _damageDealt += dd.Amount;
+                    AddTimelineDamage(dd.Time, dd.Amount);
                     if (dd.Kind == DamageKind.Melee) _meleeDamage += dd.Amount; else _spellDamage += dd.Amount;
                     // Damage spells label themselves by line shape, so classification is
                     // observed rather than looked up in a table.
@@ -761,6 +765,12 @@ public sealed class SessionStats
         }
     }
 
+    private void AddTimelineDamage(DateTime t, int amount)
+    {
+        var bucket = t.Ticks / TimeSpan.TicksPerMinute;
+        _damageTimeline[bucket] = _damageTimeline.GetValueOrDefault(bucket) + amount;
+    }
+
     /// <summary>Pet damage is the player's damage, reported under a "Pet (Name)" source
     /// ("Pet? (Name)" while the charm is only suspected from a blink). The ability behind
     /// each hit — the melee skill, or the spell the log names — is also totalled on its own
@@ -769,6 +779,7 @@ public sealed class SessionStats
         bool critical = false)
     {
         _damageDealt += amount;
+        AddTimelineDamage(t, amount);
         if (kind == DamageKind.Melee) _meleeDamage += amount; else _spellDamage += amount;
         // No name yet means this arrived via the generic "Your pet" form — still certainly
         // ours, so it gets the confirmed label rather than the provisional one.
@@ -959,6 +970,7 @@ public sealed class SessionStats
         _openBursts.Clear(); _castAgg.Clear();
         _journal.Clear(); _journalAppendsSincePrune = 0;
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
+        _damageTimeline.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
         _healingFight = null; _lastFinishedFight = null;
         _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
@@ -1132,6 +1144,9 @@ public sealed class SessionStats
                 KillsPerHour = _yourKills.Values.Sum() / hours,
                 Deaths = _deaths.Select(d => new TimedDetail(d.Time, d.Killer)).ToList(),
                 DamageDealt = _damageDealt,
+                DamageTimeline = _damageTimeline.OrderBy(kv => kv.Key)
+                    .Select(kv => new TimelinePoint(new DateTime(kv.Key * TimeSpan.TicksPerMinute), kv.Value))
+                    .ToList(),
                 MeleeDamage = _meleeDamage,
                 SpellDamage = _spellDamage,
                 HitCount = _hitCount,
@@ -1245,6 +1260,10 @@ public record NameCount(string Name, int Count);
 public record RecentRates(TimeSpan Window, bool HasFullWindow, double XpPercent, double XpPerHour,
     int Kills, long Copper, double Dps, double Hps);
 public record TimedDetail(DateTime Time, string Text);
+
+/// <summary>One minute of the session's damage timeline (see
+/// <see cref="StatsSnapshot.DamageTimeline"/>).</summary>
+public record TimelinePoint(DateTime Time, long Damage);
 /// <summary>ActiveSeconds &gt; 0 enables per-ability rate display (Total ÷ ActiveSeconds);
 /// it is 0 for lists that don't track it (damage taken, healers) and for
 /// sessions stored before it existed.</summary>
@@ -1270,6 +1289,10 @@ public sealed class StatsSnapshot
     public double KillsPerHour { get; init; }
     public List<TimedDetail> Deaths { get; init; } = [];
     public long DamageDealt { get; init; }
+    /// <summary>Damage per minute of the session, for the History DPS-over-time graph.
+    /// Minutes with no damage are absent. Empty for sessions archived before the graph
+    /// existed — the History window shows no graph rather than a flat line.</summary>
+    public List<TimelinePoint> DamageTimeline { get; init; } = [];
     public long MeleeDamage { get; init; }
     public long SpellDamage { get; init; }
     public int HitCount { get; init; }

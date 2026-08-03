@@ -51,6 +51,16 @@
                     <TextBlock x:Name="DetailText" FontSize="12" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextBrush}" FontFamily="Consolas"
                                Text="Select a session."/>
+                    <TextBlock x:Name="DpsGraphLabel" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentBrush}"
+                               Margin="0,6,0,2" Visibility="Collapsed"/>
+                    <Border x:Name="DpsGraphBorder" BorderThickness="1" CornerRadius="3"
+                            BorderBrush="{DynamicResource BorderBrush}" Margin="0,0,8,0"
+                            Visibility="Collapsed" ClipToBounds="True">
+                        <Canvas x:Name="DpsGraphCanvas" Height="72"
+                                Background="{DynamicResource PanelBrush}"
+                                SizeChanged="OnGraphSizeChanged"/>
+                    </Border>
                     <TextBlock x:Name="DamageVisualLabel" Text="Top damage sources" FontSize="12"
                                FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
                                Margin="0,6,0,2" Visibility="Collapsed"/>

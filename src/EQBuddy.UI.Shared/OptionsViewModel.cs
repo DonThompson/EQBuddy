@@ -89,6 +89,11 @@ public static class ThemeCatalog
         ("Grey", "Grey"),
         ("Solarized", "Solarized"),
         ("SolarizedDark", "Solarized Dark"),
+        ("HighContrast", "High Contrast"),
+        // Not "Custom…": the alert-sound pickers use that exact label, and anything
+        // that filters combo items by AlertSoundCatalog.CustomChoice would match this
+        // dropdown too (the Avalonia render test does).
+        (CustomTheme.Key, "Custom colors…"),
     ];
 
     public static readonly string[] Labels = [.. Themes.Select(t => t.Label)];

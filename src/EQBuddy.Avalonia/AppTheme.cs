@@ -63,6 +63,15 @@ internal static class AppTheme
             if (ByKey.TryGetValue(key, out var brush)) brush.Color = Color.Parse(hex);
     }
 
+    /// <summary>Settings-aware overload: applies the Custom theme's derived palette when
+    /// it's selected (colors are edited in the WPF app's Options; this side follows the
+    /// stored values), otherwise the selected catalog theme.</summary>
+    public static void Apply(Core.AppSettings settings)
+    {
+        foreach (var (key, hex) in CustomTheme.PaletteFor(settings))
+            if (ByKey.TryGetValue(key, out var brush)) brush.Color = Color.Parse(hex);
+    }
+
     // Tint comes from the current theme's BgBrush rather than a fixed color, so this
     // still reads right after a theme switch — only the alpha is opacity's to control.
     // Returns a fresh brush each call (opacity is a slider, not a theme), so callers that

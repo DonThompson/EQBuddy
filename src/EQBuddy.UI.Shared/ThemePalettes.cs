@@ -80,6 +80,20 @@ public static class ThemePalettes
             "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FF073642", "#FF0A3C48",
             "#33268BD2", "#40268BD2", "#8C268BD2", "#33859900", "#33CB4B16",
         ],
+        // Maximum readability over a bright moving game (field feedback 2026-08-03:
+        // "light grey on dark grey"). Near-opaque background — the translucency that
+        // makes the other themes pretty is what washes them out — plus pure white
+        // text, a bright dim tier (~10:1), and stronger borders and status colors.
+        ["HighContrast"] =
+        [
+            "#FC0A0A0A", "#33FFFFFF", "#4DFFD24D", "#CCFFFFFF", "#FFFFFFFF", "#FFCFCFCF",
+            "#FFFFD24D", "#FF66E060", "#FFFF6659", "#FFFFB84D", "#FF101010", "#FF161616",
+            "#4DFFD24D", "#59FFFFFF", "#A6FFFFFF", "#4066E060", "#40FFB84D",
+        ],
+        // The user-colored theme. This row is the seed (Grey neutrals + brass accent),
+        // shown until colors are picked; with colors set, CustomTheme.PaletteFor
+        // derives the live palette and this row is only the fallback.
+        [CustomTheme.Key] = CustomTheme.SeedRow,
     };
 
     /// <summary>Theme keys that have a palette — the same set, and order, as

@@ -42,6 +42,10 @@
                           SelectionChanged="OnThemeChanged"/>
             </Grid>
 
+            <!-- Rows are built in code (UpdateCustomColorsPanel); visible only while the
+                 Custom theme is selected. -->
+            <StackPanel x:Name="CustomColorsPanel" Visibility="Collapsed" Margin="0,8,0,0"/>
+
             <Grid Margin="0,12,0,0">
                 <TextBlock Text="Widget size" FontSize="12"/>
                 <TextBlock x:Name="ScaleLabel" Text="100%" FontSize="12" HorizontalAlignment="Right"

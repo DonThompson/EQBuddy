@@ -48,6 +48,7 @@ public partial class OptionsWindow : Window
 
         BuildRulesEditor();
         BuildCardsEditor();
+        UpdateCustomColorsPanel();
         HotkeyNote.Text = _vm.HotkeyNote;
 
         // Restore the examples panel without persisting — this isn't the user changing it.
@@ -192,12 +193,89 @@ public partial class OptionsWindow : Window
     {
         if (!_ready) return;
         _vm.ThemeIndex = ThemeCombo.SelectedIndex;
-        ThemeManager.Apply(_vm.Settings.Theme);
+        ThemeManager.Apply(_vm.Settings);
         // The card rows pick Foreground (dim vs. normal) via FindResource at construction
         // time rather than a binding, so they need an explicit rebuild to pick up the new
         // palette — everything else in the window repaints on its own via DynamicResource.
         BuildCardsEditor();
+        UpdateCustomColorsPanel();
         _main.RefreshTheme();
+    }
+
+    /// <summary>Preset swatches for the Custom theme rows: the built-in themes'
+    /// backgrounds and accents plus a few brights — hex entry covers everything else.</summary>
+    private static readonly string[] SwatchColors =
+    [
+        "#000000", "#1A1A1A", "#20242B", "#26211A", "#002B36", "#FDF6E3", "#FFFFFF",
+        "#EAEAEA", "#E3B341", "#FFD24D", "#5FA8D3", "#3FCFBE", "#7FBF5F", "#E0654A",
+        "#C080D0", "#9C9C9C",
+    ];
+
+    private void UpdateCustomColorsPanel()
+    {
+        var custom = _vm.Settings.Theme == CustomTheme.Key;
+        CustomColorsPanel.Visibility = custom ? Visibility.Visible : Visibility.Collapsed;
+        if (!custom) return;
+        CustomColorsPanel.Children.Clear();
+        CustomColorsPanel.Children.Add(ColorRow("Background",
+            _vm.Settings.CustomThemeBg ?? CustomTheme.DefaultBg, v => _vm.Settings.CustomThemeBg = v));
+        CustomColorsPanel.Children.Add(ColorRow("Text",
+            _vm.Settings.CustomThemeText ?? CustomTheme.DefaultText, v => _vm.Settings.CustomThemeText = v));
+        CustomColorsPanel.Children.Add(ColorRow("Accent",
+            _vm.Settings.CustomThemeAccent ?? CustomTheme.DefaultAccent, v => _vm.Settings.CustomThemeAccent = v));
+    }
+
+    private System.Windows.Controls.DockPanel ColorRow(string label, string current, Action<string> store)
+    {
+        var row = new System.Windows.Controls.DockPanel { Margin = new Thickness(0, 3, 0, 3) };
+        var name = new System.Windows.Controls.TextBlock
+        { Text = label, FontSize = 11, Width = 72, VerticalAlignment = VerticalAlignment.Center };
+        System.Windows.Controls.DockPanel.SetDock(name, System.Windows.Controls.Dock.Left);
+        row.Children.Add(name);
+
+        var hexBox = new System.Windows.Controls.TextBox
+        { Text = current, FontSize = 11, Width = 64, VerticalAlignment = VerticalAlignment.Center };
+        System.Windows.Controls.DockPanel.SetDock(hexBox, System.Windows.Controls.Dock.Right);
+
+        void Commit(string value)
+        {
+            // Invalid hex is simply not committed — the palette keeps its last good color.
+            if (CustomTheme.Valid(value) is not { } hex) { hexBox.Text = current; return; }
+            current = hex;
+            store(hex);
+            _main.PersistSettings();
+            hexBox.Text = hex;
+            ThemeManager.Apply(_vm.Settings);
+            BuildCardsEditor();
+            _main.RefreshTheme();
+        }
+
+        hexBox.LostFocus += (_, _) => Commit(hexBox.Text);
+        hexBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) Commit(hexBox.Text); };
+        row.Children.Add(hexBox);
+
+        var swatches = new System.Windows.Controls.WrapPanel
+        { Margin = new Thickness(6, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center };
+        foreach (var hex in SwatchColors)
+        {
+            var swatch = new System.Windows.Controls.Border
+            {
+                Width = 14,
+                Height = 14,
+                Margin = new Thickness(1),
+                CornerRadius = new CornerRadius(2),
+                BorderThickness = new Thickness(1),
+                BorderBrush = System.Windows.Media.Brushes.Gray,
+                Background = new System.Windows.Media.SolidColorBrush(
+                    (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex)!),
+                Cursor = Cursors.Hand,
+                ToolTip = hex,
+            };
+            swatch.MouseLeftButtonUp += (_, _) => Commit(hex);
+            swatches.Children.Add(swatch);
+        }
+        row.Children.Add(swatches);
+        return row;
     }
 
     private void OnSoundChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

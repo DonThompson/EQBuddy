@@ -25,7 +25,18 @@ public sealed record HistoryDetail(
     string HeaderText,
     IReadOnlyList<HistoryBreakdownRow> DamageRows,
     IReadOnlyList<HistoryBreakdownRow> HealRows,
-    string RestText);
+    string RestText,
+    IReadOnlyList<TimelinePoint> Timeline);
+
+/// <summary>DPS-over-time graph geometry, normalized to a drawing surface: X spans the
+/// session minutes, Y is inverted (0 = top) so views can feed the points straight into a
+/// polyline. Null from the builder means "no graph" (too few points — including every
+/// session archived before the timeline existed).</summary>
+public sealed record HistoryGraph(
+    IReadOnlyList<(double X, double Y)> Points,
+    double PeakDps,
+    DateTime Start,
+    DateTime End);
 
 public static class HistoryPresentation
 {
@@ -161,7 +172,30 @@ public static class HistoryPresentation
             header.ToString().TrimEnd(),
             BuildBreakdownRows(snapshot.DamageBySource, snapshot.CombatSeconds, "dps", 10),
             BuildBreakdownRows(snapshot.HealsBySpell, snapshot.CombatSeconds, "hps", 6),
-            rest.ToString().Trim());
+            rest.ToString().Trim(),
+            snapshot.DamageTimeline);
+    }
+
+    /// <summary>Lays a damage timeline out as polyline points on a width×height surface.
+    /// Minutes the timeline skips (no damage) are drawn at zero — an idle stretch is
+    /// real data, not a gap to interpolate over. Null when there's nothing to draw.</summary>
+    public static HistoryGraph? BuildDpsGraph(IReadOnlyList<TimelinePoint> timeline, double width, double height)
+    {
+        if (timeline.Count < 2 || width <= 0 || height <= 0) return null;
+        var start = timeline[0].Time;
+        var minutes = (int)Math.Round((timeline[^1].Time - start).TotalMinutes);
+        if (minutes < 1) return null;
+        var byMinute = timeline.ToDictionary(
+            p => (long)Math.Round((p.Time - start).TotalMinutes), p => p.Damage);
+        var peak = timeline.Max(p => p.Damage) / 60.0;
+        if (peak <= 0) return null;
+        var points = new List<(double X, double Y)>(minutes + 1);
+        for (var m = 0; m <= minutes; m++)
+        {
+            var dps = byMinute.GetValueOrDefault(m) / 60.0;
+            points.Add((width * m / minutes, height - height * dps / peak));
+        }
+        return new HistoryGraph(points, peak, start, timeline[^1].Time);
     }
 
     /// <summary>The standard ability-row columns ("total · ×hits · avg · rate (· crit%)")

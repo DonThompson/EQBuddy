@@ -474,7 +474,7 @@ public sealed class OptionsWindow : Window
         if (!_ready || _themeCombo.SelectedIndex < 0) return;
         _main.Settings.Theme = ThemeCatalog.Themes[_themeCombo.SelectedIndex].Key;
         _main.PersistSettings();
-        AppTheme.Apply(_main.Settings.Theme);
+        AppTheme.Apply(_main.Settings);
         _main.RefreshTheme();
     }
 

@@ -22,13 +22,16 @@ public static class ThemeManager
     /// happens against the empty dictionary.</summary>
     private const int PaletteIndex = 0;
 
-    /// <summary>Composes the palette for a theme and swaps it in. An unrecognized key (e.g.
-    /// from an older settings.json) falls back to the first entry in
-    /// <see cref="ThemeCatalog"/> rather than throwing.</summary>
-    public static void Apply(string themeKey)
+    /// <summary>Composes the palette the settings select — a catalog theme, or the
+    /// Custom theme derived from the user's three colors — and swaps it in. An
+    /// unrecognized key (e.g. from an older settings.json) falls back to the first
+    /// entry in <see cref="ThemeCatalog"/> rather than throwing.</summary>
+    public static void Apply(Core.AppSettings settings) => Apply(CustomTheme.PaletteFor(settings));
+
+    private static void Apply(IEnumerable<(string Key, string Hex)> palette)
     {
         var dictionary = new ResourceDictionary();
-        foreach (var (key, hex) in ThemePalettes.For(themeKey))
+        foreach (var (key, hex) in palette)
         {
             var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)!);
             brush.Freeze();   // shared across windows and never mutated — WPF swaps the whole dictionary

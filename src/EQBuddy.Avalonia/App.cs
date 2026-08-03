@@ -33,7 +33,7 @@ public sealed class App : Application
 
         // Applied before MainWindow is constructed so the saved theme is already live
         // for the very first frame (mirrors the WPF app's App.xaml.cs).
-        try { AppTheme.Apply(Core.AppSettings.Load().Theme); }
+        try { AppTheme.Apply(Core.AppSettings.Load()); }
         catch (Exception ex) { LogError(ex); }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
