@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.26.0",
+    "date": "2026-08-03",
+    "highlights": [
+      "Pet damage tidies up: the Combat card's per-ability pet breakdown now collapses to one line — your pet's overall damage stays as its own row, and clicking \"Pet abilities (N)\" expands the split.",
+      "Charmed pets count from the very first hit: EQBuddy now claims your charm the instant the log says \"X has been charmed.\" instead of waiting up to 9 seconds for the pet's first \"Attacking… Master\" tell. (Only YOUR charms — other players' charms nearby are correctly ignored.)"
+    ]
+  },
+  {
     "version": "1.25.1",
     "date": "2026-08-03",
     "highlights": [
