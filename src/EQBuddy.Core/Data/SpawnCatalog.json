@@ -329,7 +329,7 @@
     {
       "zone": "Burning Woods",
       "logZoneName": "The Burning Wood",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Slixin Klex",
@@ -789,7 +789,7 @@
     {
       "zone": "Chardok",
       "logZoneName": "Chardok",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1080,
       "named": [
         {
           "name": "Overking Bathezid",
@@ -865,11 +865,11 @@
         },
         {
           "name": "Interrogator Gi'mok",
-          "respawnSeconds": 1260,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "50% @ (-527, -364); lvl 55"
+          "note": "50% @ (-527, -364); lvl 55; rides zone clock"
         },
         {
           "name": "Battle Master Ska'tu",
@@ -1084,7 +1084,7 @@
     {
       "zone": "City of Mist",
       "logZoneName": "The City of Mist",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1320,
       "named": [
         {
           "name": "Lord Ghiosk",
@@ -1599,7 +1599,7 @@
     {
       "zone": "Dalnir",
       "logZoneName": "Dalnir",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 720,
       "named": [
         {
           "name": "The Kly",
@@ -1667,11 +1667,11 @@
         },
         {
           "name": "a coerced revenant",
-          "respawnSeconds": 1260,
+          "respawnSeconds": null,
           "variance": "static spawn in Crusader Room seems to be 21 minutes",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Crusader Room, 3rd floor; drops Defiled Drape of the Brood, Rod Segment I"
+          "note": "Crusader Room, 3rd floor; drops Defiled Drape of the Brood, Rod Segment I; rides zone clock"
         },
         {
           "name": "a coerced smith",
@@ -1694,7 +1694,7 @@
     {
       "zone": "Dragon Necropolis",
       "logZoneName": "Dragon Necropolis",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1620,
       "named": [
         {
           "name": "Zlandicar",
@@ -1789,7 +1789,7 @@
     {
       "zone": "Dreadlands",
       "logZoneName": "The Dreadlands",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Gorenaire",
@@ -1844,7 +1844,7 @@
     {
       "zone": "East Cabilis",
       "logZoneName": "East Cabilis",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Vessel Drozlin",
@@ -2612,7 +2612,7 @@
     {
       "zone": "Field of Bone",
       "logZoneName": "The Field of Bone",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "The Tangrin",
@@ -2715,7 +2715,7 @@
     {
       "zone": "Firiona Vie",
       "logZoneName": "Firiona Vie",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Sergeant Daelione",
@@ -2794,7 +2794,7 @@
     {
       "zone": "Frontier Mountains",
       "logZoneName": "Frontier Mountains",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Eldak Howlingbear",
@@ -3531,7 +3531,7 @@
     {
       "zone": "Howling Stones",
       "logZoneName": "Howling Stones",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1230,
       "named": [
         {
           "name": "Drusella Sathir",
@@ -4054,7 +4054,7 @@
     {
       "zone": "Kaesora",
       "logZoneName": "Kaesora",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1080,
       "named": [
         {
           "name": "Xalgoz",
@@ -4153,7 +4153,7 @@
     {
       "zone": "Karnor's Castle",
       "logZoneName": "Karnor's Castle",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1620,
       "named": [
         {
           "name": "Venril Sathir",
@@ -4412,11 +4412,11 @@
         },
         {
           "name": "Seahorse Matriarch",
-          "respawnSeconds": 1320,
+          "respawnSeconds": 900,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Seahorse Caves (map 11)"
+          "note": "Seahorse Caves (map 11); wiki mob page edited 7/20: 15 min"
         },
         {
           "name": "Frenzied Cauldron Shark",
@@ -4787,7 +4787,7 @@
     {
       "zone": "Kurn's Tower",
       "logZoneName": "Kurn's Tower",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1100,
       "named": [
         {
           "name": "Bargynn",
@@ -4866,7 +4866,7 @@
     {
       "zone": "Lake of Ill Omen",
       "logZoneName": "Lake of Ill Omen",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Lord Gorelik",
@@ -5155,35 +5155,35 @@
         },
         {
           "name": "Equestrielle the Corrupted",
-          "respawnSeconds": 400,
+          "respawnSeconds": 3600,
           "variance": "",
-          "placeholder": "",
+          "placeholder": "mist wolf",
           "source": "eqlwiki",
-          "note": "roams entire zone, highly aggressive to all"
+          "note": "roams entire zone, highly aggressive to all; wiki mob page: 60 min, mist wolf PH"
         },
         {
           "name": "Orc Chief",
-          "respawnSeconds": 400,
+          "respawnSeconds": 300,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "orc camp, map point 9"
+          "note": "orc camp, map point 9; wiki mob page: 5 min"
         },
         {
           "name": "Thistle Underbrush",
-          "respawnSeconds": 400,
+          "respawnSeconds": 90,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": ""
+          "note": "wiki mob page: ~90 s spawn point"
         },
         {
           "name": "Bracken Underbrush",
-          "respawnSeconds": 400,
+          "respawnSeconds": 90,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": ""
+          "note": "wiki mob page: ~90 s spawn point"
         },
         {
           "name": "Larik Z'Vole",
@@ -5302,31 +5302,31 @@
     {
       "zone": "Lower Guk",
       "logZoneName": "The Ruins of Old Guk",
-      "namedDefaultSeconds": 1680,
+      "namedDefaultSeconds": 660,
       "named": [
         {
           "name": "the ghoul lord",
-          "respawnSeconds": 1680,
+          "respawnSeconds": 540,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "25% spawn; Ghoul Lord room, dead side; level ~47 SK with bok/guk guards; drops Ykesha; prior data listed as 'a froglok ghoul lord'"
+          "note": "25% spawn; Ghoul Lord room, dead side; level ~47 SK with bok/guk guards; drops Ykesha; prior data listed as 'a froglok ghoul lord'; wiki mob page (reworked 7/11): 9 min"
         },
         {
           "name": "a frenzied ghoul",
-          "respawnSeconds": 1680,
+          "respawnSeconds": 570,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Rare at any of 3 spots in Frenzied Room; alternates bloodthirsty ghouls/dars; drops FBSS"
+          "note": "Rare at any of 3 spots in Frenzied Room; alternates bloodthirsty ghouls/dars; drops FBSS; wiki mob page fixed 2026-08-01: 9.5 min"
         },
         {
           "name": "the ghoul arch magi",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "jin/kor ghoul wizard",
           "source": "eqlwiki",
-          "note": "25% spawn; PH jin/kor ghoul wizard; guarded by 2 dars; high MR; eqlwiki map spells 'arch magus'"
+          "note": "25% spawn; PH jin/kor ghoul wizard; guarded by 2 dars; high MR; eqlwiki map spells 'arch magus'; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a ghoul assassin",
@@ -5346,27 +5346,27 @@
         },
         {
           "name": "a ghoul savant",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "100% spawn, Dead Tower middle level"
+          "note": "100% spawn, Dead Tower middle level; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a ghoul cavalier",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "75% spawn; SK with harm touch"
+          "note": "75% spawn; SK with harm touch; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a ghoul sage",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "34% spawn; assisted by spawns behind secret wall"
+          "note": "34% spawn; assisted by spawns behind secret wall; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a ghoul scribe",
@@ -5378,11 +5378,11 @@
         },
         {
           "name": "a ghoul executioner",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "75% spawn on platform with slave cages"
+          "note": "75% spawn on platform with slave cages; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a ghoul ritualist",
@@ -5394,27 +5394,27 @@
         },
         {
           "name": "a ghoul sentinel",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "25% spawn, secret passage west of triple spawn"
+          "note": "25% spawn, secret passage west of triple spawn; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a reanimated hand",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "100% spawn above water in Hand Room, with dar/zol guard; Wizard Rod on ground"
+          "note": "100% spawn above water in Hand Room, with dar/zol guard; Wizard Rod on ground; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a basalt gargoyle",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Multiple spawns; one sees invis; drops Basalt Carapace"
+          "note": "Multiple spawns; one sees invis; drops Basalt Carapace; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "the froglok king",
@@ -5426,51 +5426,51 @@
         },
         {
           "name": "a froglok tactician",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "25% spawn, King Room area (replaces a guard); high level wizard"
+          "note": "25% spawn, King Room area (replaces a guard); high level wizard; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a froglok noble",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "50% spawn, Noble Room; ~37 enchanter"
+          "note": "50% spawn, Noble Room; ~37 enchanter; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a froglok yun priest",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "17% spawn, Live Keep middle floor; ~39 cleric"
+          "note": "17% spawn, Live Keep middle floor; ~39 cleric; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a froglok crusader",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "dar/zol knight",
           "source": "eqlwiki",
-          "note": "Live Keep bottom floor; PH dar/zol knight; ~42 paladin"
+          "note": "Live Keep bottom floor; PH dar/zol knight; ~42 paladin; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a froglok herbalist",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "25% spawn, Herbalist Room; shaman"
+          "note": "25% spawn, Herbalist Room; shaman; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a minotaur elder",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "greater minotaur",
           "source": "eqlwiki",
-          "note": "Elder Room pit; PH greater minotaur; drops Chrysoberyl Talisman / Carved Ivory Mask"
+          "note": "Elder Room pit; PH greater minotaur; drops Chrysoberyl Talisman / Carved Ivory Mask; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a minotaur patriarch",
@@ -5490,34 +5490,34 @@
         },
         {
           "name": "Slaythe the Slayer",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "25% spawn, dead-end NE of Jail Room; drops Broken Bow Part B"
+          "note": "25% spawn, dead-end NE of Jail Room; drops Broken Bow Part B; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "an evil eye",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "~80% spawn, Ledge area; level 35 wizard, sees invis; drops Bag of Sewn Evil-Eye"
+          "note": "~80% spawn, Ledge area; level 35 wizard, sees invis; drops Bag of Sewn Evil-Eye; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         },
         {
           "name": "a huge water elemental",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "100% spawn; ~40, sees invis, frogloks assist it; no loot"
+          "note": "100% spawn; ~40, sees invis, frogloks assist it; no loot; rides zone clock (wiki retuned 28:00->11:00, 2026-08-02)"
         }
       ]
     },
     {
       "zone": "Mines of Nurga",
       "logZoneName": "Mines of Nurga",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1230,
       "named": [
         {
           "name": "Overseer Dlubish",
@@ -5782,11 +5782,11 @@
         },
         {
           "name": "Drelzna",
-          "respawnSeconds": 1140,
+          "respawnSeconds": 1110,
           "variance": "",
           "placeholder": "necromancer",
           "source": "eqlwiki",
-          "note": "PH necromancer in front of the chair; drops J-boots (era-dependent), Golden Crescent Key"
+          "note": "PH necromancer in front of the chair; drops J-boots (era-dependent), Golden Crescent Key; wiki mob page: 18.5 min"
         },
         {
           "name": "Rathyl",
@@ -5921,55 +5921,55 @@
     {
       "zone": "Nektulos Forest",
       "logZoneName": "Nektulos Forest",
-      "namedDefaultSeconds": 400,
+      "namedDefaultSeconds": 360,
       "named": [
         {
           "name": "Captain N`Farre",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "50% spawn; high MR"
+          "note": "50% spawn; high MR; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Dragoon J`Len",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Guards Neriak entrance"
+          "note": "Guards Neriak entrance; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Dragoon Tsanne",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Guards Neriak entrance"
+          "note": "Guards Neriak entrance; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Dragoon V`Tai",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Bridge spawn"
+          "note": "Bridge spawn; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Kirak Vil",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "Wanders newbie area; high MR"
+          "note": "Wanders newbie area; high MR; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Leatherfoot Deputy",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "20% spawn at stump"
+          "note": "20% spawn at stump; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Leatherfoot medic",
@@ -5981,19 +5981,19 @@
         },
         {
           "name": "Master Whoopal",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "Quester Dunden at ruin steps",
           "source": "eqlwiki",
-          "note": "30% spawn; PH Quester Dunden at ruin steps"
+          "note": "30% spawn; PH Quester Dunden at ruin steps; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "Sergeant C`orm",
-          "respawnSeconds": 400,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "50% spawn"
+          "note": "50% spawn; rides zone clock (wiki: 6:00)"
         },
         {
           "name": "an orc runner",
@@ -6390,7 +6390,7 @@
     {
       "zone": "Old Sebilis",
       "logZoneName": "Old Sebilis",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1620,
       "named": [
         {
           "name": "Trakanon",
@@ -6771,7 +6771,7 @@
     {
       "zone": "Plane of Fear",
       "logZoneName": "Plane of Fear",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 28800,
       "named": [
         {
           "name": "Cazic Thule",
@@ -6784,7 +6784,7 @@
         {
           "name": "a dracoliche",
           "respawnSeconds": 604800,
-          "variance": "3 days with 12 hour variance?",
+          "variance": "7d ±8h",
           "placeholder": "",
           "source": "eqlwiki",
           "note": "Variance itself marked uncertain on eqlwiki Respawn Timers page; zone page lists as 'Dracoliche' (dragon skeleton, not undead), small hitbox, Deadly Lifetap — timer audited 2026-08-02"
@@ -6842,7 +6842,7 @@
     {
       "zone": "Plane of Growth",
       "logZoneName": "Plane of Growth",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 43200,
       "named": [
         {
           "name": "Tunare",
@@ -6985,7 +6985,7 @@
     {
       "zone": "Plane of Hate",
       "logZoneName": "Plane of Hate",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 28800,
       "named": [
         {
           "name": "Innoruuk",
@@ -7255,7 +7255,7 @@
     {
       "zone": "Plane of Sky",
       "logZoneName": "Plane of Sky",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 28800,
       "named": [
         {
           "name": "Noble Dojorn",
@@ -7697,11 +7697,11 @@
         },
         {
           "name": "Hadden",
-          "respawnSeconds": 21600,
-          "variance": "",
+          "respawnSeconds": 480,
+          "variance": "6-8m",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "6 hour respawn per zone page; chance to drop Fishbone Earring"
+          "note": "6 hour respawn per zone page; chance to drop Fishbone Earring; wiki mob page edited 7/20: 6-8 min (Respawn_Timers page still claims 6 h)"
         }
       ]
     },
@@ -8079,7 +8079,7 @@
     {
       "zone": "Skyfire Mountains",
       "logZoneName": "Skyfire Mountains",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 780,
       "named": [
         {
           "name": "Talendor",
@@ -8237,7 +8237,7 @@
     {
       "zone": "Sleeper's Tomb",
       "logZoneName": "Sleeper's Tomb",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 28800,
       "named": [
         {
           "name": "Master of the Guard",
@@ -8519,11 +8519,11 @@
         },
         {
           "name": "Grizzleknot",
-          "respawnSeconds": 1920,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "centaur foal on 32-min timer",
           "source": "eqlwiki",
-          "note": "PH: centaur foal on 32-min timer; roams centaur village / bard well / pyramid area; corrupt treant"
+          "note": "PH: centaur foal on 32-min timer; roams centaur village / bard well / pyramid area; corrupt treant; was classic-era value; wiki zone clock now 6:00"
         },
         {
           "name": "Ghanex Drah",
@@ -8535,11 +8535,11 @@
         },
         {
           "name": "Brother Qwinn",
-          "respawnSeconds": 1200,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "PHs on a 20-min timer"
+          "note": "PHs on a 20-min timer; was classic-era value; wiki zone clock now 6:00"
         },
         {
           "name": "Cracktusk",
@@ -8747,11 +8747,11 @@
       "named": [
         {
           "name": "The Ishva Mal",
-          "respawnSeconds": 1680,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "28:00 per Zone Spawn Timers (p99 agrees); An Ishva Lteth gnoll shares/holds the spawn; underwater area (map loc 8)"
+          "note": "28:00 per Zone Spawn Timers (p99 agrees); An Ishva Lteth gnoll shares/holds the spawn; underwater area (map loc 8); rides zone clock (learning will tighten in Legends)"
         },
         {
           "name": "Tesch Val Deval`Nmak",
@@ -8948,7 +8948,7 @@
     {
       "zone": "Swamp of No Hope",
       "logZoneName": "Swamp of No Hope",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Ssessthrass",
@@ -9107,7 +9107,7 @@
     {
       "zone": "Temple of Droga",
       "logZoneName": "Temple of Droga",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 1230,
       "named": [
         {
           "name": "Chief RokGus",
@@ -9226,7 +9226,7 @@
     {
       "zone": "Temple of Veeshan",
       "logZoneName": "Temple of Veeshan",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 4320,
       "named": [
         {
           "name": "Vulak`Aerr",
@@ -9526,7 +9526,7 @@
     {
       "zone": "The Gorge of King Xorbb",
       "logZoneName": "The Gorge of King Xorbb",
-      "namedDefaultSeconds": 400,
+      "namedDefaultSeconds": 360,
       "named": [
         {
           "name": "King Xorbb",
@@ -9987,7 +9987,7 @@
     {
       "zone": "The Overthere",
       "logZoneName": "The Overthere",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Admiral Tylix",
@@ -10296,7 +10296,7 @@
     {
       "zone": "Timorous Deep",
       "logZoneName": "Timorous Deep",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 720,
       "named": [
         {
           "name": "Faydedar",
@@ -10661,7 +10661,7 @@
     {
       "zone": "Trakanon's Teeth",
       "logZoneName": "Trakanon's Teeth",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Doom",
@@ -10916,7 +10916,7 @@
     {
       "zone": "Upper Guk",
       "logZoneName": "Guk",
-      "namedDefaultSeconds": 990,
+      "namedDefaultSeconds": 480,
       "named": [
         {
           "name": "an ancient croc",
@@ -10952,11 +10952,11 @@
         },
         {
           "name": "a fungus mutant",
-          "respawnSeconds": 990,
+          "respawnSeconds": 1020,
           "variance": "exact 16m30s",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "100% spawn, Mushroom Farm; drops Guk Bracket Mildew / Degenerated Guk Weed"
+          "note": "100% spawn, Mushroom Farm; drops Guk Bracket Mildew / Degenerated Guk Weed; wiki mob page: ~17 min (PH)"
         },
         {
           "name": "Tempus",
@@ -11353,7 +11353,7 @@
     {
       "zone": "Warsliks Woods",
       "logZoneName": "Warsliks Wood",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": [
         {
           "name": "Grachnist the Destroyer",
@@ -11400,7 +11400,7 @@
     {
       "zone": "West Cabilis",
       "logZoneName": "West Cabilis",
-      "namedDefaultSeconds": null,
+      "namedDefaultSeconds": 400,
       "named": []
     },
     {
@@ -11434,19 +11434,19 @@
         },
         {
           "name": "Guard Colin",
-          "respawnSeconds": 360,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "9% spawn, 6 minute timer"
+          "note": "9% spawn, 6 minute timer; rides zone clock"
         },
         {
           "name": "a shadowed man",
-          "respawnSeconds": 600,
+          "respawnSeconds": null,
           "variance": "",
           "placeholder": "",
           "source": "eqlwiki",
-          "note": "4 spawns near SW corner at sand/grass border"
+          "note": "4 spawns near SW corner at sand/grass border; rides zone clock"
         },
         {
           "name": "Nightfall Giant",
