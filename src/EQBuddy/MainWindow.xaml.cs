@@ -145,6 +145,31 @@ public partial class MainWindow : Window
                 m.IsOpen = true;
             };
 
+        // What's-new notes, once per update. A fresh install (tutorial still pending)
+        // skips them and just records the baseline — onboarding is the tutorial's job.
+        // Installs from before the feature have no baseline; they get only the current
+        // version's notes rather than the whole history.
+        var currentVersion = UpdateChecker.CurrentVersion.ToString();
+        if (_settings.ShowTutorial || _settings.LastSeenVersion == currentVersion)
+        {
+            if (_settings.LastSeenVersion != currentVersion)
+            {
+                _settings.LastSeenVersion = currentVersion;
+                _settings.Save();
+            }
+        }
+        else
+        {
+            var lastSeen = _settings.LastSeenVersion.Length > 0
+                ? _settings.LastSeenVersion
+                : PreviousVersionBaseline(currentVersion);
+            var notes = WhatsNewCatalog.EntriesBetween(lastSeen, currentVersion);
+            _settings.LastSeenVersion = currentVersion;
+            _settings.Save();
+            if (notes.Count > 0)
+                Loaded += (_, _) => new WhatsNewWindow(this, notes).Show();
+        }
+
         TrackSpawnsItem.IsChecked = _settings.TrackSpawns;
         // No auto-open here: the window pops from RefreshUi when a countdown exists —
         // including ones recovered from the log during startup ingest. A tracker parked
@@ -327,6 +352,13 @@ public partial class MainWindow : Window
     }
 
     private OptionsWindow? _optionsWindow;
+
+    /// <summary>For pre-feature installs with no baseline: pretend they saw everything
+    /// before the running version, so they get exactly one version's worth of notes.</summary>
+    private static string PreviousVersionBaseline(string current) =>
+        Version.TryParse(current, out var v)
+            ? new Version(v.Major, Math.Max(0, v.Minor - 1), 0).ToString()
+            : current;
 
     private SpawnChipsWindow? _chipsWindow;
 

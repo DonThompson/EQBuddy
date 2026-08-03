@@ -14,6 +14,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Data\SpawnCatalog.json" />
     <EmbeddedResource Include="Data\FadeMessages.json" />
+    <EmbeddedResource Include="Data\WhatsNew.json" />
   </ItemGroup>
 
 </Project>

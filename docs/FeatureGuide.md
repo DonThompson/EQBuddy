@@ -556,6 +556,21 @@ re-importing the same file updates rows instead of duplicating).
 in-progress row; relaunch → still exactly those rows (dedup); import the same file
 twice → no duplicates.
 
+## What's new popup
+
+Once per update (NOTES-001): at the first launch of a new version, a themed popup
+lists the notable changes of every version skipped since the last one seen
+(`AppSettings.LastSeenVersion`), newest first, then never again. Content is embedded
+(`Core/Data/WhatsNew.json` via `WhatsNewCatalog`) — offline-friendly for the
+OneDrive-updated family. Fresh installs skip it entirely (the tutorial owns
+onboarding) and just record the baseline; installs from before the feature get one
+version's worth rather than the whole history. `release.ps1` refuses to release a
+version with no entry, so the popup can't silently rot.
+
+**Verify:** profile with `ShowTutorial=false, LastSeenVersion=<older>` → popup lists
+the skipped versions and `LastSeenVersion` advances; relaunch → no popup; fresh
+profile → no popup.
+
 ## Updates
 
 Checks at startup + every 6 h + on demand. Newer version → green banner; clicking it

@@ -25,9 +25,13 @@ cross-platform port cost near zero and is the road to a single UI (issue #6).
 
 ## Workflow
 
-- **Maintainer lane:** works on `main`; releases via `scripts/release.ps1 -Tag vX.Y.Z`
-  (version comes from `src/EQBuddy/EQBuddy.csproj`; keep the Avalonia csproj version
-  in sync). Releases can land daily — rebase feature branches often.
+- **Maintainer lane:** works on `main`. Changes are field-tested locally FIRST via
+  `scripts/install-local.ps1` (builds + silently installs on this machine only);
+  releases happen deliberately, bundled, when the maintainer says so, via
+  `scripts/release.ps1 -Tag vX.Y.Z` (version comes from `src/EQBuddy/EQBuddy.csproj`;
+  keep the Avalonia csproj version in sync). Every release needs a matching entry in
+  `src/EQBuddy.Core/Data/WhatsNew.json` — release.ps1 refuses without one, because
+  that entry is what the in-app "What's new" popup shows users after they update.
 - **Contributor lane:** feature branches → PRs. Every PR gets CI (build both UIs +
   tests) plus, for Avalonia changes, a **Windows smoke-run** by the maintainer
   against a fixture profile, with findings posted in the PR.

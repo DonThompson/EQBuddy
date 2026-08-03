@@ -12,6 +12,13 @@ if ($csproj -notmatch '<Version>([\d.]+)</Version>') { throw 'No <Version> in cs
 $version = $Matches[1]
 Write-Host "Releasing EQBuddy $version"
 
+# The in-app "What's new" popup reads embedded notes; a release without an entry
+# would show users nothing. Refuse rather than rot.
+$whatsNew = Get-Content "$repo\src\EQBuddy.Core\Data\WhatsNew.json" -Raw | ConvertFrom-Json
+if (-not ($whatsNew | Where-Object { $_.version -eq $version })) {
+    throw "No What's-new entry for $version in src\EQBuddy.Core\Data\WhatsNew.json — add one before releasing."
+}
+
 Get-Process EQBuddy -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 

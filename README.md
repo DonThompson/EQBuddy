@@ -50,6 +50,8 @@ Updates (automatic):
 - EQBuddy checks for new releases at startup and every 6 hours, and a green banner
   appears when one is available — click it to open the download page.
 - Right-click the widget → **Check for updates** to check on demand.
+- After an update, a one-time **"What's new"** popup shows the notable changes —
+  including every version you skipped.
 - Nothing is sent anywhere: the check is a read-only request to the GitHub Releases API.
 - *Optional, for guilds and LAN setups:* point `UpdateFolder` in
   `%AppData%\EQBuddy\settings.json` at a shared folder holding `EQBuddySetup.exe`, and

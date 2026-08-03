@@ -1,0 +1,50 @@
+[
+  {
+    "version": "1.25.0",
+    "date": "2026-08-03",
+    "highlights": [
+      "This popup! After each update, EQBuddy shows you what changed — once, and only the versions you actually skipped.",
+      "Weapon procs were already tracked (look for your proc's name, like Ignite, in Combat → Damage by attack) — now it's documented."
+    ]
+  },
+  {
+    "version": "1.24.0",
+    "date": "2026-08-02",
+    "highlights": [
+      "Buff and HoT fade alerts finally fire: EQBuddy now knows the wear-off flavor lines ('Your speed returns to normal.' is your haste dropping) even though the log never names the spell.",
+      "Spawn timers tighten themselves: re-kill a named sooner than its timer claimed and EQBuddy adopts the real gap. Your own typed values always win.",
+      "The Watch card leads with what just happened — 'last: Mesmerize (Gnoll elite) · 5m ago' — with the full list behind 'all N kinds'."
+    ]
+  },
+  {
+    "version": "1.23.1",
+    "date": "2026-08-02",
+    "highlights": [
+      "Plays nice with GINA and GamParse: log cleanup now stands down while they're running. If you use them regularly, also untick 'Auto-empty finished-session logs' in Options."
+    ]
+  },
+  {
+    "version": "1.23.0",
+    "date": "2026-08-02",
+    "highlights": [
+      "Every named can have its own respawn-due sound — Default is Alarm; pick per-row sounds to tell camps apart by ear (🔔 opts a camp in).",
+      "DUE chicklets tidy themselves away after a minute; click to dismiss sooner."
+    ]
+  },
+  {
+    "version": "1.22.0",
+    "date": "2026-08-02",
+    "highlights": [
+      "Spawn countdowns became chicklets: small movable chips, one per running timer, any zone. Double-click one for the full zone list.",
+      "Kill a named — or its placeholder — and the countdown starts from your log. 1,412 named across 119 zones ship built-in, and every duration is editable (your edits survive updates)."
+    ]
+  },
+  {
+    "version": "1.21.0",
+    "date": "2026-08-02",
+    "highlights": [
+      "Spawn tracking follows you zone to zone, EQ Legends difficulty tiers ('Befallen 4 (Refined)') included.",
+      "Befallen's timers were rebuilt from real play data — most named there respawn in about four and a half minutes."
+    ]
+  }
+]

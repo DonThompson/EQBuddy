@@ -74,6 +74,12 @@ public sealed class AppSettings
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
 
+    /// <summary>The newest version whose "What's new" notes this install has shown.
+    /// Empty on installs from before the feature: those get just the current version's
+    /// notes once (if the tutorial was already done — a fresh install skips notes
+    /// entirely; onboarding belongs to the tutorial).</summary>
+    public string LastSeenVersion { get; set; } = "";
+
     // ---- spawn timers (the Spawns window) ----
     /// <summary>Track named-mob spawn timers; the Spawns window opens whenever this is on.
     /// Default ON (David's call): the window is the feature's front door, and a default-off
