@@ -1286,19 +1286,19 @@
         },
         {
           "name": "Chokehold",
-          "respawnSeconds": null,
+          "respawnSeconds": 740,
           "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": ""
+          "source": "observed",
+          "note": "kill 20:36:21 -> re-engaged on sight 20:48:43 (742s), Hugzee log 2026-08-03, Refined tier; zone default 540 was 3m20s short. Matches Marrowbane's 743s same session"
         },
         {
           "name": "Marrowbane",
-          "respawnSeconds": null,
+          "respawnSeconds": 740,
           "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": ""
+          "source": "observed",
+          "note": "kill 20:34:06 -> re-engaged on sight 20:46:29 (743s), Hugzee log 2026-08-03, Refined tier; zone default 540 was 3m20s short. Matches Chokehold's 742s same session"
         },
         {
           "name": "Orc Taskmaster",
