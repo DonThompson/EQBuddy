@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.30.0",
+    "date": "2026-08-04",
+    "highlights": [
+      "AA potions count correctly: the potion's doubled gains use a different log line EQBuddy didn't know, and gains were counted as events rather than points — potioned sessions logged zero or half. Both fixed (thanks twill713 for the exact line).",
+      "Spawn timers understand renamed mobs: Legends gives classic named new proper names ('the ghoul lord' is Hoptor Thaggelum) — the catalog now carries aliases, starting with Hoptor (thanks chrstahl, again).",
+      "Measured spawn clocks now outrank kill-learning: mobs that spawn in several places at once (Orc Taskmaster, Royal Guard…) tricked the self-tightening timers with fast re-kills. Where a zone's clock has been measured (Crushbone's 12:18), learning stands down and old bad learned values clean themselves up. Your typed edits still beat everything.",
+      "Mez timers stopped lying in both directions: a broken mez can no longer teach its break-length as the spell's 'duration' (the 7-second Mesmerize incident), and learned durations now snap to the game's 6-second server tick so timers don't run past the real wake-up (verified against 1,000+ logged tick intervals).",
+      "On a portrait monitor, the widget can finally use the full screen height — it was sizing against your primary monitor even when living on a different one."
+    ]
+  },
+  {
     "version": "1.29.3",
     "date": "2026-08-04",
     "highlights": [
