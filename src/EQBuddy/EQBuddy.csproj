@@ -8,7 +8,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>EQBuddy</AssemblyName>
     <RootNamespace>EQBuddy</RootNamespace>
-    <Version>1.28.0</Version>
+    <!-- Version comes from Directory.Build.props (repo root) — single-sourced with the
+         Avalonia app since issue #30. -->
+
     <!-- Do NOT enable InvariantGlobalization: WPF binding culture lookup
          (XmlLanguage.GetSpecificCulture) throws under it. -->
     <ApplicationIcon>Assets\EQBuddy.ico</ApplicationIcon>

@@ -7,7 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>EQBuddy.Avalonia</AssemblyName>
     <RootNamespace>EQBuddy.Avalonia</RootNamespace>
-    <Version>1.26.0</Version>
+    <!-- Version comes from Directory.Build.props (repo root). A hardcoded copy here is
+         exactly how issue #30 happened: release.ps1 bumped only the WPF csproj, and the
+         Linux tarball shipped identifying as an older version, nagging itself forever. -->
+
     <ApplicationIcon>..\EQBuddy\Assets\EQBuddy.ico</ApplicationIcon>
   </PropertyGroup>
 

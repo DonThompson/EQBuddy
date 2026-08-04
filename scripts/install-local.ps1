@@ -8,8 +8,8 @@
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 
-$csproj = Get-Content "$repo\src\EQBuddy\EQBuddy.csproj" -Raw
-if ($csproj -notmatch '<Version>([\d.]+)</Version>') { throw 'No <Version> in csproj' }
+$props = Get-Content "$repo\Directory.Build.props" -Raw
+if ($props -notmatch '<Version>([\d.]+)</Version>') { throw 'No <Version> in Directory.Build.props' }
 $version = $Matches[1]
 Write-Host "Installing EQBuddy $version locally (no release)"
 

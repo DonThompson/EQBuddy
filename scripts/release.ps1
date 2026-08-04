@@ -6,9 +6,11 @@ $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $oneDrive = 'C:\Users\david\OneDrive\EQBuddyDownload'
 
-# Version comes from the csproj so the app, installer, and updater always agree.
-$csproj = Get-Content "$repo\src\EQBuddy\EQBuddy.csproj" -Raw
-if ($csproj -notmatch '<Version>([\d.]+)</Version>') { throw 'No <Version> in csproj' }
+# Version comes from Directory.Build.props (single source for BOTH apps — issue #30:
+# a separate Avalonia version shipped stale Linux builds) so the apps, installer, and
+# updater always agree.
+$props = Get-Content "$repo\Directory.Build.props" -Raw
+if ($props -notmatch '<Version>([\d.]+)</Version>') { throw 'No <Version> in Directory.Build.props' }
 $version = $Matches[1]
 Write-Host "Releasing EQBuddy $version"
 
