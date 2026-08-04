@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.29.0",
+    "date": "2026-08-04",
+    "highlights": [
+      "NEW: Mez chips — a small stack (💤) appears while anything is mesmerized, counting down to wake-up, and clears the moment something breaks it. It works from ANY group member's EQBuddy, not just the mez'er — the log tells everyone. Durations come from the wiki; your own casts teach it exact rank-corrected times. Drag it anywhere; it remembers.",
+      "Charmed pets now appear instantly for EVERY class. Charm landing lines turn out to differ by class — enchanter targets are 'charmed', druid/shaman animals 'blink', necro undead 'moan', and bard song targets' 'eyes glaze over' — and EQBuddy only knew two of the four. Thanks to Vellum670 for the complete charm list that cracked this.",
+      "Bard fix: song lines ('You begin to sing …') were never recognized, so bard charms and mezzes couldn't track at all. They do now.",
+      "Charm spells EQBuddy learns from your play are now remembered permanently instead of forgotten at restart.",
+      "Linux: the build now reports its real version (it claimed 1.26.0 forever and nagged itself to update — thanks to sahaq for the precise diagnosis), and update banners point at the Linux download instead of a Windows installer."
+    ]
+  },
+  {
     "version": "1.28.0",
     "date": "2026-08-04",
     "highlights": [
