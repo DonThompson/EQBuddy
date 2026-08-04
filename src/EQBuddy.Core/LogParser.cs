@@ -193,8 +193,9 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your (?<spell>.+?) spell fizzles!$")]
     private static partial Regex FizzleRx();
 
-    // You begin casting Stinging Swarm.   (bard songs use "begin singing"; same shape)
-    [GeneratedRegex(@"^You begin (?:casting|singing) (?<spell>.+?)\.$")]
+    // You begin casting Stinging Swarm. / You begin to sing Solon's Song of the Sirens.
+    // ("to sing" is the Legends form; "singing" kept in case older builds used it.)
+    [GeneratedRegex(@"^You begin (?<how>casting|singing|to sing) (?<spell>.+?)\.$")]
     private static partial Regex CastStartRx();
 
     // Your Stinging Swarm spell is interrupted.
@@ -239,9 +240,17 @@ public static partial class LogParser
     [GeneratedRegex(@"^(?<pet>.+?) (?:tells|told) you, 'Attacking .+ Master\.'$")]
     private static partial Regex PetClaimRx();
 
-    // "an asp blinks." — shown at the moment a charm lands; provisional pet signal.
+    // "an asp blinks." — the landing line for every druid/shaman animal charm AND
+    // Beguile Plants (eqlwiki msg_cast_on_other, verified 2026-08-04); provisional
+    // pet signal.
     [GeneratedRegex(@"^(?<name>.+?) blinks\.$")]
     private static partial Regex PetBlinkRx();
+
+    // "a skeleton moans." — the landing line for every NECRO undead charm (Dominate/
+    // Beguile/Cajole Undead, Thrall of Bones, Enslave Death — eqlwiki). Weak: moaning
+    // could be ambient flavor, so it only acts behind one of our own casts.
+    [GeneratedRegex(@"^(?<name>.+?) moans\.$")]
+    private static partial Regex MoanRx();
 
     // "a greater skeleton has been charmed." — the DIRECT charm-success line (found in
     // eqlog_Hugzee 2026-08-02, a Charm session in Befallen). Definitive where the blink
@@ -476,7 +485,8 @@ public static partial class LogParser
             return new CraftEvent(ts, r.Groups["item"].Value);
 
         if ((r = CastStartRx().Match(msg)).Success)
-            return new SpellCastEvent(ts, r.Groups["spell"].Value);
+            return new SpellCastEvent(ts, r.Groups["spell"].Value,
+                Song: r.Groups["how"].Value != "casting");
 
         if ((r = CastInterruptedRx().Match(msg)).Success)
             return new SpellInterruptedEvent(ts, r.Groups["spell"].Value);
@@ -511,6 +521,9 @@ public static partial class LogParser
 
         if ((r = PetBlinkRx().Match(msg)).Success)
             return new PetBlinkEvent(ts, r.Groups["name"].Value);
+
+        if ((r = MoanRx().Match(msg)).Success)
+            return new PetBlinkEvent(ts, r.Groups["name"].Value, Weak: true);
 
         if ((r = ThirdMeleeRx().Match(msg)).Success)
             return new ThirdMeleeEvent(ts, r.Groups["attacker"].Value.Trim(),

@@ -387,6 +387,19 @@ public sealed class SessionStats
                             _charmCandidate = (chCast.Spell, ch.Time, LogParser.Normalize(ch.Name));
                     }
                     break;
+                case MezzedEvent glazed:
+                    // "X's eyes glaze over." lands BOTH bard charm songs and bard mez
+                    // songs (eqlwiki: Solon's line vs Crission's/Sionachie's — identical
+                    // message). The parser can't tell them apart; the pending SONG can.
+                    // MezTracker consumes this event for mez songs; here, a pending
+                    // charm-classified cast makes it a charm landing.
+                    if (_pendingCast is { } glazeCast && glazed.Time - glazeCast.Time <= CastToBlink
+                        && _spells.Classify(glazeCast.Spell) == SpellCategory.Charm)
+                    {
+                        _pendingCast = null;
+                        ConfirmPet(glazed.Target);
+                    }
+                    break;
                 case PetClaimEvent pc:
                     // A blink/charmed line that followed an unrecognised cast, now proven
                     // ours: that cast was a charm spell, so remember it — permanently, via
@@ -420,11 +433,19 @@ public sealed class SessionStats
                         if (category == SpellCategory.Unknown)
                             _charmCandidate = (cast.Spell, pb.Time, blinked);
                     }
+                    else if (pb.Weak)
+                    {
+                        // A moan with no cast of ours in flight is ambient flavor,
+                        // not a charm — never even provisional.
+                        break;
+                    }
                     _petName = blinked;
                     _petConfirmed = false;
                     break;
                 case SpellCastEvent started:
-                    _castsStarted++;
+                    // Songs correlate (bard charms/mezzes ARE songs) but stay out of the
+                    // cast-completion stats — twisting would swamp them.
+                    if (!started.Song) _castsStarted++;
                     _pendingCast = (started.Spell, started.Time);
                     break;
                 case SpellInterruptedEvent:
@@ -435,6 +456,15 @@ public sealed class SessionStats
                         && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
                     // Charm broke on our pet. Drop the claim now instead of waiting for the
                     // creature to turn around and hit us.
+                    _petName = null;
+                    _petConfirmed = false;
+                    break;
+                case SpellWornOffEvent { Pet: false, Target.Length: 0 } woNoTarget
+                        when _petName is not null
+                        && _spells.Classify(woNoTarget.Spell) == SpellCategory.Charm:
+                    // Befriend Animal's break line names NO target — "Your charm spell
+                    // has worn off." (eqlwiki; unique among the animal charms). Only one
+                    // charm can be active, so a targetless charm fade is ours.
                     _petName = null;
                     _petConfirmed = false;
                     break;

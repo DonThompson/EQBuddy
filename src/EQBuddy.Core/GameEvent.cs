@@ -61,13 +61,22 @@ public record CraftEvent(DateTime Time, string Item) : GameEvent(Time);
 public record FizzleEvent(DateTime Time, string Spell = "") : GameEvent(Time);
 /// <summary>"You begin casting X." / "You begin singing X." — the player started a cast.
 /// Only the player's own casts are parsed; other entities' casts are deliberately ignored.</summary>
-public record SpellCastEvent(DateTime Time, string Spell) : GameEvent(Time);
+/// <param name="Song">"You begin to sing X." — a bard song start. Counts as a cast for
+/// charm/mez correlation (bard charms and mezzes are songs; issue #29's missing half:
+/// song starts were never parsed, so a bard's _pendingCast never existed and no
+/// landing line could ever correlate) but stays OUT of the cast-completion stats —
+/// twisting would swamp them.</param>
+public record SpellCastEvent(DateTime Time, string Spell, bool Song = false) : GameEvent(Time);
 /// <summary>"Your X spell is interrupted." — a started cast that never landed.</summary>
 public record SpellInterruptedEvent(DateTime Time, string Spell) : GameEvent(Time);
 /// <summary>The player's pet announced itself ("<Pet> told you, 'Attacking X Master.'").</summary>
 public record PetClaimEvent(DateTime Time, string PetName) : GameEvent(Time);
 /// <summary>A creature blinked ("an asp blinks.") — the charm-spell tell; treated as a provisional pet claim.</summary>
-public record PetBlinkEvent(DateTime Time, string Name) : GameEvent(Time);
+/// <param name="Weak">"X moans." — the necro charm landing (eqlwiki, all three undead
+/// charms). Unlike blinks, moaning is plausible ambient flavor, so a weak signal acts
+/// ONLY when one of our casts is in flight; it never sets the provisional pet on its
+/// own.</param>
+public record PetBlinkEvent(DateTime Time, string Name, bool Weak = false) : GameEvent(Time);
 /// <summary>Someone other than the player landed a melee hit (may be the player's pet).
 /// Skill is the attack verb mapped to the same label the player's own hits use ("bashes" → Bash).
 /// Critical comes from the same trailing annotation your own hits carry — third-party lines

@@ -76,6 +76,18 @@ public sealed partial class SpellCatalog
             ["Cajole Undead"] = SpellCategory.Charm,
             ["Enslave Death"] = SpellCategory.Charm,
             ["Thrall of Bones"] = SpellCategory.Charm,
+            // Confirmed-in-Legends charms from Vellum670's list + the eqlwiki sweep
+            // (issue #29, 2026-08-04). The bard SONGS are the important ones: they match
+            // no family fragment, and song starts weren't even parsed before — a bard's
+            // charm could never claim. "Solon's Bravura" is the Legends in-game name of
+            // Bewitching Bravura; both kept. Tunare`s Request carries the EQ backtick.
+            ["Solon's Song of the Sirens"] = SpellCategory.Charm,
+            ["Solon's Bewitching Bravura"] = SpellCategory.Charm,
+            ["Solon's Bravura"] = SpellCategory.Charm,
+            ["Beguile Plants"] = SpellCategory.Charm,
+            ["Beguile Undead"] = SpellCategory.Charm,
+            ["Dictate"] = SpellCategory.Charm,
+            ["Tunare`s Request"] = SpellCategory.Charm,
 
             // -- Mesmerize --
             ["Mesmerize"] = SpellCategory.Mesmerize,
@@ -85,6 +97,16 @@ public sealed partial class SpellCatalog
             ["Dazzle"] = SpellCategory.Mesmerize,
             ["Rapture"] = SpellCategory.Mesmerize,
             ["Kelin's Lucid Lullaby"] = SpellCategory.Mesmerize,
+            // Bard mez songs (eqlwiki sweep 2026-08-04) — they share the "eyes glaze
+            // over" landing with the bard CHARM songs, so classification is what keeps
+            // a mez song from ever claiming a pet.
+            ["Crission's Pixie Strike"] = SpellCategory.Mesmerize,
+            ["Sionachie's Dreams"] = SpellCategory.Mesmerize,
+            ["Song of Twilight"] = SpellCategory.Mesmerize,
+            ["Entrancing Lights"] = SpellCategory.Mesmerize,
+            ["Fascination"] = SpellCategory.Mesmerize,
+            ["Glamour of Kintaz"] = SpellCategory.Mesmerize,
+            ["Screaming Terror"] = SpellCategory.Mesmerize,
 
             // -- Root --
             ["Root"] = SpellCategory.Root,

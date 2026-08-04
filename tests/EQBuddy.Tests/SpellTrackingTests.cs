@@ -282,6 +282,81 @@ public class SpellTrackingTests
         Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
     }
 
+    /// <summary>Issue #29's bard half: charm SONGS start with "You begin to sing …",
+    /// which was never parsed — a bard's pending cast never existed, so no landing
+    /// line could correlate and the pet only ever appeared via the attack-button
+    /// tell. Songs now count as casts for correlation (Solon's songs are seeded as
+    /// charms from Vellum670's list) but stay out of the cast-completion stats.</summary>
+    [Fact]
+    public void ABardCharmSongClaimsThePetInstantly()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin to sing Solon's Song of the Sirens."),
+            At(0, 3, "a gnoll has been charmed."),
+            At(0, 5, "A gnoll hits orc pawn for 9 points of damage."));
+
+        var s = stats.Snapshot();
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Gnoll)");
+        Assert.Equal(0, s.CastsStarted);   // twisting must not swamp cast stats
+    }
+
+    /// <summary>The necro charm landing is "X moans." (eqlwiki: all three undead
+    /// charms) — never parsed before, so necros were attack-button-only. Weak signal:
+    /// it acts only behind our own cast, because moaning is plausible ambient flavor.</summary>
+    [Fact]
+    public void ANecroCharmClaimsOnTheMoanLine()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Dominate Undead."),
+            At(0, 4, "a greater skeleton moans."),
+            At(0, 6, "A greater skeleton hits orc pawn for 11 points of damage."));
+        Assert.Single(stats.Snapshot().DamageBySource, d => d.Name == "Pet (Greater skeleton)");
+    }
+
+    [Fact]
+    public void AnAmbientMoanWithNoCastClaimsNothing()
+    {
+        var stats = Replay(
+            At(0, 0, "a decaying zombie moans."),
+            At(0, 2, "A decaying zombie hits orc pawn for 11 points of damage."));
+        Assert.DoesNotContain(stats.Snapshot().DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    /// <summary>"X's eyes glaze over." lands bard CHARM songs and bard MEZ songs with
+    /// the identical message (eqlwiki) — only the pending song disambiguates. A charm
+    /// song claims the pet; a mez song must not.</summary>
+    [Fact]
+    public void TheGlazeLineIsACharmBehindACharmSongAndNotOtherwise()
+    {
+        var charm = Replay(
+            At(0, 0, "You begin to sing Solon's Bravura."),
+            At(0, 3, "a gnoll's eyes glaze over."),
+            At(0, 5, "A gnoll hits orc pawn for 9 points of damage."));
+        Assert.Single(charm.Snapshot().DamageBySource, d => d.Name == "Pet (Gnoll)");
+
+        var mez = Replay(
+            At(0, 0, "You begin to sing Crission's Pixie Strike."),
+            At(0, 3, "a gnoll's eyes glaze over."),
+            At(0, 5, "A gnoll hits orc pawn for 9 points of damage."));
+        Assert.DoesNotContain(mez.Snapshot().DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    /// <summary>Befriend Animal's break line names no target — "Your charm spell has
+    /// worn off." (eqlwiki; unique among animal charms). It must still drop the pet.</summary>
+    [Fact]
+    public void ATargetlessCharmFadeDropsThePet()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(0, 6, "A puma hits orc pawn for 8 points of damage."),
+            At(1, 0, "Your charm spell has worn off."),
+            At(1, 5, "A puma hits orc pawn for 8 points of damage."));   // no longer ours
+
+        var pet = stats.Snapshot().DamageBySource.Single(d => d.Name == "Pet (Puma)");
+        Assert.Equal(8, pet.Total);   // only the pre-fade hit is credited
+    }
+
     /// <summary>Issue #29: a client whose charms log "X has been charmed." (no blink)
     /// with a spell outside the catalog never learned it — the learning hook only
     /// existed on the blink path — so EVERY charm waited for the attack button. The
