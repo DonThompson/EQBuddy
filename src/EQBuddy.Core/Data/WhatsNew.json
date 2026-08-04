@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.28.0",
+    "date": "2026-08-04",
+    "highlights": [
+      "The Combat card's fight panel now shows the whole PULL — adds included. Multi-mob fights get a per-creature damage split, \"Your damage\" (your pet's rows finally included), and \"Damage you took\" with each hit or spell named by the creature that did it.",
+      "History gains a full \"Encounters\" review: every fight of the session as a collapsible row — who was fought, when, damage each way — expanding to the same full breakdown the live card shows. Recorded from this version forward.",
+      "An encounter is a pull, not a single creature: fights separated by less than 10 quiet seconds group together, in both the live card and History."
+    ]
+  },
+  {
     "version": "1.27.0",
     "date": "2026-08-03",
     "highlights": [
