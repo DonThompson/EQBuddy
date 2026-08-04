@@ -15,7 +15,10 @@ public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageK
 /// necromancer's bread and butter), falls, drowning. Counts as damage taken, but must not
 /// open a combat window or an encounter: hurting yourself is not a fight, and a swim
 /// across a lake shouldn't dilute DPS with minutes of "combat".</param>
-public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee, bool Self = false) : GameEvent(Time);
+/// <param name="Ability">What the hit was: the attack verb mapped to the shared skill
+/// labels ("Hit", "Slash") for melee, the spell name for nukes/DoTs, "" when the line
+/// names neither (the non-melee "YOU are burned…" form).</param>
+public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee, bool Self = false, string Ability = "") : GameEvent(Time);
 public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "", bool OverTime = false) : GameEvent(Time);
 /// <summary>"Your wounds begin to heal." — a regen/hymn tick; the log gives no amount, so we can only count them.</summary>

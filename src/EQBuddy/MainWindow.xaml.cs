@@ -1017,6 +1017,15 @@ public partial class MainWindow : Window
         var rows = healing ? f.HealsBySpell : f.ByAbility;
         FillBreakdown(list, rows, healing ? _healSort : _dmgOutSort,
             f.DurationSeconds, healing ? "hps" : "dps");
+        if (!healing)
+        {
+            // The other side of the fight: what the creature hit YOU with, by attack
+            // skill or spell (the fight is against one creature, so no name repeats).
+            CombatFightInLabel.Visibility =
+                f.ByIncoming.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(CombatFightInList, f.ByIncoming.Select(x =>
+                (x.Name, $"{x.Total:N0} · ×{x.Hits} · avg {(double)x.Total / Math.Max(1, x.Hits):0.#}")));
+        }
         text.Text = healing
             ? $"{f.Name} — {f.Healed:N0} healed · {f.Hps:0.#} hps over {f.DurationSeconds:0}s"
               + (f.InProgress ? " (fighting)" : "")

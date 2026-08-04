@@ -3,7 +3,17 @@ namespace EQBuddy.Core;
 /// <summary>A finalized fight against one creature (ENCOUNTER-*).</summary>
 public sealed record EncounterInfo(
     string Name, DateTime Start, double DurationSeconds,
-    long DamageOut, long DamageIn, double Dps, string Outcome, long Healed = 0);
+    long DamageOut, long DamageIn, double Dps, string Outcome, long Healed = 0)
+{
+    // Init-properties rather than positional params: sessions archived before these
+    // existed deserialize them as empty lists, and the History window shows the fight
+    // row without an expandable breakdown instead of failing.
+    /// <summary>Your damage in this fight by ability, pet rows included.</summary>
+    public List<SourceDamage> ByAbility { get; init; } = [];
+    public List<SourceDamage> HealsBySpell { get; init; } = [];
+    /// <summary>What the creature hit YOU with, by attack skill or spell.</summary>
+    public List<SourceDamage> ByIncoming { get; init; } = [];
+}
 
 /// <summary>
 /// The fight to show at the top of the Combat and Healing cards: the one you're in if you're
@@ -14,7 +24,8 @@ public sealed record EncounterInfo(
 public sealed record LastFightInfo(
     string Name, double DurationSeconds, long DamageOut, long DamageIn, long Healed,
     double Dps, double Hps, string Outcome, bool InProgress,
-    List<SourceDamage> ByAbility, List<SourceDamage> HealsBySpell);
+    List<SourceDamage> ByAbility, List<SourceDamage> HealsBySpell,
+    List<SourceDamage> ByIncoming);
 
 public sealed record MobLoot(string Item, int Count, double? DropRatePct);
 

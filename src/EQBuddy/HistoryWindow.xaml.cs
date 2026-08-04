@@ -54,6 +54,7 @@ public partial class HistoryWindow : Window
             DamageVisualLabel.Visibility = d.DamageRows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             BreakdownRows.FillRows(this, HealVisualList, d.HealRows);
             HealVisualLabel.Visibility = d.HealRows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            RenderFights(d.Fights);
             DetailRest.Text = d.RestText;
             DetailRest.Visibility = d.RestText.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -63,9 +64,78 @@ public partial class HistoryWindow : Window
             RenderDpsGraph(null);
             DamageVisualList.Items.Clear();
             HealVisualList.Items.Clear();
+            RenderFights([]);
             DamageVisualLabel.Visibility = HealVisualLabel.Visibility = Visibility.Collapsed;
             DetailRest.Visibility = Visibility.Collapsed;
         }
+    }
+
+    /// <summary>The session's fight-by-fight review: one collapsed row per encounter,
+    /// chronological, expanding to the same breakdown the live Combat card shows —
+    /// your damage by ability (pet rows included), what the creature hit you with,
+    /// and heals during the fight. Content is built on first expand only.</summary>
+    private void RenderFights(IReadOnlyList<Core.EncounterInfo> fights)
+    {
+        FightsPanel.Children.Clear();
+        FightsLabel.Visibility = fights.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (fights.Count == 0) return;
+        FightsLabel.Text = $"Fights ({fights.Count})";
+        foreach (var f in fights)
+        {
+            var header = new System.Windows.Controls.Button
+            {
+                Style = (Style)FindResource("IconButton"),
+                FontSize = 11,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Content = "▸ " + HistoryPresentation.BuildFightHeader(f),
+            };
+            var body = new System.Windows.Controls.StackPanel
+            { Margin = new Thickness(14, 0, 0, 4), Visibility = Visibility.Collapsed };
+            var fight = f;
+            var built = false;
+            header.Click += (_, _) =>
+            {
+                var opening = body.Visibility != Visibility.Visible;
+                body.Visibility = opening ? Visibility.Visible : Visibility.Collapsed;
+                header.Content = (opening ? "▾ " : "▸ ") + HistoryPresentation.BuildFightHeader(fight);
+                if (!opening || built) return;
+                built = true;
+                BuildFightDetail(body, fight);
+            };
+            FightsPanel.Children.Add(header);
+            FightsPanel.Children.Add(body);
+        }
+    }
+
+    private void BuildFightDetail(System.Windows.Controls.StackPanel body, Core.EncounterInfo f)
+    {
+        void Section(string title, IReadOnlyList<Core.SourceDamage> rows, string rateLabel)
+        {
+            if (rows.Count == 0) return;
+            body.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = title,
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (System.Windows.Media.Brush)FindResource("AccentBrush"),
+                Margin = new Thickness(0, 2, 0, 1),
+            });
+            var list = new System.Windows.Controls.ItemsControl();
+            BreakdownRows.FillRows(this, list,
+                HistoryPresentation.BuildBreakdownRows(rows, f.DurationSeconds, rateLabel));
+            body.Children.Add(list);
+        }
+
+        Section("Your damage", f.ByAbility, "dps");
+        Section("It hit you with", f.ByIncoming, "dps");
+        Section("Heals during the fight", f.HealsBySpell, "hps");
+        if (body.Children.Count == 0)
+            body.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = "No per-fight detail — session recorded before EQBuddy 1.28.",
+                FontSize = 11,
+                Foreground = (System.Windows.Media.Brush)FindResource("DimBrush"),
+            });
     }
 
     private IReadOnlyList<Core.TimelinePoint>? _graphTimeline;

@@ -144,6 +144,9 @@ public sealed class SessionStats
         /// <summary>Same breakdown as the session's, scoped to this fight — what actually
         /// killed the thing in front of you, rather than what you've used all night.</summary>
         public readonly Dictionary<string, AbilityAgg> ByAbility = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>What the creature did to YOU, keyed by its attack skill or spell name.
+        /// The fight is already keyed by the attacker, so rows don't repeat its name.</summary>
+        public readonly Dictionary<string, AbilityAgg> ByIncoming = new(StringComparer.OrdinalIgnoreCase);
         public readonly Dictionary<string, AbilityAgg> HealsBySpell = new(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -520,6 +523,10 @@ public sealed class SessionStats
                     _damageTaken += dt.Amount;
                     if (dt.Melee) _meleeHitsTaken++;
                     TouchFight(dt.Attacker, dt.Time, dmgIn: dt.Amount);
+                    if (_activeFights.TryGetValue(dt.Attacker, out var inFight))
+                        Ability(inFight.ByIncoming,
+                            dt.Ability.Length > 0 ? dt.Ability : dt.Melee ? "Melee" : "Non-melee")
+                            .Add(dt.Time, dt.Amount);
                     var atk = _damageByAttacker.TryGetValue(dt.Attacker, out var a) ? a : (0, 0L);
                     _damageByAttacker[dt.Attacker] = (atk.Item1 + 1, atk.Item2 + dt.Amount);
                     _lastDamageFrom = (dt.Attacker, dt.Time);
@@ -811,6 +818,10 @@ public sealed class SessionStats
             : kind == DamageKind.Melee ? "Melee" : "Spell").Add(t, amount, critical);
         TrackCombat(t, amount);
         TouchFight(target, t, dmgOut: amount);
+        // The pet's damage joins the fight's ability rows as one labeled row (mirrors the
+        // session list, where the pet is a single row with its own split behind a click).
+        if (_activeFights.TryGetValue(target, out var petFight))
+            Ability(petFight.ByAbility, label).Add(t, amount, critical);
     }
 
     private MobAgg Mob(string name) =>
@@ -852,13 +863,18 @@ public sealed class SessionStats
         if (!_activeFights.Remove(target, out var f)) return;
         if (_healingFight == target) _healingFight = null;   // heals after this belong to no fight
         var dur = Math.Max(1, ((outcome == "Killed" ? t : f.Last) - f.Start).TotalSeconds);
+        // Every retained encounter carries its full breakdown now (HISTORY fight review,
+        // 2026-08-04): the 300-encounter prune bounds the cost, and archived sessions
+        // get per-fight detail in the History window.
+        var byAbility = Breakdown(f.ByAbility);
+        var heals = Breakdown(f.HealsBySpell);
+        var byIncoming = Breakdown(f.ByIncoming);
         _encounters.Add(new EncounterInfo(target, f.Start, dur, f.DmgOut, f.DmgIn,
-            f.DmgOut / dur, outcome, f.Healed));
-        // Kept whole rather than folded into EncounterInfo: only the newest one is ever
-        // shown, and carrying a breakdown on all 300 retained encounters would be waste.
+            f.DmgOut / dur, outcome, f.Healed)
+        { ByAbility = byAbility, HealsBySpell = heals, ByIncoming = byIncoming });
         _lastFinishedFight = new LastFightInfo(target, dur, f.DmgOut, f.DmgIn, f.Healed,
             f.DmgOut / dur, f.Healed / dur, outcome, InProgress: false,
-            Breakdown(f.ByAbility), Breakdown(f.HealsBySpell));
+            byAbility, heals, byIncoming);
         if (_encounters.Count > 300) _encounters.RemoveRange(0, 100);
         var mob = Mob(target);
         mob.Encounters++;
@@ -881,7 +897,7 @@ public sealed class SessionStats
         var dur = Math.Max(1, (f.Last - f.Start).TotalSeconds);
         return new LastFightInfo(name, dur, f.DmgOut, f.DmgIn, f.Healed,
             f.DmgOut / dur, f.Healed / dur, "Fighting", InProgress: true,
-            Breakdown(f.ByAbility), Breakdown(f.HealsBySpell));
+            Breakdown(f.ByAbility), Breakdown(f.HealsBySpell), Breakdown(f.ByIncoming));
     }
 
     /// <summary>The last fight that finished, kept whole so it can still be shown between
@@ -1247,6 +1263,7 @@ public sealed class SessionStats
                 Markers = _markers.Select(m => new TimedDetail(m.Time, m.Label)).ToList(),
                 LastFight = BuildLastFight(),
                 RecentEncounters = _encounters.TakeLast(8).Reverse().ToList(),
+                Encounters = _encounters.ToList(),
                 EncounterCount = _encounters.Count,
                 Mobs = _mobs.OrderByDescending(kv => kv.Value.Kills)
                     .Select(kv => new MobSummary(
@@ -1399,6 +1416,10 @@ public sealed class StatsSnapshot
     /// fight of the session. Shown above the session totals on Combat and Healing.</summary>
     public LastFightInfo? LastFight { get; init; }
     public List<EncounterInfo> RecentEncounters { get; init; } = [];
+    /// <summary>Every retained fight of the session, oldest first (capped at 300 by the
+    /// in-session prune), each carrying its full breakdown for the History fight review.
+    /// Empty on sessions archived before 2026-08-04.</summary>
+    public List<EncounterInfo> Encounters { get; init; } = [];
     public int EncounterCount { get; init; }
     public List<MobSummary> Mobs { get; init; } = [];
     public string CurrentStance { get; init; } = "";

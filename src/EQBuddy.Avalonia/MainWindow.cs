@@ -53,6 +53,8 @@ public sealed class MainWindow : Window
     private readonly StackPanel _combatFightBody = new();
     private readonly TextBlock _combatFightText = AppTheme.DimText("");
     private readonly ItemsControl _combatFightList = new();
+    private readonly TextBlock _combatFightInLabel = AppTheme.Heading("It hit you with");
+    private readonly ItemsControl _combatFightInList = new();
     private readonly Button _combatSessionLabel = AppTheme.IconButton("v Session so far", "Show or hide the session totals");
     private readonly StackPanel _combatSessionBody = new();
     private readonly Button _healFightLabel = AppTheme.IconButton("v Last fight", "Show or hide this fight's healing");
@@ -424,6 +426,9 @@ public sealed class MainWindow : Window
         _combatFightText.Margin = new Thickness(0, 1, 0, 2);
         _combatFightBody.Children.Add(_combatFightText);
         _combatFightBody.Children.Add(_combatFightList);
+        _combatFightInLabel.Margin = new Thickness(0, 2, 0, 0);
+        _combatFightBody.Children.Add(_combatFightInLabel);
+        _combatFightBody.Children.Add(_combatFightInList);
         _combatFightLabel.Click += (_, _) =>
             ToggleSubsection(v => _settings.ShowCombatFight = v, _settings.ShowCombatFight);
         panel.Children.Add(_combatFightLabel);
@@ -1102,6 +1107,13 @@ public sealed class MainWindow : Window
         // Rates within the fight use the fight's own length, not session combat time.
         FillBreakdown(list, healing ? f.HealsBySpell : f.ByAbility,
             healing ? _healSort : _dmgOutSort, f.DurationSeconds, healing ? "hps" : "dps");
+        if (!healing)
+        {
+            // The other side of the fight: what the creature hit YOU with (WPF parity).
+            _combatFightInLabel.IsVisible = f.ByIncoming.Count > 0;
+            FillList(_combatFightInList, f.ByIncoming.Select(x =>
+                (x.Name, $"{x.Total:N0} - x{x.Hits} - avg {(double)x.Total / Math.Max(1, x.Hits):0.#}")));
+        }
         text.Text = healing
             ? $"{f.Name} - {f.Healed:N0} healed - {f.Hps:0.#} hps over {f.DurationSeconds:0}s"
               + (f.InProgress ? " (fighting)" : "")

@@ -176,6 +176,34 @@ public class EncounterTests
     }
 
     [Fact]
+    public void FightBreakdownIncludesPetRowsAndWhatItHitYouWith()
+    {
+        var s = Replay(
+            At(0, 0, "Jibekn told you, 'Attacking orc pawn Master.'"),
+            At(0, 1, "Jibekn slashes orc pawn for 20 points of damage."),
+            At(0, 2, "You slash orc pawn for 30 points of damage."),
+            At(0, 3, "Orc pawn hits YOU for 5 points of damage."),
+            At(0, 4, "orc pawn hit you for 12 points of magic damage by Shock of Blades."),
+            At(0, 5, "You have slain orc pawn!")).Snapshot();
+
+        var f = s.LastFight!;
+        Assert.Equal(30, f.ByAbility.Single(x => x.Name == "Slash").Total);
+        Assert.Equal(20, f.ByAbility.Single(x => x.Name == "Pet (Jibekn)").Total);
+        Assert.Equal(5, f.ByIncoming.Single(x => x.Name == "Hit").Total);
+        Assert.Equal(12, f.ByIncoming.Single(x => x.Name == "Shock of Blades").Total);
+
+        // The archived encounter carries the same breakdown for the History review.
+        var e = s.Encounters.Single();
+        Assert.Equal(f.ByAbility.Select(x => (x.Name, x.Total)), e.ByAbility.Select(x => (x.Name, x.Total)));
+        Assert.Equal(f.ByIncoming.Select(x => (x.Name, x.Total)), e.ByIncoming.Select(x => (x.Name, x.Total)));
+
+        // And it survives the snapshot JSON round-trip (history.db path).
+        var restored = System.Text.Json.JsonSerializer.Deserialize<StatsSnapshot>(
+            System.Text.Json.JsonSerializer.Serialize(s))!;
+        Assert.Equal(12, restored.Encounters.Single().ByIncoming.Single(x => x.Name == "Shock of Blades").Total);
+    }
+
+    [Fact]
     public void KillWatchRuleCountsAndBreaksDown()
     {
         var stats = Replay(

@@ -26,7 +26,8 @@ public sealed record HistoryDetail(
     IReadOnlyList<HistoryBreakdownRow> DamageRows,
     IReadOnlyList<HistoryBreakdownRow> HealRows,
     string RestText,
-    IReadOnlyList<TimelinePoint> Timeline);
+    IReadOnlyList<TimelinePoint> Timeline,
+    IReadOnlyList<EncounterInfo> Fights);
 
 /// <summary>DPS-over-time graph geometry, normalized to a drawing surface: X spans the
 /// session minutes, Y is inverted (0 = top) so views can feed the points straight into a
@@ -176,8 +177,20 @@ public static class HistoryPresentation
             BuildBreakdownRows(snapshot.DamageBySource, snapshot.CombatSeconds, "dps", 10),
             BuildBreakdownRows(snapshot.HealsBySpell, snapshot.CombatSeconds, "hps", 6),
             rest.ToString().Trim(),
-            snapshot.DamageTimeline);
+            snapshot.DamageTimeline,
+            // Full list when the session recorded one; the old 8-fight tail (newest
+            // first — flip to chronological) keeps pre-2026-08-04 sessions reviewable.
+            snapshot.Encounters.Count > 0
+                ? snapshot.Encounters
+                : [.. snapshot.RecentEncounters.AsEnumerable().Reverse()]);
     }
+
+    /// <summary>One fight's collapsed header line in the History fight review. Leads
+    /// with the creature's name — collapsed, the list reads as "who was fought".</summary>
+    public static string BuildFightHeader(EncounterInfo f) =>
+        $"{f.Name} — {f.Start:h:mm tt} · {f.DamageOut:N0} dmg · {f.Dps:0.#} dps · " +
+        $"{f.DurationSeconds:0}s · took {f.DamageIn:N0}" +
+        (f.Outcome == "Killed" ? "" : $" · {f.Outcome}");
 
     /// <summary>Lays a damage timeline out as polyline points on a width×height surface.
     /// Minutes the timeline skips (no damage) are drawn at zero — an idle stretch is

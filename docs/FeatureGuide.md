@@ -619,9 +619,11 @@ which the history dedup makes safe.
   The "You begin to change your invocation." precursor is deliberately ignored.
 - The Spawns window is WPF-only so far (Avalonia parity: issue #5); Core/UI.Shared
   hold all the logic, so the port is a thin view.
-- The History DPS-over-time graph and the Custom-theme color editor are WPF-only;
-  the timeline data and derived palette live in Core/UI.Shared, so both are thin
-  views to port (the Avalonia app already *applies* stored custom colors).
+- The History DPS-over-time graph, the Custom-theme color editor, and the History
+  fight-by-fight review (expandable per-encounter breakdowns) are WPF-only; the
+  data lives in Core/UI.Shared, so each is a thin view to port (the Avalonia app
+  already *applies* stored custom colors, and its Combat card does show the
+  last-fight incoming breakdown).
 - Spawn durations are community lore (eqlwiki flags its own timer pages as
   under-review); the edit box exists precisely because the defaults will be wrong
   somewhere.

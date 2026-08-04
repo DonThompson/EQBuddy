@@ -137,6 +137,10 @@
                         <TextBlock x:Name="CombatFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
                                    Margin="0,1,0,2"/>
                         <ItemsControl x:Name="CombatFightList" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="CombatFightInLabel" Text="It hit you with" FontSize="11"
+                                   FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
+                                   Visibility="Collapsed"/>
+                        <ItemsControl x:Name="CombatFightInList" Margin="0,2,0,4"/>
                     </StackPanel>
                     <Button x:Name="CombatSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
                             HorizontalAlignment="Left" Content="▾ Session so far"

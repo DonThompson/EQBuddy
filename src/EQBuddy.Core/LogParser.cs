@@ -317,7 +317,8 @@ public static partial class LogParser
 
         if ((r = MeleeInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
-                int.Parse(r.Groups["dmg"].Value), Melee: true);
+                int.Parse(r.Groups["dmg"].Value), Melee: true,
+                Ability: ThirdVerbToSkill(r.Groups["verb"].Value));
 
         if ((r = NonMeleeInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["how"].Value),
@@ -325,11 +326,13 @@ public static partial class LogParser
 
         if ((r = SchoolHitInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
-                int.Parse(r.Groups["dmg"].Value), Melee: false);
+                int.Parse(r.Groups["dmg"].Value), Melee: false,
+                Ability: r.Groups["spell"].Value);
 
         if ((r = DotInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
-                int.Parse(r.Groups["dmg"].Value), Melee: false);
+                int.Parse(r.Groups["dmg"].Value), Melee: false,
+                Ability: r.Groups["spell"].Value);
 
         if ((r = SelfHurtRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, "Yourself",
