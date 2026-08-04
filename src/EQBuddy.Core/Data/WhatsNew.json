@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.29.2",
+    "date": "2026-08-04",
+    "highlights": [
+      "Guk spawn timers fixed: Legends renamed Lower Guk ('The Ruins of ANCIENT Guk' — classic said 'Old'), and the unrecognized zone name silently disabled every timer there. EQBuddy now knows the Legends zone names, and zones can carry aliases so future renames are one-line fixes.",
+      "Guk catalog audit: the froglok shin knight added to Lower Guk (it roams both Guks), and the froglok warden + ancient croc got their 16:30 timers. If a timer runs long, your kills still tighten it automatically.",
+      "Mez chips, round two (thanks again Vellum670): a mezzed mob's chip no longer disappears when its same-named twin wakes up and fights — the woken one's combat is recognized as its own, kills are attributed to it, and re-mezzing it adds a fresh chip without touching the sleeper's."
+    ]
+  },
+  {
     "version": "1.29.1",
     "date": "2026-08-04",
     "highlights": [
