@@ -1270,11 +1270,11 @@
         },
         {
           "name": "Bloodgurgler",
-          "respawnSeconds": null,
+          "respawnSeconds": 738,
           "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "Slaver Pit"
+          "source": "observed",
+          "note": "Slaver Pit; kill 20:52:19 -> respawn shout 21:04:37 (738s exactly), Hugzee log 2026-08-03, Refined tier, camped on sight — same 12:18 clock as Marrowbane/Chokehold"
         },
         {
           "name": "Bonefire",
@@ -1286,19 +1286,19 @@
         },
         {
           "name": "Chokehold",
-          "respawnSeconds": 740,
+          "respawnSeconds": 738,
           "variance": "",
           "placeholder": "",
           "source": "observed",
-          "note": "kill 20:36:21 -> re-engaged on sight 20:48:43 (742s), Hugzee log 2026-08-03, Refined tier; zone default 540 was 3m20s short. Matches Marrowbane's 743s same session"
+          "note": "kill 20:50:02 -> respawn 21:02:20 (738s exactly, camped), Hugzee log 2026-08-03, Refined tier; first pass measured 742s with engage delay. Zone default 540 was ~3m20s short"
         },
         {
           "name": "Marrowbane",
-          "respawnSeconds": 740,
+          "respawnSeconds": 738,
           "variance": "",
           "placeholder": "",
           "source": "observed",
-          "note": "kill 20:34:06 -> re-engaged on sight 20:46:29 (743s), Hugzee log 2026-08-03, Refined tier; zone default 540 was 3m20s short. Matches Chokehold's 742s same session"
+          "note": "kill 20:47:40 -> respawn 20:59:58 (738s exactly, camped), Hugzee log 2026-08-03, Refined tier; first pass measured 743s with engage delay. Zone default 540 was ~3m20s short"
         },
         {
           "name": "Orc Taskmaster",
