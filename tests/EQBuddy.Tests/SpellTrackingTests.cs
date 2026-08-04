@@ -272,6 +272,65 @@ public class SpellTrackingTests
         Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
     }
 
+    /// <summary>Issue #29: a client whose charms log "X has been charmed." (no blink)
+    /// with a spell outside the catalog never learned it — the learning hook only
+    /// existed on the blink path — so EVERY charm waited for the attack button. The
+    /// charmed line now records the candidate; the tell teaches; the next charm of the
+    /// same spell claims instantly.</summary>
+    [Fact]
+    public void AnUnknownCharmSpellIsLearnedFromTheCharmedLinePlusTell()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Word of Submission."),   // not in any seed/family
+            At(0, 2, "an orc legionnaire has been charmed."),    // records the candidate only
+            At(0, 9, "An orc legionnaire told you, 'Attacking gnoll Master.'"),  // teaches
+            At(1, 0, "Your Word of Submission spell has worn off of an orc legionnaire."),
+            At(2, 0, "You begin casting Word of Submission."),
+            At(2, 2, "a scorched zombie has been charmed."),     // now instant — no tell yet
+            At(2, 4, "A scorched zombie hits gnoll for 15 points of damage."));
+
+        Assert.Single(stats.Snapshot().DamageBySource, d => d.Name == "Pet (Scorched zombie)");
+    }
+
+    /// <summary>A tell about a DIFFERENT creature proves nothing about the held cast —
+    /// without the name match, a bystander's charm near our unknown cast plus our real
+    /// (summoned) pet's tell would poison the catalog.</summary>
+    [Fact]
+    public void ATellNamingADifferentCreatureTeachesNothing()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Heroic Leap I."),
+            At(0, 2, "a Teir`Dal rogue has been charmed."),      // bystander's charm
+            At(0, 9, "Gonarab told you, 'Attacking gnoll Master.'"),  // our summoned pet
+            At(1, 0, "You begin casting Heroic Leap I."),
+            At(1, 2, "an orc pawn has been charmed."),           // another bystander charm
+            At(1, 4, "An orc pawn slashes gnoll for 9 points of damage."));
+
+        // Heroic Leap was not learned as a charm: the second charmed line claims nothing.
+        Assert.DoesNotContain(stats.Snapshot().DamageBySource,
+            d => d.Name.Contains("Orc pawn"));
+    }
+
+    [Fact]
+    public void LearnedCategoriesSurviveThroughTheAttachedStore()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"eqbuddy-spells-{Guid.NewGuid():N}.json");
+        try
+        {
+            var first = new SpellCatalog();
+            first.AttachStore(path);
+            Assert.True(first.Learn("Word of Submission", SpellCategory.Charm));
+
+            var second = new SpellCatalog();          // fresh session
+            second.AttachStore(path);
+            Assert.Equal(SpellCategory.Charm, second.Classify("Word of Submission III"));
+
+            // No store attached (tests, by design): nothing leaks between instances.
+            Assert.Equal(SpellCategory.Unknown, new SpellCatalog().Classify("Word of Submission"));
+        }
+        finally { File.Delete(path); }
+    }
+
     // ---- generic "Your pet" attribution ----
 
     /// <summary>

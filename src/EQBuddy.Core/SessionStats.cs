@@ -193,8 +193,15 @@ public sealed class SessionStats
 
     // ---- spell tracking ----
     private readonly SpellCatalog _spells = new();
+    /// <summary>The spell classifier, exposed so the apps can attach the persistent
+    /// learned-category store (tests don't, keeping learning session-local).</summary>
+    public SpellCatalog Spells => _spells;
     private (string Spell, DateTime Time)? _pendingCast;     // last cast started
-    private (string Spell, DateTime Time)? _charmCandidate;  // cast that preceded a blink
+    // A cast that preceded a blink or charmed line, held until a "Master" tell proves it
+    // was a charm. Pet carries the creature the line named: the tell must name the SAME
+    // creature to teach, so a bystander's charm coinciding with our own unrelated cast
+    // (Hugzee's Heroic Leap) can never mislabel that cast as a charm (issue #29).
+    private (string Spell, DateTime Time, string Pet)? _charmCandidate;
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
@@ -359,22 +366,40 @@ public sealed class SessionStats
                     // 9 s of otherwise-unclaimed damage. Unknown charm spells still get
                     // learned via the Master tell, which is caster-only and unspoofable.
                     // Deliberately NO TrackCombat: charming isn't fighting.
-                    if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink
-                        && _spells.Classify(chCast.Spell) == SpellCategory.Charm)
+                    if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink)
                     {
-                        _pendingCast = null;
-                        ConfirmPet(LogParser.Normalize(ch.Name));
+                        var chCategory = _spells.Classify(chCast.Spell);
+                        if (chCategory == SpellCategory.Charm)
+                        {
+                            _pendingCast = null;
+                            ConfirmPet(LogParser.Normalize(ch.Name));
+                        }
+                        // Unknown cast + no pet of our own: record the cast as a charm
+                        // candidate — NO claim, no damage credit (a bystander's charm
+                        // coinciding with Heroic Leap must not steal anything) — so the
+                        // "Master" tell that follows the first attack order can teach the
+                        // spell. Before this, the learning hook only existed on the blink
+                        // path: a client whose charms log "has been charmed." with a spell
+                        // outside the catalog never learned it, and every charm waited for
+                        // the attack button (issue #29). With the persistent store, that
+                        // wait now happens once per spell ever.
+                        else if (chCategory == SpellCategory.Unknown && _petName is null)
+                            _charmCandidate = (chCast.Spell, ch.Time, LogParser.Normalize(ch.Name));
                     }
                     break;
                 case PetClaimEvent pc:
-                    // A blink that followed an unrecognised cast, now proven to be ours:
-                    // that cast was a charm spell, so remember it for the rest of the run.
-                    if (_charmCandidate is { } cand && pc.Time - cand.Time <= BlinkToClaim)
+                    // A blink/charmed line that followed an unrecognised cast, now proven
+                    // ours: that cast was a charm spell, so remember it — permanently, via
+                    // the attached store. The tell must name the same creature the line
+                    // did; a tell about a different pet proves nothing about that cast.
+                    var claimed = LogParser.Normalize(pc.PetName);
+                    if (_charmCandidate is { } cand && pc.Time - cand.Time <= BlinkToClaim
+                        && string.Equals(cand.Pet, claimed, StringComparison.OrdinalIgnoreCase))
                     {
                         _spells.Learn(cand.Spell, SpellCategory.Charm);
                         _charmCandidate = null;
                     }
-                    ConfirmPet(LogParser.Normalize(pc.PetName));
+                    ConfirmPet(claimed);
                     TrackCombat(pc.Time);
                     break;
                 case PetBlinkEvent pb:
@@ -393,7 +418,7 @@ public sealed class SessionStats
                         // Unrecognised spell: hold onto it so a following "Master" tell
                         // can teach us it was a charm.
                         if (category == SpellCategory.Unknown)
-                            _charmCandidate = (cast.Spell, pb.Time);
+                            _charmCandidate = (cast.Spell, pb.Time, blinked);
                     }
                     _petName = blinked;
                     _petConfirmed = false;

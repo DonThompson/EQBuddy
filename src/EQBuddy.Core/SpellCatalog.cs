@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace EQBuddy.Core;
@@ -168,6 +169,46 @@ public sealed partial class SpellCatalog
 
     private readonly Dictionary<string, SpellCategory> _learned =
         new(StringComparer.OrdinalIgnoreCase);
+    private string? _storePath;
+
+    /// <summary>
+    /// Loads previously learned categories from <paramref name="path"/> and saves after
+    /// every new learning, so a charm spell taught once (via its "Master" tell) stays
+    /// known across sessions — issue #29's report was re-learning the same spell every
+    /// launch. Tests never attach a store, so learning stays session-local there.
+    /// </summary>
+    public void AttachStore(string path)
+    {
+        _storePath = path;
+        try
+        {
+            if (!File.Exists(path)) return;
+            var stored = JsonSerializer.Deserialize<Dictionary<string, SpellCategory>>(
+                File.ReadAllText(path));
+            if (stored is null) return;
+            foreach (var (name, category) in stored)
+                if (category != SpellCategory.Unknown && name.Length > 0 && !Seed.ContainsKey(name))
+                    _learned.TryAdd(name, category);
+        }
+        catch
+        {
+            // A corrupt store must never take the tracker down; the next Learn rewrites it.
+        }
+    }
+
+    private void SaveStore()
+    {
+        if (_storePath is not { } path) return;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, JsonSerializer.Serialize(_learned));
+        }
+        catch
+        {
+            // Persistence is best-effort; in-memory learning still works for the session.
+        }
+    }
 
     /// <summary>Strips a trailing roman-numeral rank so "Stinging Swarm V" and
     /// "Stinging Swarm" are the same spell.</summary>
@@ -204,6 +245,7 @@ public sealed partial class SpellCatalog
         if (name.Length == 0 || Seed.ContainsKey(name)) return false;
         if (_learned.TryGetValue(name, out var existing) && existing == category) return false;
         _learned[name] = category;
+        SaveStore();
         return true;
     }
 

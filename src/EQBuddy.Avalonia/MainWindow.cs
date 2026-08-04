@@ -18,6 +18,9 @@ public sealed class MainWindow : Window
 {
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly SessionStats _stats = new();
+    // Attached at construction (not in SessionStats itself) so tests never touch disk.
+    private void AttachSpellStore() =>
+        _stats.Spells.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "spell-categories.json"));
     private readonly LogWatcher _watcher;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
@@ -138,6 +141,9 @@ public sealed class MainWindow : Window
 
     public MainWindow()
     {
+        // Before the watcher's startup replay, so already-logged charms classify with
+        // everything learned in earlier sessions (issue #29).
+        AttachSpellStore();
         _watcher = new LogWatcher(_stats);
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
@@ -1375,7 +1381,10 @@ public sealed class MainWindow : Window
                 if (info is not null && UpdateChecker.IsNewer(info))
                 {
                     _pendingUpdate = info;
-                    _updateText.Text = info.SetupPath is not null || info.DownloadUrl is not null
+                    // "Click here to install" is only true where the staged installer can
+                    // actually run (Windows); Linux always goes to the download page.
+                    _updateText.Text = OperatingSystem.IsWindows()
+                            && (info.SetupPath is not null || info.DownloadUrl is not null)
                         ? $"Update v{info.Latest} is ready - click here to install."
                         : $"Update v{info.Latest} is available - click to open the download page.";
                     _updateBanner.IsVisible = true;
@@ -1486,7 +1495,11 @@ public sealed class MainWindow : Window
             {
                 Process.Start(new ProcessStartInfo(UpdateChecker.GitHubLatestPage) { UseShellExecute = true });
                 _pendingUpdate = null;
-                _updateText.Text = "Download page opened - run the new EQBuddySetup.exe to update.";
+                // On Linux the setup exe means nothing — say what actually works there
+                // (issue #30: the old text told Linux users to run a Windows installer).
+                _updateText.Text = OperatingSystem.IsWindows()
+                    ? "Download page opened - run the new EQBuddySetup.exe to update."
+                    : "Download page opened - get EQBuddy-linux-x64.tar.gz and extract it over this install.";
                 _upToDateNoticeUntil = DateTime.Now.AddSeconds(10);
             }
             catch (Exception ex)

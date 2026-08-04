@@ -12,6 +12,9 @@ public partial class MainWindow : Window
 {
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly SessionStats _stats = new();
+    // Attached at construction (not in SessionStats itself) so tests never touch disk.
+    private void AttachSpellStore() =>
+        _stats.Spells.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "spell-categories.json"));
     private readonly LogWatcher _watcher;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
@@ -38,6 +41,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // Before the watcher's startup replay, so already-logged charms classify with
+        // everything learned in earlier sessions (issue #29).
+        AttachSpellStore();
         _watcher = new LogWatcher(_stats);
         // Spawn timers ride the watcher's event stream — wired before the first Select so
         // the startup replay re-derives countdowns from kills already in the log.
