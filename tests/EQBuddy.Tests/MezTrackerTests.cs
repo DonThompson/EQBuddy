@@ -169,6 +169,20 @@ public class MezTrackerTests
         Assert.Empty(t.Snapshot(T0.AddSeconds(40)));
     }
 
+    /// <summary>A rank-lengthened mez fades long after the base duration — the entry
+    /// must still be there (hidden) for the fade to teach the real duration, or high
+    /// ranks would be unlearnable.</summary>
+    [Fact]
+    public void AFadeWellPastTheBaseDurationStillTeaches()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize III."),
+            Ev(2, "an orc pawn has been mesmerized."),                     // base says +26
+            Ev(46, "Your Mesmerize III spell has worn off of an orc pawn."));   // 44s real
+
+        Assert.Equal(44, t.LearnedDurations["Mesmerize III"], 0);
+    }
+
     [Fact]
     public void ZoningClearsEverything()
     {

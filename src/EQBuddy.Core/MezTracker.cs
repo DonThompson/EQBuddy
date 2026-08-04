@@ -252,9 +252,13 @@ public sealed class MezTracker
     private void Prune(DateTime now)
     {
         _recentCasts.RemoveAll(c => now - c.Time > CastToLand);
-        _active.RemoveAll(m =>
-            (m.ExpiresAt is { } e && now - e > ExpiryLinger) ||
-            (m.ExpiresAt is null && now - m.LandedAt > UnknownDurationCap));
+        // Entries are RETAINED well past their visible expiry (Snapshot hides them
+        // after ExpiryLinger): a rank-lengthened mez can fade long after the base
+        // duration, and the natural-fade line must still find its entry to learn
+        // from — pruning at the linger would make high ranks unlearnable. A stale
+        // retained entry also absorbs the next break line first (earliest expiry),
+        // which is the right guess: it's the likeliest-awake one.
+        _active.RemoveAll(m => now - m.LandedAt > UnknownDurationCap);
     }
 
     private void SaveStore()

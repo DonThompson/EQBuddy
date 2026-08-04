@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.29.1",
+    "date": "2026-08-04",
+    "highlights": [
+      "Mez chips, day-one fixes (thanks Vellum670 for same-day field testing): re-mezzing now REFRESHES the countdown — chain-mezzing works as you'd expect, and bard pulse songs keep their chip alive.",
+      "Same-named mobs caught by an AoE mez get separate, numbered chips ('orc pawn (2)'), and a break clears one of them, not all.",
+      "Chips no longer vanish mid-mez: damage-over-time ticks from a spell cast before the mez don't count as 'the mob woke up', and a chip whose base timer runs out holds at 0:00 briefly instead of disappearing — spell ranks lengthen mezzes, and your own casts teach EQBuddy the real duration (any rank, remembered permanently)."
+    ]
+  },
+  {
     "version": "1.29.0",
     "date": "2026-08-04",
     "highlights": [
