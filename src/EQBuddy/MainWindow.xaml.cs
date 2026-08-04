@@ -66,8 +66,13 @@ public partial class MainWindow : Window
         // A 60-minute quiet gap ends a session — persist its final state to history.
         _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");
 
+        // Height caps follow the monitor the widget is ON (a portrait secondary screen
+        // is taller than the primary — discussion #31); primary work area is only the
+        // pre-handle starting value.
         MaxHeight = SystemParameters.WorkArea.Height - 20;
         SectionScroll.MaxHeight = SystemParameters.WorkArea.Height - 160;
+        SourceInitialized += (_, _) => UpdateHeightCaps();
+        LocationChanged += (_, _) => UpdateHeightCaps();
 
         // Migration: any per-rule pin from older versions turns on the group pin.
         if (!_settings.PinWatchChips && _settings.TrackedRules.Any(r => r.Pinned))
@@ -375,6 +380,16 @@ public partial class MainWindow : Window
     private SpawnChipsWindow? _chipsWindow;
     private MezChipsWindow? _mezWindow;
     private readonly MezTracker _mezTracker = new();
+
+    /// <summary>Re-derives the height caps from the monitor the widget currently
+    /// occupies (see MonitorMetrics — primary-only caps halved the widget on portrait
+    /// secondary screens, discussion #31).</summary>
+    private void UpdateHeightCaps()
+    {
+        if (MonitorMetrics.WorkAreaFor(this) is not { } work) return;
+        MaxHeight = Math.Max(200, work.Height - 20);
+        SectionScroll.MaxHeight = Math.Max(120, work.Height - 160);
+    }
 
     /// <summary>Mez chips: who's asleep, wake-up countdown ("?" until the spell's
     /// duration is known), warning tint inside the last tick. Same-named entries are
