@@ -285,6 +285,9 @@ public class SpawnTimerTests
     [Theory]
     [InlineData("You have entered Guk.")]
     [InlineData("You have entered Upper Guk 3 (Fused).")]
+    // chrstahl's verbatim lines from issue #36 — Legends' real name for Upper Guk is
+    // "The City of Guk", which no classic source predicted. Field data beats theory.
+    [InlineData("You have entered The City of Guk 4 (Refined).")]
     public void ArticleNamedMobsStartTimersAgainstTheRealCatalog(string zoneLine)
     {
         var t = new SpawnTimers(SpawnCatalog.LoadEmbedded(), new SpawnOverrides()) { Server = "qeynos" };

@@ -10925,7 +10925,7 @@
     {
       "zone": "Upper Guk",
       "logZoneName": "Guk",
-      "logZoneAliases": ["guktop"],
+      "logZoneAliases": ["The City of Guk", "guktop"],
       "namedDefaultSeconds": 480,
       "named": [
         {
