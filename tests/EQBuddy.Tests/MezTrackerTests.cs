@@ -88,13 +88,15 @@ public class MezTrackerTests
         var t = Replay(
             Ev(0, "You begin casting Mesmerize II."),
             Ev(2, "an orc pawn has been mesmerized."),
-            Ev(34, "Your Mesmerize II spell has worn off of an orc pawn."),   // 32s observed
+            // 32s raw gap = a 30s (5-tick) mez plus worn-off message lag — the learner
+            // tick-floors it (Aenari's report: raw gaps made timers run 2-3s long).
+            Ev(34, "Your Mesmerize II spell has worn off of an orc pawn."),
             Ev(60, "You begin casting Mesmerize II."),
             Ev(62, "a gnoll has been mesmerized."));
 
-        Assert.Equal(32, t.LearnedDurations["Mesmerize II"], 0);
+        Assert.Equal(30, t.LearnedDurations["Mesmerize II"], 0);
         var m = Assert.Single(t.Snapshot(T0.AddSeconds(63)));
-        Assert.Equal(31, m.RemainingSeconds(T0.AddSeconds(63))!.Value, 0);
+        Assert.Equal(29, m.RemainingSeconds(T0.AddSeconds(63))!.Value, 0);
     }
 
     [Fact]
@@ -178,9 +180,9 @@ public class MezTrackerTests
         var t = Replay(
             Ev(0, "You begin casting Mesmerize III."),
             Ev(2, "an orc pawn has been mesmerized."),                     // base says +26
-            Ev(46, "Your Mesmerize III spell has worn off of an orc pawn."));   // 44s real
+            Ev(46, "Your Mesmerize III spell has worn off of an orc pawn."));   // 44s raw
 
-        Assert.Equal(44, t.LearnedDurations["Mesmerize III"], 0);
+        Assert.Equal(42, t.LearnedDurations["Mesmerize III"], 0);   // tick-floored: 7 ticks
     }
 
     /// <summary>Issue #35 (Vellum670): once one twin breaks, its ongoing fight kept
@@ -256,9 +258,10 @@ public class MezTrackerTests
             File.WriteAllText(path, """{"Mesmerize":7,"Enthrall":52}""");
             var t = new MezTracker();
             t.AttachStore(path);
-            // 7 is under Mesmerize's base 24 → quarantined; 52 ≥ Enthrall's 48 → kept.
+            // 7 is under Mesmerize's base 24 → quarantined; 52 carries message lag and
+            // tick-floors to 48 (≥ Enthrall's base 48) → kept, healed.
             Assert.False(t.LearnedDurations.ContainsKey("Mesmerize"));
-            Assert.Equal(52, t.LearnedDurations["Enthrall"]);
+            Assert.Equal(48, t.LearnedDurations["Enthrall"]);
         }
         finally { File.Delete(path); }
     }

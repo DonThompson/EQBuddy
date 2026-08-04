@@ -55,6 +55,12 @@ public sealed class MezTracker
     /// Refreshed by activity; long enough to cover a fight, short enough that a name
     /// doesn't stay break-immune forever (issue #35).</summary>
     public static readonly TimeSpan AwakeMemory = TimeSpan.FromSeconds(45);
+    /// <summary>EQ effects run on 6-second server ticks, and the worn-off message fires
+    /// at the tick boundary — up to several seconds AFTER the mez actually released.
+    /// True durations are tick multiples, so rounding an observation DOWN to the tick
+    /// recovers the exact duration and strips the message lag (field report from
+    /// Aenari: learned timers ran 2-3s past the real wake — the dangerous direction).</summary>
+    public const double ServerTickSeconds = 6;
 
     private readonly Dictionary<string, MezSpellInfo> _catalog;
     private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
@@ -101,13 +107,14 @@ public sealed class MezTracker
             lock (_lock)
                 foreach (var (spell, seconds) in stored)
                 {
-                    // Reject stored values below the catalog base: files written before
-                    // the early-break learning guard existed can carry break lengths as
-                    // "durations" (the {"Mesmerize": 7} incident) — quarantine them so
-                    // the guard's next honest observation replaces them.
+                    // Heal files written before the guards existed: tick-floor values
+                    // that carry message lag (Aenari's 2-3s-long timers), and reject
+                    // anything below the catalog base — break lengths recorded as
+                    // "durations" (the {"Mesmerize": 7} incident).
+                    var ticked = Math.Floor(seconds / ServerTickSeconds) * ServerTickSeconds;
                     var floor = _catalog.TryGetValue(SpellCatalog.BaseName(spell), out var info)
                         ? info.DurationSeconds ?? 0 : 0;
-                    if (seconds is > 0 and < 600 && seconds >= floor) _learned.TryAdd(spell, seconds);
+                    if (ticked is > 0 and < 600 && ticked >= floor) _learned.TryAdd(spell, ticked);
                 }
         }
         catch { /* corrupt store: rewritten on next learn */ }
@@ -253,7 +260,10 @@ public sealed class MezTracker
         // the machine): the worn-off line ALSO fires on breaks, so an observation
         // SHORTER than the catalog base is a break — ranks only lengthen mezzes —
         // and a fade right after the name's awake ledger was touched is a break too.
-        var observed = (wo.Time - entry.LandedAt).TotalSeconds;
+        // Tick-floor the raw gap (see ServerTickSeconds): 32.8s observed = a 30s mez
+        // plus message lag, never a 32.8s mez.
+        var observed = Math.Floor((wo.Time - entry.LandedAt).TotalSeconds / ServerTickSeconds)
+            * ServerTickSeconds;
         var baseFloor = _catalog.TryGetValue(SpellCatalog.BaseName(entry.Spell), out var info)
             ? info.DurationSeconds ?? 0 : 0;
         var brokeRecently = _awake.TryGetValue(name, out var aw)
