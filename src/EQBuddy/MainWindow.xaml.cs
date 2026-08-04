@@ -373,6 +373,7 @@ public partial class MainWindow : Window
             : current;
 
     private SpawnChipsWindow? _chipsWindow;
+    private MezChipsWindow? _mezWindow;
     private readonly MezTracker _mezTracker = new();
 
     /// <summary>Mez chips for the shared stack: who's asleep, wake-up countdown ("?"
@@ -548,12 +549,11 @@ public partial class MainWindow : Window
             // while timers do — including alongside the full window, which is a browser,
             // not a replacement. No pop-open of the full window, ever (David's design).
             var hasTimers = _spawnsVm.HasActiveTimers(DateTime.Now);
-            var hasMez = _mezTracker.Snapshot(DateTime.Now).Count > 0;
-            if (hasTimers || hasMez)
+            if (hasTimers)
             {
                 if (_chipsWindow is not { IsLoaded: true })
                 {
-                    _chipsWindow = new SpawnChipsWindow(this, _spawnsVm) { ExtraChips = MezChips };
+                    _chipsWindow = new SpawnChipsWindow(this, _spawnsVm);
                     _chipsWindow.Show();
                 }
                 _chipsWindow.RefreshChips(DateTime.Now);
@@ -566,6 +566,24 @@ public partial class MainWindow : Window
         else
         {
             CloseChips();
+        }
+
+        // The mez stack lives its own life, independent of spawn tracking: it exists
+        // exactly while a mez is believed active, in its own window (David's call —
+        // mez chips park next to the fight, spawn chips are ambient).
+        if (_mezTracker.Snapshot(DateTime.Now).Count > 0)
+        {
+            if (_mezWindow is not { IsLoaded: true })
+            {
+                _mezWindow = new MezChipsWindow(_settings, MezChips);
+                _mezWindow.Show();
+            }
+            _mezWindow.RefreshChips(DateTime.Now);
+        }
+        else if (_mezWindow is { IsLoaded: true } mw)
+        {
+            _mezWindow = null;
+            mw.Close();   // saves the stack position on the way out
         }
 
         // Every 5s: re-check which character's log is growing and follow them.

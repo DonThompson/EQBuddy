@@ -117,6 +117,11 @@ public sealed class AppSettings
     public double SpawnChipsLeft { get; set; } = double.NaN;
     public double SpawnChipsTop { get; set; } = double.NaN;
 
+    /// <summary>Position of the mez-chip stack — its own window, deliberately separate
+    /// from the spawn chips (mez chips are combat-urgent, spawn chips are ambient).</summary>
+    public double MezChipsLeft { get; set; } = double.NaN;
+    public double MezChipsTop { get; set; } = double.NaN;
+
     private static string FilePath => AppPaths.File("settings.json");
 
     // NaN is a legitimate value here ("not placed yet" window positions), and the
