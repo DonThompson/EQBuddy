@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.29.3",
+    "date": "2026-08-04",
+    "highlights": [
+      "Upper Guk spawn timers actually fixed: Legends renamed the zone to \"The City of Guk\" — a name no classic source predicted — so EQBuddy didn't recognize it and started no timers there. Confirmed from chrstahl's log lines (thanks for testing and reporting from the field!); those exact lines are now the automated test."
+    ]
+  },
+  {
     "version": "1.29.2",
     "date": "2026-08-04",
     "highlights": [
