@@ -29,17 +29,27 @@ public sealed class SpawnZone
     /// <summary>The name the game's "You have entered X." line uses, when it differs
     /// from the wiki's title for the zone.</summary>
     public string LogZoneName { get; set; } = "";
+    /// <summary>Additional names the zone-enter line might use — Legends renames zones
+    /// versus classic ("The Ruins of ANCIENT Guk" vs classic "…Old Guk", issue #36), and
+    /// a wrong single LogZoneName silently kills every timer in the zone. Short /who
+    /// codes (guktop) belong here too.</summary>
+    public List<string> LogZoneAliases { get; set; } = [];
     public double? NamedDefaultSeconds { get; set; }
     public List<SpawnEntry> Named { get; set; } = [];
 
     public bool MatchesZoneName(string zoneName)
     {
         if (zoneName.Length == 0) return false;
-        return Eq(Zone, zoneName) || Eq(LogZoneName, zoneName)
+        if (Eq(Zone, zoneName) || Eq(LogZoneName, zoneName)
             // "You have entered The Estate of Unrest." vs catalog "Estate of Unrest":
             // containment either way covers article and prefix differences.
             || Contains(zoneName, Zone) || Contains(Zone, zoneName)
-            || (LogZoneName.Length > 0 && (Contains(zoneName, LogZoneName) || Contains(LogZoneName, zoneName)));
+            || (LogZoneName.Length > 0 && (Contains(zoneName, LogZoneName) || Contains(LogZoneName, zoneName))))
+            return true;
+        foreach (var alias in LogZoneAliases)
+            if (Eq(alias, zoneName) || Contains(zoneName, alias) || Contains(alias, zoneName))
+                return true;
+        return false;
 
         static bool Eq(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
         static bool Contains(string hay, string needle) =>
