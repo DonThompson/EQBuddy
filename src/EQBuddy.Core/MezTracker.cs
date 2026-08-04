@@ -100,7 +100,15 @@ public sealed class MezTracker
             if (stored is null) return;
             lock (_lock)
                 foreach (var (spell, seconds) in stored)
-                    if (seconds is > 0 and < 600) _learned.TryAdd(spell, seconds);
+                {
+                    // Reject stored values below the catalog base: files written before
+                    // the early-break learning guard existed can carry break lengths as
+                    // "durations" (the {"Mesmerize": 7} incident) — quarantine them so
+                    // the guard's next honest observation replaces them.
+                    var floor = _catalog.TryGetValue(SpellCatalog.BaseName(spell), out var info)
+                        ? info.DurationSeconds ?? 0 : 0;
+                    if (seconds is > 0 and < 600 && seconds >= floor) _learned.TryAdd(spell, seconds);
+                }
         }
         catch { /* corrupt store: rewritten on next learn */ }
     }
@@ -232,17 +240,25 @@ public sealed class MezTracker
     private bool OnWornOff(SpellWornOffEvent wo)
     {
         // Among same-named entries the longest-asleep one fades first.
+        var name = LogParser.Normalize(wo.Target);
         var entry = _active
-            .Where(m => m.Target.Equals(
-                LogParser.Normalize(wo.Target), StringComparison.OrdinalIgnoreCase))
+            .Where(m => m.Target.Equals(name, StringComparison.OrdinalIgnoreCase))
             .OrderBy(m => m.LandedAt)
             .FirstOrDefault();
         if (entry is null) return false;
         _active.Remove(entry);
         // A natural fade measures the full duration; learn the longest observed per
-        // exact (ranked) spell name — early breaks shorten gaps, nothing lengthens them.
+        // exact (ranked) spell name. Guards (field report, David 2026-08-04: a single
+        // 7s early break got learned as Mesmerize's duration and shrank every chip on
+        // the machine): the worn-off line ALSO fires on breaks, so an observation
+        // SHORTER than the catalog base is a break — ranks only lengthen mezzes —
+        // and a fade right after the name's awake ledger was touched is a break too.
         var observed = (wo.Time - entry.LandedAt).TotalSeconds;
-        if (observed is > 3 and < 600
+        var baseFloor = _catalog.TryGetValue(SpellCatalog.BaseName(entry.Spell), out var info)
+            ? info.DurationSeconds ?? 0 : 0;
+        var brokeRecently = _awake.TryGetValue(name, out var aw)
+            && (wo.Time - aw.Last).Duration() <= TimeSpan.FromSeconds(3);
+        if (observed is > 3 and < 600 && observed >= baseFloor && !brokeRecently
             && (!_learned.TryGetValue(entry.Spell, out var known) || observed > known))
         {
             _learned[entry.Spell] = Math.Round(observed, 1);

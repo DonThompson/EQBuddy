@@ -226,6 +226,43 @@ public class MezTrackerTests
         Assert.Equal(2, t.Snapshot(T0.AddSeconds(15)).Count);
     }
 
+    /// <summary>Field report (David, live session): a single 7s early break got learned
+    /// as Mesmerize's "duration" and shrank every chip on the machine. The worn-off
+    /// line fires on breaks too — an observation under the catalog base (ranks only
+    /// lengthen) must never teach.</summary>
+    [Fact]
+    public void AnEarlyBreakFadeDoesNotPoisonTheLearnedDuration()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize."),
+            Ev(2, "an orc pawn has been mesmerized."),
+            Ev(9, "Your Mesmerize spell has worn off of an orc pawn."));   // 7s = break
+
+        Assert.False(t.LearnedDurations.ContainsKey("Mesmerize"));
+
+        // The next cast still counts down from the honest catalog base.
+        t.Apply(Ev(20, "You begin casting Mesmerize."));
+        t.Apply(Ev(22, "a gnoll has been mesmerized."));
+        var m = Assert.Single(t.Snapshot(T0.AddSeconds(23)));
+        Assert.Equal(23, m.RemainingSeconds(T0.AddSeconds(23))!.Value, 0);
+    }
+
+    [Fact]
+    public void PoisonedStoreValuesAreQuarantinedOnLoad()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"eqbuddy-mez-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """{"Mesmerize":7,"Enthrall":52}""");
+            var t = new MezTracker();
+            t.AttachStore(path);
+            // 7 is under Mesmerize's base 24 → quarantined; 52 ≥ Enthrall's 48 → kept.
+            Assert.False(t.LearnedDurations.ContainsKey("Mesmerize"));
+            Assert.Equal(52, t.LearnedDurations["Enthrall"]);
+        }
+        finally { File.Delete(path); }
+    }
+
     [Fact]
     public void ZoningClearsEverything()
     {
