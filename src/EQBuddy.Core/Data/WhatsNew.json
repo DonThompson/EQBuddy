@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.27.0",
+    "date": "2026-08-03",
+    "highlights": [
+      "New High Contrast theme for tired eyes: solid background, pure white text — the see-through panels are what made other themes wash out over a bright game scene.",
+      "Or build your own: pick \"Custom colors…\" in Options and choose background, text, and accent (swatches or hex). EQBuddy fills in the rest and quietly fixes your text color if the combo would be unreadable.",
+      "The History window now graphs your DPS over time for each session (recorded from this version forward).",
+      "The DPS section shows damage by stance AND by invocation — invocations turned out to write a log line only when you change one, which is why this took until now.",
+      "Lost the widget after unplugging a monitor? Fixed: every window now checks its saved spot still exists on screen and comes back to a visible position if not.",
+      "Crushbone named run a measured 12:18 clock (was 9:00 — chips fired over 3 minutes early). Marrowbane, Chokehold, and Bloodgurgler were timed live to the second."
+    ]
+  },
+  {
     "version": "1.26.0",
     "date": "2026-08-03",
     "highlights": [
