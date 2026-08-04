@@ -183,6 +183,49 @@ public class MezTrackerTests
         Assert.Equal(44, t.LearnedDurations["Mesmerize III"], 0);
     }
 
+    /// <summary>Issue #35 (Vellum670): once one twin breaks, its ongoing fight kept
+    /// generating damage lines for the shared name — and each line ate another
+    /// sibling's chip. The awake ledger attributes those lines to the woken creature.</summary>
+    [Fact]
+    public void AWokenTwinsFightDoesNotEatTheSleepersChip()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization."),
+            Ev(3, "a rock golem has been mesmerized."),
+            Ev(3, "a rock golem has been mesmerized."),
+            Ev(10, "Twiddley slashes a rock golem for 12 points of damage."));   // one breaks
+        Assert.Single(t.Snapshot(T0.AddSeconds(11)));
+
+        // The woken golem fights on — its lines are ITS fight, not new breaks.
+        t.Apply(Ev(12, "A rock golem hits Twiddley for 9 points of damage."));
+        t.Apply(Ev(14, "Twiddley slashes a rock golem for 15 points of damage."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(15)));
+
+        // Killing the awake one settles the ledger; the sleeper keeps its chip.
+        t.Apply(Ev(18, "You have slain a rock golem!"));
+        Assert.Single(t.Snapshot(T0.AddSeconds(19)));
+
+        // Nothing awake anymore: the next hit is a REAL break of the sleeper.
+        t.Apply(Ev(20, "Twiddley slashes a rock golem for 15 points of damage."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(21)));
+    }
+
+    /// <summary>Re-mezzing the woken twin adds a fresh chip — it must not steal or
+    /// refresh the still-sleeping sibling's.</summary>
+    [Fact]
+    public void RemezOfTheWokenTwinAddsAChipWithoutTouchingTheSleeper()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization."),
+            Ev(3, "a rock golem has been mesmerized."),
+            Ev(3, "a rock golem has been mesmerized."),
+            Ev(10, "Twiddley slashes a rock golem for 12 points of damage."),
+            Ev(12, "You begin casting Mesmerize."),
+            Ev(14, "a rock golem has been mesmerized."));
+
+        Assert.Equal(2, t.Snapshot(T0.AddSeconds(15)).Count);
+    }
+
     [Fact]
     public void ZoningClearsEverything()
     {

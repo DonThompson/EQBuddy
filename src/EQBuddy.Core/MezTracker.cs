@@ -51,11 +51,21 @@ public sealed class MezTracker
     /// rank-lengthened mezzes outlive the base duration, and a chip that silently
     /// vanishes mid-mez reads as a bug (issue #32).</summary>
     public static readonly TimeSpan ExpiryLinger = TimeSpan.FromSeconds(8);
+    /// <summary>How long a woken creature keeps explaining damage lines for its name.
+    /// Refreshed by activity; long enough to cover a fight, short enough that a name
+    /// doesn't stay break-immune forever (issue #35).</summary>
+    public static readonly TimeSpan AwakeMemory = TimeSpan.FromSeconds(45);
 
     private readonly Dictionary<string, MezSpellInfo> _catalog;
     private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<MezState> _active = [];
     private readonly List<(string Caster, string Spell, DateTime Time)> _recentCasts = [];
+    // The awake ledger (issue #35): creatures of this name currently believed awake,
+    // and when one last acted. Once a break wakes one twin, its ongoing fight keeps
+    // generating damage lines for the shared name — those attribute HERE instead of
+    // eating the still-mezzed siblings' chips. Kills decrement; inactivity expires it.
+    private readonly Dictionary<string, (int Count, DateTime Last)> _awake =
+        new(StringComparer.OrdinalIgnoreCase);
     private string? _storePath;
     private readonly object _lock = new();
 
@@ -115,25 +125,25 @@ public sealed class MezTracker
                     break;
                 // Any damage wakes a mezzed creature — from anyone, visible to everyone.
                 case DamageDealtEvent dd:
-                    changed = RemoveTarget(dd.Target);
+                    changed = OnCreatureActivity(dd.Target, dd.Time);
                     break;
                 case ThirdMeleeEvent tm:
                     // Damage TO the target breaks it; the target ATTACKING proves it woke.
-                    changed = RemoveTarget(tm.Target) | RemoveTarget(tm.Attacker);
+                    changed = OnCreatureActivity(tm.Target, tm.Time) | OnCreatureActivity(tm.Attacker, tm.Time);
                     break;
                 case ThirdDotEvent td:
-                    changed = RemoveTarget(td.Target);
+                    changed = OnCreatureActivity(td.Target, td.Time);
                     break;
                 case ThirdSchoolEvent tsch:
-                    changed = RemoveTarget(tsch.Target) | RemoveTarget(tsch.Attacker);
+                    changed = OnCreatureActivity(tsch.Target, tsch.Time) | OnCreatureActivity(tsch.Attacker, tsch.Time);
                     break;
                 // The creature acting proves it's awake — but a DoT tick doesn't count:
                 // a dot cast before the mez keeps ticking on you while the mob sleeps.
                 case DamageTakenEvent { Self: false, OverTime: false } dt:
-                    changed = RemoveTarget(dt.Attacker);
+                    changed = OnCreatureActivity(dt.Attacker, dt.Time);
                     break;
                 case KillEvent k:
-                    changed = RemoveTarget(k.Target);
+                    changed = OnKill(k.Target, k.Time);
                     break;
                 case SpellWornOffEvent { Pet: false } wo when wo.Target.Length > 0 && IsMezSpell(wo.Spell):
                     // Caster-private natural fade: the exact end, and the one signal that
@@ -144,6 +154,7 @@ public sealed class MezTracker
                     changed = _active.Count > 0;
                     _active.Clear();
                     _recentCasts.Clear();
+                    _awake.Clear();
                     break;
             }
             Prune(evt.Time);
@@ -190,6 +201,18 @@ public sealed class MezTracker
         var entry = new MezState(mez.Target, cast.Spell, cast.Caster, mez.Time,
             DurationFor(cast.Spell) is { } d ? mez.Time.AddSeconds(d) : null);
 
+        // An AWAKE creature of this name getting mezzed is the classic re-mez after a
+        // break: settle its ledger entry and ADD a chip — the sleeping siblings keep
+        // theirs (issue #35).
+        if (_awake.TryGetValue(entry.Target, out var awake) && awake.Count > 0
+            && mez.Time - awake.Last <= AwakeMemory)
+        {
+            if (awake.Count == 1) _awake.Remove(entry.Target);
+            else _awake[entry.Target] = (awake.Count - 1, mez.Time);
+            _active.Add(entry);
+            return true;
+        }
+
         // Same-name handling (issue #32, reworked from the original keep-earliest rule):
         // chain-mezzing ONE target is the normal workflow, so a re-landing REFRESHES the
         // earliest-expiring same-name entry. The exception is several landings in the
@@ -233,13 +256,41 @@ public sealed class MezTracker
         : _catalog.TryGetValue(SpellCatalog.BaseName(spell), out var info) ? info.DurationSeconds
         : null;
 
-    private bool RemoveTarget(string target)
+    /// <summary>A damage/action line for this name. If a creature of the name is
+    /// already believed awake (and recently active), the line is ITS fight — no chip
+    /// is touched (issue #35: the woken twin's ongoing fight must not erase the
+    /// still-mezzed siblings' chips). Otherwise this line IS the break: the
+    /// earliest-expiring chip drops and the ledger records one awake creature.</summary>
+    private bool OnCreatureActivity(string target, DateTime now)
     {
-        // ONE entry per break, not all (issue #32): with two mezzed "orc pawn"s, the
-        // tank hitting one must not erase the other's chip. The log can't say which
-        // woke, so drop the earliest-expiring — the least-harmful guess, and a wrong
-        // one self-corrects on the next damage line.
         var name = LogParser.Normalize(target);
+        if (_awake.TryGetValue(name, out var a) && a.Count > 0 && now - a.Last <= AwakeMemory)
+        {
+            _awake[name] = (a.Count, now);   // the awake one is still fighting
+            return false;
+        }
+        var victim = _active
+            .Where(m => m.Target.Equals(name, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.ExpiresAt ?? DateTime.MaxValue)
+            .FirstOrDefault();
+        if (victim is null) return false;
+        _active.Remove(victim);
+        _awake[name] = ((_awake.TryGetValue(name, out var prev) ? prev.Count : 0) + 1, now);
+        return true;
+    }
+
+    /// <summary>A kill for this name. An awake creature dying decrements the ledger
+    /// and touches no chip (the dead one is the one that was fighting); a kill with
+    /// nothing awake means a mezzed one was killed outright (AoE) — drop its chip.</summary>
+    private bool OnKill(string target, DateTime now)
+    {
+        var name = LogParser.Normalize(target);
+        if (_awake.TryGetValue(name, out var a) && a.Count > 0 && now - a.Last <= AwakeMemory)
+        {
+            if (a.Count == 1) _awake.Remove(name);
+            else _awake[name] = (a.Count - 1, now);
+            return false;
+        }
         var victim = _active
             .Where(m => m.Target.Equals(name, StringComparison.OrdinalIgnoreCase))
             .OrderBy(m => m.ExpiresAt ?? DateTime.MaxValue)

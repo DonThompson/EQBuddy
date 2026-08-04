@@ -261,6 +261,23 @@ public class SpawnTimerTests
     }
 
     /// <summary>Timers tighten themselves from play: a re-kill sooner than the timer
+    /// <summary>Issue #36 regression net: article-bearing catalog names ("the froglok
+    /// shin lord", 285 entries) must match normalized kill lines, end to end against
+    /// the REAL embedded catalog — zone resolution included. When this passes but a
+    /// player still reports no timer, the divergence is Legends-vs-catalog data (zone
+    /// name or mob placement), not code.</summary>
+    [Theory]
+    [InlineData("You have entered Guk.")]
+    [InlineData("You have entered Upper Guk 3 (Fused).")]
+    public void ArticleNamedMobsStartTimersAgainstTheRealCatalog(string zoneLine)
+    {
+        var t = new SpawnTimers(SpawnCatalog.LoadEmbedded(), new SpawnOverrides()) { Server = "qeynos" };
+        t.Apply(LogParser.Parse($"[Tue Aug 4 19:00:00 2026] {zoneLine}")!);
+        t.Apply(LogParser.Parse("[Tue Aug 4 19:05:00 2026] You have slain the froglok shin lord!")!);
+        Assert.Single(t.Snapshot(DateTime.Parse("2026-08-04T19:05:01")),
+            s => s.Name == "the froglok shin lord");
+    }
+
     /// says is possible proves the respawn is at most that gap. Manual edits are never
     /// touched, learning never loosens, and sub-90-second gaps are multi-spawn noise.</summary>
     [Fact]
