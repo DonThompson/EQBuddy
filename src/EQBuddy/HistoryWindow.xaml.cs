@@ -70,16 +70,16 @@ public partial class HistoryWindow : Window
         }
     }
 
-    /// <summary>The session's fight-by-fight review: one collapsed row per encounter,
-    /// chronological, expanding to the same breakdown the live Combat card shows —
-    /// your damage by ability (pet rows included), what the creature hit you with,
-    /// and heals during the fight. Content is built on first expand only.</summary>
-    private void RenderFights(IReadOnlyList<Core.EncounterInfo> fights)
+    /// <summary>The session's encounter review: one collapsed row per PULL (fights
+    /// separated by a quiet gap group together, adds included), chronological,
+    /// expanding to your damage by ability (pet rows included), damage you took by
+    /// the creatures' attacks/spells, and heals. Content builds on first expand.</summary>
+    private void RenderFights(IReadOnlyList<Core.PullInfo> fights)
     {
         FightsPanel.Children.Clear();
         FightsLabel.Visibility = fights.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (fights.Count == 0) return;
-        FightsLabel.Text = $"Fights ({fights.Count})";
+        FightsLabel.Text = $"Encounters ({fights.Count})";
         foreach (var f in fights)
         {
             var header = new System.Windows.Controls.Button
@@ -107,8 +107,20 @@ public partial class HistoryWindow : Window
         }
     }
 
-    private void BuildFightDetail(System.Windows.Controls.StackPanel body, Core.EncounterInfo f)
+    private void BuildFightDetail(System.Windows.Controls.StackPanel body, Core.PullInfo p)
     {
+        // Multi-creature pulls lead with the per-creature damage split, so "which of
+        // the three actually hurt" is answerable before any section is read.
+        if (p.Fights.Count > 1)
+            body.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = string.Join(" · ", p.Fights.Select(f => $"{f.Name} {f.DamageOut:N0}")),
+                FontSize = 11,
+                Foreground = (System.Windows.Media.Brush)FindResource("DimBrush"),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 1, 0, 1),
+            });
+
         void Section(string title, IReadOnlyList<Core.SourceDamage> rows, string rateLabel)
         {
             if (rows.Count == 0) return;
@@ -122,13 +134,13 @@ public partial class HistoryWindow : Window
             });
             var list = new System.Windows.Controls.ItemsControl();
             BreakdownRows.FillRows(this, list,
-                HistoryPresentation.BuildBreakdownRows(rows, f.DurationSeconds, rateLabel));
+                HistoryPresentation.BuildBreakdownRows(rows, p.DurationSeconds, rateLabel));
             body.Children.Add(list);
         }
 
-        Section("Your damage", f.ByAbility, "dps");
-        Section("It hit you with", f.ByIncoming, "dps");
-        Section("Heals during the fight", f.HealsBySpell, "hps");
+        Section("Your damage", p.ByAbility, "dps");
+        Section("Damage you took", p.ByIncoming, "dps");
+        Section("Heals during the fight", p.HealsBySpell, "hps");
         if (body.Children.Count == 0)
             body.Children.Add(new System.Windows.Controls.TextBlock
             {

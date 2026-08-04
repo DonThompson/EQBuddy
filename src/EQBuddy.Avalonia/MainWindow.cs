@@ -53,7 +53,8 @@ public sealed class MainWindow : Window
     private readonly StackPanel _combatFightBody = new();
     private readonly TextBlock _combatFightText = AppTheme.DimText("");
     private readonly ItemsControl _combatFightList = new();
-    private readonly TextBlock _combatFightInLabel = AppTheme.Heading("It hit you with");
+    private readonly TextBlock _combatFightOutLabel = AppTheme.Heading("Your damage");
+    private readonly TextBlock _combatFightInLabel = AppTheme.Heading("Damage you took");
     private readonly ItemsControl _combatFightInList = new();
     private readonly Button _combatSessionLabel = AppTheme.IconButton("v Session so far", "Show or hide the session totals");
     private readonly StackPanel _combatSessionBody = new();
@@ -425,6 +426,7 @@ public sealed class MainWindow : Window
         var panel = new StackPanel();
         _combatFightText.Margin = new Thickness(0, 1, 0, 2);
         _combatFightBody.Children.Add(_combatFightText);
+        _combatFightBody.Children.Add(_combatFightOutLabel);
         _combatFightBody.Children.Add(_combatFightList);
         _combatFightInLabel.Margin = new Thickness(0, 2, 0, 0);
         _combatFightBody.Children.Add(_combatFightInLabel);
@@ -1109,7 +1111,8 @@ public sealed class MainWindow : Window
             healing ? _healSort : _dmgOutSort, f.DurationSeconds, healing ? "hps" : "dps");
         if (!healing)
         {
-            // The other side of the fight: what the creature hit YOU with (WPF parity).
+            // Same two-section shape as the WPF card: "Your damage" / "Damage you took".
+            _combatFightOutLabel.IsVisible = f.ByAbility.Count > 0;
             _combatFightInLabel.IsVisible = f.ByIncoming.Count > 0;
             FillList(_combatFightInList, f.ByIncoming.Select(x =>
                 (x.Name, $"{x.Total:N0} - x{x.Hits} - avg {(double)x.Total / Math.Max(1, x.Hits):0.#}")));

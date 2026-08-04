@@ -27,6 +27,75 @@ public sealed record LastFightInfo(
     List<SourceDamage> ByAbility, List<SourceDamage> HealsBySpell,
     List<SourceDamage> ByIncoming);
 
+/// <summary>
+/// A pull: one or more per-creature fights whose activity overlapped or sat within
+/// <see cref="EncounterGrouping.PullGap"/> of each other. This is the unit the History
+/// fight review shows — "the encounter" as a player experiences it, adds included —
+/// while the per-creature fights underneath keep powering farming stats and kill
+/// correlation untouched.
+/// </summary>
+public sealed record PullInfo(
+    string Title, DateTime Start, double DurationSeconds,
+    long DamageOut, long DamageIn, long Healed, double Dps,
+    IReadOnlyList<EncounterInfo> Fights,
+    List<SourceDamage> ByAbility, List<SourceDamage> ByIncoming, List<SourceDamage> HealsBySpell);
+
+public static class EncounterGrouping
+{
+    /// <summary>Quiet time that separates one pull from the next — matches the combat
+    /// window's close gap: if combat would have closed, the next fight is a new pull.</summary>
+    public static readonly TimeSpan PullGap = TimeSpan.FromSeconds(10);
+
+    /// <summary>Groups per-creature fights (oldest first) into pulls. Incoming rows are
+    /// prefixed with the creature's name when a pull has more than one, so "Damage you
+    /// took" keeps saying who did it; your own damage rows merge by ability.</summary>
+    public static List<PullInfo> Group(IReadOnlyList<EncounterInfo> fights, TimeSpan? gap = null)
+    {
+        var g = gap ?? PullGap;
+        var pulls = new List<PullInfo>();
+        var current = new List<EncounterInfo>();
+        var currentEnd = DateTime.MinValue;
+        foreach (var f in fights.OrderBy(x => x.Start))
+        {
+            if (current.Count > 0 && f.Start > currentEnd + g)
+            {
+                pulls.Add(Build(current));
+                current = [];
+            }
+            current.Add(f);
+            var end = f.Start.AddSeconds(f.DurationSeconds);
+            if (end > currentEnd) currentEnd = end;
+        }
+        if (current.Count > 0) pulls.Add(Build(current));
+        return pulls;
+    }
+
+    private static PullInfo Build(List<EncounterInfo> fights)
+    {
+        var start = fights[0].Start;
+        var end = fights.Max(f => f.Start.AddSeconds(f.DurationSeconds));
+        var dur = Math.Max(1, (end - start).TotalSeconds);
+        var multi = fights.Select(f => f.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1;
+        var title = string.Join(" + ", fights.GroupBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g2 => g2.Count() > 1 ? $"{g2.Key} ×{g2.Count()}" : g2.Key));
+        var dmgOut = fights.Sum(f => f.DamageOut);
+        return new PullInfo(title, start, dur, dmgOut,
+            fights.Sum(f => f.DamageIn), fights.Sum(f => f.Healed), dmgOut / dur, fights,
+            Merge(fights.SelectMany(f => f.ByAbility)),
+            Merge(fights.SelectMany(f => multi
+                ? f.ByIncoming.Select(r => r with { Name = $"{f.Name}: {r.Name}" })
+                : f.ByIncoming)),
+            Merge(fights.SelectMany(f => f.HealsBySpell)));
+    }
+
+    private static List<SourceDamage> Merge(IEnumerable<SourceDamage> rows) =>
+        rows.GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(g => new SourceDamage(g.First().Name, g.Sum(r => r.Hits), g.Sum(r => r.Total),
+                g.Sum(r => r.Crits), g.Sum(r => r.ActiveSeconds)))
+            .OrderByDescending(r => r.Total)
+            .ToList();
+}
+
 public sealed record MobLoot(string Item, int Count, double? DropRatePct);
 
 /// <summary>Per-creature farming aggregate (MOB-*). Drop rates are observed personal

@@ -204,6 +204,45 @@ public class EncounterTests
     }
 
     [Fact]
+    public void OverlappingFightsGroupIntoOnePullAndGapsSplitThem()
+    {
+        var s = Replay(
+            At(0, 0, "You slash orc pawn for 30 points of damage."),
+            At(0, 2, "Orc centurion hits YOU for 5 points of damage."),   // add joins the pull
+            At(0, 4, "You have slain orc pawn!"),
+            At(0, 6, "You slash orc centurion for 40 points of damage."),
+            At(0, 8, "You have slain orc centurion!"),
+            At(1, 0, "You slash a ghoul for 25 points of damage."),       // 52s later: new pull
+            At(1, 2, "You have slain a ghoul!")).Snapshot();
+
+        var pulls = EncounterGrouping.Group(s.Encounters);
+        Assert.Equal(2, pulls.Count);
+
+        var pull = pulls[0];
+        Assert.Equal("Orc pawn + Orc centurion", pull.Title);
+        Assert.Equal(70, pull.DamageOut);
+        // Your damage merges by ability; incoming keeps the creature's name because
+        // the pull has more than one.
+        Assert.Equal(70, pull.ByAbility.Single(x => x.Name == "Slash").Total);
+        Assert.Equal(5, pull.ByIncoming.Single(x => x.Name == "Orc centurion: Hit").Total);
+
+        Assert.Equal("Ghoul", pulls[1].Title);
+        // Single-creature pull: incoming rows stay unprefixed (none here, though).
+        Assert.Equal(25, pulls[1].ByAbility.Single(x => x.Name == "Slash").Total);
+    }
+
+    [Fact]
+    public void SameNamedAddsCountInThePullTitle()
+    {
+        var fights = new List<EncounterInfo>
+        {
+            new("Orc pawn", DateTime.Parse("2026-07-18T15:00:00"), 5, 30, 0, 6, "Killed"),
+            new("Orc pawn", DateTime.Parse("2026-07-18T15:00:03"), 5, 30, 0, 6, "Killed"),
+        };
+        Assert.Equal("Orc pawn ×2", EncounterGrouping.Group(fights).Single().Title);
+    }
+
+    [Fact]
     public void KillWatchRuleCountsAndBreaksDown()
     {
         var stats = Replay(

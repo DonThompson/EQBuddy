@@ -1019,8 +1019,10 @@ public partial class MainWindow : Window
             f.DurationSeconds, healing ? "hps" : "dps");
         if (!healing)
         {
-            // The other side of the fight: what the creature hit YOU with, by attack
-            // skill or spell (the fight is against one creature, so no name repeats).
+            // Same two-section shape as the History encounter review: "Your damage",
+            // then what the creature hit YOU with by attack skill or spell.
+            CombatFightOutLabel.Visibility =
+                f.ByAbility.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             CombatFightInLabel.Visibility =
                 f.ByIncoming.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CombatFightInList, f.ByIncoming.Select(x =>
