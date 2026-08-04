@@ -28,6 +28,26 @@ page instead.
 
 ## For players (install guide)
 
+> **Windows security note.** Windows Defender or SmartScreen may warn about
+> `EQBuddySetup.exe` — occasionally even flagging it as a threat. That's a false
+> positive, and a predictable one: EQBuddy is a free community tool signed with a
+> self-signed certificate rather than a paid publisher certificate, so Windows has no
+> "reputation" history for it, and single-file installers from unknown publishers are
+> exactly what Defender's heuristics are tuned to distrust. You don't have to take
+> our word for it:
+>
+> - The **full source code is public** in this repository — what you see is what gets built.
+> - Every release publishes a **SHA-256 hash** (`EQBuddySetup.exe.sha256`) beside the
+>   installer. Verify your download in PowerShell with
+>   `Get-FileHash -Algorithm SHA256 EQBuddySetup.exe` and compare — a match means you
+>   have exactly the published file. (EQBuddy's own auto-updater refuses any download
+>   that fails this same check.)
+> - Prefer no installer at all? Use **EQBuddy-portable.zip** from the same release —
+>   unzip and run.
+>
+> If Defender quarantines the file, restore it and add an exclusion only after the
+> hash check passes.
+
 1. Run **EQBuddySetup.exe** and click through the installer (no admin needed).
 2. Launch **EQBuddy** from the Start Menu or desktop shortcut. A **quick tutorial**
    walks you through the key features — its first page asks whether EQBuddy may
