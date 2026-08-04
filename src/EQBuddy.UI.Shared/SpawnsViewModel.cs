@@ -3,7 +3,11 @@ using EQBuddy.Core;
 namespace EQBuddy.UI.Shared;
 
 /// <summary>One chicklet in the minimized spawn-countdown stack.</summary>
-public sealed record SpawnChip(string Zone, string Name, string CountdownText, bool IsDue, string Detail);
+/// <summary>One row in the chip stack. Icon distinguishes chip kinds sharing the stack:
+/// "⏳" spawn countdowns, "💤" active mezzes (Zone is "" for those — they belong to no
+/// zone list and their due-click clears nothing).</summary>
+public sealed record SpawnChip(string Zone, string Name, string CountdownText, bool IsDue, string Detail,
+    string Icon = "⏳");
 
 /// <summary>One row in the Spawns window, ready to render.</summary>
 public sealed record SpawnRow(

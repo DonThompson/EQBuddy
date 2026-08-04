@@ -23,6 +23,11 @@ public partial class SpawnChipsWindow : Window
     private readonly MainWindow _main;
     private readonly SpawnsViewModel _vm;
     private readonly AppSettings _settings;
+
+    /// <summary>Extra chip source sharing the stack (the mez tracker); rendered above
+    /// the spawn countdowns because a mez wake-up is the more urgent number.</summary>
+    public Func<DateTime, List<SpawnChip>>? ExtraChips { get; set; }
+
     private string _signature = "";
     private readonly List<TextBlock> _countdowns = [];
     private List<SpawnChip> _chips = [];
@@ -47,7 +52,8 @@ public partial class SpawnChipsWindow : Window
     /// <summary>Called from MainWindow's 1 s tick while the stack is visible.</summary>
     public void RefreshChips(DateTime now)
     {
-        _chips = _vm.Chips(now);
+        var extra = ExtraChips?.Invoke(now);
+        _chips = extra is { Count: > 0 } ? [.. extra, .. _vm.Chips(now)] : _vm.Chips(now);
         var signature = string.Join("", _chips.Select(c => $"{c.Zone}|{c.Name}|{c.IsDue}"));
         if (signature != _signature)
         {
@@ -73,7 +79,7 @@ public partial class SpawnChipsWindow : Window
 
             var name = new TextBlock
             {
-                Text = $"⏳ {chip.Name}", FontSize = 11, FontWeight = FontWeights.SemiBold,
+                Text = $"{chip.Icon} {chip.Name}", FontSize = 11, FontWeight = FontWeights.SemiBold,
                 Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center,
                 TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 180,
             };
@@ -111,6 +117,8 @@ public partial class SpawnChipsWindow : Window
     private void OnChipMouseDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Border { Tag: SpawnChip chip }) return;
+        // Mez chips (Zone == "") have no zone window and no timer to clear — they only drag.
+        if (chip.Zone.Length == 0) { DragMove(); return; }
         if (e.ClickCount == 2)
         {
             // The full zone list, opened on the chip's zone. MainWindow's tick hides

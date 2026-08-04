@@ -41,6 +41,10 @@ public sealed class LogWatcher : IDisposable
     /// re-derive running countdowns from the log's own timestamps.</summary>
     public SpawnTimers? Spawns { get; set; }
 
+    /// <summary>Optional third consumer: the mez-target tracker, same replay-safe
+    /// pipeline (its entries are short-lived, so replay mostly proves them expired).</summary>
+    public MezTracker? Mez { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -175,6 +179,7 @@ public sealed class LogWatcher : IDisposable
                         {
                             _stats.Apply(evt);
                             Spawns?.Apply(evt);
+                            Mez?.Apply(evt);
                         }
                         // Every line, parsed or not: a Text watch rule matches the line's
                         // words, not whatever event we did or didn't make of it.

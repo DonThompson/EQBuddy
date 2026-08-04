@@ -66,10 +66,20 @@ public class SpellTrackingTests
     /// a single-character tool, so another player's cast line is ignored.
     /// (Names sanitized per CONTRIBUTING — these lines are real in shape only.)</summary>
     [Fact]
-    public void OtherEntitiesCastsAreIgnored()
+    public void OtherEntitiesCastsAreNotOwnCasts()
     {
-        Assert.Null(LogParser.Parse(Ts + "Otherchar begins casting Tame Spirit."));
-        Assert.Null(LogParser.Parse(Ts + "Otherchar`s warder begins casting Minor Healing."));
+        // Since the mez tracker these parse as OtherCastEvent (they carry spell + rank,
+        // which is what lets a bystander's EQBuddy attribute a group member's mez) —
+        // but they must never count toward the PLAYER's cast statistics.
+        var other = Assert.IsType<OtherCastEvent>(
+            LogParser.Parse(Ts + "Otherchar begins casting Tame Spirit."));
+        Assert.Equal("Otherchar", other.Caster);
+        Assert.IsType<OtherCastEvent>(
+            LogParser.Parse(Ts + "Otherchar`s warder begins casting Minor Healing."));
+
+        var stats = new SessionStats();
+        stats.Apply(LogParser.Parse(Ts + "Otherchar begins casting Tame Spirit.")!);
+        Assert.Equal(0, stats.Snapshot().CastsStarted);
     }
 
     /// <summary>Real line from a mage log. Without its own pattern the general worn-off

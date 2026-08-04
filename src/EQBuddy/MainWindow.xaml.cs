@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using EQBuddy.Core;
+using SpawnChip = EQBuddy.UI.Shared.SpawnChip;
 
 namespace EQBuddy;
 
@@ -44,7 +45,9 @@ public partial class MainWindow : Window
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
         AttachSpellStore();
+        _mezTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "mez-durations.json"));
         _watcher = new LogWatcher(_stats);
+        _watcher.Mez = _mezTracker;
         // Spawn timers ride the watcher's event stream — wired before the first Select so
         // the startup replay re-derives countdowns from kills already in the log.
         var spawnCatalog = SpawnCatalog.LoadEmbedded();
@@ -370,6 +373,23 @@ public partial class MainWindow : Window
             : current;
 
     private SpawnChipsWindow? _chipsWindow;
+    private readonly MezTracker _mezTracker = new();
+
+    /// <summary>Mez chips for the shared stack: who's asleep, wake-up countdown ("?"
+    /// until the spell's duration is known), warning tint inside the last tick.</summary>
+    private List<SpawnChip> MezChips(DateTime now) =>
+        _mezTracker.Snapshot(now).Select(m =>
+        {
+            var remaining = m.RemainingSeconds(now);
+            var text = remaining is { } r
+                ? $"{(int)r / 60}:{(int)r % 60:00}"
+                : "?";
+            return new SpawnChip(
+                Zone: "", Name: m.Target, CountdownText: text,
+                IsDue: remaining is <= 6,
+                Detail: $"{m.Spell} by {m.Caster} · landed {m.LandedAt:h:mm:ss tt}",
+                Icon: "💤");
+        }).ToList();
 
     private void CloseChips()
     {
@@ -528,11 +548,12 @@ public partial class MainWindow : Window
             // while timers do — including alongside the full window, which is a browser,
             // not a replacement. No pop-open of the full window, ever (David's design).
             var hasTimers = _spawnsVm.HasActiveTimers(DateTime.Now);
-            if (hasTimers)
+            var hasMez = _mezTracker.Snapshot(DateTime.Now).Count > 0;
+            if (hasTimers || hasMez)
             {
                 if (_chipsWindow is not { IsLoaded: true })
                 {
-                    _chipsWindow = new SpawnChipsWindow(this, _spawnsVm);
+                    _chipsWindow = new SpawnChipsWindow(this, _spawnsVm) { ExtraChips = MezChips };
                     _chipsWindow.Show();
                 }
                 _chipsWindow.RefreshChips(DateTime.Now);

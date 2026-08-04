@@ -619,11 +619,16 @@ which the history dedup makes safe.
   The "You begin to change your invocation." precursor is deliberately ignored.
 - The Spawns window is WPF-only so far (Avalonia parity: issue #5); Core/UI.Shared
   hold all the logic, so the port is a thin view.
-- The History DPS-over-time graph, the Custom-theme color editor, and the History
-  fight-by-fight review (expandable per-encounter breakdowns) are WPF-only; the
-  data lives in Core/UI.Shared, so each is a thin view to port (the Avalonia app
-  already *applies* stored custom colors, and its Combat card does show the
-  last-fight incoming breakdown).
+- The History DPS-over-time graph, the Custom-theme color editor, the History
+  fight-by-fight review (expandable per-encounter breakdowns), and the mez-target
+  chips are WPF-only; the data lives in Core/UI.Shared, so each is a thin view to
+  port (the Avalonia app already *applies* stored custom colors, and its Combat
+  card does show the last-fight incoming breakdown).
+- Mez chips: bard mez songs re-pulse every ~18s, and the same-name conservative
+  rule means their chips show the earliest expiry rather than extending on each
+  pulse. Legends' spell ranks ADD mez duration but eqlwiki doesn't say how much
+  ("+?") — the caster-side learner (longest observed land→fade gap per ranked
+  spell name, persisted to mez-durations.json) fills that in from play.
 - Spawn durations are community lore (eqlwiki flags its own timer pages as
   under-review); the edit box exists precisely because the defaults will be wrong
   somewhere.

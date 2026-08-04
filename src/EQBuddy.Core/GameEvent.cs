@@ -86,6 +86,15 @@ public record SessionMarkerEvent(DateTime Time, string Label) : GameEvent(Time);
 /// <see cref="WatchKind.Text"/> rule's text. Only matching lines become events — journaling
 /// every line would mean holding the whole log in memory, most of it chat.</summary>
 public record RawLineEvent(DateTime Time, string Line) : GameEvent(Time);
+/// <summary>"Shack begins casting Shield of Thistles IV." — another player's or an NPC's
+/// cast, WITH spell name and rank (verified in eqlog_Hugzee). This is what lets a group
+/// member's EQBuddy attribute a mez it merely witnessed: the caster's cast line plus the
+/// bystander-visible landing line are both in everyone's log.</summary>
+public record OtherCastEvent(DateTime Time, string Caster, string Spell) : GameEvent(Time);
+/// <summary>"X has been mesmerized." — mez landing, bystander-visible exactly like
+/// "has been charmed." (proven: NPC mezzes on other players appear in Hugzee's log).
+/// Names no caster and no spell; correlation with a recent mez cast supplies both.</summary>
+public record MezzedEvent(DateTime Time, string Target) : GameEvent(Time);
 /// <summary>"You assume a defensive stance." — stance state change (EQL-specific).</summary>
 public record StanceEvent(DateTime Time, string Stance) : GameEvent(Time);
 /// <summary>"You begin reciting the unyielding invocation." — invocation change

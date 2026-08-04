@@ -250,6 +250,22 @@ public static partial class LogParser
     [GeneratedRegex(@"^(?<name>.+?) has been charmed\.$")]
     private static partial Regex CharmedRx();
 
+    // "ice boned skeleton has been mesmerized." — mez landing, bystander-visible
+    // (field-verified in eqlog_Hugzee, incl. NPC mezzes on other players). The verb
+    // set and the exotic phrasings come from eqlwiki's per-spell msg_cast_on_other
+    // fields (researched 2026-08-04): Glamour/Melodious append "by …", Rapture swoons,
+    // Screaming Terror screams, the bard songs nod/glaze/stumble.
+    [GeneratedRegex(
+        @"^(?<target>.+?)(?: has been (?:mesmerized|enthralled|entranced|fascinated)(?: by .+)?" +
+        @"| swoons in raptured bliss| begins to scream| gawks at the glowing lights" +
+        @"| stumbles toward you|'s (?:head nods|eyes glaze over))\.$")]
+    private static partial Regex MezzedRx();
+
+    // "Shack begins casting Shield of Thistles IV." — other players' and NPCs' casts,
+    // with spell name and rank. ("You begin casting …" is the separate own-cast line.)
+    [GeneratedRegex(@"^(?<caster>.+?) begins casting (?<spell>.+?)\.$")]
+    private static partial Regex OtherCastRx();
+
     [GeneratedRegex(@"^Your target resisted the (?<spell>.+?) spell\.$")]
     private static partial Regex ResistRx();
 
@@ -486,6 +502,12 @@ public static partial class LogParser
 
         if ((r = CharmedRx().Match(msg)).Success)
             return new CharmedEvent(ts, r.Groups["name"].Value);
+
+        if ((r = MezzedRx().Match(msg)).Success)
+            return new MezzedEvent(ts, Normalize(r.Groups["target"].Value));
+
+        if ((r = OtherCastRx().Match(msg)).Success)
+            return new OtherCastEvent(ts, Normalize(r.Groups["caster"].Value), r.Groups["spell"].Value);
 
         if ((r = PetBlinkRx().Match(msg)).Success)
             return new PetBlinkEvent(ts, r.Groups["name"].Value);
