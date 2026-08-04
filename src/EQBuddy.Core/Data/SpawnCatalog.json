@@ -5307,6 +5307,7 @@
       "named": [
         {
           "name": "the ghoul lord",
+          "aliases": ["Hoptor Thaggelum"],
           "respawnSeconds": 540,
           "variance": "",
           "placeholder": "",

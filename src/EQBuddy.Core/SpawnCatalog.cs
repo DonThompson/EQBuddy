@@ -8,6 +8,11 @@ namespace EQBuddy.Core;
 public sealed class SpawnEntry
 {
     public string Name { get; set; } = "";
+    /// <summary>Other names the SAME creature's kill line may use. Legends renames
+    /// classic named mobs — "the ghoul lord" is "Hoptor Thaggelum" in-game, classic
+    /// name demoted to a subtitle (issue #38, confirmed from chrstahl's kill line) —
+    /// and the wiki mostly still titles pages by the classic names.</summary>
+    public List<string> Aliases { get; set; } = [];
     /// <summary>Documented respawn in seconds, or null when nobody has written it down —
     /// the zone's <see cref="SpawnZone.NamedDefaultSeconds"/> is the fallback, and a null
     /// there too means the timer has to come from the player.</summary>

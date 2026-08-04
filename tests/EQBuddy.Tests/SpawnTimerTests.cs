@@ -266,6 +266,20 @@ public class SpawnTimerTests
     /// the REAL embedded catalog — zone resolution included. When this passes but a
     /// player still reports no timer, the divergence is Legends-vs-catalog data (zone
     /// name or mob placement), not code.</summary>
+    /// <summary>Legends renames MOBS too: "the ghoul lord" is "Hoptor Thaggelum"
+    /// in-game (issue #38, chrstahl's verbatim lines — which also proved Lower Guk
+    /// kept classic's "Old Guk" zone name). Entry aliases absorb mob renames the way
+    /// zone aliases absorb zone renames.</summary>
+    [Fact]
+    public void ARenamedMobStartsItsClassicEntrysTimer()
+    {
+        var t = new SpawnTimers(SpawnCatalog.LoadEmbedded(), new SpawnOverrides()) { Server = "qeynos" };
+        t.Apply(LogParser.Parse("[Tue Aug 4 17:08:21 2026] You have entered The Ruins of Old Guk 4 (Refined).")!);
+        t.Apply(LogParser.Parse("[Tue Aug 4 17:16:04 2026] You have slain Hoptor Thaggelum!")!);
+        Assert.Single(t.Snapshot(DateTime.Parse("2026-08-04T17:16:05")),
+            s => s.Name == "the ghoul lord" && s.Zone == "Lower Guk");
+    }
+
     /// <summary>Legends renamed Lower Guk "The Ruins of ANCIENT Guk" (classic said
     /// "Old"); a single mismatched log-zone name silently kills every timer in the
     /// zone (issue #36's likely cause). The alias list absorbs renames.</summary>

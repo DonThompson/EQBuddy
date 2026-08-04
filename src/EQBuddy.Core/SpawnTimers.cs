@@ -78,7 +78,8 @@ public sealed class SpawnTimers
                     var o = _overrides.Find(zone.Zone, entry.Name);
                     var placeholder = o?.Placeholder ?? entry.Placeholder;
                     if (!Matches(entry.Name, k.Target, fuzzy)
-                        && !Matches(placeholder, k.Target, fuzzy)) continue;
+                        && !Matches(placeholder, k.Target, fuzzy)
+                        && !entry.Aliases.Any(a => Matches(a, k.Target, fuzzy))) continue;
 
                     var duration = o?.RespawnSeconds ?? SpawnCatalog.EffectiveSeconds(zone, entry);
                     duration = LearnFromRekill(zone.Zone, entry.Name, k.Time, duration);
