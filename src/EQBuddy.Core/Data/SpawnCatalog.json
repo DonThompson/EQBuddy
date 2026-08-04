@@ -1219,6 +1219,7 @@
       "zone": "Crushbone",
       "logZoneName": "Clan Crushbone",
       "namedDefaultSeconds": 738,
+      "namedDefaultTrusted": true,
       "named": [
         {
           "name": "Emperor Crush",
@@ -1271,6 +1272,7 @@
         {
           "name": "Bloodgurgler",
           "respawnSeconds": 738,
+          "trusted": true,
           "variance": "",
           "placeholder": "",
           "source": "observed",
@@ -1287,6 +1289,7 @@
         {
           "name": "Chokehold",
           "respawnSeconds": 738,
+          "trusted": true,
           "variance": "",
           "placeholder": "",
           "source": "observed",
@@ -1295,6 +1298,7 @@
         {
           "name": "Marrowbane",
           "respawnSeconds": 738,
+          "trusted": true,
           "variance": "",
           "placeholder": "",
           "source": "observed",

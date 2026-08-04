@@ -17,6 +17,12 @@ public sealed class SpawnEntry
     /// the zone's <see cref="SpawnZone.NamedDefaultSeconds"/> is the fallback, and a null
     /// there too means the timer has to come from the player.</summary>
     public double? RespawnSeconds { get; set; }
+    /// <summary>True when <see cref="RespawnSeconds"/> was MEASURED (camped-on-sight log
+    /// timestamps), not copied from a wiki. Trusted timers disable re-kill learning for
+    /// the entry: a shorter gap against a measured clock means multiple spawn points
+    /// sharing the name, not a faster respawn (David, 2026-08-04 — a learned 328s from
+    /// multi-spawn Orc Taskmaster kills sat under Crushbone's measured 738s clock).</summary>
+    public bool Trusted { get; set; }
     public string Variance { get; set; } = "";
     /// <summary>The placeholder NPC whose death also restarts this named's cycle, or "".
     /// Displayed as "Named — Placeholder (npc)" and matched against kill lines like the
@@ -40,6 +46,9 @@ public sealed class SpawnZone
     /// codes (guktop) belong here too.</summary>
     public List<string> LogZoneAliases { get; set; } = [];
     public double? NamedDefaultSeconds { get; set; }
+    /// <summary>True when <see cref="NamedDefaultSeconds"/> is a MEASURED zone clock
+    /// (see SpawnEntry.Trusted) — entries riding it don't re-kill-learn.</summary>
+    public bool NamedDefaultTrusted { get; set; }
     public List<SpawnEntry> Named { get; set; } = [];
 
     public bool MatchesZoneName(string zoneName)
