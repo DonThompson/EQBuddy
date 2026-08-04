@@ -129,6 +129,11 @@ public static partial class LogParser
     [GeneratedRegex(@"^You assume an? (?<stance>.+?) stance\.$")]
     private static partial Regex StanceRx();
 
+    // You begin reciting the empowering invocation. (observed: empowering,
+    // unyielding, recovery — parsed open so new ones just work)
+    [GeneratedRegex(@"^You begin reciting the (?<invocation>.+?) invocation\.$")]
+    private static partial Regex InvocationRx();
+
     [GeneratedRegex(@"(?<n>\d+) (?<unit>platinum|gold|silver|copper)")]
     private static partial Regex CoinPartRx();
 
@@ -468,6 +473,9 @@ public static partial class LogParser
 
         if ((r = StanceRx().Match(msg)).Success)
             return new StanceEvent(ts, Normalize(r.Groups["stance"].Value));
+
+        if ((r = InvocationRx().Match(msg)).Success)
+            return new InvocationEvent(ts, Normalize(r.Groups["invocation"].Value));
 
         // Pet announcement and third-party combat (checked last — specific patterns above win).
         if ((r = PetClaimRx().Match(msg)).Success)

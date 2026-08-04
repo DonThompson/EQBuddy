@@ -91,6 +91,8 @@ public sealed class MainWindow : Window
     private readonly ItemsControl _recentFightsList = new();
     private readonly TextBlock _stanceLabel = AppTheme.Heading("By stance");
     private readonly ItemsControl _stanceList = new();
+    private readonly TextBlock _invocationLabel = AppTheme.Heading("By invocation");
+    private readonly ItemsControl _invocationList = new();
     private readonly TextBlock _farmingLabel = AppTheme.Heading("Farming (per creature)");
     private readonly ItemsControl _farmingList = new();
     private readonly TextBlock _markersLabel = AppTheme.Heading("Camp markers");
@@ -448,6 +450,9 @@ public sealed class MainWindow : Window
         _stanceLabel.Margin = new Thickness(0, 6, 0, 0);
         body.Children.Add(_stanceLabel);
         body.Children.Add(_stanceList);
+        _invocationLabel.Margin = new Thickness(0, 6, 0, 0);
+        body.Children.Add(_invocationLabel);
+        body.Children.Add(_invocationList);
         panel.Children.Add(body);
         return panel;
     }
@@ -828,6 +833,9 @@ public sealed class MainWindow : Window
             _stanceLabel.IsVisible = s.Stances.Count > 0;
             FillList(_stanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg - {(int)x.CombatSeconds}s - {x.Dps:0.#} dps")));
+            _invocationLabel.IsVisible = s.Invocations.Count > 0;
+            FillList(_invocationList, s.Invocations.Select(x =>
+                (x.Name, $"{x.Damage:N0} dmg - {(int)x.CombatSeconds}s - {x.Dps:0.#} dps")));
         }
         _healingHeader.Text = s.Hps > 0 ? $"{s.Hps:0.#} hps" : $"{s.HealingDone:N0} healed";
         if (_sections["healing"].IsExpanded)
@@ -926,6 +934,7 @@ public sealed class MainWindow : Window
         _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
         _petAbilityLabel.IsVisible = s.PetAbilities.Count > 0;
         _stanceLabel.IsVisible = s.Stances.Count > 0;
+        _invocationLabel.IsVisible = s.Invocations.Count > 0;
         _farmingLabel.IsVisible = s.Mobs.Any(m => m.Kills > 0);
         _partyKillsLabel.IsVisible = s.PartyKillsByKiller.Count > 0;
         _craftedLabel.IsVisible = s.Crafted.Count > 0;

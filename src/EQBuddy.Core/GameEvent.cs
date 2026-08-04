@@ -85,3 +85,9 @@ public record SessionMarkerEvent(DateTime Time, string Label) : GameEvent(Time);
 public record RawLineEvent(DateTime Time, string Line) : GameEvent(Time);
 /// <summary>"You assume a defensive stance." — stance state change (EQL-specific).</summary>
 public record StanceEvent(DateTime Time, string Stance) : GameEvent(Time);
+/// <summary>"You begin reciting the unyielding invocation." — invocation change
+/// (first observed in Hugzee's enchanter respec, 2026-08-03; invocations logged
+/// nothing we knew of before that). The preceding "You begin to change your
+/// invocation." line is deliberately not parsed — the reciting line names the
+/// state, and parsing both would be the unconscious-line mistake again.</summary>
+public record InvocationEvent(DateTime Time, string Invocation) : GameEvent(Time);

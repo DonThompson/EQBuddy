@@ -186,6 +186,9 @@
                     <TextBlock x:Name="StanceLabel" Text="By stance" FontSize="11" FontWeight="SemiBold"
                                Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="StanceList" Margin="0,2,0,0"/>
+                    <TextBlock x:Name="InvocationLabel" Text="By invocation" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="InvocationList" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>

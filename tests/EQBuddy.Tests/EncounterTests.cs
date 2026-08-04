@@ -155,6 +155,27 @@ public class EncounterTests
     }
 
     [Fact]
+    public void InvocationWindowsAttributeDamageLikeStances()
+    {
+        // Real line shapes from eqlog_Hugzee_qeynos 2026-08-03 — the first invocation
+        // evidence ever observed. The "begin to change" precursor must parse to nothing
+        // (like the knocked-unconscious line) or every swap would double-fire.
+        var s = Replay(
+            At(0, 0, "You begin to change your invocation."),
+            At(0, 0, "You begin reciting the empowering invocation."),
+            At(0, 5, "You slash orc pawn for 40 points of damage."),
+            At(1, 0, "You begin reciting the unyielding invocation."),
+            At(1, 5, "You slash orc pawn for 10 points of damage."),
+            At(5, 0, "You have entered West Commonlands.")).Snapshot();
+
+        Assert.Equal("Unyielding", s.CurrentInvocation);
+        Assert.Equal(40, s.Invocations.Single(x => x.Name == "Empowering").Damage);
+        Assert.Equal(10, s.Invocations.Single(x => x.Name == "Unyielding").Damage);
+        // Stances and invocations are independent axes — one didn't leak into the other.
+        Assert.Empty(s.Stances);
+    }
+
+    [Fact]
     public void KillWatchRuleCountsAndBreaksDown()
     {
         var stats = Replay(

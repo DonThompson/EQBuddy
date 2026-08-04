@@ -176,6 +176,10 @@ public sealed class SessionStats
     private string? _currentStance;
     private readonly Dictionary<string, (double Seconds, long Damage)> _stanceAgg = new(StringComparer.OrdinalIgnoreCase);
 
+    // ---- invocation windows (2026-08-03, same model as stances) ----
+    private string? _currentInvocation;
+    private readonly Dictionary<string, (double Seconds, long Damage)> _invocationAgg = new(StringComparer.OrdinalIgnoreCase);
+
     // Combat-window tracking for DPS
     private readonly List<(DateTime Start, DateTime End)> _combatSpans = new();
     private double _closedCombatSeconds; private long _closedCombatDamage;
@@ -486,6 +490,11 @@ public sealed class SessionStats
                         var sv1 = _stanceAgg.TryGetValue(st1, out var stCur) ? stCur : (0.0, 0L);
                         _stanceAgg[st1] = (sv1.Item1, sv1.Item2 + dd.Amount);
                     }
+                    if (_currentInvocation is { } inv1)
+                    {
+                        var iv1 = _invocationAgg.TryGetValue(inv1, out var invCur) ? invCur : (0.0, 0L);
+                        _invocationAgg[inv1] = (iv1.Item1, iv1.Item2 + dd.Amount);
+                    }
                     break;
                 case MissEvent { Outgoing: true } m:
                     _missCount++;
@@ -608,6 +617,12 @@ public sealed class SessionStats
                     CloseCombatLocked();
                     _currentStance = stc.Stance;
                     if (!_stanceAgg.ContainsKey(stc.Stance)) _stanceAgg[stc.Stance] = (0, 0);
+                    break;
+                case InvocationEvent inv:
+                    // Same attribution boundary as a stance change.
+                    CloseCombatLocked();
+                    _currentInvocation = inv.Invocation;
+                    if (!_invocationAgg.ContainsKey(inv.Invocation)) _invocationAgg[inv.Invocation] = (0, 0);
                     break;
                 case AutoSellEvent asell:
                     var lcur = _loot.TryGetValue(asell.Item, out var lval) ? lval : (0, asell.Source);
@@ -931,6 +946,11 @@ public sealed class SessionStats
                 var v = _stanceAgg.TryGetValue(st, out var cur) ? cur : (0.0, 0L);
                 _stanceAgg[st] = (v.Item1 + span, v.Item2);
             }
+            if (_currentInvocation is { } inv)
+            {
+                var v = _invocationAgg.TryGetValue(inv, out var cur) ? cur : (0.0, 0L);
+                _invocationAgg[inv] = (v.Item1 + span, v.Item2);
+            }
         }
         _combatStart = null; _combatLast = null; _combatDamage = 0;
     }
@@ -975,6 +995,7 @@ public sealed class SessionStats
         _healingFight = null; _lastFinishedFight = null;
         _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
         _currentStance = null; _stanceAgg.Clear();
+        _currentInvocation = null; _invocationAgg.Clear();
     }
 
     private static void Bump(Dictionary<string, int> d, string key) =>
@@ -1243,6 +1264,11 @@ public sealed class SessionStats
                     .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,
                         kv.Value.Seconds > 0 ? kv.Value.Damage / kv.Value.Seconds : 0))
                     .OrderByDescending(x => x.CombatSeconds).ToList(),
+                CurrentInvocation = _currentInvocation ?? "",
+                Invocations = _invocationAgg
+                    .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,
+                        kv.Value.Seconds > 0 ? kv.Value.Damage / kv.Value.Seconds : 0))
+                    .OrderByDescending(x => x.CombatSeconds).ToList(),
             };
         }
     }
@@ -1377,6 +1403,9 @@ public sealed class StatsSnapshot
     public List<MobSummary> Mobs { get; init; } = [];
     public string CurrentStance { get; init; } = "";
     public List<StanceInfo> Stances { get; init; } = [];
+    /// <summary>Invocation brackets, same model (and record shape) as stances.</summary>
+    public string CurrentInvocation { get; init; } = "";
+    public List<StanceInfo> Invocations { get; init; } = [];
     /// <summary>Spells observed hitting more than one creature at once, reported per
     /// cast rather than per target — the figures that decide whether pulling a group and
     /// AoEing it beats killing them one at a time.</summary>

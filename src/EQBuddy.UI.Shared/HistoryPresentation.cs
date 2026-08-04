@@ -155,6 +155,9 @@ public static class HistoryPresentation
         if (snapshot.Stances.Count > 0)
             text.AppendLine("Stances: " + string.Join(" - ",
                 snapshot.Stances.Select(stance => $"{stance.Name} {stance.Damage:N0} dmg over {(int)stance.CombatSeconds}s ({stance.Dps:0.#} dps)")));
+        if (snapshot.Invocations.Count > 0)
+            text.AppendLine("Invocations: " + string.Join(" - ",
+                snapshot.Invocations.Select(inv => $"{inv.Name} {inv.Damage:N0} dmg over {(int)inv.CombatSeconds}s ({inv.Dps:0.#} dps)")));
         if (snapshot.Zones.Count > 0)
             text.AppendLine("Zones: " + string.Join(" -> ", snapshot.Zones.Select(zone => zone.Text)));
         if (snapshot.Markers.Count > 0)

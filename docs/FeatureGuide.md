@@ -614,7 +614,9 @@ which the history dedup makes safe.
 
 ## Known limitations
 
-- Invocations produce no known log lines — unparsed until evidence exists.
+- Invocations went unparsed until 2026-08-03 (they log nothing until you change one);
+  "You begin reciting the &lt;name&gt; invocation." now drives DPS-by-invocation brackets.
+  The "You begin to change your invocation." precursor is deliberately ignored.
 - The Spawns window is WPF-only so far (Avalonia parity: issue #5); Core/UI.Shared
   hold all the logic, so the port is a thin view.
 - The History DPS-over-time graph and the Custom-theme color editor are WPF-only;
