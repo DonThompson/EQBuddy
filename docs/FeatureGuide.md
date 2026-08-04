@@ -624,11 +624,14 @@ which the history dedup makes safe.
   chips are WPF-only; the data lives in Core/UI.Shared, so each is a thin view to
   port (the Avalonia app already *applies* stored custom colors, and its Combat
   card does show the last-fight incoming breakdown).
-- Mez chips: bard mez songs re-pulse every ~18s, and the same-name conservative
-  rule means their chips show the earliest expiry rather than extending on each
-  pulse. Legends' spell ranks ADD mez duration but eqlwiki doesn't say how much
-  ("+?") — the caster-side learner (longest observed land→fade gap per ranked
-  spell name, persisted to mez-durations.json) fills that in from play.
+- Mez chips: a re-landing REFRESHES the same-name chip (chain-mezzing and bard
+  pulse songs both depend on this — issue #32); only same-second landings (an AoE
+  catching same-named mobs) create separate, numbered chips, and a break clears
+  one of those, not all. Legends' spell ranks ADD mez duration but eqlwiki doesn't
+  say how much ("+?") — the caster-side learner (longest observed land→fade gap
+  per ranked spell name, persisted to mez-durations.json) fills that in from play,
+  and expired chips linger at 0:00 for a few seconds rather than vanishing, since
+  a rank-lengthened mez can outlive the base timer.
 - Spawn durations are community lore (eqlwiki flags its own timer pages as
   under-review); the edit box exists precisely because the defaults will be wrong
   somewhere.

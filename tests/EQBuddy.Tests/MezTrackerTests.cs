@@ -108,6 +108,67 @@ public class MezTrackerTests
         Assert.IsType<OtherCastEvent>(Ev(0, "Shack begins casting Shield of Thistles IV."));
     }
 
+    /// <summary>Issue #32 item 2: chain-mezzing one target is the normal workflow — a
+    /// re-landing must REFRESH the countdown (also what keeps bard pulse songs alive).</summary>
+    [Fact]
+    public void RemezRefreshesTheCountdown()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize."),
+            Ev(2, "an orc pawn has been mesmerized."),
+            Ev(20, "You begin casting Mesmerize."),
+            Ev(22, "an orc pawn has been mesmerized."));
+
+        var m = Assert.Single(t.Snapshot(T0.AddSeconds(23)));
+        Assert.Equal(23, m.RemainingSeconds(T0.AddSeconds(23))!.Value, 0);   // 22+24-23
+    }
+
+    /// <summary>Issue #32 item 3: same-second landings (an AoE catching same-named
+    /// mobs) are distinct creatures with separate chips — and a break clears ONE of
+    /// them (the earliest-expiring), not both.</summary>
+    [Fact]
+    public void AoeSameNameGetsSeparateEntriesAndBreaksClearOne()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization."),
+            Ev(3, "an orc pawn has been mesmerized."),
+            Ev(3, "an orc pawn has been mesmerized."));
+        Assert.Equal(2, t.Snapshot(T0.AddSeconds(4)).Count);
+
+        t.Apply(Ev(6, "Twiddley slashes an orc pawn for 5 points of damage."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(7)));
+    }
+
+    /// <summary>Issue #32 item 1: a DoT cast before the mez keeps ticking on the player
+    /// while the mob sleeps — the tick must not clear the chip. Real melee still does.</summary>
+    [Fact]
+    public void ADotTickFromTheMezzedMobDoesNotClearTheChip()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize."),
+            Ev(2, "an orc oracle has been mesmerized."),
+            Ev(8, "You have taken 7 damage from Flame Lick by an orc oracle."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(9)));
+
+        t.Apply(Ev(12, "Orc oracle hits YOU for 9 points of damage."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(13)));
+    }
+
+    /// <summary>Issue #32 item 1 (the other half): rank-lengthened mezzes outlive the
+    /// catalog's base duration — an expired chip lingers visibly at 0:00 instead of
+    /// silently vanishing mid-mez.</summary>
+    [Fact]
+    public void AnExpiredChipLingersBrieflyInsteadOfVanishing()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize."),
+            Ev(2, "an orc pawn has been mesmerized."));   // expires at +26
+
+        var lingering = Assert.Single(t.Snapshot(T0.AddSeconds(30)));
+        Assert.Equal(0, lingering.RemainingSeconds(T0.AddSeconds(30))!.Value, 0);
+        Assert.Empty(t.Snapshot(T0.AddSeconds(40)));
+    }
+
     [Fact]
     public void ZoningClearsEverything()
     {

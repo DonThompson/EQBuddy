@@ -376,21 +376,29 @@ public partial class MainWindow : Window
     private MezChipsWindow? _mezWindow;
     private readonly MezTracker _mezTracker = new();
 
-    /// <summary>Mez chips for the shared stack: who's asleep, wake-up countdown ("?"
-    /// until the spell's duration is known), warning tint inside the last tick.</summary>
-    private List<SpawnChip> MezChips(DateTime now) =>
-        _mezTracker.Snapshot(now).Select(m =>
+    /// <summary>Mez chips: who's asleep, wake-up countdown ("?" until the spell's
+    /// duration is known), warning tint inside the last tick. Same-named entries are
+    /// numbered — "orc pawn (2)" — since the log can't tell the creatures apart
+    /// (issue #32 asked for separate timers rather than one merged chip).</summary>
+    private List<SpawnChip> MezChips(DateTime now)
+    {
+        var states = _mezTracker.Snapshot(now);
+        var seen = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        return states.Select(m =>
         {
+            var n = seen[m.Target] = seen.GetValueOrDefault(m.Target) + 1;
+            var dupe = states.Count(x => x.Target.Equals(m.Target, StringComparison.OrdinalIgnoreCase)) > 1;
             var remaining = m.RemainingSeconds(now);
             var text = remaining is { } r
                 ? $"{(int)r / 60}:{(int)r % 60:00}"
                 : "?";
             return new SpawnChip(
-                Zone: "", Name: m.Target, CountdownText: text,
+                Zone: "", Name: dupe ? $"{m.Target} ({n})" : m.Target, CountdownText: text,
                 IsDue: remaining is <= 6,
                 Detail: $"{m.Spell} by {m.Caster} · landed {m.LandedAt:h:mm:ss tt}",
                 Icon: "💤");
         }).ToList();
+    }
 
     private void CloseChips()
     {

@@ -47,6 +47,10 @@ public sealed class MezTracker
     /// <summary>Without a known duration, a mez chip that nothing ever breaks is
     /// dropped after this long — mezzes don't last minutes.</summary>
     public static readonly TimeSpan UnknownDurationCap = TimeSpan.FromSeconds(120);
+    /// <summary>An expired chip stays visible at 0:00 this long before dropping —
+    /// rank-lengthened mezzes outlive the base duration, and a chip that silently
+    /// vanishes mid-mez reads as a bug (issue #32).</summary>
+    public static readonly TimeSpan ExpiryLinger = TimeSpan.FromSeconds(8);
 
     private readonly Dictionary<string, MezSpellInfo> _catalog;
     private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
@@ -123,8 +127,9 @@ public sealed class MezTracker
                 case ThirdSchoolEvent tsch:
                     changed = RemoveTarget(tsch.Target) | RemoveTarget(tsch.Attacker);
                     break;
-                // The creature acting proves it's awake.
-                case DamageTakenEvent { Self: false } dt:
+                // The creature acting proves it's awake — but a DoT tick doesn't count:
+                // a dot cast before the mez keeps ticking on you while the mob sleeps.
+                case DamageTakenEvent { Self: false, OverTime: false } dt:
                     changed = RemoveTarget(dt.Attacker);
                     break;
                 case KillEvent k:
@@ -147,12 +152,15 @@ public sealed class MezTracker
     }
 
     /// <summary>Active mezzes at <paramref name="now"/>, soonest wake-up first;
-    /// unknown-duration entries sort last (nothing to warn about yet).</summary>
+    /// unknown-duration entries sort last (nothing to warn about yet). Entries past
+    /// their expiry stay visible (at 0:00) for <see cref="ExpiryLinger"/> — the mez
+    /// may genuinely still hold (rank-lengthened durations) and a silent vanish
+    /// mid-mez reads as a bug.</summary>
     public List<MezState> Snapshot(DateTime now)
     {
         lock (_lock)
             return _active
-                .Where(m => m.ExpiresAt is null || m.ExpiresAt > now)
+                .Where(m => m.ExpiresAt is null || now - m.ExpiresAt < ExpiryLinger)
                 .OrderBy(m => m.ExpiresAt ?? DateTime.MaxValue)
                 .ToList();
     }
@@ -179,32 +187,35 @@ public sealed class MezTracker
         var cast = _recentCasts.LastOrDefault(c => mez.Time - c.Time <= CastToLand);
         if (cast.Spell is null || cast.Spell.Length == 0) return false;   // nobody we can see cast a mez
 
-        var duration = DurationFor(cast.Spell);
-        // Same-name ambiguity (two mezzed "orc pawn"s): keep ONE entry per name with the
-        // EARLIEST expiry — the conservative timer, matching the charm rules' humility.
-        var existing = _active.FindIndex(m => m.Target.Equals(mez.Target, StringComparison.OrdinalIgnoreCase));
         var entry = new MezState(mez.Target, cast.Spell, cast.Caster, mez.Time,
-            duration is { } d ? mez.Time.AddSeconds(d) : null);
-        if (existing >= 0)
-        {
-            var kept = _active[existing];
-            if (kept.ExpiresAt is { } k && (entry.ExpiresAt is not { } e || k <= e)) return false;
-            _active[existing] = entry;
-        }
-        else
-        {
-            _active.Add(entry);
-        }
+            DurationFor(cast.Spell) is { } d ? mez.Time.AddSeconds(d) : null);
+
+        // Same-name handling (issue #32, reworked from the original keep-earliest rule):
+        // chain-mezzing ONE target is the normal workflow, so a re-landing REFRESHES the
+        // earliest-expiring same-name entry. The exception is several landings in the
+        // same second (an AoE catching same-named mobs): those are distinct creatures
+        // and get their own entries — the UI numbers them.
+        var sameName = _active.Where(m =>
+            m.Target.Equals(mez.Target, StringComparison.OrdinalIgnoreCase)).ToList();
+        var refresh = sameName
+            .Where(m => m.LandedAt != mez.Time)
+            .OrderBy(m => m.ExpiresAt ?? DateTime.MaxValue)
+            .FirstOrDefault();
+        if (refresh is not null) _active.Remove(refresh);
+        _active.Add(entry);
         return true;
     }
 
     private bool OnWornOff(SpellWornOffEvent wo)
     {
-        var i = _active.FindIndex(m => m.Target.Equals(
-            LogParser.Normalize(wo.Target), StringComparison.OrdinalIgnoreCase));
-        if (i < 0) return false;
-        var entry = _active[i];
-        _active.RemoveAt(i);
+        // Among same-named entries the longest-asleep one fades first.
+        var entry = _active
+            .Where(m => m.Target.Equals(
+                LogParser.Normalize(wo.Target), StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.LandedAt)
+            .FirstOrDefault();
+        if (entry is null) return false;
+        _active.Remove(entry);
         // A natural fade measures the full duration; learn the longest observed per
         // exact (ranked) spell name — early breaks shorten gaps, nothing lengthens them.
         var observed = (wo.Time - entry.LandedAt).TotalSeconds;
@@ -224,16 +235,25 @@ public sealed class MezTracker
 
     private bool RemoveTarget(string target)
     {
-        var removed = _active.RemoveAll(m =>
-            m.Target.Equals(LogParser.Normalize(target), StringComparison.OrdinalIgnoreCase));
-        return removed > 0;
+        // ONE entry per break, not all (issue #32): with two mezzed "orc pawn"s, the
+        // tank hitting one must not erase the other's chip. The log can't say which
+        // woke, so drop the earliest-expiring — the least-harmful guess, and a wrong
+        // one self-corrects on the next damage line.
+        var name = LogParser.Normalize(target);
+        var victim = _active
+            .Where(m => m.Target.Equals(name, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.ExpiresAt ?? DateTime.MaxValue)
+            .FirstOrDefault();
+        if (victim is null) return false;
+        _active.Remove(victim);
+        return true;
     }
 
     private void Prune(DateTime now)
     {
         _recentCasts.RemoveAll(c => now - c.Time > CastToLand);
         _active.RemoveAll(m =>
-            (m.ExpiresAt is { } e && now - e > TimeSpan.FromSeconds(5)) ||
+            (m.ExpiresAt is { } e && now - e > ExpiryLinger) ||
             (m.ExpiresAt is null && now - m.LandedAt > UnknownDurationCap));
     }
 

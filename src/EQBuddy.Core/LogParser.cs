@@ -357,7 +357,7 @@ public static partial class LogParser
         if ((r = DotInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
                 int.Parse(r.Groups["dmg"].Value), Melee: false,
-                Ability: r.Groups["spell"].Value);
+                Ability: r.Groups["spell"].Value, OverTime: true);
 
         if ((r = SelfHurtRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, "Yourself",
