@@ -872,9 +872,6 @@ public sealed class SessionStats
         _encounters.Add(new EncounterInfo(target, f.Start, dur, f.DmgOut, f.DmgIn,
             f.DmgOut / dur, outcome, f.Healed)
         { ByAbility = byAbility, HealsBySpell = heals, ByIncoming = byIncoming });
-        _lastFinishedFight = new LastFightInfo(target, dur, f.DmgOut, f.DmgIn, f.Healed,
-            f.DmgOut / dur, f.Healed / dur, outcome, InProgress: false,
-            byAbility, heals, byIncoming);
         if (_encounters.Count > 300) _encounters.RemoveRange(0, 100);
         var mob = Mob(target);
         mob.Encounters++;
@@ -882,27 +879,42 @@ public sealed class SessionStats
     }
 
     /// <summary>
-    /// The fight worth showing at the top of the card: the one in progress, or the last one
-    /// that finished. "In progress" wins because while you're swinging that's the fight you
-    /// care about; its duration and rates are running figures, which is why the caller is
-    /// told which kind it got.
-    ///
-    /// Several fights can be open at once (an add, a nearby pull) — the most recently touched
-    /// one is the one you're actually engaged with.
+    /// The encounter worth showing at the top of the card: the current PULL (open fights
+    /// plus anything that finished within the pull gap of them — an add killed two seconds
+    /// ago is still this encounter), or the last completed pull between pulls. Same
+    /// grouping the History review uses, so the live card and the archive agree on what
+    /// "the fight" was (per David, 2026-08-04).
     /// </summary>
     private LastFightInfo? BuildLastFight()
     {
-        if (_activeFights.Count == 0) return _lastFinishedFight;
-        var (name, f) = _activeFights.MaxBy(kv => kv.Value.Last);
-        var dur = Math.Max(1, (f.Last - f.Start).TotalSeconds);
-        return new LastFightInfo(name, dur, f.DmgOut, f.DmgIn, f.Healed,
-            f.DmgOut / dur, f.Healed / dur, "Fighting", InProgress: true,
-            Breakdown(f.ByAbility), Breakdown(f.HealsBySpell), Breakdown(f.ByIncoming));
-    }
+        // Materialize open fights as in-progress encounters so they group with the
+        // recently finalized ones. 32-fight tail: a pull chain longer than that is
+        // ancient history for a "current fight" card, and grouping stays O(small).
+        var pool = _encounters.TakeLast(32).Concat(_activeFights.Select(kv =>
+            new EncounterInfo(kv.Key, kv.Value.Start,
+                Math.Max(1, (kv.Value.Last - kv.Value.Start).TotalSeconds),
+                kv.Value.DmgOut, kv.Value.DmgIn,
+                kv.Value.DmgOut / Math.Max(1, (kv.Value.Last - kv.Value.Start).TotalSeconds),
+                "Fighting", kv.Value.Healed)
+            {
+                ByAbility = Breakdown(kv.Value.ByAbility),
+                HealsBySpell = Breakdown(kv.Value.HealsBySpell),
+                ByIncoming = Breakdown(kv.Value.ByIncoming),
+            })).ToList();
+        if (pool.Count == 0) return null;
 
-    /// <summary>The last fight that finished, kept whole so it can still be shown between
-    /// pulls. Null until the first fight ends.</summary>
-    private LastFightInfo? _lastFinishedFight;
+        var pull = EncounterGrouping.Group(pool)[^1];
+        var inProgress = pull.Fights.Any(f => f.Outcome == "Fighting");
+        var outcome = inProgress ? "Fighting"
+            : pull.Fights.All(f => f.Outcome == "Killed") ? "Killed"
+            : pull.Fights.Count == 1 ? pull.Fights[0].Outcome   // no self-referential name prefix
+            : string.Join(" · ", pull.Fights.Where(f => f.Outcome is not ("Killed" or "Fighting"))
+                .Select(f => $"{f.Name} {f.Outcome}").Distinct());
+        return new LastFightInfo(pull.Title, pull.DurationSeconds, pull.DamageOut,
+            pull.DamageIn, pull.Healed, pull.Dps, pull.Healed / pull.DurationSeconds,
+            outcome, inProgress, pull.ByAbility, pull.HealsBySpell, pull.ByIncoming)
+        { Fights = pull.Fights };
+    }
 
     private static List<SourceDamage> Breakdown(Dictionary<string, AbilityAgg> d) =>
         d.OrderByDescending(kv => kv.Value.Total)
@@ -1008,7 +1020,7 @@ public sealed class SessionStats
         _activeBuckets.Clear(); _markers.Clear(); _combatSpans.Clear();
         _damageTimeline.Clear();
         _activeFights.Clear(); _encounters.Clear(); _mobs.Clear(); _lastKill = null;
-        _healingFight = null; _lastFinishedFight = null;
+        _healingFight = null;
         _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
         _currentStance = null; _stanceAgg.Clear();
         _currentInvocation = null; _invocationAgg.Clear();

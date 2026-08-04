@@ -94,14 +94,15 @@ public class LastFightTests
         Assert.Equal("Timeout", s.LastFight!.Outcome);
     }
 
-    /// <summary>With an add in play, the fight you're actually engaged with is the one you
-    /// touched last.</summary>
+    /// <summary>Fights separated by more than the pull gap are different encounters —
+    /// the card shows the one you're actually engaged with. (Fights closer together
+    /// group into one pull; EncounterTests covers that side.)</summary>
     [Fact]
-    public void TheMostRecentlyTouchedFightWins()
+    public void AFightPastThePullGapIsANewEncounter()
     {
         var s = Replay(
             At(0, 0, "You slash orc pawn for 10 points of damage."),
-            At(0, 10, "You slash orc centurion for 5 points of damage.")).Snapshot();
+            At(0, 20, "You slash orc centurion for 5 points of damage.")).Snapshot();
 
         Assert.Equal("Orc centurion", s.LastFight!.Name);
     }

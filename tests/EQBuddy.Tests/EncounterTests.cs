@@ -232,6 +232,26 @@ public class EncounterTests
     }
 
     [Fact]
+    public void TheLiveCardShowsTheCurrentPullNotOneCreature()
+    {
+        // Pawn is dead but the add is still swinging: the "current fight" is the PULL —
+        // dead pawn included — not just the creature touched most recently.
+        var s = Replay(
+            At(0, 0, "You slash orc pawn for 30 points of damage."),
+            At(0, 2, "Orc centurion hits YOU for 5 points of damage."),
+            At(0, 4, "You have slain orc pawn!"),
+            At(0, 6, "You slash orc centurion for 40 points of damage.")).Snapshot();
+
+        var f = s.LastFight!;
+        Assert.True(f.InProgress);
+        Assert.Equal("Orc pawn + Orc centurion", f.Name);
+        Assert.Equal(70, f.DamageOut);
+        Assert.Equal(70, f.ByAbility.Single(x => x.Name == "Slash").Total);
+        Assert.Equal(5, f.ByIncoming.Single(x => x.Name == "Orc centurion: Hit").Total);
+        Assert.Equal(2, f.Fights.Count);
+    }
+
+    [Fact]
     public void SameNamedAddsCountInThePullTitle()
     {
         var fights = new List<EncounterInfo>

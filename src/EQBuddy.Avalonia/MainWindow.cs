@@ -53,6 +53,7 @@ public sealed class MainWindow : Window
     private readonly StackPanel _combatFightBody = new();
     private readonly TextBlock _combatFightText = AppTheme.DimText("");
     private readonly ItemsControl _combatFightList = new();
+    private readonly TextBlock _combatFightSplit = AppTheme.DimText("");
     private readonly TextBlock _combatFightOutLabel = AppTheme.Heading("Your damage");
     private readonly TextBlock _combatFightInLabel = AppTheme.Heading("Damage you took");
     private readonly ItemsControl _combatFightInList = new();
@@ -426,6 +427,7 @@ public sealed class MainWindow : Window
         var panel = new StackPanel();
         _combatFightText.Margin = new Thickness(0, 1, 0, 2);
         _combatFightBody.Children.Add(_combatFightText);
+        _combatFightBody.Children.Add(_combatFightSplit);
         _combatFightBody.Children.Add(_combatFightOutLabel);
         _combatFightBody.Children.Add(_combatFightList);
         _combatFightInLabel.Margin = new Thickness(0, 2, 0, 0);
@@ -1111,7 +1113,11 @@ public sealed class MainWindow : Window
             healing ? _healSort : _dmgOutSort, f.DurationSeconds, healing ? "hps" : "dps");
         if (!healing)
         {
-            // Same two-section shape as the WPF card: "Your damage" / "Damage you took".
+            // Same treatment as the WPF card: split line, "Your damage", "Damage you took".
+            _combatFightSplit.IsVisible = f.Fights.Count > 1;
+            if (f.Fights.Count > 1)
+                _combatFightSplit.Text = string.Join(" - ",
+                    f.Fights.Select(x => $"{x.Name} {x.DamageOut:N0}"));
             _combatFightOutLabel.IsVisible = f.ByAbility.Count > 0;
             _combatFightInLabel.IsVisible = f.ByIncoming.Count > 0;
             FillList(_combatFightInList, f.ByIncoming.Select(x =>

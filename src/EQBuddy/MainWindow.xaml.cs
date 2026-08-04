@@ -1019,8 +1019,12 @@ public partial class MainWindow : Window
             f.DurationSeconds, healing ? "hps" : "dps");
         if (!healing)
         {
-            // Same two-section shape as the History encounter review: "Your damage",
-            // then what the creature hit YOU with by attack skill or spell.
+            // Same treatment as the History encounter review: per-creature split when
+            // the pull has several, then "Your damage" and "Damage you took".
+            CombatFightSplit.Visibility = f.Fights.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            if (f.Fights.Count > 1)
+                CombatFightSplit.Text = string.Join(" · ",
+                    f.Fights.Select(x => $"{x.Name} {x.DamageOut:N0}"));
             CombatFightOutLabel.Visibility =
                 f.ByAbility.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             CombatFightInLabel.Visibility =

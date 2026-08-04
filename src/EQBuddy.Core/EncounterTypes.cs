@@ -25,7 +25,12 @@ public sealed record LastFightInfo(
     string Name, double DurationSeconds, long DamageOut, long DamageIn, long Healed,
     double Dps, double Hps, string Outcome, bool InProgress,
     List<SourceDamage> ByAbility, List<SourceDamage> HealsBySpell,
-    List<SourceDamage> ByIncoming);
+    List<SourceDamage> ByIncoming)
+{
+    /// <summary>The per-creature fights inside this pull — the cards show a
+    /// per-creature damage split when there's more than one.</summary>
+    public IReadOnlyList<EncounterInfo> Fights { get; init; } = [];
+}
 
 /// <summary>
 /// A pull: one or more per-creature fights whose activity overlapped or sat within

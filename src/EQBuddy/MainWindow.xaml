@@ -136,6 +136,8 @@
                     <StackPanel x:Name="CombatFightBody" Visibility="Collapsed">
                         <TextBlock x:Name="CombatFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
                                    Margin="0,1,0,2"/>
+                        <TextBlock x:Name="CombatFightSplit" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                                   Margin="0,0,0,2" Visibility="Collapsed"/>
                         <TextBlock x:Name="CombatFightOutLabel" Text="Your damage" FontSize="11"
                                    FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
                                    Visibility="Collapsed"/>
