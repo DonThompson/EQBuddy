@@ -620,10 +620,16 @@ which the history dedup makes safe.
 - The Spawns window is WPF-only so far (Avalonia parity: issue #5); Core/UI.Shared
   hold all the logic, so the port is a thin view.
 - The History DPS-over-time graph, the Custom-theme color editor, the History
-  fight-by-fight review (expandable per-encounter breakdowns), and the mez-target
-  chips are WPF-only; the data lives in Core/UI.Shared, so each is a thin view to
-  port (the Avalonia app already *applies* stored custom colors, and its Combat
-  card does show the last-fight incoming breakdown).
+  fight-by-fight review (expandable per-encounter breakdowns), the mez-target
+  chips, and the item-info popup are WPF-only; the data lives in Core/UI.Shared,
+  so each is a thin view to port (the Avalonia app already *applies* stored custom
+  colors, and its Combat card does show the last-fight incoming breakdown).
+- Item info (click a loot row, or search in the popup): on-demand eqlwiki lookup —
+  stats, vendor value, drops-from, sold-by, quests, recipes — with a 7-day cache
+  and LIVE/CACHED/STALE source labels. One fetch per explicit request, nothing in
+  the background; in-game "+N" upgrade suffixes are stripped (the wiki has base
+  pages only). EqlWikiItemService in Core, fixture-tested against real saved
+  wikitext.
 - Mez chips: a re-landing REFRESHES the same-name chip (chain-mezzing and bard
   pulse songs both depend on this — issue #32); only same-second landings (an AoE
   catching same-named mobs) create separate, numbered chips, and a break clears

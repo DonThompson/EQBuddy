@@ -381,6 +381,21 @@ public partial class MainWindow : Window
     private MezChipsWindow? _mezWindow;
     private readonly MezTracker _mezTracker = new();
 
+    private readonly EqlWikiItemService _wikiItems =
+        new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "items"));
+    private ItemInfoWindow? _itemWindow;
+
+    /// <summary>Loot rows and the search box route here: one shared popup, re-driven
+    /// per lookup.</summary>
+    public void ShowItemInfo(string itemName)
+    {
+        if (_itemWindow is not { IsLoaded: true })
+            _itemWindow = new ItemInfoWindow(_wikiItems) { Owner = this };
+        _itemWindow.Show();
+        _itemWindow.Activate();
+        _itemWindow.Lookup(itemName);
+    }
+
     /// <summary>Re-derives the height caps from the monitor the widget currently
     /// occupies (see MonitorMetrics — primary-only caps halved the widget on portrait
     /// secondary screens, discussion #31).</summary>
@@ -799,7 +814,7 @@ public partial class MainWindow : Window
 
         if (LootSection.IsExpanded)
         {
-            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")));
+            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo);
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
         }
@@ -1570,7 +1585,7 @@ public partial class MainWindow : Window
     }
 
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
-        Func<string, Brush>? valueBrush = null)
+        Func<string, Brush>? valueBrush = null, Action<string>? onNameClick = null)
     {
         var items = rows.ToList();
         list.Items.Clear();
@@ -1584,6 +1599,13 @@ public partial class MainWindow : Window
                 Text = name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
                 Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(0, 1, 8, 1),
             };
+            if (onNameClick is not null)
+            {
+                var clickName = name;
+                left.Cursor = System.Windows.Input.Cursors.Hand;
+                left.ToolTip = "Click for item info (eqlwiki)";
+                left.MouseLeftButtonUp += (_, _) => onNameClick(clickName);
+            }
             var right = new TextBlock
             {
                 Text = value, FontSize = 12,
