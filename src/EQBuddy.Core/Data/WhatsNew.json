@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.31.0",
+    "date": "2026-08-05",
+    "highlights": [
+      "NEW: Item info — click any item in the Loot section (or search in the popup) to see its stats, vendor value, who drops it, who sells it, and what quests want it, straight from eqlwiki. Cached for a week; works offline from cache.",
+      "Loot the game auto-stores now counts: motes routed to currency and pelts sent to the tradeskill depot write a special log line EQBuddy didn't know — mote watch rules were missing every stored mote (thanks joeymavity + shururuun for the exact lines).",
+      "Alerts were playing at HALF volume this whole time — a player-found bug (thanks gl_tchd). Now full volume, with an Alert volume slider in Options.",
+      "Right-click any spawn chip to dismiss it, even mid-countdown (thanks anyhow188).",
+      "The Watch rules guide was rewritten with clearer wording contributed by chaosrah, and the spell-class dropdown finally explains itself. A Nisch Mas Mender joins the Splitpaw catalog (chaosrah again)."
+    ]
+  },
+  {
     "version": "1.30.0",
     "date": "2026-08-04",
     "highlights": [
