@@ -89,7 +89,8 @@ Log cleanup (automatic, optional):
   GamParse is running, so those tools' log positions are never yanked out from under
   them.
 
-Watch rules & alerts:
+Watch rules & alerts — see the **[full Watch List guide](docs/WatchListGuide.md)** with
+screenshots and a use-case cookbook for every rule kind:
 - ⚙ Options → **Watch rules**: add simple match texts (e.g. `mote`) — the 🎯 Tracked
   card shows every matching item name, quantities, and per-hour rates (wall-clock and
   active-play). 📌 pins a chip to the mini dashboard; 🔔 and the sound box fire a
