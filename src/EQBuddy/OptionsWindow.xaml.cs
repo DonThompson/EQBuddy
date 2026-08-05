@@ -44,6 +44,8 @@ public partial class OptionsWindow : Window
 
         foreach (var choice in OptionsViewModel.SoundChoices) SoundCombo.Items.Add(choice);
         SoundCombo.SelectedIndex = _vm.SoundIndex;
+        AlertVolumeSlider.Value = Math.Clamp(_vm.Settings.AlertVolume, 0.1, 1.0);
+        AlertVolumeLabel.Text = $"{AlertVolumeSlider.Value:P0}";
         UpdateSoundFileNote();
 
         BuildRulesEditor();
@@ -305,6 +307,14 @@ public partial class OptionsWindow : Window
 
     private void OnSoundTest(object sender, RoutedEventArgs e) => _main.PlayAlertSound();
 
+    private void OnAlertVolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_ready) return;
+        _vm.Settings.AlertVolume = AlertVolumeSlider.Value;
+        _main.PersistSettings();
+        AlertVolumeLabel.Text = $"{AlertVolumeSlider.Value:P0}";
+    }
+
     private void UpdateSoundFileNote()
     {
         SoundFileNote.Text = _vm.SoundFileNote;
@@ -487,7 +497,10 @@ public partial class OptionsWindow : Window
                 FontSize = 11,
                 MinWidth = 104,
                 Margin = new Thickness(4, 0, 0, 0),
-                ToolTip = "Watch one named spell, or a whole class of spells",
+                // chaosrah (Reddit): the unlabeled dropdown read as a mystery — say
+                // plainly that it's the spell CLASS and that it replaces match text.
+                ToolTip = "Spell class: watch one named spell (\"By name\" + match text), " +
+                    "or a whole class — Charm, Mez, HoT… — with no match text needed",
             };
             foreach (var f in OptionsViewModel.SpellFilterNames) spellFilter.Items.Add(f);
             spellFilter.SelectedIndex = (int)rule.SpellFilter;

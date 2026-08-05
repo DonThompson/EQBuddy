@@ -140,6 +140,14 @@
                             ToolTip="Play the alert sound" Click="OnSoundTest" Margin="4,0,0,0"/>
                 </StackPanel>
             </Grid>
+            <Grid Margin="0,6,0,0">
+                <TextBlock Text="Alert volume" FontSize="12"/>
+                <TextBlock x:Name="AlertVolumeLabel" Text="100%" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource AccentBrush}"/>
+            </Grid>
+            <Slider x:Name="AlertVolumeSlider" Minimum="0.1" Maximum="1.0" TickFrequency="0.05"
+                    IsSnapToTickEnabled="True" Margin="0,4,0,4"
+                    ValueChanged="OnAlertVolumeChanged"/>
             <TextBlock x:Name="SoundFileNote" Style="{StaticResource Dim}" TextWrapping="Wrap"
                        Visibility="Collapsed"/>
             <TextBlock Text="While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus."

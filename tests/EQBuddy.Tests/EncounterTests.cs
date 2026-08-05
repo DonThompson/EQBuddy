@@ -262,6 +262,18 @@ public class EncounterTests
         Assert.Equal("Orc pawn ×2", EncounterGrouping.Group(fights).Single().Title);
     }
 
+    /// <summary>Issue #39 end-to-end: a "mote" loot watch rule must fire when the mote
+    /// routes to currency storage — joeymavity's exact line, previously invisible.</summary>
+    [Fact]
+    public void AMoteLootRuleFiresOnCurrencyStoredMotes()
+    {
+        var stats = Replay(
+            At(0, 0, "You looted a Mote of Major Potential from a spite golem's corpse and stored it in your currency"));
+        var rules = new[] { new TrackedRule { Name = "Motes", Pattern = "mote", Kind = WatchKind.Loot } };
+        var r = Assert.Single(stats.Snapshot(null, rules).Tracked);
+        Assert.Equal(1, r.TotalQuantity);
+    }
+
     [Fact]
     public void KillWatchRuleCountsAndBreaksDown()
     {

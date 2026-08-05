@@ -34,6 +34,10 @@ public sealed class AppSettings
     /// <summary>Alert sound: a built-in name (Ding, Notify, Chimes, Chord, Tada,
     /// Exclamation, Alarm) or the full path of a custom .wav/.mp3 file.</summary>
     public string AlertSound { get; set; } = "Ding";
+    /// <summary>Alert playback volume, 0..1. Defaults to FULL — WPF's MediaPlayer
+    /// default is 0.5 and nothing ever set it, so alerts played at half loudness
+    /// for everyone (Reddit report: "very quiet, needs a booster").</summary>
+    public double AlertVolume { get; set; } = 1.0;
     /// <summary>Position of the floating alert tile; NaN = above the widget.</summary>
     public double AlertLeft { get; set; } = double.NaN;
     public double AlertTop { get; set; } = double.NaN;

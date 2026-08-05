@@ -626,8 +626,8 @@ public sealed class SessionStats
                     break;
                 case LootEvent l:
                     var cur = _loot.TryGetValue(l.Item, out var lv) ? lv : (0, l.Source);
-                    _loot[l.Item] = (cur.Item1 + 1, l.Source);
-                    _lootCount++;
+                    _loot[l.Item] = (cur.Item1 + l.Count, l.Source);
+                    _lootCount += l.Count;
                     // Loot lines name the corpse — explicit creature correlation (CORRELATE-005).
                     Bump(Mob(l.Source).Loot, l.Item);
                     break;

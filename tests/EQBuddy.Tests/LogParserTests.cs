@@ -309,6 +309,26 @@ public class LogParserTests
         Assert.Equal(7, e.Level);
     }
 
+    /// <summary>Issue #39 (joeymavity + shururuun, verbatim lines): loot auto-routed to
+    /// currency / the tradeskill depot skips every other loot line and writes this one —
+    /// with NO trailing period. Until now these were invisible: mote watch rules
+    /// silently missed every stored mote, and the standing lore that "currency-routed
+    /// motes write nothing" turns out to be outdated.</summary>
+    [Theory]
+    [InlineData("You looted a Mote of Major Potential from a spite golem's corpse and stored it in your currency",
+        "Mote of Major Potential", "Spite golem", 1)]
+    [InlineData("You looted a High Quality Bear Skin from a kodiak's corpse and stored it in your tradeskill depot",
+        "High Quality Bear Skin", "Kodiak", 1)]
+    [InlineData("You looted 2 Spider Silk from a giant spider's corpse and stored it in your tradeskill depot",
+        "Spider Silk", "Giant spider", 2)]
+    public void AutoStoredLootCounts(string line, string item, string source, int count)
+    {
+        var e = Parse<LootEvent>(line);
+        Assert.Equal(item, e.Item);
+        Assert.Equal(source, e.Source);
+        Assert.Equal(count, e.Count);
+    }
+
     [Fact]
     public void AaPoint()
     {

@@ -1241,6 +1241,9 @@ public partial class MainWindow : Window
             if (System.IO.File.Exists(file))
             {
                 _alertPlayer ??= new System.Windows.Media.MediaPlayer();
+                // MediaPlayer defaults to HALF volume; this line was the whole
+                // "alerts are very quiet" report.
+                _alertPlayer.Volume = Math.Clamp(_settings.AlertVolume, 0.0, 1.0);
                 _alertPlayer.Open(new Uri(file));
                 _alertPlayer.Play();
                 return;

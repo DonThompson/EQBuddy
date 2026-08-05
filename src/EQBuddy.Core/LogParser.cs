@@ -153,6 +153,15 @@ public static partial class LogParser
     [GeneratedRegex(@"^You looted (?:(?<n>\d+)|an?) (?<item>.+?) from (?<source>.+?)'s corpse and sold it for (?<coins>.+?)\.$")]
     private static partial Regex AutoSellRx();
 
+    // You looted a Mote of Major Potential from a spite golem's corpse and stored it in your currency
+    // You looted a High Quality Bear Skin from a kodiak's corpse and stored it in your tradeskill depot
+    // Auto-storage routing (issue #39, verbatim from joeymavity and shururuun): loot
+    // that goes to currency / the tradeskill depot / the dragon hoard skips every
+    // other loot line — this one has NO trailing period. For years the lore said
+    // currency-routed motes wrote nothing; the game (now) says otherwise.
+    [GeneratedRegex(@"^You looted (?:(?<n>\d+)|an?) (?<item>.+?) from (?<source>.+?)'s corpse and stored it in your (?<where>.+?)\.?$")]
+    private static partial Regex AutoStoreRx();
+
     // You successfully destroyed 1 Spider Venom Sac.
     [GeneratedRegex(@"^You successfully destroyed (?<n>\d+) (?<item>.+?)\.$")]
     private static partial Regex DestroyedRx();
@@ -414,6 +423,11 @@ public static partial class LogParser
                 r.Groups["spell"].Success ? r.Groups["spell"].Value : "Unknown",
                 Outgoing: false, Healer: r.Groups["healer"].Value,
                 OverTime: r.Groups["hot"].Success);
+
+        if ((r = AutoStoreRx().Match(msg)).Success)
+            return new LootEvent(ts, r.Groups["item"].Value, Normalize(r.Groups["source"].Value),
+                UpgradeResult: null,
+                Count: r.Groups["n"].Success ? int.Parse(r.Groups["n"].Value) : 1);
 
         if ((r = AutoSellRx().Match(msg)).Success)
             return new AutoSellEvent(ts, r.Groups["item"].Value,
