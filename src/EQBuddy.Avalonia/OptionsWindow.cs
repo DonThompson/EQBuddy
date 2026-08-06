@@ -27,6 +27,11 @@ public sealed class OptionsWindow : Window
     private readonly ComboBox _windowCombo = new() { Width = 90, FontSize = 12 };
     private readonly ComboBox _soundCombo = new() { Width = 120, FontSize = 12 };
     private readonly TextBlock _soundFileNote = AppTheme.DimText("");
+    private readonly ScrollViewer _contentScroll = new()
+    {
+        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+    };
     private readonly StackPanel _rulesPanel = new() { Margin = new Thickness(0, 4, 0, 0) };
     private readonly Button _guideToggle = AppTheme.IconButton("> Show examples", "Worked examples for every rule kind");
     private readonly Border _guidePanel = new()
@@ -54,14 +59,16 @@ public sealed class OptionsWindow : Window
         ShowInTaskbar = false;
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        _contentScroll.Content = BuildContent();
         Content = new Border
         {
             Background = AppTheme.BgBrush,
             CornerRadius = new CornerRadius(10),
             BorderBrush = AppTheme.BorderBrush,
             BorderThickness = new Thickness(1),
-            Child = BuildContent(),
+            Child = _contentScroll,
         };
+        Opened += (_, _) => UpdateHeightLimit();
         PointerPressed += OnDrag;
         _scaleSlider.Value = main.UiScale;
         _opacitySlider.Value = main.WidgetOpacity;
@@ -144,6 +151,20 @@ public sealed class OptionsWindow : Window
         ToggleGuide(main.Settings.ShowWatchGuide, persist: false);
         UpdateLabels();
         _ready = true;
+    }
+
+    private void UpdateHeightLimit()
+    {
+        var screen = Screens.ScreenFromWindow(this);
+        if (screen is null) return;
+
+        // Size to the content while it fits, then give the ScrollViewer a real viewport
+        // once the options grow beyond the current monitor. Without this bound the window
+        // simply kept measuring taller and the lower controls became unreachable.
+        var workingHeight = screen.WorkingArea.Height / screen.Scaling;
+        var availableHeight = Math.Max(240, workingHeight - 40);
+        MaxHeight = availableHeight;
+        _contentScroll.MaxHeight = availableHeight - 2; // outer border
     }
 
     private Control BuildContent()

@@ -77,6 +77,34 @@ public class OptionsRenderTests : IDisposable
         main.Close();
     }
 
+    [AvaloniaFact]
+    public void LongOptionsContentHasABoundedScrollableViewport()
+    {
+        var main = new MainWindow();
+        main.Show();
+        for (var i = 0; i < 30; i++)
+            main.Settings.TrackedRules.Add(new TrackedRule
+            {
+                Name = $"extra rule {i}", Pattern = $"pattern {i}", Kind = WatchKind.Text,
+            });
+
+        var options = new OptionsWindow(main);
+        options.Show();
+        var scroll = options.GetVisualDescendants().OfType<ScrollViewer>()
+            .Single(s => s.Content is StackPanel { Width: 520 });
+
+        Assert.Equal(global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
+            scroll.VerticalScrollBarVisibility);
+        Assert.True(scroll.MaxHeight < double.PositiveInfinity);
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height,
+            $"content {scroll.Extent.Height}px should exceed viewport {scroll.Viewport.Height}px");
+        scroll.Offset = new global::Avalonia.Vector(0, 100);
+        Assert.True(scroll.Offset.Y > 0);
+
+        options.Close();
+        main.Close();
+    }
+
     /// <summary>Each rule offers a real sound choice, not just on/off — and the two rules in
     /// the fixture keep their different sounds.</summary>
     [AvaloniaFact]
