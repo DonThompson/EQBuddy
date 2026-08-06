@@ -148,6 +148,19 @@ public static partial class LogParser
     [GeneratedRegex(@"^You have gained (?:an|(?<n>\d+)) ability point(?:s|\(s\))?! +You now have (?<total>\d+) ability point(?:s|\(s\))?\.$")]
     private static partial Regex AaRx();
 
+    // You have gained the ability "Quick Buff" at a cost of 5 ability points.
+    // You have improved Combat Fury 3 at a cost of 3 ability points.
+    // You have improved Symphonic Aura: Enabled 4 at a cost of 0 ability points.
+    // (Dranak/Hugzee logs, 2026-08-06.) "gained the ability" is the rank-1 purchase with the
+    // name quoted; "improved <name> <rank>" is every later rank, unquoted with a trailing
+    // rank number. Cost 0 marks innate grants and free toggle flips — parsed, not skipped:
+    // the AA ledger wants those too (an innate can still change durations).
+    [GeneratedRegex(@"^You have gained the ability ""(?<ability>.+?)"" at a cost of (?<cost>\d+) ability points?\.$")]
+    private static partial Regex AaPurchaseRx();
+
+    [GeneratedRegex(@"^You have improved (?<ability>.+?) (?<rank>\d+) at a cost of (?<cost>\d+) ability points?\.$")]
+    private static partial Regex AaImproveRx();
+
     // You looted a Snake Egg from an asp's corpse and sold it for 4 copper.
     // You looted 2 Spider Silk from a giant spider's corpse and sold it for 2 gold, 8 silver and 6 copper.
     [GeneratedRegex(@"^You looted (?:(?<n>\d+)|an?) (?<item>.+?) from (?<source>.+?)'s corpse and sold it for (?<coins>.+?)\.$")]
@@ -486,6 +499,14 @@ public static partial class LogParser
         if ((r = AaRx().Match(msg)).Success)
             return new AaEvent(ts, int.Parse(r.Groups["total"].Value),
                 Points: r.Groups["n"].Success ? int.Parse(r.Groups["n"].Value) : 1);
+
+        if ((r = AaPurchaseRx().Match(msg)).Success)
+            return new AaPurchaseEvent(ts, r.Groups["ability"].Value, Rank: 1,
+                int.Parse(r.Groups["cost"].Value));
+
+        if ((r = AaImproveRx().Match(msg)).Success)
+            return new AaPurchaseEvent(ts, r.Groups["ability"].Value,
+                int.Parse(r.Groups["rank"].Value), int.Parse(r.Groups["cost"].Value));
 
         if ((r = SkillUpRx().Match(msg)).Success)
             return new SkillUpEvent(ts, r.Groups["skill"].Value, int.Parse(r.Groups["value"].Value));

@@ -235,6 +235,33 @@ public class EncounterTests
     }
 
     [Fact]
+    public void AaPurchasesBuildALedgerThatSurvivesSessionResets()
+    {
+        // Verbatim shapes from Dranak/Hugzee logs 2026-08-06: rank 1 is "gained the
+        // ability" with the name quoted, later ranks are "improved <name> <rank>".
+        var stats = Replay(
+            At(0, 0, "You have gained the ability \"Combat Fury\" at a cost of 1 ability points."),
+            At(0, 5, "You have improved Combat Fury 2 at a cost of 2 ability points."),
+            At(0, 9, "You have improved Combat Fury 3 at a cost of 3 ability points."),
+            At(1, 0, "You have gained the ability \"Innate Divine Healing\" at a cost of 0 ability points."),
+            At(2, 0, "You have improved Symphonic Aura: Enabled 4 at a cost of 0 ability points."));
+        var s = stats.Snapshot();
+        Assert.Equal(3, s.AaAbilities.Single(a => a.Name == "Combat Fury").Rank);
+        Assert.Equal(1, s.AaAbilities.Single(a => a.Name == "Innate Divine Healing").Rank);
+        Assert.Equal(4, s.AaAbilities.Single(a => a.Name == "Symphonic Aura: Enabled").Rank);
+
+        // The ledger is character state: a session-gap reset keeps it (the full-log replay
+        // crosses gap resets, and purchases before the gap must not be forgotten)...
+        stats.Apply(LogParser.Parse(
+            "[Sat Jul 18 17:30:00 2026] You slash a rat for 1 points of damage.")!);
+        Assert.Equal(3, stats.Snapshot().AaAbilities.Single(a => a.Name == "Combat Fury").Rank);
+
+        // ...while a character switch wipes it.
+        stats.ClearCharacterState();
+        Assert.Empty(stats.Snapshot().AaAbilities);
+    }
+
+    [Fact]
     public void OverlappingFightsGroupIntoOnePullAndGapsSplitThem()
     {
         var s = Replay(

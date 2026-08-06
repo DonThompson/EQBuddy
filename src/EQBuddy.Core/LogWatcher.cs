@@ -125,6 +125,7 @@ public sealed class LogWatcher : IDisposable
             _offset = 0;
             _remainder.Clear();
             InitialIngestDone = false;
+            _stats.ClearCharacterState();
             _stats.Reset();
         }
         Task.Run(() =>

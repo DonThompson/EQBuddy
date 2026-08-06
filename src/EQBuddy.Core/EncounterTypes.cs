@@ -122,6 +122,11 @@ public sealed record MobSummary(
 /// <summary>Combat time and damage while a stance was active (STANCE-*).</summary>
 public sealed record StanceInfo(string Name, double CombatSeconds, long Damage, double Dps);
 
+/// <summary>An owned AA ability: highest rank observed in the log and when it was bought.
+/// The ledger feeds duration models — an AA can lengthen buffs or mez far past the spell's
+/// base numbers, and "why does MY mez run long" starts here.</summary>
+public sealed record AaAbilityInfo(string Name, int Rank, DateTime Time);
+
 /// <summary>A spell observed hitting several creatures at once, measured per cast.
 /// AvgTargets below MaxTargets means some casts caught fewer creatures than the best one —
 /// the gap between them is how much AoE value is being left on the table by pull size.</summary>

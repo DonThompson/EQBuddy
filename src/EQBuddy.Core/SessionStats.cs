@@ -117,6 +117,10 @@ public sealed class SessionStats
     private double _xpPercent; private int _xpTicks;
     private double _xpSinceLevel;
     private int _aaGained; private int _aaTotal;
+    /// <summary>AA abilities owned: name → (highest observed rank, when). Survives session
+    /// resets deliberately — purchases are character state, not session activity, and the
+    /// duration models that read them need the full picture, not since-last-camp.</summary>
+    private readonly Dictionary<string, (int Rank, DateTime Time)> _aaAbilities = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(DateTime Time, int Level)> _levels = new();
 
     private readonly Dictionary<string, (int Ups, int Value)> _skills = new(StringComparer.OrdinalIgnoreCase);
@@ -677,6 +681,12 @@ public sealed class SessionStats
                 case AaEvent aa:
                     _aaGained += aa.Points; _aaTotal = aa.TotalPoints;
                     break;
+                case AaPurchaseEvent ap:
+                    // Highest rank wins regardless of replay order; a re-observed rank-1
+                    // "gained" after an "improved" (log replay) must not regress the ledger.
+                    if (!_aaAbilities.TryGetValue(ap.Ability, out var known) || ap.Rank > known.Rank)
+                        _aaAbilities[ap.Ability] = (ap.Rank, ap.Time);
+                    break;
                 case StanceEvent stc:
                     // Close the open combat window under the OLD stance before switching,
                     // so its time is attributed correctly.
@@ -1057,6 +1067,17 @@ public sealed class SessionStats
         lock (_lock) ResetLocked();
     }
 
+    /// <summary>Wipe character-scoped state that outlives session resets (the AA ledger).
+    /// Called on character switch, where the whole new log is replayed anyway — NOT part of
+    /// <see cref="ResetLocked"/>, because the initial full-log ingest replays session-gap
+    /// resets and clearing there would forget every purchase made before the last gap.
+    /// Caveat (until the ledger gets a durable store): log truncation erases purchase
+    /// lines, so a restart after auto-empty starts the ledger over.</summary>
+    public void ClearCharacterState()
+    {
+        lock (_lock) _aaAbilities.Clear();
+    }
+
     private void ResetLocked()
     {
         _sessionStart = null; _lastEventTime = null;
@@ -1317,6 +1338,8 @@ public sealed class SessionStats
                     ? Math.Max(0, 100 - Math.Min(_xpSinceLevel, 100)) / (_xpPercent / hours)
                     : null,
                 AaGained = _aaGained,
+                AaAbilities = _aaAbilities.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(kv => new AaAbilityInfo(kv.Key, kv.Value.Rank, kv.Value.Time)).ToList(),
                 AaTotal = _aaTotal,
                 AaPerHour = _aaGained / hours,
                 Levels = _levels.Select(l => new TimedDetail(l.Time, $"Level {l.Level}")).ToList(),
@@ -1461,6 +1484,9 @@ public sealed class StatsSnapshot
     /// <summary>Estimated hours to next level at this session's XP rate; null when the rate is negligible. Exact when a level-up was seen this session, otherwise an upper bound.</summary>
     public double? HoursToLevel { get; init; }
     public int AaGained { get; init; }
+    /// <summary>AA abilities owned (name, highest rank seen, last purchase time) —
+    /// character-scoped, rebuilt from the whole log at ingest, alphabetical.</summary>
+    public List<AaAbilityInfo> AaAbilities { get; init; } = [];
     public int AaTotal { get; init; }
     public double AaPerHour { get; init; }
     public List<TimedDetail> Levels { get; init; } = [];

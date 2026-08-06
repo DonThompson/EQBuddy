@@ -348,6 +348,33 @@ public class LogParserTests
         Assert.Equal(2, e.Points);
     }
 
+    /// <summary>Rank-1 AA purchase: quoted name, cost included (Hugzee's log, 2026-08-06).
+    /// Cost 0 marks innate grants — parsed like the rest, the ledger wants those too.</summary>
+    [Theory]
+    [InlineData("You have gained the ability \"Quick Buff\" at a cost of 5 ability points.", "Quick Buff", 5)]
+    [InlineData("You have gained the ability \"Innate Divine Healing\" at a cost of 0 ability points.", "Innate Divine Healing", 0)]
+    public void AaAbilityPurchase(string line, string ability, int cost)
+    {
+        var e = Parse<AaPurchaseEvent>(line);
+        Assert.Equal(ability, e.Ability);
+        Assert.Equal(1, e.Rank);
+        Assert.Equal(cost, e.Cost);
+    }
+
+    /// <summary>Rank upgrades: unquoted name with a trailing rank number. The name can
+    /// itself contain a colon suffix ("Symphonic Aura: Enabled") — the rank is always the
+    /// final number before "at a cost".</summary>
+    [Theory]
+    [InlineData("You have improved Combat Fury 3 at a cost of 3 ability points.", "Combat Fury", 3, 3)]
+    [InlineData("You have improved Symphonic Aura: Enabled 4 at a cost of 0 ability points.", "Symphonic Aura: Enabled", 4, 0)]
+    public void AaAbilityImprovement(string line, string ability, int rank, int cost)
+    {
+        var e = Parse<AaPurchaseEvent>(line);
+        Assert.Equal(ability, e.Ability);
+        Assert.Equal(rank, e.Rank);
+        Assert.Equal(cost, e.Cost);
+    }
+
     [Fact]
     public void SkillUp()
     {
