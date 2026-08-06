@@ -88,8 +88,13 @@ public sealed partial class EqlWikiMobService
             yield return title;
             yield return "A " + lower;
             if ("aeiou".Contains(lower[0])) yield return "An " + lower;
+            // Normalize strips EVERY leading article, including "The" — but named mobs
+            // often live at "The <Name>" pages ("The Prophet" in Crushbone showed no
+            // drops, David 2026-08-06; bare "Prophet" is missing on the wiki).
+            yield return "The " + lower;
             yield return titleCase;
             yield return "A " + titleCase;
+            yield return "The " + titleCase;
             var noBacktick = title.Replace("`", "");
             if (noBacktick != title)
             {

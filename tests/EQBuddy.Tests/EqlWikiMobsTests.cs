@@ -50,6 +50,22 @@ public class EqlWikiMobsTests
     }
 
     [Fact]
+    public async Task TheNamedMobsResolveViaTheirArticle()
+    {
+        // Normalize strips "the " like any article, so The Prophet arrives as "Prophet" —
+        // and bare "Prophet" is missing on the wiki (David's report: a well-known named
+        // showing no drops). The ladder must try the "The" forms.
+        var svc = new EqlWikiMobService(
+            Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
+            title => Task.FromResult<string?>(title == "The Prophet"
+                ? "{{Namedmobpage\n| name = The Prophet\n| known_loot = \n{{:Prophet Skull}}\n}}"
+                : null));
+        var result = await svc.LookupAsync("Prophet");
+        Assert.Equal(ItemLookupState.Live, result.State);
+        Assert.Equal("Prophet Skull", result.Mob!.Drops.Single().Item);
+    }
+
+    [Fact]
     public async Task MissingMobIsNotFoundAfterAllCandidates()
     {
         var svc = new EqlWikiMobService(
