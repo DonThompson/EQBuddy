@@ -1829,6 +1829,9 @@ public partial class MainWindow : Window
                 var clickName = name;
                 left.Cursor = System.Windows.Input.Cursors.Hand;
                 left.ToolTip ??= "Click for item info (eqlwiki)";
+                // Swallow the down so it can't start a window DragMove and eat the Up
+                // (the discussion #46 failure mode, same fix as the breakout rows).
+                left.MouseLeftButtonDown += (_, ev) => ev.Handled = true;
                 left.MouseLeftButtonUp += (_, _) => onNameClick(clickName);
             }
             var right = new TextBlock
