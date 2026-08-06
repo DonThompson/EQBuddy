@@ -1,5 +1,18 @@
 [
  {
+  "version": "1.33.0",
+  "date": "2026-08-06",
+  "highlights": [
+   "The beta features grew up fast — one afternoon of live testing and your feedback produced everything below. Keep it coming via the new GREEN ✉ button, now right in the title bar.",
+   "NEW (beta): Loot breakout — star 🎒 and minimize: while you fight, the window shows what the creature can drop (your counts and % first, wiki drops behind, duplicates like \"+2\" tiers folded together). /consider something and it targets that instead — and multi-creature pulls show the whole group's possible loot merged, since the log can't know which one you've targeted. Hover any item for its wiki info (fetched on the spot); click to open its eqlwiki page. A Target | Session toggle flips to what you've looted.",
+   "NEW (beta): Watch breakout — pin 📌 any watch rule and minimize: a floating window shows every pinned rule with counts and per-hour rates (CrispyPigeon131's mote-window idea).",
+   "Breakout windows now RESIZE: drag the ⋰ grip and the list scrolls inside whatever size you set (double-click the grip to auto-size again). The damage/healing/pet windows also gained sort links — total · hits · avg · dps.",
+   "Regen songs finally show as healing: Hymn of Restoration ticks carry no amounts in the log, so EQBuddy now ESTIMATES — and since instruments and ranks raise the real number, you can type your true hp/tick into Options and your number wins (read it off the heal text over your head).",
+   "Sort the Loot list by name or count (Klona11), and a new Options toggle hides the widget while the game is running but not focused — alt-tab friendly (sicliffe-cloud).",
+   "A second EQBuddy launch can no longer crash on startup — fix contributed by ahaselden. Also patched a security advisory in the bundled SQLite library."
+  ]
+ },
+ {
   "version": "1.32.0",
   "date": "2026-08-06",
   "highlights": [
