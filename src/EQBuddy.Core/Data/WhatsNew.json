@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.34.0",
+  "date": "2026-08-06",
+  "highlights": [
+   "FIXED: EQBuddy was silently swallowing Ctrl+Shift+T (reopen browser tab) and a few other shortcuts from EVERY app on your PC — the global hotkeys registered system-wide. They're gone entirely (thanks to the sharp-eyed Reddit report). Everything they did is on the widget itself: – for mini mode, right-click for camp markers and click-through.",
+   "Click-through moved to the right-click menu, with a small 🔒 chip beside the widget while it's on — click the chip to interact again (a click-through window can't be clicked to unlock itself).",
+   "✕ on a breakout window now hides it for good — its ⭐ chip stays on the mini pill, and Options → Breakout windows has checkboxes to bring any window back (thanks Frankthetankk, reported through Send feedback within an hour of 1.33.0)."
+  ]
+ },
+ {
   "version": "1.33.0",
   "date": "2026-08-06",
   "highlights": [
