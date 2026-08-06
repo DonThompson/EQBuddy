@@ -38,6 +38,7 @@ public partial class OptionsWindow : Window
         PinChipsCheck.IsChecked = _vm.PinWatchChips;
         TutorialCheck.IsChecked = _vm.ShowTutorial;
         TargetDropsCheck.IsChecked = _vm.ShowTargetDrops;
+        HideUnfocusedCheck.IsChecked = _vm.HideWhenGameUnfocused;
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
 
         foreach (var choice in OptionsViewModel.WindowChoices) WindowCombo.Items.Add(choice);
@@ -118,6 +119,11 @@ public partial class OptionsWindow : Window
     private void OnTargetDropsToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.ShowTargetDrops = TargetDropsCheck.IsChecked == true;
+    }
+
+    private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _vm.HideWhenGameUnfocused = HideUnfocusedCheck.IsChecked == true;
     }
 
     /// <summary>Called back by MainWindow.SetTrackSpawns so closing the Spawns window

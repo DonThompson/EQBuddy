@@ -7,8 +7,9 @@ using EQBuddy.Core;
 namespace EQBuddy;
 
 /// <summary>Which stat a breakout window tracks. Each kind is one singleton window with its
-/// own remembered position and Fight/Session scope.</summary>
-public enum BreakoutKind { Damage, Healing, Pet }
+/// own remembered position and Fight/Session scope (Watch has no scope — watch rules are
+/// session counters, so its toggle is hidden).</summary>
+public enum BreakoutKind { Damage, Healing, Pet, Watch }
 
 /// <summary>
 /// A small floating bar-chart window for one stat — your damage, your healing, or the pet's
@@ -60,6 +61,7 @@ public partial class BreakoutWindow : Window
             Top = area.Top + 80 + 150 * (int)kind;
         }
         Closed += (_, _) => SavePosition();
+        if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
         ApplyScopeVisual();
     }
 
@@ -76,7 +78,7 @@ public partial class BreakoutWindow : Window
         {
             case BreakoutKind.Damage: _settings.BreakoutDamageScope = v; break;
             case BreakoutKind.Healing: _settings.BreakoutHealingScope = v; break;
-            default: _settings.BreakoutPetScope = v; break;
+            case BreakoutKind.Pet: _settings.BreakoutPetScope = v; break;
         }
         _settings.Save();
     }
@@ -85,7 +87,8 @@ public partial class BreakoutWindow : Window
     {
         BreakoutKind.Damage => (_settings.BreakoutDamageLeft, _settings.BreakoutDamageTop),
         BreakoutKind.Healing => (_settings.BreakoutHealingLeft, _settings.BreakoutHealingTop),
-        _ => (_settings.BreakoutPetLeft, _settings.BreakoutPetTop),
+        BreakoutKind.Pet => (_settings.BreakoutPetLeft, _settings.BreakoutPetTop),
+        _ => (_settings.BreakoutWatchLeft, _settings.BreakoutWatchTop),
     };
 
     /// <summary>Persist the spot on hide as well as close — the window is hidden and
@@ -98,8 +101,10 @@ public partial class BreakoutWindow : Window
                 _settings.BreakoutDamageLeft = Left; _settings.BreakoutDamageTop = Top; break;
             case BreakoutKind.Healing:
                 _settings.BreakoutHealingLeft = Left; _settings.BreakoutHealingTop = Top; break;
-            default:
+            case BreakoutKind.Pet:
                 _settings.BreakoutPetLeft = Left; _settings.BreakoutPetTop = Top; break;
+            default:
+                _settings.BreakoutWatchLeft = Left; _settings.BreakoutWatchTop = Top; break;
         }
         _settings.Save();
     }
@@ -108,6 +113,7 @@ public partial class BreakoutWindow : Window
     /// actually changed (same signature idiom as the chip windows).</summary>
     public void Update(StatsSnapshot s)
     {
+        if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
         var f = s.LastFight;
         var (title, rows, secs, rateLabel) = _kind switch
         {
@@ -151,6 +157,47 @@ public partial class BreakoutWindow : Window
         if (sig == _signature) return;
         _signature = sig;
         BreakdownRows.FillAbilityRows(this, Rows, rows, Math.Max(1, secs), rateLabel, max: 10);
+    }
+
+    /// <summary>The Watch breakout: every 📌-pinned rule as a bar row — count, last match,
+    /// per-hour rate. "Search an item and add it to the window" is exactly what adding and
+    /// pinning a watch rule already does, so the window rides that instead of inventing a
+    /// second tracking system (CrispyPigeon131's mote window, discussion #44).</summary>
+    private void UpdateWatch(StatsSnapshot s)
+    {
+        TitleText.Text = "🎯 Watch list";
+        var pinnedIds = _settings.TrackedRules
+            .Where(r => r.Enabled && r.Pinned).Select(r => r.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        var rows = s.Tracked.Where(t => pinnedIds.Contains(t.Id)).ToList();
+
+        var total = rows.Sum(r => r.TotalQuantity);
+        SubText.Text = $"Session · {rows.Count} pinned rule{(rows.Count == 1 ? "" : "s")} · {total} total";
+
+        var empty = rows.Count == 0;
+        EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        if (empty)
+        {
+            EmptyText.Text = "Pin 📌 a watch rule in Options to track it here.";
+            Rows.Items.Clear();
+            _signature = "";
+            return;
+        }
+
+        var sig = "watch|" + string.Join(",", rows.Select(r => $"{r.Id}:{r.TotalQuantity}:{r.LastItem}"));
+        if (sig == _signature) return;
+        _signature = sig;
+
+        Rows.Items.Clear();
+        var top = Math.Max(1, rows.Max(r => r.TotalQuantity));
+        var barBrush = BreakdownRows.BarBrush(this);
+        foreach (var r in rows.OrderByDescending(x => x.TotalQuantity))
+        {
+            var value = $"{r.TotalQuantity} · {r.PerHour:0.#}/hr";
+            var tooltip = r.LastItem is { Length: > 0 } li ? $"last: {li}" : null;
+            Rows.Items.Add(BreakdownRows.Row(this, r.Name, value,
+                (double)r.TotalQuantity / top, barBrush, tooltip));
+        }
     }
 
     private void ApplyScopeVisual()

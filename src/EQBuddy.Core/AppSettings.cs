@@ -130,6 +130,16 @@ public sealed class AppSettings
     /// fought). Default on; the toggle exists for lean-card people.</summary>
     public bool ShowTargetDrops { get; set; } = true;
 
+    /// <summary>Loot list order: "count" (biggest stacks first, the original behavior) or
+    /// "name" (alphabetical — Klona11's ask, discussion #43).</summary>
+    public string LootSort { get; set; } = "count";
+
+    /// <summary>Hide the widget (and its satellite windows) while the game is running but
+    /// NOT the foreground app — alt-tabbing to a browser shouldn't leave the widget over
+    /// its buttons (sicliffe-cloud, discussion #41). Off by default; when the game isn't
+    /// running at all the widget always shows (people configure it outside the game).</summary>
+    public bool HideWhenGameUnfocused { get; set; }
+
     // Breakout stat windows (BREAKOUT-*): one position + Fight/Session scope per kind.
     // They open while the widget is minimized with the matching star set, so there is no
     // enabled flag — the star is the switch.
@@ -142,6 +152,10 @@ public sealed class AppSettings
     public double BreakoutPetLeft { get; set; } = double.NaN;
     public double BreakoutPetTop { get; set; } = double.NaN;
     public string BreakoutPetScope { get; set; } = "fight";
+    /// <summary>The Watch breakout (CrispyPigeon131, discussion #44): pinned watch rules
+    /// as a floating window while minimized. No scope — rules are session counters.</summary>
+    public double BreakoutWatchLeft { get; set; } = double.NaN;
+    public double BreakoutWatchTop { get; set; } = double.NaN;
 
     private static string FilePath => AppPaths.File("settings.json");
 

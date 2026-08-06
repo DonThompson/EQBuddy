@@ -199,6 +199,11 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         get => _settings.ShowTargetDrops;
         set { _settings.ShowTargetDrops = value; PersistAnd(); }
     }
+    public bool HideWhenGameUnfocused
+    {
+        get => _settings.HideWhenGameUnfocused;
+        set { _settings.HideWhenGameUnfocused = value; PersistAnd(); }
+    }
 
     // ---- recent-rate window ----
     public static readonly string[] WindowChoices = ["5 min", "15 min", "30 min"];

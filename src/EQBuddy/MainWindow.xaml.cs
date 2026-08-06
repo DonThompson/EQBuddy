@@ -516,6 +516,14 @@ public partial class MainWindow : Window
         cw.Close();   // saves the stack position on the way out
     }
 
+    private void OnLootSort(object sender, MouseButtonEventArgs e)
+    {
+        _settings.LootSort = (string)((FrameworkElement)sender).Tag;
+        _settings.Save();
+        RefreshUi();
+        e.Handled = true;
+    }
+
     private void OnPetAbilitiesToggled(object sender, MouseButtonEventArgs e)
     {
         _settings.ShowPetAbilities = !_settings.ShowPetAbilities;
@@ -650,6 +658,8 @@ public partial class MainWindow : Window
 
     private void RefreshUi()
     {
+        UpdateFocusHide();
+
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
         // off the shared tick so a hidden window can't silence a camp.
         if (_settings.TrackSpawns)
@@ -665,7 +675,7 @@ public partial class MainWindow : Window
             // Chicklets are the ambient face of spawn tracking: the stack exists exactly
             // while timers do — including alongside the full window, which is a browser,
             // not a replacement. No pop-open of the full window, ever (David's design).
-            var hasTimers = _spawnsVm.HasActiveTimers(DateTime.Now);
+            var hasTimers = !_hiddenForFocus && _spawnsVm.HasActiveTimers(DateTime.Now);
             if (hasTimers)
             {
                 if (_chipsWindow is not { IsLoaded: true })
@@ -688,7 +698,7 @@ public partial class MainWindow : Window
         // The mez stack lives its own life, independent of spawn tracking: it exists
         // exactly while a mez is believed active, in its own window (David's call —
         // mez chips park next to the fight, spawn chips are ambient).
-        if (_mezTracker.Snapshot(DateTime.Now).Count > 0)
+        if (!_hiddenForFocus && _mezTracker.Snapshot(DateTime.Now).Count > 0)
         {
             if (_mezWindow is not { IsLoaded: true })
             {
@@ -894,7 +904,14 @@ public partial class MainWindow : Window
 
         if (LootSection.IsExpanded)
         {
-            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo,
+            var byName = _settings.LootSort == "name";
+            LootSortBar.Visibility = s.Loot.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            LootSortName.Foreground = (Brush)FindResource(byName ? "AccentBrush" : "DimBrush");
+            LootSortCount.Foreground = (Brush)FindResource(byName ? "DimBrush" : "AccentBrush");
+            var loot = byName
+                ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
+                : s.Loot;
+            FillList(LootList, loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo,
                 tooltip: ItemHoverStats);
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
@@ -1438,17 +1455,23 @@ public partial class MainWindow : Window
     private readonly Dictionary<BreakoutKind, BreakoutWindow> _breakouts = new();
     private readonly HashSet<BreakoutKind> _breakoutDismissed = new();
 
-    private static readonly (BreakoutKind Kind, string StarKey)[] BreakoutStars =
-        [(BreakoutKind.Damage, "dps"), (BreakoutKind.Healing, "hps"), (BreakoutKind.Pet, "pet")];
-
-    /// <summary>Open/refresh/hide the breakout windows to match the stars: each shows while
-    /// the widget is minimized and its stat is starred, unless ✕-dismissed this stint.</summary>
+    /// <summary>Open/refresh/hide the breakout windows: each shows while the widget is
+    /// minimized and its condition holds — a star for the stat kinds, any 📌-pinned rule
+    /// for the Watch list — unless ✕-dismissed this stint or hidden with the game
+    /// unfocused.</summary>
     private void UpdateBreakouts(StatsSnapshot s)
     {
-        foreach (var (kind, starKey) in BreakoutStars)
+        foreach (var kind in Enum.GetValues<BreakoutKind>())
         {
-            var want = _settings.Minimized && _settings.MiniStats.Contains(starKey) &&
-                       !_breakoutDismissed.Contains(kind);
+            var want = _settings.Minimized && !_hiddenForFocus &&
+                       !_breakoutDismissed.Contains(kind) && kind switch
+                       {
+                           BreakoutKind.Damage => _settings.MiniStats.Contains("dps"),
+                           BreakoutKind.Healing => _settings.MiniStats.Contains("hps"),
+                           BreakoutKind.Pet => _settings.MiniStats.Contains("pet"),
+                           _ => _settings.PinWatchChips &&
+                                _settings.TrackedRules.Any(r => r.Enabled && r.Pinned),
+                       };
             _breakouts.TryGetValue(kind, out var w);
             if (want)
             {
@@ -1765,6 +1788,43 @@ public partial class MainWindow : Window
         }
     }
 
+    // ---- hide while the game is unfocused (FOCUS-*, discussion #41) ----
+
+    private bool _hiddenForFocus;
+
+    /// <summary>When enabled, the widget hides while the game runs WITHOUT being the
+    /// foreground app — alt-tab to a browser and the corner it lives in is the browser's
+    /// again. Never hides when the game isn't running (configuring the widget outside the
+    /// game must stay possible) or when EQBuddy itself is what has focus (clicking the
+    /// widget must not vanish it). Satellite windows follow via their own tick gates.</summary>
+    private void UpdateFocusHide()
+    {
+        var hide = ShouldHideForFocus();
+        if (hide == _hiddenForFocus) return;
+        _hiddenForFocus = hide;
+        Visibility = hide ? Visibility.Hidden : Visibility.Visible;
+    }
+
+    private bool ShouldHideForFocus()
+    {
+        if (!_settings.HideWhenGameUnfocused) return false;
+        var fg = Native.GetForegroundWindow();
+        if (fg == IntPtr.Zero) return false;
+        Native.GetWindowThreadProcessId(fg, out var fgPid);
+        if (fgPid == (uint)Environment.ProcessId) return false;
+        try
+        {
+            using var p = System.Diagnostics.Process.GetProcessById((int)fgPid);
+            if (p.ProcessName.Equals("eqgame", StringComparison.OrdinalIgnoreCase)) return false;
+        }
+        catch { return false; }   // foreground process already gone — don't flicker
+
+        // Foreground is some third app: hide only if the game is actually running.
+        var game = System.Diagnostics.Process.GetProcessesByName("eqgame");
+        try { return game.Length > 0; }
+        finally { foreach (var g in game) g.Dispose(); }
+    }
+
     // ---- global hotkeys + click-through (INPUT-*) ----
 
     private System.Windows.Interop.HwndSource? _hwndSource;
@@ -1789,6 +1849,11 @@ public partial class MainWindow : Window
 
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         public static extern bool GetCursorPos(out Point point);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
     }
 
     /// <summary>
