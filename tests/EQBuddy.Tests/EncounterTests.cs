@@ -204,6 +204,37 @@ public class EncounterTests
     }
 
     [Fact]
+    public void FightCarriesThePetsOwnAbilitySplit()
+    {
+        // The pet stays ONE row in ByAbility; the per-fight split by the pet's own ability
+        // lives beside it (Pet breakout window / History, 2026-08-06). Session-wide
+        // PetAbilities already existed — this pins the per-fight counterpart.
+        var s = Replay(
+            At(0, 0, "Jibekn told you, 'Attacking orc pawn Master.'"),
+            At(0, 1, "Jibekn slashes orc pawn for 20 points of damage."),
+            At(0, 2, "Jibekn slashes orc pawn for 22 points of damage. (Critical)"),
+            At(0, 3, "Jibekn hit orc pawn for 15 points of fire damage by Burst of Flame."),
+            At(0, 4, "You slash orc pawn for 30 points of damage."),
+            At(0, 5, "You have slain orc pawn!")).Snapshot();
+
+        var f = s.LastFight!;
+        Assert.Equal(57, f.ByAbility.Single(x => x.Name == "Pet (Jibekn)").Total);
+        var slash = f.PetAbilities.Single(x => x.Name == "Slash");
+        Assert.Equal(42, slash.Total);
+        Assert.Equal(2, slash.Hits);
+        Assert.Equal(1, slash.Crits);
+        Assert.Equal(15, f.PetAbilities.Single(x => x.Name == "Burst of Flame").Total);
+        // The pet split sums to the pet's single labeled row — no hit counted twice.
+        Assert.Equal(f.ByAbility.Single(x => x.Name == "Pet (Jibekn)").Total,
+            f.PetAbilities.Sum(x => x.Total));
+
+        // Archived encounter carries it, and it survives the snapshot JSON round-trip.
+        var restored = System.Text.Json.JsonSerializer.Deserialize<StatsSnapshot>(
+            System.Text.Json.JsonSerializer.Serialize(s))!;
+        Assert.Equal(42, restored.Encounters.Single().PetAbilities.Single(x => x.Name == "Slash").Total);
+    }
+
+    [Fact]
     public void OverlappingFightsGroupIntoOnePullAndGapsSplitThem()
     {
         var s = Replay(

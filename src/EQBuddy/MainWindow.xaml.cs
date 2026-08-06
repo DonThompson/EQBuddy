@@ -883,10 +883,11 @@ public partial class MainWindow : Window
 
     // ---- watch rules: rendering + alerts ----
 
-    // Both keyed by TrackedRule.Id — a display name can be shared by two rules, and keying
+    // Keyed by TrackedRule.Id — a display name can be shared by two rules, and keying
     // on it made same-named rules share baselines and cooldowns.
     private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, DateTime> _ruleLastAlert = new(StringComparer.Ordinal);
+    private readonly EQBuddy.UI.Shared.AlertCooldowns _ruleCooldowns = new();
+    private readonly EQBuddy.UI.Shared.SoundGate _soundGate = new();
     private string? _alertBaselinePath;
     private AlertWindow? _alertWindow;
 
@@ -1065,13 +1066,11 @@ public partial class MainWindow : Window
 
     private void FireAlert(TrackedRule rule, string ruleName, string label, TimeSpan cooldown)
     {
-        var last = _ruleLastAlert.TryGetValue(rule.Id, out var la) ? la : DateTime.MinValue;
-        if (DateTime.Now - last < cooldown) return;
-        _ruleLastAlert[rule.Id] = DateTime.Now;
+        if (!_ruleCooldowns.ShouldFire(rule, label, cooldown, DateTime.Now)) return;
 
         if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
-            PlayAlertSound(sound);
+            PlayAlertSound(sound, coalesce: true);
     }
 
     /// <summary>
@@ -1226,9 +1225,14 @@ public partial class MainWindow : Window
     internal void PlayAlertSound() => PlayAlertSound(_settings.AlertSound);
 
     /// <summary>Play a specific alert sound: a named built-in, or a custom
-    /// .wav/.mp3 path. Unknown/missing values fall back to the system Asterisk.</summary>
-    internal void PlayAlertSound(string choiceOrPath)
+    /// .wav/.mp3 path. Unknown/missing values fall back to the system Asterisk.
+    /// With <paramref name="coalesce"/> on, sounds inside <see cref="EQBuddy.UI.Shared.SoundGate.Window"/>
+    /// of the last one are dropped — several rules firing together are one audio alert, and
+    /// the first clip plays to the end instead of being cut off by the next Open(). Manual
+    /// previews and spawn-due chimes keep coalesce off: the user asked for that exact sound.</summary>
+    internal void PlayAlertSound(string choiceOrPath, bool coalesce = false)
     {
+        if (coalesce && !_soundGate.TryClaim(DateTime.Now)) return;
         try
         {
             // Legacy SystemSounds names from earlier settings map onto the palette.

@@ -148,6 +148,10 @@ public sealed class SessionStats
         /// The fight is already keyed by the attacker, so rows don't repeat its name.</summary>
         public readonly Dictionary<string, AbilityAgg> ByIncoming = new(StringComparer.OrdinalIgnoreCase);
         public readonly Dictionary<string, AbilityAgg> HealsBySpell = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>The pet's damage in this fight split by its ability — the per-fight
+        /// counterpart of the session-wide split, so a fight can answer "what did the pet
+        /// actually do here" (the ByAbility list keeps the pet as one labeled row).</summary>
+        public readonly Dictionary<string, AbilityAgg> PetAbilities = new(StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>The fight healing is currently credited to. Heals name a target, not a
@@ -874,9 +878,14 @@ public sealed class SessionStats
         TrackCombat(t, amount);
         TouchFight(target, t, dmgOut: amount);
         // The pet's damage joins the fight's ability rows as one labeled row (mirrors the
-        // session list, where the pet is a single row with its own split behind a click).
+        // session list, where the pet is a single row with its own split behind a click),
+        // and the per-fight pet split keyed by ability alongside it.
         if (_activeFights.TryGetValue(target, out var petFight))
+        {
             Ability(petFight.ByAbility, label).Add(t, amount, critical);
+            Ability(petFight.PetAbilities, ability.Length > 0 ? ability
+                : kind == DamageKind.Melee ? "Melee" : "Spell").Add(t, amount, critical);
+        }
     }
 
     private MobAgg Mob(string name) =>
@@ -926,7 +935,8 @@ public sealed class SessionStats
         var byIncoming = Breakdown(f.ByIncoming);
         _encounters.Add(new EncounterInfo(target, f.Start, dur, f.DmgOut, f.DmgIn,
             f.DmgOut / dur, outcome, f.Healed)
-        { ByAbility = byAbility, HealsBySpell = heals, ByIncoming = byIncoming });
+        { ByAbility = byAbility, HealsBySpell = heals, ByIncoming = byIncoming,
+          PetAbilities = Breakdown(f.PetAbilities) });
         if (_encounters.Count > 300) _encounters.RemoveRange(0, 100);
         var mob = Mob(target);
         mob.Encounters++;
@@ -955,6 +965,7 @@ public sealed class SessionStats
                 ByAbility = Breakdown(kv.Value.ByAbility),
                 HealsBySpell = Breakdown(kv.Value.HealsBySpell),
                 ByIncoming = Breakdown(kv.Value.ByIncoming),
+                PetAbilities = Breakdown(kv.Value.PetAbilities),
             })).ToList();
         if (pool.Count == 0) return null;
 
@@ -968,7 +979,7 @@ public sealed class SessionStats
         return new LastFightInfo(pull.Title, pull.DurationSeconds, pull.DamageOut,
             pull.DamageIn, pull.Healed, pull.Dps, pull.Healed / pull.DurationSeconds,
             outcome, inProgress, pull.ByAbility, pull.HealsBySpell, pull.ByIncoming)
-        { Fights = pull.Fights };
+        { Fights = pull.Fights, PetAbilities = pull.PetAbilities };
     }
 
     private static List<SourceDamage> Breakdown(Dictionary<string, AbilityAgg> d) =>
