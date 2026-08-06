@@ -145,6 +145,9 @@ public partial class MainWindow : Window
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_FEEDBACK") == "1")
+            Loaded += (_, _) => OnFeedback(this, new RoutedEventArgs());
+
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_HISTORY") == "1")
             Loaded += async (_, _) =>

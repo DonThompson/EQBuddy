@@ -69,20 +69,33 @@ public sealed partial class EqlWikiMobService
         return new MobLookupResult(null, ItemLookupState.NotFound, null);
     }
 
-    /// <summary>SessionStats mob names arrive article-stripped ("Spite Golem"), so try the
-    /// bare name first (named mobs live there), then the article-titled regular-mob page,
-    /// then backtick-stripped variants (wikis drop EQ backticks — the Skeleton L`rodd
-    /// lesson from the spawn catalog).</summary>
+    /// <summary>SessionStats mob names arrive article-stripped and first-letter-capitalized
+    /// ("Spite golem"), but MediaWiki titles are case-sensitive past their FIRST letter —
+    /// "A Spite golem" misses while both "A spite golem" and "A Spite Golem" exist. So:
+    /// bare name (named mobs live there), lowercase article form (the wiki's redirect
+    /// habit), title-case forms, then backtick-stripped variants (wikis drop EQ backticks —
+    /// the Skeleton L`rodd lesson from the spawn catalog). Deduped, order preserved.</summary>
     private static IEnumerable<string> Candidates(string title)
     {
-        yield return title;
-        yield return "A " + title;
-        if ("AEIOU".Contains(char.ToUpperInvariant(title[0]))) yield return "An " + title;
-        var noBacktick = title.Replace("`", "");
-        if (noBacktick != title)
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var t in Raw(title))
+            if (t.Length > 0 && seen.Add(t)) yield return t;
+
+        static IEnumerable<string> Raw(string title)
         {
-            yield return noBacktick;
-            yield return "A " + noBacktick;
+            var lower = title.ToLowerInvariant();
+            var titleCase = System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(lower);
+            yield return title;
+            yield return "A " + lower;
+            if ("aeiou".Contains(lower[0])) yield return "An " + lower;
+            yield return titleCase;
+            yield return "A " + titleCase;
+            var noBacktick = title.Replace("`", "");
+            if (noBacktick != title)
+            {
+                yield return noBacktick;
+                yield return "A " + noBacktick.ToLowerInvariant();
+            }
         }
     }
 

@@ -29,8 +29,10 @@ public class EqlWikiMobsTests
     [Fact]
     public async Task RegularMobsResolveViaTheArticleTitledPage()
     {
-        // SessionStats names arrive article-stripped ("Spite Golem"); the wiki page for a
-        // regular mob is "A Spite Golem". The service's candidate list bridges the gap.
+        // SessionStats names arrive article-stripped, first letter capitalized ("Spite
+        // golem"); the wiki page is "A Spite Golem" (titles are case-sensitive past the
+        // first letter). The candidate ladder bridges both gaps — this exact case shipped
+        // broken once as NOT ON WIKI (2026-08-06 screenshot round).
         var requested = new List<string>();
         var svc = new EqlWikiMobService(
             Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
@@ -41,9 +43,9 @@ public class EqlWikiMobsTests
                     ? "{{Namedmobpage\n| name = A Spite Golem\n| known_loot = \n{{:Apothic Crown}}\n}}"
                     : null);
             });
-        var result = await svc.LookupAsync("Spite Golem");
+        var result = await svc.LookupAsync("Spite golem");
         Assert.Equal(ItemLookupState.Live, result.State);
-        Assert.Equal(["Spite Golem", "A Spite Golem"], requested);
+        Assert.Equal(["Spite golem", "A spite golem", "Spite Golem", "A Spite Golem"], requested);
         Assert.Equal("Apothic Crown", result.Mob!.Drops.Single().Item);
     }
 
