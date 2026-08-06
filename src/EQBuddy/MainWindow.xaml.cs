@@ -1528,8 +1528,6 @@ public partial class MainWindow : Window
         NormalRoot.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         ResizeGrip.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         _settings.Save();
-        // Restoring forgives every ✕ — next minimize brings the full starred set back.
-        if (!mini) _breakoutDismissed.Clear();
         var snap = _stats.Snapshot();
         if (mini) UpdateMiniChips(snap);
         UpdateBreakouts(snap);
@@ -1538,18 +1536,18 @@ public partial class MainWindow : Window
     // ---- breakout stat windows (BREAKOUT-*) ----
 
     private readonly Dictionary<BreakoutKind, BreakoutWindow> _breakouts = new();
-    private readonly HashSet<BreakoutKind> _breakoutDismissed = new();
 
     /// <summary>Open/refresh/hide the breakout windows: each shows while the widget is
     /// minimized and its condition holds — a star for the stat kinds, any 📌-pinned rule
-    /// for the Watch list — unless ✕-dismissed this stint or hidden with the game
-    /// unfocused.</summary>
+    /// for the Watch list — unless ✕-disabled (persistent, re-enable in Options: the old
+    /// until-next-minimize dismissal made the window whack-a-mole, discussion #45) or
+    /// hidden with the game unfocused.</summary>
     private void UpdateBreakouts(StatsSnapshot s)
     {
         foreach (var kind in Enum.GetValues<BreakoutKind>())
         {
             var want = _settings.Minimized && !_hiddenForFocus &&
-                       !_breakoutDismissed.Contains(kind) && kind switch
+                       !_settings.DisabledBreakouts.Contains(kind.ToString()) && kind switch
                        {
                            BreakoutKind.Damage => _settings.MiniStats.Contains("dps"),
                            BreakoutKind.Healing => _settings.MiniStats.Contains("hps"),
@@ -1564,7 +1562,12 @@ public partial class MainWindow : Window
                 if (w is not { IsLoaded: true })
                 {
                     _breakouts[kind] = w = new BreakoutWindow(_settings, kind) { Main = this };
-                    w.Dismissed += k => _breakoutDismissed.Add(k);
+                    w.Dismissed += k =>
+                    {
+                        if (!_settings.DisabledBreakouts.Contains(k.ToString()))
+                            _settings.DisabledBreakouts.Add(k.ToString());
+                        _settings.Save();
+                    };
                 }
                 if (!w.IsVisible) w.Show();
                 w.Update(s);
@@ -1877,18 +1880,18 @@ public partial class MainWindow : Window
         finally { foreach (var g in game) g.Dispose(); }
     }
 
-    // ---- global hotkeys + click-through (INPUT-*) ----
+    // ---- click-through (INPUT-*) ----
+    // Global hotkeys are GONE (Reddit report, 2026-08-06): RegisterHotKey is system-wide,
+    // so EQBuddy was eating Ctrl+Shift+T (reopen browser tab) and friends from every app
+    // on the machine. Click-through — the one feature that lived only on a hotkey — moved
+    // to the right-click menu, with a small clickable 🔒 chip as the way back out (the
+    // widget itself can't be clicked while transparent, by definition).
 
     private System.Windows.Interop.HwndSource? _hwndSource;
     private bool _clickThrough;
-    private const int WmHotkey = 0x0312;
 
     private static class Native
     {
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint mods, uint vk);
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         public static extern int GetWindowLong(IntPtr hWnd, int index);
         [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -1911,7 +1914,7 @@ public partial class MainWindow : Window
     /// <summary>
     /// Someone launched a second EQBuddy. Surface this one instead — which is almost
     /// certainly what they wanted, since the usual reason to relaunch is that the widget
-    /// is hidden by the hotkey or buried behind a fullscreen game.
+    /// is hidden or buried behind a fullscreen game.
     /// </summary>
     internal void RestoreFromAnotherInstance()
     {
@@ -1929,69 +1932,37 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
         _hwndSource = (System.Windows.Interop.HwndSource)PresentationSource.FromVisual(this)!;
-        _hwndSource.AddHook(WndProc);
-        RegisterHotkey(1, _settings.HotkeyToggleOverlay);
-        RegisterHotkey(2, _settings.HotkeyClickThrough);
-        RegisterHotkey(3, _settings.HotkeyMiniMode);
-        RegisterHotkey(4, _settings.HotkeyCampMarker);
     }
 
-    private void RegisterHotkey(int id, string spec)
-    {
-        if (string.IsNullOrWhiteSpace(spec) || _hwndSource is null) return;
-        uint mods = 0, vk = 0;
-        foreach (var part in spec.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
-        {
-            switch (part.ToUpperInvariant())
-            {
-                case "CTRL" or "CONTROL": mods |= 0x2; break;
-                case "SHIFT": mods |= 0x4; break;
-                case "ALT": mods |= 0x1; break;
-                case "WIN": mods |= 0x8; break;
-                default:
-                    if (Enum.TryParse<System.Windows.Input.Key>(part, ignoreCase: true, out var key))
-                        vk = (uint)KeyInterop.VirtualKeyFromKey(key);
-                    break;
-            }
-        }
-        if (vk == 0 || !Native.RegisterHotKey(_hwndSource.Handle, id, mods, vk))
-            App.LogError($"Hotkey '{spec}' could not be registered (invalid or already in use).");
-    }
+    private ClickThroughChip? _unlockChip;
 
-    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        if (msg != WmHotkey) return IntPtr.Zero;
-        handled = true;
-        switch (wParam.ToInt32())
-        {
-            case 1: // show/hide overlay
-                if (Visibility == Visibility.Visible) Hide(); else { Show(); Topmost = true; }
-                break;
-            case 2:
-                ToggleClickThrough();
-                break;
-            case 3:
-                SetMode(!_settings.Minimized);
-                break;
-            case 4:
-                DropCampMarker();
-                break;
-        }
-        return IntPtr.Zero;
-    }
+    private void OnClickThrough(object sender, RoutedEventArgs e) =>
+        SetClickThrough(!_clickThrough);
 
-    private void ToggleClickThrough()
+    private void SetClickThrough(bool on)
     {
         if (_hwndSource is null) return;
-        _clickThrough = !_clickThrough;
+        _clickThrough = on;
         var style = Native.GetWindowLong(_hwndSource.Handle, Native.GwlExstyle);
         Native.SetWindowLong(_hwndSource.Handle, Native.GwlExstyle,
             _clickThrough ? style | Native.WsExTransparent : style & ~Native.WsExTransparent);
         // Visible but unobtrusive state indicator (INPUT-012).
         RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "BorderBrush");
         RootBorder().ToolTip = _clickThrough
-            ? $"Click-through ON — press {_settings.HotkeyClickThrough} to interact again"
+            ? "Click-through ON — click the 🔒 chip to interact again"
             : null;
+        ClickThroughItem.IsChecked = _clickThrough;
+        // The way back: a transparent widget can't be clicked, so a tiny normal-hit-test
+        // chip parks beside it while click-through is on.
+        if (_clickThrough)
+        {
+            _unlockChip ??= new ClickThroughChip(() => SetClickThrough(false));
+            _unlockChip.ShowNear(this);
+        }
+        else
+        {
+            _unlockChip?.Hide();
+        }
     }
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
@@ -2010,8 +1981,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        if (_hwndSource is not null)
-            for (var id = 1; id <= 4; id++) Native.UnregisterHotKey(_hwndSource.Handle, id);
+        _unlockChip?.Close();
         _settings.WindowLeft = Left;
         _settings.WindowTop = Top;
         _settings.Save();

@@ -32,7 +32,7 @@
                 </Border>
                 <TextBlock Grid.Column="2" Text="✕" FontSize="11" VerticalAlignment="Center"
                            Cursor="Hand" Padding="2,0" MouseLeftButtonDown="OnDismiss"
-                           ToolTip="Hide until the widget is next minimized"/>
+                           ToolTip="Hide this window for good (its ⭐ chip stays; re-enable under ⚙ Options → Breakout windows)"/>
             </Grid>
             <TextBlock Grid.Row="1" x:Name="SubText" FontSize="10.5" Margin="1,0,0,2"
                        TextTrimming="CharacterEllipsis"/>

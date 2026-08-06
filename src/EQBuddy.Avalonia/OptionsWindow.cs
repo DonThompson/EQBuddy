@@ -215,9 +215,6 @@ public sealed class OptionsWindow : Window
 
         panel.Children.Add(Heading("Overlay cards", new Thickness(0, 14, 0, 2)));
         panel.Children.Add(_cardsPanel);
-        panel.Children.Add(AppTheme.DimText(
-            $"Hotkeys (global, editable in settings.json):\n{_main.Settings.HotkeyToggleOverlay} show/hide - {_main.Settings.HotkeyClickThrough} click-through - {_main.Settings.HotkeyMiniMode} mini - {_main.Settings.HotkeyCampMarker} camp marker",
-            new Thickness(0, 14, 0, 0)));
         panel.Children.Add(AppTheme.DimText("Size also scales all text. Changes apply instantly and are saved.",
             new Thickness(0, 8, 0, 0)));
         return panel;

@@ -126,7 +126,6 @@ public sealed class MainWindow : Window
     private DateTime _upToDateNoticeUntil = DateTime.MinValue;
     private bool _installingUpdate;
     private bool _clickThrough;
-    private X11HotkeyService? _hotkeys;
     private HistoryWindow? _historyWindow;
     private OptionsWindow? _optionsWindow;
     private AlertWindow? _alertWindow;
@@ -216,7 +215,6 @@ public sealed class MainWindow : Window
         Loaded += (_, _) =>
         {
             UpdateWindowHeightLimit();
-            RegisterGlobalHotkeys();
             if (_settings.ShowTutorial)
                 new TutorialWindow(this).Show(this);
         };
@@ -1299,50 +1297,9 @@ public sealed class MainWindow : Window
             (s.CurrentZone.Length > 0 ? $" - {s.CurrentZone}" : ""));
     }
 
-    private void RegisterGlobalHotkeys()
-    {
-        if (_hotkeys is not null) return;
-        try
-        {
-            _hotkeys = new X11HotkeyService(
-            [
-                (_settings.HotkeyToggleOverlay, ToggleOverlayVisibility),
-                (_settings.HotkeyClickThrough, ToggleClickThrough),
-                (_settings.HotkeyMiniMode, () => SetMode(!_settings.Minimized)),
-                (_settings.HotkeyCampMarker, DropCampMarker),
-            ]);
-        }
-        catch (Exception ex)
-        {
-            App.LogError($"Global hotkeys disabled: {ex.Message}");
-        }
-    }
-
-    private void ToggleOverlayVisibility()
-    {
-        if (IsVisible)
-        {
-            Hide();
-        }
-        else
-        {
-            Show();
-            Topmost = true;
-            Activate();
-        }
-    }
-
-    private void ToggleClickThrough()
-    {
-        var next = !_clickThrough;
-        if (!X11ClickThrough.Set(this, next)) return;
-        _clickThrough = next;
-        _root.BorderBrush = _clickThrough ? AppTheme.WarnBrush : AppTheme.BorderBrush;
-        Topmost = true;
-        ToolTip.SetTip(_root, _clickThrough
-            ? $"Click-through ON - press {_settings.HotkeyClickThrough} to interact again"
-            : null);
-    }
+    // Global hotkeys removed 2026-08-06 (Reddit: system-wide registration ate common
+    // browser shortcuts like Ctrl+Shift+T). Click-through's Linux re-entry story is
+    // Don's call — tracked on issue #7; X11ClickThrough.Set stays for when it returns.
 
     private void OnGear(object? sender, EventArgs e) => _root.ContextMenu?.Open(_root);
 
@@ -1729,7 +1686,6 @@ public sealed class MainWindow : Window
         _settings.Save();
         if (_clickThrough)
             X11ClickThrough.Set(this, enabled: false);
-        _hotkeys?.Dispose();
         _alertWindow?.Close();
         _archiver.FinalizeActiveSync(CurrentSnapshot(), "ApplicationExit");
         _watcher.Dispose();

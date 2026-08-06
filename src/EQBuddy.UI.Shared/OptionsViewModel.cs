@@ -339,10 +339,6 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     }
 
     // ---- hotkeys ----
-    public string HotkeyNote =>
-        $"{_settings.HotkeyToggleOverlay} show/hide · {_settings.HotkeyClickThrough} click-through · " +
-        $"{_settings.HotkeyMiniMode} mini · {_settings.HotkeyCampMarker} camp marker";
-
     private void PersistAnd(string? alsoNotify = null, [CallerMemberName] string? propertyName = null)
     {
         _persist();

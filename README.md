@@ -212,11 +212,14 @@ Session history (automatic):
   (zone, loot, creature names, notes, tags), view the full per-session breakdown, add
   notes/tags, copy a shareable summary, export JSON, or delete.
 
-Hotkeys (global, defaults; edit in `%AppData%\EQBuddy\settings.json`):
-- `Ctrl+Shift+H` show/hide the widget · `Ctrl+Shift+T` click-through (game clicks pass
-  through the widget; border turns amber) · `Ctrl+Shift+M` mini mode ·
-  `Ctrl+Shift+K` drop a camp marker (also in the right-click menu; markers appear under
-  Travels & Deaths).
+Click-through & window control:
+- Right-click → **Click-through**: game clicks pass straight through the widget (border
+  turns amber). A small **🔒 chip** appears beside it — click the chip to interact again.
+- *Global hotkeys were removed in 1.34*: they registered system-wide and swallowed
+  common shortcuts like `Ctrl+Shift+T` (reopen browser tab) from every app on the
+  machine — a player caught it, and the right fix was removal. Everything they did is
+  reachable from the widget itself: **–** for mini mode, the right-click menu for
+  click-through and camp markers.
 - ⚙ Options → **Overlay cards**: reorder cards and hide the ones you don't want —
   hidden cards keep collecting data.
 

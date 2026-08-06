@@ -73,11 +73,10 @@ public sealed class AppSettings
     public List<string> SectionOrder { get; set; } = [];
     /// <summary>Hidden overlay cards (still collect data — OVERLAY acceptance).</summary>
     public List<string> HiddenSections { get; set; } = [];
-    /// <summary>Global hotkeys ("Ctrl+Shift+H" style; empty disables one).</summary>
-    public string HotkeyToggleOverlay { get; set; } = "Ctrl+Shift+H";
-    public string HotkeyClickThrough { get; set; } = "Ctrl+Shift+T";
-    public string HotkeyMiniMode { get; set; } = "Ctrl+Shift+M";
-    public string HotkeyCampMarker { get; set; } = "Ctrl+Shift+K";
+    // Global hotkeys were REMOVED 2026-08-06 (Reddit report: RegisterHotKey is
+    // system-wide, so EQBuddy ate Ctrl+Shift+T — reopen browser tab — from every app on
+    // the machine). Old settings.json files still carrying Hotkey* keys deserialize fine;
+    // unknown properties are ignored and dropped on the next save.
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
@@ -146,8 +145,13 @@ public sealed class AppSettings
     public bool HideWhenGameUnfocused { get; set; }
 
     // Breakout stat windows (BREAKOUT-*): one position + Fight/Session scope per kind.
-    // They open while the widget is minimized with the matching star set, so there is no
-    // enabled flag — the star is the switch.
+    // They open while the widget is minimized with the matching star set.
+
+    /// <summary>Breakout kinds the player ✕-closed for good ("Damage", "Loot", …): the
+    /// star keeps its mini-pill chip, the window stays away until re-enabled in Options
+    /// (Frankthetankk, discussion #45 — ✕-until-next-minimize made the window a
+    /// whack-a-mole).</summary>
+    public List<string> DisabledBreakouts { get; set; } = [];
     public double BreakoutDamageLeft { get; set; } = double.NaN;
     public double BreakoutDamageTop { get; set; } = double.NaN;
     public string BreakoutDamageScope { get; set; } = "fight";
