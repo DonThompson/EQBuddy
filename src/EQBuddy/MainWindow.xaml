@@ -24,6 +24,7 @@
                 <MenuItem Header="Spawn timers…" Click="OnSpawnsWindow"/>
                 <MenuItem x:Name="TrackSpawnsItem" Header="Track spawns (named respawn timers)"
                           IsCheckable="True" Click="OnTrackSpawns"/>
+                <MenuItem Header="Send feedback…" Click="OnFeedback"/>
                 <Separator/>
                 <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>
                 <MenuItem Header="Auto-detect log folder" Click="OnAutoDetectLogFolder"/>

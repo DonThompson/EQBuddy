@@ -1151,7 +1151,9 @@ public partial class MainWindow : Window
     {
         if (!_ruleCooldowns.ShouldFire(rule, label, cooldown, DateTime.Now)) return;
 
-        if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
+        if (rule.AlertBanner)
+            AlertTile.ShowAlert($"★ {ruleName}: {label}",
+                EQBuddy.UI.Shared.AlertColors.Hex(rule.AlertColor));
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
             PlayAlertSound(sound, coalesce: true);
     }
@@ -1341,6 +1343,9 @@ public partial class MainWindow : Window
     }
 
     private void OnTutorial(object sender, RoutedEventArgs e) => new TutorialWindow(this).Show();
+
+    private void OnFeedback(object sender, RoutedEventArgs e) =>
+        new FeedbackWindow { Owner = this }.Show();
 
     private void OnCampMarker(object sender, RoutedEventArgs e) => DropCampMarker();
 

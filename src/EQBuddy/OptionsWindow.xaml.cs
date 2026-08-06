@@ -446,6 +446,7 @@ public partial class OptionsWindow : Window
         Star(1.4);
         Auto("RulePin");
         Auto("RuleBanner");
+        Auto("RuleColor");
         Auto("RuleSound");
         Auto("RuleDelay");
         Auto("RuleDelete");
@@ -458,7 +459,7 @@ public partial class OptionsWindow : Window
 
         var header = RuleGrid();
         header.Margin = new Thickness(0, 2, 0, 2);
-        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 6) };
+        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 7) };
         foreach (var (text, column) in headings)
         {
             var label = new System.Windows.Controls.TextBlock
@@ -553,6 +554,45 @@ public partial class OptionsWindow : Window
             row.Children.Add(RuleToggle("🔔", "Banner alert on match", 4, rule.AlertBanner,
                 v => rule.AlertBanner = v));
 
+            // Banner color: one small dot cycling the palette on click (Chaosrah's
+            // color-coded alerts) — a combo box would not fit the row.
+            var colorDot = new System.Windows.Controls.Button
+            {
+                Padding = new Thickness(2, 0, 2, 0),
+                Margin = new Thickness(2, 0, 0, 0),
+                Background = System.Windows.Media.Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+            };
+            void PaintDot()
+            {
+                var hex = EQBuddy.UI.Shared.AlertColors.Hex(rule.AlertColor);
+                var choiceName = EQBuddy.UI.Shared.AlertColors
+                    .Choices[EQBuddy.UI.Shared.AlertColors.IndexOf(rule.AlertColor)].Name;
+                colorDot.Content = new System.Windows.Controls.TextBlock
+                {
+                    Text = "●",
+                    FontSize = 12,
+                    Foreground = hex.Length > 0
+                        ? new System.Windows.Media.SolidColorBrush(
+                            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex))
+                        : (System.Windows.Media.Brush)FindResource("AccentBrush"),
+                };
+                colorDot.ToolTip = $"Banner color: {choiceName} — click to change";
+            }
+            PaintDot();
+            colorDot.Click += (_, _) =>
+            {
+                var next = (EQBuddy.UI.Shared.AlertColors.IndexOf(rule.AlertColor) + 1)
+                    % EQBuddy.UI.Shared.AlertColors.Choices.Length;
+                var picked = EQBuddy.UI.Shared.AlertColors.Choices[next].Name;
+                rule.AlertColor = picked == "Default" ? "" : picked;
+                PaintDot();
+                _vm.Persist();
+            };
+            System.Windows.Controls.Grid.SetColumn(colorDot, 5);
+            row.Children.Add(colorDot);
+
             // Per-rule sound, so you can tell what happened from the audio alone.
             // Replaces the old on/off toggle: "Off" mutes, "Default" follows the shared
             // choice below, anything else is this rule's own sound.
@@ -596,7 +636,7 @@ public partial class OptionsWindow : Window
                 if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
                     _main.PlayAlertSound(preview);
             };
-            System.Windows.Controls.Grid.SetColumn(sound, 5);
+            System.Windows.Controls.Grid.SetColumn(sound, 6);
             row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
@@ -618,7 +658,7 @@ public partial class OptionsWindow : Window
                 delay.Text = DelayText.Format(rule.AlertDelaySeconds);   // shows any clamp
                 _vm.Persist();
             };
-            System.Windows.Controls.Grid.SetColumn(delay, 6);
+            System.Windows.Controls.Grid.SetColumn(delay, 7);
             row.Children.Add(delay);
 
             var del = new System.Windows.Controls.Button
@@ -630,7 +670,7 @@ public partial class OptionsWindow : Window
                 _vm.RemoveRule(rule);
                 BuildRulesEditor();
             };
-            System.Windows.Controls.Grid.SetColumn(del, 7);
+            System.Windows.Controls.Grid.SetColumn(del, 8);
             row.Children.Add(del);
 
             RulesPanel.Children.Add(row);

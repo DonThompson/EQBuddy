@@ -1090,7 +1090,9 @@ public sealed class MainWindow : Window
     {
         if (!_ruleCooldowns.ShouldFire(rule, label, cooldown, DateTime.Now)) return;
 
-        if (rule.AlertBanner) AlertTile.ShowAlert($"★ {ruleName}: {label}");
+        if (rule.AlertBanner)
+            AlertTile.ShowAlert($"★ {ruleName}: {label}",
+                EQBuddy.UI.Shared.AlertColors.Hex(rule.AlertColor));
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
             PlayAlertSound(sound, coalesce: true);
     }
