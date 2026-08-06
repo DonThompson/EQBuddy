@@ -131,10 +131,15 @@ public partial class BreakoutWindow : Window
 
         var total = rows.Sum(r => r.Total);
         var rate = total / Math.Max(1, secs);
-        SubText.Text = _fightScope
+        // Hymn/regen ticks carry no amounts in the log, so they can never join the HPS
+        // rows — but a bard mid-song staring at "no healing" reads it as broken (David,
+        // live test 2026-08-06). Count them where healing lives.
+        var regen = _kind == BreakoutKind.Healing && s.RegenTicks > 0
+            ? $" · {s.RegenTicks} regen ticks" : "";
+        SubText.Text = (_fightScope
             ? f is null ? "No fights yet"
                 : $"{f.Name} · {f.DurationSeconds:0}s · {f.Outcome} · {rate:0.#} {rateLabel}"
-            : $"Session · {s.CombatSeconds / 60:0}m in combat · {rate:0.#} {rateLabel}";
+            : $"Session · {s.CombatSeconds / 60:0}m in combat · {rate:0.#} {rateLabel}") + regen;
 
         var empty = rows.Count == 0;
         EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
@@ -142,6 +147,8 @@ public partial class BreakoutWindow : Window
         {
             EmptyText.Text = _kind switch
             {
+                BreakoutKind.Healing when s.RegenTicks > 0 =>
+                    $"{s.RegenTicks} hymn/regen ticks — the game logs no amounts for these,\nso they count but can't join the HPS rows.",
                 BreakoutKind.Healing => "No healing seen yet.",
                 BreakoutKind.Pet => "No pet damage seen yet.",
                 _ => "No damage seen yet.",
