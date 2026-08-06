@@ -16,6 +16,7 @@
     <EmbeddedResource Include="Data\FadeMessages.json" />
     <EmbeddedResource Include="Data\WhatsNew.json" />
     <EmbeddedResource Include="Data\MezSpells.json" />
+    <EmbeddedResource Include="Data\AaCatalog.json" />
   </ItemGroup>
 
 </Project>

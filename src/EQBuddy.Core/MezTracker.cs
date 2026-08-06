@@ -62,6 +62,13 @@ public sealed class MezTracker
     /// Aenari: learned timers ran 2-3s past the real wake — the dangerous direction).</summary>
     public const double ServerTickSeconds = 6;
 
+    // No AA correction on purpose: the full eqlwiki AA sweep (2026-08-06, AaCatalog)
+    // found NO EQ Legends AA that extends detrimental mez/charm durations — unlike live
+    // EQ's Mesmerization Mastery. Adamant Will only moves resist chance, which never
+    // shifts a landed mez's clock. Learned durations here are therefore character-true
+    // without reading the AA ledger. (Beneficial-duration AAs like Spell Casting
+    // Reinforcement matter to future BUFF countdowns, not to this tracker.)
+
     private readonly Dictionary<string, MezSpellInfo> _catalog;
     private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<MezState> _active = [];

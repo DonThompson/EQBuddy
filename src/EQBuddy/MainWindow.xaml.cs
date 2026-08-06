@@ -853,7 +853,8 @@ public partial class MainWindow : Window
             FillList(SkillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
             AaAbilitiesLabel.Visibility = s.AaAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(AaAbilityList, s.AaAbilities.Select(a =>
-                (a.Name, a.Rank > 1 ? $"rank {a.Rank}" : "")));
+                    (a.Name, a.Rank > 1 ? $"rank {a.Rank}" : "")),
+                tooltip: name => AaCatalog.Find(name)?.Effect);
         }
 
         if (FactionSection.IsExpanded)
@@ -1638,7 +1639,8 @@ public partial class MainWindow : Window
     }
 
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
-        Func<string, Brush>? valueBrush = null, Action<string>? onNameClick = null)
+        Func<string, Brush>? valueBrush = null, Action<string>? onNameClick = null,
+        Func<string, string?>? tooltip = null)
     {
         var items = rows.ToList();
         list.Items.Clear();
@@ -1652,6 +1654,11 @@ public partial class MainWindow : Window
                 Text = name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
                 Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(0, 1, 8, 1),
             };
+            if (tooltip?.Invoke(name) is { Length: > 0 } tip)
+                left.ToolTip = new System.Windows.Controls.ToolTip
+                {
+                    Content = new TextBlock { Text = tip, TextWrapping = TextWrapping.Wrap, MaxWidth = 340 },
+                };
             if (onNameClick is not null)
             {
                 var clickName = name;
