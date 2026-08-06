@@ -234,16 +234,18 @@ public class EncounterTests
         Assert.Equal(42, restored.Encounters.Single().PetAbilities.Single(x => x.Name == "Slash").Total);
     }
 
-    /// <summary>Target-drops target source (David's spec, 2026-08-06): an open fight
-    /// always wins; otherwise the NEWER of the last finished fight and the last
-    /// /consider, each within the 45s linger.</summary>
+    /// <summary>Target-drops target pool (David's spec + live reports, 2026-08-06): open
+    /// fights always win and ALL of them are the pool — the log can't say which one is
+    /// targeted, and picking one made the window cycle with whoever swung last.
+    /// Between fights: the NEWER of the last finished fight and the last /consider,
+    /// each within the 45s linger.</summary>
     [Fact]
     public void ConsideringACreatureMakesItTheCurrentTarget()
     {
         var s = Replay(
             At(0, 0, "Orc pawn scowls at you, ready to attack -- looks like a reasonably safe opponent. (Lvl: 3)"))
             .Snapshot();
-        Assert.Equal("Orc pawn", s.CurrentTarget);
+        Assert.Equal(["Orc pawn"], s.CurrentTargets);
 
         // A consider AFTER a kill retargets; an open fight still outranks both.
         var s2 = Replay(
@@ -251,14 +253,26 @@ public class EncounterTests
             At(0, 4, "You have slain a ghoul!"),
             At(0, 10, "Orc pawn scowls at you, ready to attack -- looks like a reasonably safe opponent. (Lvl: 3)"),
             At(0, 20, "You slash a spite golem for 10 points of damage.")).Snapshot();
-        Assert.Equal("Spite golem", s2.CurrentTarget);
+        Assert.Equal(["Spite golem"], s2.CurrentTargets);
 
         var s3 = Replay(
             At(0, 0, "You slash a ghoul for 10 points of damage."),
             At(0, 4, "You have slain a ghoul!"),
             At(0, 10, "Orc pawn scowls at you, ready to attack -- looks like a reasonably safe opponent. (Lvl: 3)"),
             At(0, 12, "You gain experience! (0.1%)")).Snapshot();
-        Assert.Equal("Orc pawn", s3.CurrentTarget);
+        Assert.Equal(["Orc pawn"], s3.CurrentTargets);
+    }
+
+    [Fact]
+    public void AMultiCreaturePullPoolsEveryOpenFightInStableOrder()
+    {
+        // Both creatures stay in the pool, oldest fight first — the order must not
+        // follow whoever swung most recently (that was the cycling bug).
+        var s = Replay(
+            At(0, 0, "You slash orc pawn for 10 points of damage."),
+            At(0, 2, "Orc centurion hits YOU for 5 points of damage."),
+            At(0, 4, "Orc centurion hits YOU for 5 points of damage.")).Snapshot();
+        Assert.Equal(["Orc pawn", "Orc centurion"], s.CurrentTargets);
     }
 
     [Fact]

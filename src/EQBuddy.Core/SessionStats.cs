@@ -1038,15 +1038,21 @@ public sealed class SessionStats
     /// that walking away really clears it.</summary>
     private static readonly TimeSpan TargetLinger = TimeSpan.FromSeconds(45);
 
-    /// <summary>The creature to show target drops for: an open fight always wins; else
-    /// the newer of the last finalized fight and the last /consider, each within
-    /// <see cref="TargetLinger"/> of log time. "" when none — the surfaces hide rather
-    /// than naming something stale.</summary>
-    private string BuildCurrentTargetLocked()
+    /// <summary>The creatures to show target drops for. The log never says which one is
+    /// actually TARGETED, so in a multi-creature pull the pool is EVERY open fight
+    /// (David's live report, 2026-08-06: picking the most-recently-touched one made the
+    /// window cycle with whoever swung last and reset its lookups). Ordered oldest fight
+    /// first so the list is stable while the pull lasts, capped at 5 — an AE farm pull
+    /// doesn't need thirty wiki lookups. Between fights: the newer of the last finished
+    /// fight and the last /consider, each within <see cref="TargetLinger"/>.</summary>
+    private List<string> BuildCurrentTargetsLocked()
     {
         if (_activeFights.Count > 0)
-            return _activeFights.MaxBy(kv => kv.Value.Last).Key;
-        if (_lastEventTime is not { } last) return "";
+            return _activeFights.OrderBy(kv => kv.Value.Start)
+                .Select(kv => kv.Key)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(5).ToList();
+        if (_lastEventTime is not { } last) return [];
 
         var best = ""; var bestAt = DateTime.MinValue;
         if (_encounters.Count > 0)
@@ -1057,7 +1063,7 @@ public sealed class SessionStats
         }
         if (_lastConsider is { } con && last - con.Time <= TargetLinger && con.Time > bestAt)
             best = con.Name;
-        return best;
+        return best.Length > 0 ? [best] : [];
     }
 
     /// <summary>The AA ledger a snapshot shows: union of this run's observations and the
@@ -1448,7 +1454,7 @@ public sealed class SessionStats
                 Tracked = tracked,
                 Markers = _markers.Select(m => new TimedDetail(m.Time, m.Label)).ToList(),
                 LastFight = BuildLastFight(),
-                CurrentTarget = BuildCurrentTargetLocked(),
+                CurrentTargets = BuildCurrentTargetsLocked(),
                 RecentEncounters = _encounters.TakeLast(8).Reverse().ToList(),
                 Encounters = _encounters.ToList(),
                 EncounterCount = _encounters.Count,
@@ -1537,9 +1543,10 @@ public sealed class StatsSnapshot
     /// <summary>The current pet's name, or "" when none is claimed — window titles want the
     /// name without fishing it back out of a "Pet (Name)" row label.</summary>
     public string PetName { get; init; } = "";
-    /// <summary>The creature being fought right now (or just killed, briefly) — feeds the
-    /// Loot card's target-drops block. "" between pulls.</summary>
-    public string CurrentTarget { get; init; } = "";
+    /// <summary>The creatures being fought right now (every open fight — the log can't
+    /// say which is targeted), or the one just killed / last considered, briefly. Feeds
+    /// the target-drops surfaces. Empty between pulls.</summary>
+    public List<string> CurrentTargets { get; init; } = [];
     public List<NameCount> SpecialHits { get; init; } = [];
     public double SessionDps { get; init; }
     public double CurrentDps { get; init; }

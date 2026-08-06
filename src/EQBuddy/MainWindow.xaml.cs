@@ -414,66 +414,93 @@ public partial class MainWindow : Window
 
     private readonly EqlWikiMobService _wikiMobs =
         new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "mobs"));
-    private string _targetLookupName = "";
-    private MobLookupResult? _targetResult;
-    private int _targetSeq;
 
-    /// <summary>One bounded wiki lookup per new target; the sequence guard drops stale
-    /// responses when the player has moved on to another creature mid-fetch.</summary>
-    private async Task LookupTargetAsync(string name, int seq)
+    /// <summary>Session-lifetime per-creature results, so a multi-mob pull never re-looks
+    /// anything up and the drops list can't flicker as different creatures swing
+    /// (David's live report, 2026-08-06). null value = lookup in flight.</summary>
+    private readonly Dictionary<string, MobLookupResult?> _targetResults =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private async Task LookupTargetAsync(string name)
     {
         try
         {
             var result = await _wikiMobs.LookupAsync(name);
-            if (seq != _targetSeq) return;
-            _targetResult = result;
+            _targetResults[name] = result;
             RefreshUi();
         }
         catch (Exception ex) { App.LogError(ex); }
     }
 
     /// <summary>Target-drops content shared by the Loot card's 🎯 block and the Loot
-    /// breakout — one builder, so the two can never disagree, and the wiki lookup fires
+    /// breakout — one builder, so the two can never disagree, and the wiki lookups fire
     /// from HERE so a minimized session (where the card never renders) still resolves
-    /// the target (David's live report, 2026-08-06). "" header = no target.</summary>
+    /// targets. The pool is EVERY creature in the current pull (the log can't say which
+    /// is targeted; picking one made the list cycle — David's live report), and items
+    /// fold to their base names so "Leather Whip +2" and the wiki's "Leather Whip"
+    /// are one row (David's screenshot, same session). "" header = no target.</summary>
     internal (string Header, List<(string Name, string Value)> Rows) TargetDropsContent(StatsSnapshot s)
     {
-        var target = _settings.ShowTargetDrops ? s.CurrentTarget : "";
-        if (target.Length == 0) return ("", []);
-        if (!target.Equals(_targetLookupName, StringComparison.OrdinalIgnoreCase))
-        {
-            _targetLookupName = target;
-            _targetResult = null;
-            _ = LookupTargetAsync(target, ++_targetSeq);
-        }
+        var targets = _settings.ShowTargetDrops ? s.CurrentTargets : [];
+        if (targets.Count == 0) return ("", []);
+        foreach (var t in targets)
+            if (!_targetResults.ContainsKey(t))
+            {
+                _targetResults[t] = null;
+                _ = LookupTargetAsync(t);
+            }
 
-        var mob = s.Mobs.FirstOrDefault(m => m.Name.Equals(target, StringComparison.OrdinalIgnoreCase));
-        var kills = mob?.Kills ?? 0;
-        var state = _targetResult switch
+        // Observed drops lead (your data outranks the wiki), folded to base names with
+        // counts summed across tiers and creatures. Percent only for a single-creature
+        // pool — mixed kill denominators would make it a lie.
+        var kills = 0;
+        var observed = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in targets)
         {
-            null => "looking up…",
-            { State: ItemLookupState.Live } => "LIVE",
-            { State: ItemLookupState.Cached, FetchedAt: { } at } => $"CACHED {at:M/d}",
-            { State: ItemLookupState.StaleCache, FetchedAt: { } at } => $"STALE {at:M/d}",
-            { State: ItemLookupState.Offline } => "OFFLINE",
-            _ => "NOT ON WIKI",
-        };
-        // Observed drops lead (your own data outranks the wiki), wiki-only rows follow.
+            var mob = s.Mobs.FirstOrDefault(m => m.Name.Equals(t, StringComparison.OrdinalIgnoreCase));
+            if (mob is null) continue;
+            kills += mob.Kills;
+            foreach (var l in mob.Loot)
+            {
+                var baseName = EqlWikiItemService.NormalizeTitle(l.Item);
+                observed[baseName] = observed.GetValueOrDefault(baseName) + l.Count;
+            }
+        }
         var rows = new List<(string Name, string Value)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var l in (mob?.Loot ?? []).OrderByDescending(l => l.Count))
+        foreach (var (item, count) in observed.OrderByDescending(kv => kv.Value))
         {
-            var pct = l.DropRatePct is { } p ? $" · {p:0}%" : "";
-            rows.Add((l.Item, $"{l.Count} this session{pct}"));
-            seen.Add(l.Item);
+            var pct = targets.Count == 1 && kills > 0 ? $" · {100.0 * count / kills:0}%" : "";
+            rows.Add((item, $"{count} this session{pct}"));
+            seen.Add(item);
         }
-        foreach (var (item, rarity) in _targetResult?.Mob?.Drops ?? [])
-            if (seen.Add(item))
-                rows.Add((item, rarity));
+
+        var pending = false;
+        foreach (var t in targets)
+        {
+            var r = _targetResults.GetValueOrDefault(t);
+            if (r is null) { pending = true; continue; }
+            foreach (var (item, rarity) in r.Mob?.Drops ?? [])
+                if (seen.Add(EqlWikiItemService.NormalizeTitle(item)))
+                    rows.Add((item, rarity));
+        }
         var extra = Math.Max(0, rows.Count - 14);
         if (extra > 0) rows = rows.Take(14).ToList();
 
-        var header = $"🎯 Fighting: {target}" +
+        var state = targets.Count == 1
+            ? _targetResults.GetValueOrDefault(targets[0]) switch
+            {
+                null => "looking up…",
+                { State: ItemLookupState.Live } => "LIVE",
+                { State: ItemLookupState.Cached, FetchedAt: { } at } => $"CACHED {at:M/d}",
+                { State: ItemLookupState.StaleCache, FetchedAt: { } at } => $"STALE {at:M/d}",
+                { State: ItemLookupState.Offline } => "OFFLINE",
+                _ => "NOT ON WIKI",
+            }
+            : pending ? "looking up…" : "merged pull";
+        var names = string.Join(" + ", targets.Take(3)) +
+            (targets.Count > 3 ? $" +{targets.Count - 3}" : "");
+        var header = $"🎯 Fighting: {names}" +
             (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
             $" · drops (eqlwiki · {state}{(extra > 0 ? $" · +{extra} more" : "")})";
         return (header, rows);
