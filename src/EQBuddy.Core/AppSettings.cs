@@ -134,6 +134,11 @@ public sealed class AppSettings
     /// "name" (alphabetical — Klona11's ask, discussion #43).</summary>
     public string LootSort { get; set; } = "count";
 
+    /// <summary>Player-supplied hp-per-tick for the regen healing estimate (0 = use the
+    /// wiki base value). The log can't see instrument resonance or spell ranks; the
+    /// player's own health bar can — their number wins (David, 2026-08-06).</summary>
+    public int RegenPerTickOverride { get; set; }
+
     /// <summary>Hide the widget (and its satellite windows) while the game is running but
     /// NOT the foreground app — alt-tabbing to a browser shouldn't leave the widget over
     /// its buttons (sicliffe-cloud, discussion #41). Off by default; when the game isn't

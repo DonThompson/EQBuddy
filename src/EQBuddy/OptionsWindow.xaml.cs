@@ -39,6 +39,7 @@ public partial class OptionsWindow : Window
         TutorialCheck.IsChecked = _vm.ShowTutorial;
         TargetDropsCheck.IsChecked = _vm.ShowTargetDrops;
         HideUnfocusedCheck.IsChecked = _vm.HideWhenGameUnfocused;
+        RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
 
         foreach (var choice in OptionsViewModel.WindowChoices) WindowCombo.Items.Add(choice);
@@ -124,6 +125,14 @@ public partial class OptionsWindow : Window
     private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.HideWhenGameUnfocused = HideUnfocusedCheck.IsChecked == true;
+    }
+
+    private void OnRegenPerTickChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        // Blank or unparseable = back to the wiki base; the box shows any clamp.
+        _vm.RegenPerTickOverride = int.TryParse(RegenPerTickBox.Text.Trim(), out var v) ? v : 0;
+        RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
     }
 
     /// <summary>Called back by MainWindow.SetTrackSpawns so closing the Spawns window

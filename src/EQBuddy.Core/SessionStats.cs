@@ -89,6 +89,15 @@ public sealed class SessionStats
     private readonly Dictionary<string, (int Count, long Total)> _healsByHealer = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AbilityAgg> _healsBySpell = new(StringComparer.OrdinalIgnoreCase);
     private int _regenTicks;
+    private long _regenEstimated;
+    private string? _regenSpell;
+    private string? _lastRegenCast;
+
+    /// <summary>Player-supplied hp-per-tick for the regen estimate (Options), 0 = unset.
+    /// The log can't know instrument resonance or ranks; the player's health bar can —
+    /// same "your number wins" rule the spawn timers use.</summary>
+    public int RegenPerTickOverride { get; set; }
+
     private string? _characterName;
 
     /// <summary>The watched character's name — needed to recognize self-heals
@@ -462,6 +471,10 @@ public sealed class SessionStats
                     // cast-completion stats — twisting would swamp them.
                     if (!started.Song) _castsStarted++;
                     _pendingCast = (started.Spell, started.Time);
+                    // Amount-less regen family: remember the last one cast/sung, so the
+                    // shared "wounds begin to heal" tick line knows whose ticks these are.
+                    if (RegenCatalog.PerTick(SpellCatalog.BaseName(started.Spell)) is not null)
+                        _lastRegenCast = SpellCatalog.BaseName(started.Spell);
                     break;
                 case SpellInterruptedEvent:
                     _castsInterrupted++;
@@ -638,6 +651,19 @@ public sealed class SessionStats
                     break;
                 case RegenTickEvent:
                     _regenTicks++;
+                    // Estimated regen healing (David, 2026-08-06): the tick line names no
+                    // spell and no amount, so this is attribution-by-own-cast × a per-tick
+                    // value — the player's Options override when set (they can read the
+                    // real number off their health bar; instruments/ranks raise it past
+                    // the wiki base), else the wiki base. No cast seen → count only.
+                    if (_lastRegenCast is { } regenSpell)
+                    {
+                        var perTick = RegenPerTickOverride > 0
+                            ? RegenPerTickOverride
+                            : RegenCatalog.PerTick(regenSpell) ?? 0;
+                        _regenEstimated += perTick;
+                        _regenSpell = regenSpell;
+                    }
                     break;
                 case LootEvent l:
                     var cur = _loot.TryGetValue(l.Item, out var lv) ? lv : (0, l.Source);
@@ -1131,6 +1157,7 @@ public sealed class SessionStats
         _lastDamageFrom = null;
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
+        _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null;
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
         _copper = 0; _coinDrops = 0; _biggestDrop = 0;
         _vendorCopper = 0; _salesCount = 0; _soldItems.Clear();
@@ -1358,6 +1385,8 @@ public sealed class SessionStats
                         0, kv.Value.ActiveSeconds)).ToList(),
                 Hps = combatSeconds > 0 ? _healingDone / combatSeconds : 0,
                 RegenTicks = _regenTicks,
+                RegenEstimatedHealed = _regenEstimated,
+                RegenSpell = _regenSpell ?? "",
                 LootTotal = _lootCount,
                 Loot = _loot.OrderByDescending(kv => kv.Value.Count)
                     .Select(kv => new LootDetail(kv.Key, kv.Value.Count, kv.Value.LastSource)).ToList(),
@@ -1511,6 +1540,11 @@ public sealed class StatsSnapshot
     public List<SourceDamage> HealsBySpell { get; init; } = [];
     public double Hps { get; init; }
     public int RegenTicks { get; init; }
+    /// <summary>Estimated regen healing: ticks × (player override, else wiki base) for
+    /// the attributed spell. A floor, labeled est., never part of <see cref="Hps"/>.</summary>
+    public long RegenEstimatedHealed { get; init; }
+    /// <summary>The regen spell the ticks were attributed to ("" when no own cast seen).</summary>
+    public string RegenSpell { get; init; } = "";
     public int LootTotal { get; init; }
     public List<LootDetail> Loot { get; init; } = [];
     public List<NameCount> Crafted { get; init; } = [];

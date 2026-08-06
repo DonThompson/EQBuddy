@@ -516,6 +516,19 @@ public partial class MainWindow : Window
         cw.Close();   // saves the stack position on the way out
     }
 
+    /// <summary>The regen-tick line for healing surfaces: count always; estimate when a
+    /// cast attributed the ticks (× the player's Options value when set, else wiki base —
+    /// the log itself never carries an amount, so this stays labeled est.).</summary>
+    internal string RegenLine(StatsSnapshot s)
+    {
+        if (s.RegenEstimatedHealed <= 0 || s.RegenSpell.Length == 0)
+            return $"{s.RegenTicks} regen/hymn ticks (game logs no amounts for these)";
+        var basis = _settings.RegenPerTickOverride > 0
+            ? "your hp/tick from Options"
+            : "wiki base — set your real hp/tick in Options";
+        return $"{s.RegenSpell}: est. ~{s.RegenEstimatedHealed:N0} healed over {s.RegenTicks} ticks ({basis})";
+    }
+
     private void OnLootSort(object sender, MouseButtonEventArgs e)
     {
         _settings.LootSort = (string)((FrameworkElement)sender).Tag;
@@ -659,6 +672,7 @@ public partial class MainWindow : Window
     private void RefreshUi()
     {
         UpdateFocusHide();
+        _stats.RegenPerTickOverride = _settings.RegenPerTickOverride;
 
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
         // off the shared tick so a hidden window can't silence a camp.
@@ -870,7 +884,7 @@ public partial class MainWindow : Window
                 (s.Recent is { Hps: > 0 } rh
                     ? $"\nLast {(int)rh.Window.TotalMinutes}m: {rh.Hps:0.#} hps"
                     : "") +
-                (s.RegenTicks > 0 ? $"\n{s.RegenTicks} regen/hymn ticks (game logs no amounts for these)" : "");
+                (s.RegenTicks > 0 ? "\n" + RegenLine(s) : "");
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;

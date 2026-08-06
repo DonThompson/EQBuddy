@@ -204,6 +204,13 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         get => _settings.HideWhenGameUnfocused;
         set { _settings.HideWhenGameUnfocused = value; PersistAnd(); }
     }
+    /// <summary>0 = wiki base. Clamped to a sane band — a typo of 90000 would turn the
+    /// estimate into an absurdity that outlives the typo.</summary>
+    public int RegenPerTickOverride
+    {
+        get => _settings.RegenPerTickOverride;
+        set { _settings.RegenPerTickOverride = Math.Clamp(value, 0, 5000); PersistAnd(); }
+    }
 
     // ---- recent-rate window ----
     public static readonly string[] WindowChoices = ["5 min", "15 min", "30 min"];

@@ -133,9 +133,12 @@ public partial class BreakoutWindow : Window
         var rate = total / Math.Max(1, secs);
         // Hymn/regen ticks carry no amounts in the log, so they can never join the HPS
         // rows — but a bard mid-song staring at "no healing" reads it as broken (David,
-        // live test 2026-08-06). Count them where healing lives.
+        // live test 2026-08-06). Count them where healing lives; estimate when attributed.
         var regen = _kind == BreakoutKind.Healing && s.RegenTicks > 0
-            ? $" · {s.RegenTicks} regen ticks" : "";
+            ? s.RegenEstimatedHealed > 0
+                ? $" · est. ~{s.RegenEstimatedHealed:N0} regen ({s.RegenTicks} ticks)"
+                : $" · {s.RegenTicks} regen ticks"
+            : "";
         SubText.Text = (_fightScope
             ? f is null ? "No fights yet"
                 : $"{f.Name} · {f.DurationSeconds:0}s · {f.Outcome} · {rate:0.#} {rateLabel}"
@@ -147,6 +150,9 @@ public partial class BreakoutWindow : Window
         {
             EmptyText.Text = _kind switch
             {
+                BreakoutKind.Healing when s.RegenEstimatedHealed > 0 =>
+                    $"{s.RegenSpell}: est. ~{s.RegenEstimatedHealed:N0} healed over {s.RegenTicks} ticks.\n" +
+                    "The game logs no amounts — this is ticks × your Options\nhp/tick (or the wiki base), so it stays labeled est.",
                 BreakoutKind.Healing when s.RegenTicks > 0 =>
                     $"{s.RegenTicks} hymn/regen ticks — the game logs no amounts for these,\nso they count but can't join the HPS rows.",
                 BreakoutKind.Healing => "No healing seen yet.",
