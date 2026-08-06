@@ -90,14 +90,20 @@ public sealed partial class EqlWikiItemService
         if (noBacktick != title) yield return noBacktick;
     }
 
+    /// <summary>Cache-only peek: synchronous, accepts any age, never fetches — for
+    /// surfaces that must cost nothing (row values, first-paint tooltips).</summary>
+    public ItemInfo? CachedInfo(string inGameName)
+    {
+        var cached = ReadCache(NormalizeTitle(inGameName));
+        return cached is null ? null : Parse(cached.Wikitext, cached.Title);
+    }
+
     /// <summary>Cache-only stats peek for hover tooltips: synchronous, accepts any age,
     /// never fetches. A hover must cost nothing — the click path does the real lookup.</summary>
     public string? CachedStatsText(string inGameName)
     {
-        var cached = ReadCache(NormalizeTitle(inGameName));
-        if (cached is null) return null;
-        var info = Parse(cached.Wikitext, cached.Title);
-        return info.StatsLines.Count > 0 ? string.Join("\n", info.StatsLines) : null;
+        var info = CachedInfo(inGameName);
+        return info is { StatsLines.Count: > 0 } ? string.Join("\n", info.StatsLines) : null;
     }
 
     private async Task<string?> FetchFromApi(string title)

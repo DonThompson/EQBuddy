@@ -165,6 +165,9 @@ public sealed class AppSettings
     /// fighting, session loot between fights, opened by the 🎒 star while minimized.</summary>
     public double BreakoutLootLeft { get; set; } = double.NaN;
     public double BreakoutLootTop { get; set; } = double.NaN;
+    /// <summary>"target" (drops for the creature you're fighting or last /considered) or
+    /// "session" (what you've looted).</summary>
+    public string BreakoutLootScope { get; set; } = "target";
 
     private static string FilePath => AppPaths.File("settings.json");
 

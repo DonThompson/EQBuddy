@@ -125,6 +125,13 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your wounds begin to heal\.$")]
     private static partial Regex RegenTickRx();
 
+    // Orc pawn scowls at you, ready to attack -- looks like a reasonably safe opponent. (Lvl: 3)
+    // (Hugzee's log, 2026-08-06 — the only faction phrase observed in Legends so far;
+    // the classic-EQ phrase family fills the alternation, anchored by the Legends-only
+    // "(Lvl: N)" tail so a chat line can't satisfy it.)
+    [GeneratedRegex(@"^(?<name>.+?) (?:scowls at you|regards you|glares at you|glowers at you|judges you|kindly considers you|looks upon you|looks your way).*\(Lvl: (?<level>\d+)\)$")]
+    private static partial Regex ConsiderRx();
+
     // You assume a ranged stance. / You assume an offensive stance.
     [GeneratedRegex(@"^You assume an? (?<stance>.+?) stance\.$")]
     private static partial Regex StanceRx();
@@ -516,6 +523,10 @@ public static partial class LogParser
 
         if ((r = FactionRx().Match(msg)).Success)
             return new FactionEvent(ts, r.Groups["faction"].Value, int.Parse(r.Groups["delta"].Value));
+
+        if ((r = ConsiderRx().Match(msg)).Success)
+            return new ConsiderEvent(ts, Normalize(r.Groups["name"].Value),
+                int.Parse(r.Groups["level"].Value));
 
         if ((r = FactionCappedRx().Match(msg)).Success)
             return new FactionEvent(ts, r.Groups["faction"].Value, 0, Capped: true);

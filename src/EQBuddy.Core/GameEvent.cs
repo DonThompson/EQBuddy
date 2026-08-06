@@ -26,6 +26,9 @@ public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "", bool OverTime = false) : GameEvent(Time);
 /// <summary>"Your wounds begin to heal." — a regen/hymn tick; the log gives no amount, so we can only count them.</summary>
 public record RegenTickEvent(DateTime Time) : GameEvent(Time);
+/// <summary>A /consider line — deliberate targeting, so it can drive the target-drops
+/// surfaces without a swing being landed first (David, 2026-08-06).</summary>
+public record ConsiderEvent(DateTime Time, string Name, int Level) : GameEvent(Time);
 /// <param name="Count">Stack size — auto-storage lines ("stored it in your tradeskill
 /// depot", issue #39) can carry counts like the auto-sell lines do.</param>
 public record LootEvent(DateTime Time, string Item, string Source, string? UpgradeResult, int Count = 1) : GameEvent(Time);

@@ -361,6 +361,20 @@ public class LogParserTests
         Assert.Equal(cost, e.Cost);
     }
 
+    /// <summary>/consider lines (Hugzee's log, 2026-08-06 — both verbatim): the faction
+    /// phrase varies, but the Legends-only "(Lvl: N)" tail anchors the match so a chat
+    /// line can never satisfy it. Considering is deliberate targeting, so this drives
+    /// the target-drops surfaces without a swing landed.</summary>
+    [Theory]
+    [InlineData("Orc pawn scowls at you, ready to attack -- looks like a reasonably safe opponent. (Lvl: 3)", "Orc pawn", 3)]
+    [InlineData("Orc centurion scowls at you, ready to attack -- looks like a reasonably safe opponent. (Lvl: 1)", "Orc centurion", 1)]
+    public void ConsiderLinesNameTheTargetAndLevel(string line, string name, int level)
+    {
+        var e = Parse<ConsiderEvent>(line);
+        Assert.Equal(name, e.Name);
+        Assert.Equal(level, e.Level);
+    }
+
     /// <summary>Rank upgrades: unquoted name with a trailing rank number. The name can
     /// itself contain a colon suffix ("Symphonic Aura: Enabled") — the rank is always the
     /// final number before "at a cost".</summary>

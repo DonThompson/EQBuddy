@@ -92,6 +92,7 @@ public sealed class SessionStats
     private long _regenEstimated;
     private string? _regenSpell;
     private string? _lastRegenCast;
+    private (string Name, DateTime Time)? _lastConsider;
 
     /// <summary>Player-supplied hp-per-tick for the regen estimate (Options), 0 = unset.
     /// The log can't know instrument resonance or ranks; the player's health bar can —
@@ -649,6 +650,12 @@ public sealed class SessionStats
                     if (h.Spell != "Unknown")
                         _spells.Learn(h.Spell, h.OverTime ? SpellCategory.HealOverTime : SpellCategory.Heal);
                     break;
+                case ConsiderEvent con:
+                    // Deliberate targeting: a /con names the creature you care about
+                    // without a swing landed — it competes with recent fights for the
+                    // target-drops surfaces (David, 2026-08-06).
+                    _lastConsider = (con.Name, con.Time);
+                    break;
                 case RegenTickEvent:
                     _regenTicks++;
                     // Estimated regen healing (David, 2026-08-06): the tick line names no
@@ -1031,19 +1038,26 @@ public sealed class SessionStats
     /// that walking away really clears it.</summary>
     private static readonly TimeSpan TargetLinger = TimeSpan.FromSeconds(45);
 
-    /// <summary>The creature to show target drops for: the most recently engaged open
-    /// fight, else the last finalized one within <see cref="TargetLinger"/> of log time.
-    /// "" when neither — the block hides rather than naming something stale.</summary>
+    /// <summary>The creature to show target drops for: an open fight always wins; else
+    /// the newer of the last finalized fight and the last /consider, each within
+    /// <see cref="TargetLinger"/> of log time. "" when none — the surfaces hide rather
+    /// than naming something stale.</summary>
     private string BuildCurrentTargetLocked()
     {
         if (_activeFights.Count > 0)
             return _activeFights.MaxBy(kv => kv.Value.Last).Key;
-        if (_encounters.Count > 0 && _lastEventTime is { } last)
+        if (_lastEventTime is not { } last) return "";
+
+        var best = ""; var bestAt = DateTime.MinValue;
+        if (_encounters.Count > 0)
         {
             var e = _encounters[^1];
-            if (last - e.Start.AddSeconds(e.DurationSeconds) <= TargetLinger) return e.Name;
+            var end = e.Start.AddSeconds(e.DurationSeconds);
+            if (last - end <= TargetLinger) { best = e.Name; bestAt = end; }
         }
-        return "";
+        if (_lastConsider is { } con && last - con.Time <= TargetLinger && con.Time > bestAt)
+            best = con.Name;
+        return best;
     }
 
     /// <summary>The AA ledger a snapshot shows: union of this run's observations and the
@@ -1157,7 +1171,7 @@ public sealed class SessionStats
         _lastDamageFrom = null;
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
-        _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null;
+        _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null; _lastConsider = null;
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
         _copper = 0; _coinDrops = 0; _biggestDrop = 0;
         _vendorCopper = 0; _salesCount = 0; _soldItems.Clear();

@@ -65,8 +65,14 @@ public partial class BreakoutWindow : Window
             Top = area.Top + 80 + 150 * (int)kind;
         }
         Closed += (_, _) => SavePosition();
-        if (_kind is BreakoutKind.Watch or BreakoutKind.Loot)
-            ScopeBorder.Visibility = Visibility.Collapsed;
+        if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
+        if (_kind == BreakoutKind.Loot)
+        {
+            // Same toggle chrome, different axis: what the TARGET can drop vs what the
+            // SESSION has yielded (David, 2026-08-06).
+            ScopeFight.Text = "Target";
+            ScopeSession.Text = "Session";
+        }
         ApplyScopeVisual();
     }
 
@@ -74,6 +80,7 @@ public partial class BreakoutWindow : Window
     {
         BreakoutKind.Damage => _settings.BreakoutDamageScope,
         BreakoutKind.Healing => _settings.BreakoutHealingScope,
+        BreakoutKind.Loot => _settings.BreakoutLootScope == "session" ? "session" : "fight",
         _ => _settings.BreakoutPetScope,
     };
 
@@ -84,6 +91,8 @@ public partial class BreakoutWindow : Window
             case BreakoutKind.Damage: _settings.BreakoutDamageScope = v; break;
             case BreakoutKind.Healing: _settings.BreakoutHealingScope = v; break;
             case BreakoutKind.Pet: _settings.BreakoutPetScope = v; break;
+            case BreakoutKind.Loot:
+                _settings.BreakoutLootScope = v == "session" ? "session" : "target"; break;
         }
         _settings.Save();
     }
@@ -222,62 +231,87 @@ public partial class BreakoutWindow : Window
         }
     }
 
-    /// <summary>The Loot breakout: while a fight is on (or just ended), the shared
-    /// target-drops content — the very thing the minimized player couldn't see (the 🎯
-    /// block lives in a card that never renders while minimized); between fights, the
-    /// session's loot. Item rows click through to Item info and hover their stats,
-    /// same as the card.</summary>
+    /// <summary>The Loot breakout, Target|Session toggled (David's spec, 2026-08-06):
+    /// Target = what the creature you're fighting — or last /considered — can drop, your
+    /// observed counts and % leading, wiki drops behind, values from your own sales or
+    /// the wiki. Session = what you've looted. Hovering a row fetches the eqlwiki item
+    /// info on the spot; clicking opens the eqlwiki page in the browser.</summary>
     private void UpdateLoot(StatsSnapshot s)
     {
-        var (header, targetRows) = Main?.TargetDropsContent(s) ?? ("", []);
-        var fighting = header.Length > 0;
         TitleText.Text = "🎒 Loot";
-        SubText.Text = fighting
-            ? header.Replace("🎯 Fighting: ", "🎯 ")
-            : $"Session · {s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")} looted";
-
         List<(string Name, string Value)> rows;
-        if (fighting)
+        string emptyText;
+        if (_fightScope)   // = Target scope for this kind
         {
+            var (header, targetRows) = Main?.TargetDropsContent(s) ?? ("", []);
+            var hasTarget = header.Length > 0;
+            SubText.Text = hasTarget ? header.Replace("🎯 Fighting: ", "🎯 ") : "No target";
             rows = targetRows;
+            emptyText = hasTarget
+                ? "Nothing known for this creature yet."
+                : "Swing at something — or /consider it — and its\npossible drops appear here.";
         }
         else
         {
+            SubText.Text = $"Session · {s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")} looted";
             var loot = _settings.LootSort == "name"
                 ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
                 : s.Loot;
             rows = loot.Take(12).Select(l => (l.Item, $"×{l.Count}")).ToList();
+            emptyText = "No loot seen yet.";
         }
 
         var empty = rows.Count == 0;
         EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
         if (empty)
         {
-            EmptyText.Text = fighting ? "Nothing known for this creature yet." : "No loot seen yet.";
+            EmptyText.Text = emptyText;
             Rows.Items.Clear();
             _signature = "";
             return;
         }
 
-        var sig = $"loot|{fighting}|{SubText.Text}|{string.Join(",", rows.Select(r => r.Name + r.Value))}";
+        var sig = $"loot|{_fightScope}|{SubText.Text}|{string.Join(",", rows.Select(r => r.Name + r.Value))}";
         if (sig == _signature) return;
         _signature = sig;
 
         Rows.Items.Clear();
         var barBrush = BreakdownRows.BarBrush(this);
         foreach (var (name, value) in rows)
+            Rows.Items.Add(BuildItemRow(name, value, barBrush));
+    }
+
+    /// <summary>An item row wired the way David specced the breakout: hover = the eqlwiki
+    /// item info, fetched on the spot if the cache is empty (the tooltip live-updates
+    /// from "Looking up…"); click = the eqlwiki page in the browser.</summary>
+    private Grid BuildItemRow(string name, string value, Brush barBrush)
+    {
+        var cachedTip = Main?.CachedItemStats(name);
+        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null);
+        var tipText = new TextBlock
         {
-            var row = BreakdownRows.Row(this, name, value, 0, barBrush,
-                Main?.ItemHoverStats(name) ?? "Click for item info (eqlwiki)");
-            if (Main is { } main)
-            {
-                var clickName = name;
-                row.Cursor = System.Windows.Input.Cursors.Hand;
-                row.MouseLeftButtonDown += (_, e) => e.Handled = true;   // don't start a drag
-                row.MouseLeftButtonUp += (_, _) => main.ShowItemInfo(clickName);
-            }
-            Rows.Items.Add(row);
-        }
+            Text = cachedTip ?? "Looking up on eqlwiki…",
+            TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 340,
+            FontFamily = new FontFamily("Consolas"),
+        };
+        var tip = new System.Windows.Controls.ToolTip { Content = tipText };
+        row.ToolTip = tip;
+
+        var fetched = false;
+        tip.Opened += async (_, _) =>
+        {
+            // Fetch once per row lifetime; a cache hit inside FetchItemTooltip is free.
+            if (fetched || Main is not { } main) return;
+            fetched = true;
+            var text = await main.FetchItemTooltip(name);
+            tipText.Text = text ?? (cachedTip ?? "Not on the wiki.");
+        };
+
+        row.Cursor = System.Windows.Input.Cursors.Hand;
+        row.MouseLeftButtonDown += (_, e) => e.Handled = true;   // don't start a window drag
+        row.MouseLeftButtonUp += (_, _) => MainWindow.OpenWikiPage(name);
+        return row;
     }
 
     private void ApplyScopeVisual()

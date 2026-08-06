@@ -406,6 +406,10 @@ public partial class MainWindow : Window
     internal string ItemHoverStats(string itemName) =>
         _wikiItems.CachedStatsText(itemName) ?? "Click for item info (eqlwiki)";
 
+    /// <summary>Raw cached stats (null when the cache is empty) — the Loot breakout's
+    /// tooltip wants the real distinction so it knows to fetch.</summary>
+    internal string? CachedItemStats(string itemName) => _wikiItems.CachedStatsText(itemName);
+
     // ---- target drops (TARGET-*): the Loot card's "what can this drop" block ----
 
     private readonly EqlWikiMobService _wikiMobs =
@@ -486,6 +490,32 @@ public partial class MainWindow : Window
         TargetBlock.Visibility = Visibility.Visible;
         TargetHeader.Text = header;
         FillList(TargetDropsList, rows, onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
+    }
+
+    /// <summary>Full tooltip text for an item, FETCHING from the wiki when the cache is
+    /// empty — the Loot breakout's hover asks for this deliberately (David: mouse-over
+    /// should just show the item info). One bounded lookup, cached for a week.</summary>
+    internal async Task<string?> FetchItemTooltip(string name)
+    {
+        var r = await _wikiItems.LookupAsync(name);
+        return r.Item is { StatsLines.Count: > 0 } info
+            ? string.Join("\n", info.StatsLines)
+            : null;
+    }
+
+    /// <summary>Open an item's eqlwiki page in the default browser — the search URL
+    /// lands on the page itself on an exact title match (MediaWiki "Go"), and on
+    /// search results otherwise, so a rename never strands the user on a 404.</summary>
+    internal static void OpenWikiPage(string itemName)
+    {
+        var url = "https://eqlwiki.com/index.php?search="
+            + Uri.EscapeDataString(EqlWikiItemService.NormalizeTitle(itemName));
+        try
+        {
+            System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex) { App.LogError(ex); }
     }
 
     /// <summary>Re-derives the height caps from the monitor the widget currently
