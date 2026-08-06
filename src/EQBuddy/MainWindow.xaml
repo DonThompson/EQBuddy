@@ -75,11 +75,19 @@
                            FontSize="12" Foreground="{DynamicResource DimBrush}"
                            TextTrimming="CharacterEllipsis" Text="looking for a character…"
                            ToolTip="Follows whoever is actively playing (log file growth)"/>
-                <!-- Feedback sits IN the title bar, not buried in the menu (David: the
-                     betas live on reports, so the door should be visible). -->
-                <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#x1F4E8;"
+                <!-- Feedback sits IN the title bar, not buried in the menu, and wears the
+                     one green pill on the bar so the eye lands on it (David: the betas
+                     live on reports, so the door should draw people). Text-glyph envelope,
+                     not the emoji — color emoji ignore Foreground, the glyph tints. -->
+                <Button Grid.Column="2" Style="{StaticResource IconButton}"
                         ToolTip="Send feedback — feature ideas and bug reports shape the beta features"
-                        Click="OnFeedback"/>
+                        Click="OnFeedback">
+                    <Border Background="{DynamicResource GoodWashBrush}" CornerRadius="6"
+                            Padding="4,0,4,1">
+                        <TextBlock Text="&#x2709;&#xFE0E;" FontSize="13"
+                                   Foreground="{DynamicResource GoodBrush}"/>
+                    </Border>
+                </Button>
                 <Button x:Name="GearBtn" Grid.Column="3" Style="{StaticResource IconButton}"
                         Content="&#x2699;&#xFE0F;" ToolTip="Settings" Click="OnGear"/>
                 <Button Grid.Column="4" Style="{StaticResource IconButton}" Content="&#x21BB;"
