@@ -161,6 +161,10 @@ public sealed class AppSettings
     /// as a floating window while minimized. No scope — rules are session counters.</summary>
     public double BreakoutWatchLeft { get; set; } = double.NaN;
     public double BreakoutWatchTop { get; set; } = double.NaN;
+    /// <summary>The Loot breakout (David's live report 2026-08-06): target drops while
+    /// fighting, session loot between fights, opened by the 🎒 star while minimized.</summary>
+    public double BreakoutLootLeft { get; set; } = double.NaN;
+    public double BreakoutLootTop { get; set; } = double.NaN;
 
     private static string FilePath => AppPaths.File("settings.json");
 

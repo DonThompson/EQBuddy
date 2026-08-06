@@ -7,9 +7,9 @@ using EQBuddy.Core;
 namespace EQBuddy;
 
 /// <summary>Which stat a breakout window tracks. Each kind is one singleton window with its
-/// own remembered position and Fight/Session scope (Watch has no scope — watch rules are
-/// session counters, so its toggle is hidden).</summary>
-public enum BreakoutKind { Damage, Healing, Pet, Watch }
+/// own remembered position and Fight/Session scope (Watch and Loot have no scope — their
+/// content is session/target shaped, so the toggle is hidden).</summary>
+public enum BreakoutKind { Damage, Healing, Pet, Watch, Loot }
 
 /// <summary>
 /// A small floating bar-chart window for one stat — your damage, your healing, or the pet's
@@ -27,6 +27,10 @@ public partial class BreakoutWindow : Window
 {
     private readonly AppSettings _settings;
     private readonly BreakoutKind _kind;
+
+    /// <summary>The owning widget — the Loot kind reads target-drops content and item
+    /// click/hover behavior through it (same shared builder the Loot card uses).</summary>
+    public MainWindow? Main { get; set; }
 
     /// <summary>Raised when the user ✕-dismisses the window — the owner suppresses this
     /// kind until the widget is next minimized.</summary>
@@ -61,7 +65,8 @@ public partial class BreakoutWindow : Window
             Top = area.Top + 80 + 150 * (int)kind;
         }
         Closed += (_, _) => SavePosition();
-        if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
+        if (_kind is BreakoutKind.Watch or BreakoutKind.Loot)
+            ScopeBorder.Visibility = Visibility.Collapsed;
         ApplyScopeVisual();
     }
 
@@ -88,7 +93,8 @@ public partial class BreakoutWindow : Window
         BreakoutKind.Damage => (_settings.BreakoutDamageLeft, _settings.BreakoutDamageTop),
         BreakoutKind.Healing => (_settings.BreakoutHealingLeft, _settings.BreakoutHealingTop),
         BreakoutKind.Pet => (_settings.BreakoutPetLeft, _settings.BreakoutPetTop),
-        _ => (_settings.BreakoutWatchLeft, _settings.BreakoutWatchTop),
+        BreakoutKind.Watch => (_settings.BreakoutWatchLeft, _settings.BreakoutWatchTop),
+        _ => (_settings.BreakoutLootLeft, _settings.BreakoutLootTop),
     };
 
     /// <summary>Persist the spot on hide as well as close — the window is hidden and
@@ -103,8 +109,10 @@ public partial class BreakoutWindow : Window
                 _settings.BreakoutHealingLeft = Left; _settings.BreakoutHealingTop = Top; break;
             case BreakoutKind.Pet:
                 _settings.BreakoutPetLeft = Left; _settings.BreakoutPetTop = Top; break;
-            default:
+            case BreakoutKind.Watch:
                 _settings.BreakoutWatchLeft = Left; _settings.BreakoutWatchTop = Top; break;
+            default:
+                _settings.BreakoutLootLeft = Left; _settings.BreakoutLootTop = Top; break;
         }
         _settings.Save();
     }
@@ -114,6 +122,7 @@ public partial class BreakoutWindow : Window
     public void Update(StatsSnapshot s)
     {
         if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
+        if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
         var f = s.LastFight;
         var (title, rows, secs, rateLabel) = _kind switch
         {
@@ -210,6 +219,64 @@ public partial class BreakoutWindow : Window
             var tooltip = r.LastItem is { Length: > 0 } li ? $"last: {li}" : null;
             Rows.Items.Add(BreakdownRows.Row(this, r.Name, value,
                 (double)r.TotalQuantity / top, barBrush, tooltip));
+        }
+    }
+
+    /// <summary>The Loot breakout: while a fight is on (or just ended), the shared
+    /// target-drops content — the very thing the minimized player couldn't see (the 🎯
+    /// block lives in a card that never renders while minimized); between fights, the
+    /// session's loot. Item rows click through to Item info and hover their stats,
+    /// same as the card.</summary>
+    private void UpdateLoot(StatsSnapshot s)
+    {
+        var (header, targetRows) = Main?.TargetDropsContent(s) ?? ("", []);
+        var fighting = header.Length > 0;
+        TitleText.Text = "🎒 Loot";
+        SubText.Text = fighting
+            ? header.Replace("🎯 Fighting: ", "🎯 ")
+            : $"Session · {s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")} looted";
+
+        List<(string Name, string Value)> rows;
+        if (fighting)
+        {
+            rows = targetRows;
+        }
+        else
+        {
+            var loot = _settings.LootSort == "name"
+                ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
+                : s.Loot;
+            rows = loot.Take(12).Select(l => (l.Item, $"×{l.Count}")).ToList();
+        }
+
+        var empty = rows.Count == 0;
+        EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+        if (empty)
+        {
+            EmptyText.Text = fighting ? "Nothing known for this creature yet." : "No loot seen yet.";
+            Rows.Items.Clear();
+            _signature = "";
+            return;
+        }
+
+        var sig = $"loot|{fighting}|{SubText.Text}|{string.Join(",", rows.Select(r => r.Name + r.Value))}";
+        if (sig == _signature) return;
+        _signature = sig;
+
+        Rows.Items.Clear();
+        var barBrush = BreakdownRows.BarBrush(this);
+        foreach (var (name, value) in rows)
+        {
+            var row = BreakdownRows.Row(this, name, value, 0, barBrush,
+                Main?.ItemHoverStats(name) ?? "Click for item info (eqlwiki)");
+            if (Main is { } main)
+            {
+                var clickName = name;
+                row.Cursor = System.Windows.Input.Cursors.Hand;
+                row.MouseLeftButtonDown += (_, e) => e.Handled = true;   // don't start a drag
+                row.MouseLeftButtonUp += (_, _) => main.ShowItemInfo(clickName);
+            }
+            Rows.Items.Add(row);
         }
     }
 

@@ -401,8 +401,9 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Hover stats for an item row: the cached wiki stat block when we have one
-    /// (any age — a hover is a peek, not a lookup), else a hint that clicking fetches.</summary>
-    private string ItemHoverStats(string itemName) =>
+    /// (any age — a hover is a peek, not a lookup), else a hint that clicking fetches.
+    /// Internal: the Loot breakout borrows it for its own rows.</summary>
+    internal string ItemHoverStats(string itemName) =>
         _wikiItems.CachedStatsText(itemName) ?? "Click for item info (eqlwiki)";
 
     // ---- target drops (TARGET-*): the Loot card's "what can this drop" block ----
@@ -427,15 +428,14 @@ public partial class MainWindow : Window
         catch (Exception ex) { App.LogError(ex); }
     }
 
-    private void RenderTargetDrops(StatsSnapshot s)
+    /// <summary>Target-drops content shared by the Loot card's 🎯 block and the Loot
+    /// breakout — one builder, so the two can never disagree, and the wiki lookup fires
+    /// from HERE so a minimized session (where the card never renders) still resolves
+    /// the target (David's live report, 2026-08-06). "" header = no target.</summary>
+    internal (string Header, List<(string Name, string Value)> Rows) TargetDropsContent(StatsSnapshot s)
     {
         var target = _settings.ShowTargetDrops ? s.CurrentTarget : "";
-        if (target.Length == 0)
-        {
-            TargetBlock.Visibility = Visibility.Collapsed;
-            return;
-        }
-        TargetBlock.Visibility = Visibility.Visible;
+        if (target.Length == 0) return ("", []);
         if (!target.Equals(_targetLookupName, StringComparison.OrdinalIgnoreCase))
         {
             _targetLookupName = target;
@@ -469,9 +469,22 @@ public partial class MainWindow : Window
         var extra = Math.Max(0, rows.Count - 14);
         if (extra > 0) rows = rows.Take(14).ToList();
 
-        TargetHeader.Text = $"🎯 Fighting: {target}" +
+        var header = $"🎯 Fighting: {target}" +
             (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
             $" · drops (eqlwiki · {state}{(extra > 0 ? $" · +{extra} more" : "")})";
+        return (header, rows);
+    }
+
+    private void RenderTargetDrops(StatsSnapshot s)
+    {
+        var (header, rows) = TargetDropsContent(s);
+        if (header.Length == 0)
+        {
+            TargetBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+        TargetBlock.Visibility = Visibility.Visible;
+        TargetHeader.Text = header;
         FillList(TargetDropsList, rows, onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
     }
 
@@ -1483,6 +1496,7 @@ public partial class MainWindow : Window
                            BreakoutKind.Damage => _settings.MiniStats.Contains("dps"),
                            BreakoutKind.Healing => _settings.MiniStats.Contains("hps"),
                            BreakoutKind.Pet => _settings.MiniStats.Contains("pet"),
+                           BreakoutKind.Loot => _settings.MiniStats.Contains("loot"),
                            _ => _settings.PinWatchChips &&
                                 _settings.TrackedRules.Any(r => r.Enabled && r.Pinned),
                        };
@@ -1491,7 +1505,7 @@ public partial class MainWindow : Window
             {
                 if (w is not { IsLoaded: true })
                 {
-                    _breakouts[kind] = w = new BreakoutWindow(_settings, kind);
+                    _breakouts[kind] = w = new BreakoutWindow(_settings, kind) { Main = this };
                     w.Dismissed += k => _breakoutDismissed.Add(k);
                 }
                 if (!w.IsVisible) w.Show();
