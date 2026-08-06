@@ -194,19 +194,75 @@ public partial class BreakoutWindow : Window
         }
     }
 
+    /// <summary>First resize gesture of any kind: freeze the current auto size and take
+    /// manual control, so the resize isn't immediately undone by SizeToContent.</summary>
+    private void EnterManualSize()
+    {
+        if (SizeToContent == SizeToContent.Manual) return;
+        var w = ActualWidth; var h = ActualHeight;
+        SizeToContent = SizeToContent.Manual;
+        Width = w; Height = h;
+        RowsScroll.MaxHeight = double.PositiveInfinity;
+    }
+
     private void OnGripDrag(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
     {
-        if (SizeToContent != SizeToContent.Manual)
-        {
-            // First drag: freeze the current auto size and take manual control.
-            var w = ActualWidth; var h = ActualHeight;
-            SizeToContent = SizeToContent.Manual;
-            Width = w; Height = h;
-            RowsScroll.MaxHeight = double.PositiveInfinity;
-        }
+        EnterManualSize();
         Width = Math.Clamp(Width + e.HorizontalChange, MinManualWidth, 900);
         Height = Math.Clamp(Height + e.VerticalChange, MinManualHeight,
             SystemParameters.WorkArea.Height);
+    }
+
+    // ---- native edge-resize (discussion feedback via David, 2026-08-06: "I still can't
+    // resize the loot window" — a frameless window has no resize borders, and a corner
+    // glyph nobody finds isn't an affordance). WM_NCHITTEST maps the right/bottom edges
+    // to resize zones so the window behaves like windows do; the grip stays as the
+    // visible hint. ----
+
+    private const int WmNcHitTest = 0x84;
+    private const int WmNcLButtonDown = 0xA1;
+    private const int WmExitSizeMove = 0x232;
+    private const int HtRight = 11, HtBottom = 15, HtBottomRight = 17;
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        if (PresentationSource.FromVisual(this) is System.Windows.Interop.HwndSource src)
+            src.AddHook(ResizeHook);
+    }
+
+    private IntPtr ResizeHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        switch (msg)
+        {
+            case WmNcHitTest:
+            {
+                // lParam: screen coords, low word X, high word Y (signed for multi-monitor).
+                var x = (short)((long)lParam & 0xFFFF);
+                var y = (short)(((long)lParam >> 16) & 0xFFFF);
+                var p = PointFromScreen(new Point(x, y));
+                var onRight = p.X >= ActualWidth - 8;
+                var onBottom = p.Y >= ActualHeight - 8;
+                if (onRight && onBottom) { handled = true; return HtBottomRight; }
+                if (onRight && p.Y > 24) { handled = true; return HtRight; }
+                if (onBottom) { handled = true; return HtBottom; }
+                break;
+            }
+            case WmNcLButtonDown when (long)wParam is HtRight or HtBottom or HtBottomRight:
+                // The native size loop is about to start — leave SizeToContent first or
+                // the height snaps back the moment layout runs.
+                EnterManualSize();
+                break;
+            case WmExitSizeMove when SizeToContent == SizeToContent.Manual:
+                // ActualWidth/Height, not Width/Height: the native size loop moves the
+                // window without writing the dependency properties.
+                Width = ActualWidth;
+                Height = ActualHeight;
+                SetSizeSetting(ActualWidth, ActualHeight);
+                _settings.Save();
+                break;
+        }
+        return IntPtr.Zero;
     }
 
     private void OnGripDone(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
