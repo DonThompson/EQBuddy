@@ -34,7 +34,8 @@ public partial class MainWindow : Window
 
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "money", "xp", "deaths"];
 
-    private enum StatSort { Total, Hits, Avg, Rate }
+    // StatSort moved to BreakdownRows.cs (internal) when the breakout windows grew
+    // their own sort bars — one enum, every surface.
     private StatSort _dmgOutSort = StatSort.Total;
     private StatSort _dmgInSort = StatSort.Total;
     private StatSort _healSort = StatSort.Total;
@@ -1742,42 +1743,8 @@ public partial class MainWindow : Window
     /// falls the longer you go without using it. The burst rate (total ÷ the ability's
     /// own active time) lives in the tooltip. The bar follows the sorted column.</summary>
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
-        StatSort sort, double combatSeconds, string rateLabel)
-    {
-        var secs = Math.Max(1, combatSeconds);
-        double Rate(SourceDamage d) => d.Total / secs;
-        static double Avg(SourceDamage d) => (double)d.Total / Math.Max(1, d.Hits);
-        var sorted = (sort switch
-        {
-            StatSort.Hits => stats.OrderByDescending(d => d.Hits),
-            StatSort.Avg => stats.OrderByDescending(Avg),
-            StatSort.Rate => stats.OrderByDescending(Rate),
-            _ => stats.OrderByDescending(d => d.Total),
-        }).ToList();
-        list.Items.Clear();
-        if (sorted.Count == 0) return;
-        var grand = Math.Max(1, sorted.Sum(d => d.Total));
-        Func<SourceDamage, double> metric = sort switch
-        {
-            StatSort.Hits => d => d.Hits,
-            StatSort.Avg => Avg,
-            StatSort.Rate => Rate,
-            _ => d => d.Total,
-        };
-        var topMetric = Math.Max(1e-9, sorted.Max(metric));
-        var barBrush = BreakdownRows.BarBrush(this);
-
-        foreach (var d in sorted)
-        {
-            var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
-            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#} · {Rate(d):0.#} {rateLabel}{critPart}";
-            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {rateLabel} = total ÷ {secs:0}s in combat" +
-                (d.ActiveSeconds > 0
-                    ? $" · burst {d.Total / Math.Max(1, d.ActiveSeconds):0.#}/s over the ~{d.ActiveSeconds:0}s it was in use"
-                    : "");
-            list.Items.Add(BreakdownRows.Row(this, d.Name, value, metric(d) / topMetric, barBrush, tooltip));
-        }
-    }
+        StatSort sort, double combatSeconds, string rateLabel) =>
+        BreakdownRows.FillAbilityRowsSorted(this, list, stats, sort, combatSeconds, rateLabel);
 
     /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>
     private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)

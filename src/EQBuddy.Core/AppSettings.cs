@@ -168,6 +168,23 @@ public sealed class AppSettings
     /// <summary>"target" (drops for the creature you're fighting or last /considered) or
     /// "session" (what you've looted).</summary>
     public string BreakoutLootScope { get; set; } = "target";
+    // Per-breakout manual size (NaN = auto-size to content). Set the moment the resize
+    // grip is dragged; cleared by double-clicking it (David: let me resize the loot
+    // window and scroll, 2026-08-06).
+    public double BreakoutDamageWidth { get; set; } = double.NaN;
+    public double BreakoutDamageHeight { get; set; } = double.NaN;
+    public double BreakoutHealingWidth { get; set; } = double.NaN;
+    public double BreakoutHealingHeight { get; set; } = double.NaN;
+    public double BreakoutPetWidth { get; set; } = double.NaN;
+    public double BreakoutPetHeight { get; set; } = double.NaN;
+    public double BreakoutWatchWidth { get; set; } = double.NaN;
+    public double BreakoutWatchHeight { get; set; } = double.NaN;
+    public double BreakoutLootWidth { get; set; } = double.NaN;
+    public double BreakoutLootHeight { get; set; } = double.NaN;
+    // Per-breakout row sort for the stat kinds: "total" | "hits" | "avg" | "rate".
+    public string BreakoutDamageSort { get; set; } = "total";
+    public string BreakoutHealingSort { get; set; } = "total";
+    public string BreakoutPetSort { get; set; } = "total";
 
     private static string FilePath => AppPaths.File("settings.json");
 

@@ -75,13 +75,18 @@
                            FontSize="12" Foreground="{DynamicResource DimBrush}"
                            TextTrimming="CharacterEllipsis" Text="looking for a character…"
                            ToolTip="Follows whoever is actively playing (log file growth)"/>
-                <Button x:Name="GearBtn" Grid.Column="2" Style="{StaticResource IconButton}"
+                <!-- Feedback sits IN the title bar, not buried in the menu (David: the
+                     betas live on reports, so the door should be visible). -->
+                <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#x1F4E8;"
+                        ToolTip="Send feedback — feature ideas and bug reports shape the beta features"
+                        Click="OnFeedback"/>
+                <Button x:Name="GearBtn" Grid.Column="3" Style="{StaticResource IconButton}"
                         Content="&#x2699;&#xFE0F;" ToolTip="Settings" Click="OnGear"/>
-                <Button Grid.Column="3" Style="{StaticResource IconButton}" Content="&#x21BB;"
+                <Button Grid.Column="4" Style="{StaticResource IconButton}" Content="&#x21BB;"
                         ToolTip="Reset session stats" Click="OnReset"/>
-                <Button Grid.Column="4" Style="{StaticResource IconButton}" Content="&#x2013;"
+                <Button Grid.Column="5" Style="{StaticResource IconButton}" Content="&#x2013;"
                         ToolTip="Minimize to dashboard (starred stats only)" Click="OnMinimize"/>
-                <Button Grid.Column="5" Style="{StaticResource IconButton}" Content="&#x2715;"
+                <Button Grid.Column="6" Style="{StaticResource IconButton}" Content="&#x2715;"
                         ToolTip="Close" Click="OnClose"/>
             </Grid>
 

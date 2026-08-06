@@ -54,6 +54,13 @@ public partial class BreakoutWindow : Window
         SubText.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
         EmptyText.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
 
+        // Sort links only make sense for ability-stat rows.
+        SortBar.Visibility = _kind is BreakoutKind.Watch or BreakoutKind.Loot
+            ? Visibility.Collapsed : Visibility.Visible;
+        if (_kind == BreakoutKind.Healing) SortRate.Text = "hps";
+        _sort = ParseSort(SortSetting());
+        ApplySortVisual();
+
         var (left, top) = PositionSetting();
         if (ScreenGuard.OnScreen(left, top, Width, 120)) { Left = left; Top = top; }
         else
@@ -64,6 +71,19 @@ public partial class BreakoutWindow : Window
             Left = area.Right - Width - 40;
             Top = area.Top + 80 + 150 * (int)kind;
         }
+
+        // Auto-size mode still caps the list so a 40-item session can't run the window
+        // off the screen; a manual size (grip-dragged, persisted) takes over entirely.
+        RowsScroll.MaxHeight = SystemParameters.WorkArea.Height * 0.6;
+        var (savedW, savedH) = SizeSetting();
+        if (savedW is >= MinManualWidth and <= 900 && savedH is >= MinManualHeight)
+        {
+            SizeToContent = SizeToContent.Manual;
+            Width = savedW;
+            Height = Math.Min(savedH, SystemParameters.WorkArea.Height);
+            RowsScroll.MaxHeight = double.PositiveInfinity;
+        }
+
         Closed += (_, _) => SavePosition();
         if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
         if (_kind == BreakoutKind.Loot)
@@ -105,6 +125,107 @@ public partial class BreakoutWindow : Window
         BreakoutKind.Watch => (_settings.BreakoutWatchLeft, _settings.BreakoutWatchTop),
         _ => (_settings.BreakoutLootLeft, _settings.BreakoutLootTop),
     };
+
+    private StatSort _sort = StatSort.Total;
+
+    private static StatSort ParseSort(string v) => v switch
+    {
+        "hits" => StatSort.Hits, "avg" => StatSort.Avg, "rate" => StatSort.Rate,
+        _ => StatSort.Total,
+    };
+
+    private string SortSetting() => _kind switch
+    {
+        BreakoutKind.Healing => _settings.BreakoutHealingSort,
+        BreakoutKind.Pet => _settings.BreakoutPetSort,
+        _ => _settings.BreakoutDamageSort,
+    };
+
+    private void OnSortClick(object sender, MouseButtonEventArgs e)
+    {
+        var key = (string)((FrameworkElement)sender).Tag;
+        _sort = ParseSort(key);
+        switch (_kind)
+        {
+            case BreakoutKind.Healing: _settings.BreakoutHealingSort = key; break;
+            case BreakoutKind.Pet: _settings.BreakoutPetSort = key; break;
+            default: _settings.BreakoutDamageSort = key; break;
+        }
+        _settings.Save();
+        ApplySortVisual();
+        e.Handled = true;
+    }
+
+    private void ApplySortVisual()
+    {
+        foreach (var (tb, key) in new[]
+            { (SortTotal, "total"), (SortHits, "hits"), (SortAvg, "avg"), (SortRate, "rate") })
+            tb.SetResourceReference(TextBlock.ForegroundProperty,
+                ParseSort(key) == _sort ? "AccentBrush" : "DimBrush");
+        _signature = "";   // force a repaint in the new order on the next tick
+    }
+
+    private const double MinManualWidth = 200;
+    private const double MinManualHeight = 120;
+
+    private (double W, double H) SizeSetting() => _kind switch
+    {
+        BreakoutKind.Damage => (_settings.BreakoutDamageWidth, _settings.BreakoutDamageHeight),
+        BreakoutKind.Healing => (_settings.BreakoutHealingWidth, _settings.BreakoutHealingHeight),
+        BreakoutKind.Pet => (_settings.BreakoutPetWidth, _settings.BreakoutPetHeight),
+        BreakoutKind.Watch => (_settings.BreakoutWatchWidth, _settings.BreakoutWatchHeight),
+        _ => (_settings.BreakoutLootWidth, _settings.BreakoutLootHeight),
+    };
+
+    private void SetSizeSetting(double w, double h)
+    {
+        switch (_kind)
+        {
+            case BreakoutKind.Damage:
+                _settings.BreakoutDamageWidth = w; _settings.BreakoutDamageHeight = h; break;
+            case BreakoutKind.Healing:
+                _settings.BreakoutHealingWidth = w; _settings.BreakoutHealingHeight = h; break;
+            case BreakoutKind.Pet:
+                _settings.BreakoutPetWidth = w; _settings.BreakoutPetHeight = h; break;
+            case BreakoutKind.Watch:
+                _settings.BreakoutWatchWidth = w; _settings.BreakoutWatchHeight = h; break;
+            default:
+                _settings.BreakoutLootWidth = w; _settings.BreakoutLootHeight = h; break;
+        }
+    }
+
+    private void OnGripDrag(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+    {
+        if (SizeToContent != SizeToContent.Manual)
+        {
+            // First drag: freeze the current auto size and take manual control.
+            var w = ActualWidth; var h = ActualHeight;
+            SizeToContent = SizeToContent.Manual;
+            Width = w; Height = h;
+            RowsScroll.MaxHeight = double.PositiveInfinity;
+        }
+        Width = Math.Clamp(Width + e.HorizontalChange, MinManualWidth, 900);
+        Height = Math.Clamp(Height + e.VerticalChange, MinManualHeight,
+            SystemParameters.WorkArea.Height);
+    }
+
+    private void OnGripDone(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        SetSizeSetting(Width, Height);
+        _settings.Save();
+    }
+
+    private void OnGripReset(object sender, MouseButtonEventArgs e)
+    {
+        // Back to auto-size: forget the manual size and let content drive height again.
+        SetSizeSetting(double.NaN, double.NaN);
+        _settings.Save();
+        Width = 272;
+        ClearValue(HeightProperty);
+        RowsScroll.MaxHeight = SystemParameters.WorkArea.Height * 0.6;
+        SizeToContent = SizeToContent.Height;
+        e.Handled = true;
+    }
 
     /// <summary>Persist the spot on hide as well as close — the window is hidden and
     /// re-shown across minimize cycles, and only the last Closed would otherwise count.</summary>
@@ -183,11 +304,11 @@ public partial class BreakoutWindow : Window
         }
 
         // Signature: rebuilding ten bar rows every second is cheap but pointless between
-        // fights — only re-render when a number moved or the scope/fight changed.
-        var sig = $"{_fightScope}|{f?.Name}|{secs:0}|{string.Join(",", rows.Select(r => $"{r.Name}:{r.Total}"))}";
+        // fights — only re-render when a number moved or the scope/fight/sort changed.
+        var sig = $"{_fightScope}|{_sort}|{f?.Name}|{secs:0}|{string.Join(",", rows.Select(r => $"{r.Name}:{r.Total}"))}";
         if (sig == _signature) return;
         _signature = sig;
-        BreakdownRows.FillAbilityRows(this, Rows, rows, Math.Max(1, secs), rateLabel, max: 10);
+        BreakdownRows.FillAbilityRowsSorted(this, Rows, rows, _sort, Math.Max(1, secs), rateLabel, max: 10);
     }
 
     /// <summary>The Watch breakout: every 📌-pinned rule as a bar row — count, last match,
