@@ -45,7 +45,8 @@ public class EqlWikiMobsTests
             });
         var result = await svc.LookupAsync("Spite golem");
         Assert.Equal(ItemLookupState.Live, result.State);
-        Assert.Equal(["Spite golem", "A spite golem", "Spite Golem", "A Spite Golem"], requested);
+        Assert.Equal(["Spite golem", "A spite golem", "The spite golem", "Spite Golem", "A Spite Golem"],
+            requested);
         Assert.Equal("Apothic Crown", result.Mob!.Drops.Single().Item);
     }
 
