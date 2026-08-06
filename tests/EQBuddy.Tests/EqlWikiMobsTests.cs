@@ -66,12 +66,39 @@ public class EqlWikiMobsTests
         Assert.Equal("Prophet Skull", result.Mob!.Drops.Single().Item);
     }
 
+    /// <summary>The fuzzy fallback (David, 2026-08-06): when every exact form misses,
+    /// wiki search results are accepted under the spawn catalog's bounded-edit-distance
+    /// rule — a one-letter drift resolves, a merely-related page never does.</summary>
+    [Fact]
+    public async Task WikiSearchRescuesANearMissButNeverAStranger()
+    {
+        var svc = new EqlWikiMobService(
+            Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
+            title => Task.FromResult<string?>(title == "Emperor Crushbone"
+                ? "{{Namedmobpage\n| name = Emperor Crushbone\n| known_loot = \n{{:Crown of the Emperor}}\n}}"
+                : null),
+            _ => Task.FromResult<List<string>>(["Emperor Crushbone"]));
+        // One letter off — every exact candidate misses, search + fuzzy resolve it.
+        var result = await svc.LookupAsync("Emperor Crushbon");
+        Assert.Equal(ItemLookupState.Live, result.State);
+        Assert.Equal("Crown of the Emperor", result.Mob!.Drops.Single().Item);
+
+        // A dissimilar search hit is rejected: better no answer than a wrong creature.
+        var strict = new EqlWikiMobService(
+            Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
+            _ => Task.FromResult<string?>(null),
+            _ => Task.FromResult<List<string>>(["Crushbone (Zone)"]));
+        Assert.Equal(ItemLookupState.NotFound,
+            (await strict.LookupAsync("Emperor Crushbon")).State);
+    }
+
     [Fact]
     public async Task MissingMobIsNotFoundAfterAllCandidates()
     {
         var svc = new EqlWikiMobService(
             Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
-            _ => Task.FromResult<string?>(null));
+            _ => Task.FromResult<string?>(null),
+            _ => Task.FromResult<List<string>>([]));   // stubbed: no network from a unit test
         var result = await svc.LookupAsync("Utterly Fictional");
         Assert.Equal(ItemLookupState.NotFound, result.State);
         Assert.Equal(ItemLookupState.Offline,
