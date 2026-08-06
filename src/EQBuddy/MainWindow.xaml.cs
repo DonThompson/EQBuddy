@@ -32,7 +32,7 @@ public partial class MainWindow : Window
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
 
-    private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "loot", "money", "xp", "deaths"];
+    private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "money", "xp", "deaths"];
 
     private enum StatSort { Total, Hits, Avg, Rate }
     private StatSort _dmgOutSort = StatSort.Total;
@@ -676,6 +676,7 @@ public partial class MainWindow : Window
 
         if (MiniRoot.Visibility == Visibility.Visible)
             UpdateMiniChips(s);
+        UpdateBreakouts(s);
 
         ZoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "—";
         var active = TimeSpan.FromSeconds(s.ActiveSeconds);
@@ -1305,6 +1306,7 @@ public partial class MainWindow : Window
     {
         yield return ("dps", StarDps);
         yield return ("hps", StarHps);
+        yield return ("pet", StarPet);
         yield return ("kills", StarKills);
         yield return ("loot", StarLoot);
         yield return ("money", StarMoney);
@@ -1334,7 +1336,46 @@ public partial class MainWindow : Window
         NormalRoot.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         ResizeGrip.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         _settings.Save();
-        if (mini) UpdateMiniChips(_stats.Snapshot());
+        // Restoring forgives every ✕ — next minimize brings the full starred set back.
+        if (!mini) _breakoutDismissed.Clear();
+        var snap = _stats.Snapshot();
+        if (mini) UpdateMiniChips(snap);
+        UpdateBreakouts(snap);
+    }
+
+    // ---- breakout stat windows (BREAKOUT-*) ----
+
+    private readonly Dictionary<BreakoutKind, BreakoutWindow> _breakouts = new();
+    private readonly HashSet<BreakoutKind> _breakoutDismissed = new();
+
+    private static readonly (BreakoutKind Kind, string StarKey)[] BreakoutStars =
+        [(BreakoutKind.Damage, "dps"), (BreakoutKind.Healing, "hps"), (BreakoutKind.Pet, "pet")];
+
+    /// <summary>Open/refresh/hide the breakout windows to match the stars: each shows while
+    /// the widget is minimized and its stat is starred, unless ✕-dismissed this stint.</summary>
+    private void UpdateBreakouts(StatsSnapshot s)
+    {
+        foreach (var (kind, starKey) in BreakoutStars)
+        {
+            var want = _settings.Minimized && _settings.MiniStats.Contains(starKey) &&
+                       !_breakoutDismissed.Contains(kind);
+            _breakouts.TryGetValue(kind, out var w);
+            if (want)
+            {
+                if (w is not { IsLoaded: true })
+                {
+                    _breakouts[kind] = w = new BreakoutWindow(_settings, kind);
+                    w.Dismissed += k => _breakoutDismissed.Add(k);
+                }
+                if (!w.IsVisible) w.Show();
+                w.Update(s);
+            }
+            else if (w is { IsVisible: true })
+            {
+                w.SavePosition();
+                w.Hide();
+            }
+        }
     }
 
     private void UpdateMiniChips(StatsSnapshot s)
@@ -1348,6 +1389,7 @@ public partial class MainWindow : Window
                 "kills" => $"\U0001F480 {s.YourKillCount}",
                 "dps" => s.CurrentDps > 0 ? $"⚔ {s.CurrentDps:0} dps" : $"⚔ {s.SessionDps:0} dps",
                 "hps" => $"✚ {s.Hps:0.#} hps",
+                "pet" => $"🐾 {s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps",
                 "loot" => $"\U0001F392 {s.LootTotal}",
                 "money" => $"\U0001F4B0 {StatsSnapshot.FormatCoin(s.Copper)}",
                 "xp" => $"\U0001F4C8 {s.XpPercent:0.0}%" +
@@ -1758,6 +1800,7 @@ public partial class MainWindow : Window
         _settings.WindowLeft = Left;
         _settings.WindowTop = Top;
         _settings.Save();
+        foreach (var w in _breakouts.Values) w.Close();   // each persists its spot on Closed
         _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();
         _repo.Dispose();

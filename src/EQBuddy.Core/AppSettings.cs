@@ -126,6 +126,19 @@ public sealed class AppSettings
     public double MezChipsLeft { get; set; } = double.NaN;
     public double MezChipsTop { get; set; } = double.NaN;
 
+    // Breakout stat windows (BREAKOUT-*): one position + Fight/Session scope per kind.
+    // They open while the widget is minimized with the matching star set, so there is no
+    // enabled flag — the star is the switch.
+    public double BreakoutDamageLeft { get; set; } = double.NaN;
+    public double BreakoutDamageTop { get; set; } = double.NaN;
+    public string BreakoutDamageScope { get; set; } = "fight";
+    public double BreakoutHealingLeft { get; set; } = double.NaN;
+    public double BreakoutHealingTop { get; set; } = double.NaN;
+    public string BreakoutHealingScope { get; set; } = "fight";
+    public double BreakoutPetLeft { get; set; } = double.NaN;
+    public double BreakoutPetTop { get; set; } = double.NaN;
+    public string BreakoutPetScope { get; set; } = "fight";
+
     private static string FilePath => AppPaths.File("settings.json");
 
     // NaN is a legitimate value here ("not placed yet" window positions), and the

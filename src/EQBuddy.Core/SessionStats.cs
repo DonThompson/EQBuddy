@@ -1275,6 +1275,7 @@ public sealed class SessionStats
                 PetAbilities = _petAbilities.OrderByDescending(kv => kv.Value.Total)
                     .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
                         kv.Value.Crits, kv.Value.ActiveSeconds)).ToList(),
+                PetName = _petName ?? "",
                 SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 SessionDps = sessionDps,
@@ -1425,6 +1426,9 @@ public sealed class StatsSnapshot
     /// <summary>Your pet's damage split by what it used (melee skill or spell name), summing
     /// to the pet rows in <see cref="DamageBySource"/>. Empty when no pet damage was seen.</summary>
     public List<SourceDamage> PetAbilities { get; init; } = [];
+    /// <summary>The current pet's name, or "" when none is claimed — window titles want the
+    /// name without fishing it back out of a "Pet (Name)" row label.</summary>
+    public string PetName { get; init; } = "";
     public List<NameCount> SpecialHits { get; init; } = [];
     public double SessionDps { get; init; }
     public double CurrentDps { get; init; }

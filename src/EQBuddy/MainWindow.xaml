@@ -119,11 +119,22 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="&#x2694;&#xFE0F; Combat" FontSize="13"/>
                         <TextBlock x:Name="CombatHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 dps"/>
                         <ToggleButton x:Name="StarDps" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="dps" Click="OnStarChanged" ToolTip="Show DPS in mini dashboard"/>
+                        <!-- Pet damage has no card of its own (it's the fold-out below), but its
+                             watch-toggle lives up here with the other stars per David: one place
+                             to say what you watch when minimized. The 🐾 tells the two stars apart. -->
+                        <StackPanel Grid.Column="3" Orientation="Horizontal">
+                            <TextBlock Text="🐾" FontSize="9" VerticalAlignment="Center"
+                                       Margin="2,0,0,0" Opacity="0.75"/>
+                            <ToggleButton x:Name="StarPet" Style="{StaticResource StarToggle}"
+                                          Tag="pet" Click="OnStarChanged"
+                                          ToolTip="Show pet damage in mini dashboard"/>
+                        </StackPanel>
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
