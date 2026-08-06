@@ -222,7 +222,8 @@ public partial class BreakoutWindow : Window
     private const int WmNcHitTest = 0x84;
     private const int WmNcLButtonDown = 0xA1;
     private const int WmExitSizeMove = 0x232;
-    private const int HtRight = 11, HtBottom = 15, HtBottomRight = 17;
+    private const int HtLeft = 10, HtRight = 11, HtTop = 12, HtTopLeft = 13,
+        HtTopRight = 14, HtBottom = 15, HtBottomLeft = 16, HtBottomRight = 17;
 
     protected override void OnSourceInitialized(EventArgs e)
     {
@@ -241,25 +242,25 @@ public partial class BreakoutWindow : Window
                 var x = (short)((long)lParam & 0xFFFF);
                 var y = (short)(((long)lParam >> 16) & 0xFFFF);
                 var p = PointFromScreen(new Point(x, y));
-                var onRight = p.X >= ActualWidth - 8;
-                var onBottom = p.Y >= ActualHeight - 8;
-                if (onRight && onBottom) { handled = true; return HtBottomRight; }
-                if (onRight && p.Y > 24) { handled = true; return HtRight; }
-                if (onBottom) { handled = true; return HtBottom; }
+                // Any side, any corner (David: resize like a normal window). Zone math is
+                // pure and unit-tested in EQBuddy.UI.Shared.ResizeZones.
+                var hit = EQBuddy.UI.Shared.ResizeZones.Hit(p.X, p.Y, ActualWidth, ActualHeight);
+                if (hit != 0) { handled = true; return hit; }
                 break;
             }
-            case WmNcLButtonDown when (long)wParam is HtRight or HtBottom or HtBottomRight:
+            case WmNcLButtonDown when (long)wParam is >= HtLeft and <= HtBottomRight:
                 // The native size loop is about to start — leave SizeToContent first or
                 // the height snaps back the moment layout runs.
                 EnterManualSize();
                 break;
             case WmExitSizeMove when SizeToContent == SizeToContent.Manual:
                 // ActualWidth/Height, not Width/Height: the native size loop moves the
-                // window without writing the dependency properties.
+                // window without writing the dependency properties. SavePosition too — a
+                // top/left resize moves the window's origin.
                 Width = ActualWidth;
                 Height = ActualHeight;
                 SetSizeSetting(ActualWidth, ActualHeight);
-                _settings.Save();
+                SavePosition();
                 break;
         }
         return IntPtr.Zero;
