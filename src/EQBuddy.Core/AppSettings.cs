@@ -126,6 +126,10 @@ public sealed class AppSettings
     public double MezChipsLeft { get; set; } = double.NaN;
     public double MezChipsTop { get; set; } = double.NaN;
 
+    /// <summary>Target-drops block in the Loot card (wiki drops for the creature being
+    /// fought). Default on; the toggle exists for lean-card people.</summary>
+    public bool ShowTargetDrops { get; set; } = true;
+
     // Breakout stat windows (BREAKOUT-*): one position + Fight/Session scope per kind.
     // They open while the widget is minimized with the matching star set, so there is no
     // enabled flag — the star is the switch.

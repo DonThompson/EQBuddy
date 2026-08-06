@@ -397,6 +397,81 @@ public partial class MainWindow : Window
         _itemWindow.Lookup(itemName);
     }
 
+    /// <summary>Hover stats for an item row: the cached wiki stat block when we have one
+    /// (any age — a hover is a peek, not a lookup), else a hint that clicking fetches.</summary>
+    private string ItemHoverStats(string itemName) =>
+        _wikiItems.CachedStatsText(itemName) ?? "Click for item info (eqlwiki)";
+
+    // ---- target drops (TARGET-*): the Loot card's "what can this drop" block ----
+
+    private readonly EqlWikiMobService _wikiMobs =
+        new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "mobs"));
+    private string _targetLookupName = "";
+    private MobLookupResult? _targetResult;
+    private int _targetSeq;
+
+    /// <summary>One bounded wiki lookup per new target; the sequence guard drops stale
+    /// responses when the player has moved on to another creature mid-fetch.</summary>
+    private async Task LookupTargetAsync(string name, int seq)
+    {
+        try
+        {
+            var result = await _wikiMobs.LookupAsync(name);
+            if (seq != _targetSeq) return;
+            _targetResult = result;
+            RefreshUi();
+        }
+        catch (Exception ex) { App.LogError(ex); }
+    }
+
+    private void RenderTargetDrops(StatsSnapshot s)
+    {
+        var target = _settings.ShowTargetDrops ? s.CurrentTarget : "";
+        if (target.Length == 0)
+        {
+            TargetBlock.Visibility = Visibility.Collapsed;
+            return;
+        }
+        TargetBlock.Visibility = Visibility.Visible;
+        if (!target.Equals(_targetLookupName, StringComparison.OrdinalIgnoreCase))
+        {
+            _targetLookupName = target;
+            _targetResult = null;
+            _ = LookupTargetAsync(target, ++_targetSeq);
+        }
+
+        var mob = s.Mobs.FirstOrDefault(m => m.Name.Equals(target, StringComparison.OrdinalIgnoreCase));
+        var kills = mob?.Kills ?? 0;
+        var state = _targetResult switch
+        {
+            null => "looking up…",
+            { State: ItemLookupState.Live } => "LIVE",
+            { State: ItemLookupState.Cached, FetchedAt: { } at } => $"CACHED {at:M/d}",
+            { State: ItemLookupState.StaleCache, FetchedAt: { } at } => $"STALE {at:M/d}",
+            { State: ItemLookupState.Offline } => "OFFLINE",
+            _ => "NOT ON WIKI",
+        };
+        // Observed drops lead (your own data outranks the wiki), wiki-only rows follow.
+        var rows = new List<(string Name, string Value)>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var l in (mob?.Loot ?? []).OrderByDescending(l => l.Count))
+        {
+            var pct = l.DropRatePct is { } p ? $" · {p:0}%" : "";
+            rows.Add((l.Item, $"{l.Count} this session{pct}"));
+            seen.Add(l.Item);
+        }
+        foreach (var (item, rarity) in _targetResult?.Mob?.Drops ?? [])
+            if (seen.Add(item))
+                rows.Add((item, rarity));
+        var extra = Math.Max(0, rows.Count - 14);
+        if (extra > 0) rows = rows.Take(14).ToList();
+
+        TargetHeader.Text = $"🎯 Fighting: {target}" +
+            (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
+            $" · drops (eqlwiki · {state}{(extra > 0 ? $" · +{extra} more" : "")})";
+        FillList(TargetDropsList, rows, onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
+    }
+
     /// <summary>Re-derives the height caps from the monitor the widget currently
     /// occupies (see MonitorMetrics — primary-only caps halved the widget on portrait
     /// secondary screens, discussion #31).</summary>
@@ -816,9 +891,11 @@ public partial class MainWindow : Window
 
         if (LootSection.IsExpanded)
         {
-            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo);
+            FillList(LootList, s.Loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo,
+                tooltip: ItemHoverStats);
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
+            RenderTargetDrops(s);
         }
 
         if (MoneySection.IsExpanded)
@@ -1655,15 +1732,17 @@ public partial class MainWindow : Window
                 Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(0, 1, 8, 1),
             };
             if (tooltip?.Invoke(name) is { Length: > 0 } tip)
-                left.ToolTip = new System.Windows.Controls.ToolTip
-                {
-                    Content = new TextBlock { Text = tip, TextWrapping = TextWrapping.Wrap, MaxWidth = 340 },
-                };
+            {
+                var tipText = new TextBlock { Text = tip, TextWrapping = TextWrapping.Wrap, MaxWidth = 340 };
+                // Multi-line tips are stat blocks — monospace keeps their columns readable.
+                if (tip.Contains('\n')) tipText.FontFamily = new FontFamily("Consolas");
+                left.ToolTip = new System.Windows.Controls.ToolTip { Content = tipText };
+            }
             if (onNameClick is not null)
             {
                 var clickName = name;
                 left.Cursor = System.Windows.Input.Cursors.Hand;
-                left.ToolTip = "Click for item info (eqlwiki)";
+                left.ToolTip ??= "Click for item info (eqlwiki)";
                 left.MouseLeftButtonUp += (_, _) => onNameClick(clickName);
             }
             var right = new TextBlock

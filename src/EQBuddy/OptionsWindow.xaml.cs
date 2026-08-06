@@ -37,6 +37,7 @@ public partial class OptionsWindow : Window
         TruncateCheck.IsChecked = _vm.TruncateLogs;
         PinChipsCheck.IsChecked = _vm.PinWatchChips;
         TutorialCheck.IsChecked = _vm.ShowTutorial;
+        TargetDropsCheck.IsChecked = _vm.ShowTargetDrops;
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
 
         foreach (var choice in OptionsViewModel.WindowChoices) WindowCombo.Items.Add(choice);
@@ -112,6 +113,11 @@ public partial class OptionsWindow : Window
     private void OnTutorialToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.ShowTutorial = TutorialCheck.IsChecked == true;
+    }
+
+    private void OnTargetDropsToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _vm.ShowTargetDrops = TargetDropsCheck.IsChecked == true;
     }
 
     /// <summary>Called back by MainWindow.SetTrackSpawns so closing the Spawns window

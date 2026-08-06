@@ -90,6 +90,16 @@ public sealed partial class EqlWikiItemService
         if (noBacktick != title) yield return noBacktick;
     }
 
+    /// <summary>Cache-only stats peek for hover tooltips: synchronous, accepts any age,
+    /// never fetches. A hover must cost nothing — the click path does the real lookup.</summary>
+    public string? CachedStatsText(string inGameName)
+    {
+        var cached = ReadCache(NormalizeTitle(inGameName));
+        if (cached is null) return null;
+        var info = Parse(cached.Wikitext, cached.Title);
+        return info.StatsLines.Count > 0 ? string.Join("\n", info.StatsLines) : null;
+    }
+
     private async Task<string?> FetchFromApi(string title)
     {
         var url = "https://eqlwiki.com/api.php?action=query&prop=revisions&rvprop=content&format=json&redirects=1&titles="
@@ -198,51 +208,8 @@ public sealed partial class EqlWikiItemService
         return info;
     }
 
-    /// <summary>Splits {{Itempage ...}} into its |field = value chunks. Values contain
-    /// nested templates and HTML, so a naive '|' split breaks — fields start only at a
-    /// line beginning with |name= at nesting depth zero relative to the template.</summary>
-    private static Dictionary<string, string> SplitTemplateFields(string wikitext)
-    {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var start = wikitext.IndexOf("{{Itempage", StringComparison.OrdinalIgnoreCase);
-        if (start < 0) return result;
-
-        // Walk to the matching close of the template, tracking brace depth.
-        var depth = 0; var end = wikitext.Length;
-        for (var i = start; i < wikitext.Length - 1; i++)
-        {
-            if (wikitext[i] == '{' && wikitext[i + 1] == '{') { depth++; i++; }
-            else if (wikitext[i] == '}' && wikitext[i + 1] == '}')
-            {
-                depth--; i++;
-                if (depth == 0) { end = i - 1; break; }
-            }
-        }
-
-        var body = wikitext[(start + "{{Itempage".Length)..end];
-        string? field = null; var valueStart = 0; depth = 0;
-        var lineStart = 0;
-        for (var i = 0; i <= body.Length; i++)
-        {
-            var atEnd = i == body.Length;
-            var ch = atEnd ? '\n' : body[i];
-            if (!atEnd && ch == '{' && i + 1 < body.Length && body[i + 1] == '{') { depth++; i++; continue; }
-            if (!atEnd && ch == '}' && i + 1 < body.Length && body[i + 1] == '}') { depth--; i++; continue; }
-            if (ch != '\n') continue;
-
-            var line = body[lineStart..i];
-            if (depth == 0 && Regex.Match(line, @"^\s*\|\s*(\w+)\s*=(.*)$") is { Success: true } m)
-            {
-                if (field is not null)
-                    result[field] = body[valueStart..lineStart].Trim();
-                field = m.Groups[1].Value;
-                valueStart = lineStart + line.IndexOf('=') + 1;
-            }
-            lineStart = i + 1;
-        }
-        if (field is not null) result[field] = body[valueStart..].Trim();
-        return result;
-    }
+    private static Dictionary<string, string> SplitTemplateFields(string wikitext) =>
+        EqlWikiText.TemplateFields(wikitext, "Itempage");
 
     /// <summary>Two shapes in the wild: plain "5p 9g 2s 8c", or an HTML list of per-coin
     /// lines ("0 Platinums / 5 Silvers / 8 Coppers" with markup). Both normalize to

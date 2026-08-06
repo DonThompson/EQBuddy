@@ -1000,6 +1000,26 @@ public sealed class SessionStats
         { Fights = pull.Fights, PetAbilities = pull.PetAbilities };
     }
 
+    /// <summary>How long a finished fight's creature stays "the target" for the Loot
+    /// card's drops block — long enough to read the list after the kill, short enough
+    /// that walking away really clears it.</summary>
+    private static readonly TimeSpan TargetLinger = TimeSpan.FromSeconds(45);
+
+    /// <summary>The creature to show target drops for: the most recently engaged open
+    /// fight, else the last finalized one within <see cref="TargetLinger"/> of log time.
+    /// "" when neither — the block hides rather than naming something stale.</summary>
+    private string BuildCurrentTargetLocked()
+    {
+        if (_activeFights.Count > 0)
+            return _activeFights.MaxBy(kv => kv.Value.Last).Key;
+        if (_encounters.Count > 0 && _lastEventTime is { } last)
+        {
+            var e = _encounters[^1];
+            if (last - e.Start.AddSeconds(e.DurationSeconds) <= TargetLinger) return e.Name;
+        }
+        return "";
+    }
+
     /// <summary>The AA ledger a snapshot shows: union of this run's observations and the
     /// durable store, highest rank per ability — the store is what survives log truncation,
     /// the in-memory side is what a store-less test (or first run) sees.</summary>
@@ -1385,6 +1405,7 @@ public sealed class SessionStats
                 Tracked = tracked,
                 Markers = _markers.Select(m => new TimedDetail(m.Time, m.Label)).ToList(),
                 LastFight = BuildLastFight(),
+                CurrentTarget = BuildCurrentTargetLocked(),
                 RecentEncounters = _encounters.TakeLast(8).Reverse().ToList(),
                 Encounters = _encounters.ToList(),
                 EncounterCount = _encounters.Count,
@@ -1473,6 +1494,9 @@ public sealed class StatsSnapshot
     /// <summary>The current pet's name, or "" when none is claimed — window titles want the
     /// name without fishing it back out of a "Pet (Name)" row label.</summary>
     public string PetName { get; init; } = "";
+    /// <summary>The creature being fought right now (or just killed, briefly) — feeds the
+    /// Loot card's target-drops block. "" between pulls.</summary>
+    public string CurrentTarget { get; init; } = "";
     public List<NameCount> SpecialHits { get; init; } = [];
     public double SessionDps { get; init; }
     public double CurrentDps { get; init; }

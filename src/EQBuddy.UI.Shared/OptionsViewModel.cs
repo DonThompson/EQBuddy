@@ -194,6 +194,11 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         get => _settings.ShowTutorial;
         set { _settings.ShowTutorial = value; PersistAnd(); }
     }
+    public bool ShowTargetDrops
+    {
+        get => _settings.ShowTargetDrops;
+        set { _settings.ShowTargetDrops = value; PersistAnd(); }
+    }
 
     // ---- recent-rate window ----
     public static readonly string[] WindowChoices = ["5 min", "15 min", "30 min"];
