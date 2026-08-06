@@ -121,6 +121,13 @@ public sealed class SessionStats
     /// resets deliberately — purchases are character state, not session activity, and the
     /// duration models that read them need the full picture, not since-last-camp.</summary>
     private readonly Dictionary<string, (int Rank, DateTime Time)> _aaAbilities = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Optional durable ledger behind <see cref="_aaAbilities"/> — purchases write
+    /// through to it, and snapshots read the union, so truncated logs can't forget an AA.</summary>
+    public AaLedgerStore? AaStore { get; set; }
+
+    private string AaCharacterKey =>
+        CharacterName is { Length: > 0 } c ? $"{c}_{ServerName}".ToLowerInvariant() : "";
     private readonly List<(DateTime Time, int Level)> _levels = new();
 
     private readonly Dictionary<string, (int Ups, int Value)> _skills = new(StringComparer.OrdinalIgnoreCase);
@@ -686,6 +693,7 @@ public sealed class SessionStats
                     // "gained" after an "improved" (log replay) must not regress the ledger.
                     if (!_aaAbilities.TryGetValue(ap.Ability, out var known) || ap.Rank > known.Rank)
                         _aaAbilities[ap.Ability] = (ap.Rank, ap.Time);
+                    AaStore?.Record(AaCharacterKey, ap.Ability, ap.Rank, ap.Time);
                     break;
                 case StanceEvent stc:
                     // Close the open combat window under the OLD stance before switching,
@@ -990,6 +998,20 @@ public sealed class SessionStats
             pull.DamageIn, pull.Healed, pull.Dps, pull.Healed / pull.DurationSeconds,
             outcome, inProgress, pull.ByAbility, pull.HealsBySpell, pull.ByIncoming)
         { Fights = pull.Fights, PetAbilities = pull.PetAbilities };
+    }
+
+    /// <summary>The AA ledger a snapshot shows: union of this run's observations and the
+    /// durable store, highest rank per ability — the store is what survives log truncation,
+    /// the in-memory side is what a store-less test (or first run) sees.</summary>
+    private List<AaAbilityInfo> BuildAaLedgerLocked()
+    {
+        var merged = new Dictionary<string, (int Rank, DateTime Time)>(_aaAbilities, StringComparer.OrdinalIgnoreCase);
+        if (AaStore is { } store && AaCharacterKey.Length > 0)
+            foreach (var (name, e) in store.For(AaCharacterKey))
+                if (!merged.TryGetValue(name, out var known) || e.Rank > known.Rank)
+                    merged[name] = (e.Rank, e.Time);
+        return merged.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(kv => new AaAbilityInfo(kv.Key, kv.Value.Rank, kv.Value.Time)).ToList();
     }
 
     private static List<SourceDamage> Breakdown(Dictionary<string, AbilityAgg> d) =>
@@ -1338,8 +1360,7 @@ public sealed class SessionStats
                     ? Math.Max(0, 100 - Math.Min(_xpSinceLevel, 100)) / (_xpPercent / hours)
                     : null,
                 AaGained = _aaGained,
-                AaAbilities = _aaAbilities.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
-                    .Select(kv => new AaAbilityInfo(kv.Key, kv.Value.Rank, kv.Value.Time)).ToList(),
+                AaAbilities = BuildAaLedgerLocked(),
                 AaTotal = _aaTotal,
                 AaPerHour = _aaGained / hours,
                 Levels = _levels.Select(l => new TimedDetail(l.Time, $"Level {l.Level}")).ToList(),

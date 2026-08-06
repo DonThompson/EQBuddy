@@ -46,6 +46,7 @@ public partial class MainWindow : Window
         // everything learned in earlier sessions (issue #29).
         AttachSpellStore();
         _mezTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "mez-durations.json"));
+        _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
         _watcher = new LogWatcher(_stats);
         _watcher.Mez = _mezTracker;
         // Spawn timers ride the watcher's event stream — wired before the first Select so
@@ -850,6 +851,9 @@ public partial class MainWindow : Window
                     }))
                     : "");
             FillList(SkillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
+            AaAbilitiesLabel.Visibility = s.AaAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            FillList(AaAbilityList, s.AaAbilities.Select(a =>
+                (a.Name, a.Rank > 1 ? $"rank {a.Rank}" : "")));
         }
 
         if (FactionSection.IsExpanded)

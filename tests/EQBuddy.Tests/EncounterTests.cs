@@ -262,6 +262,47 @@ public class EncounterTests
     }
 
     [Fact]
+    public void AaStoreRemembersPurchasesTheLogHasLost()
+    {
+        // The janitor truncates quiet logs, erasing purchase lines for good — the durable
+        // store is what still knows the ranks afterwards.
+        var path = Path.Combine(Path.GetTempPath(), $"aa-ledger-test-{Guid.NewGuid():N}.json");
+        try
+        {
+            var stats = new SessionStats
+            {
+                CharacterName = "Kaybek", ServerName = "freeport",
+                AaStore = new AaLedgerStore(path),
+            };
+            stats.Apply(LogParser.Parse(
+                At(0, 0, "You have improved Combat Fury 3 at a cost of 3 ability points."))!);
+
+            // Fresh stats over an emptied log (character switch semantics + nothing to
+            // replay), same store file re-read from disk: the ledger still knows.
+            var later = new SessionStats
+            {
+                CharacterName = "Kaybek", ServerName = "freeport",
+                AaStore = new AaLedgerStore(path),
+            };
+            Assert.Equal(3, later.Snapshot().AaAbilities.Single(a => a.Name == "Combat Fury").Rank);
+
+            // Another character on the same install sees none of Kaybek's AAs.
+            var other = new SessionStats
+            {
+                CharacterName = "Douglas", ServerName = "qeynos",
+                AaStore = new AaLedgerStore(path),
+            };
+            Assert.Empty(other.Snapshot().AaAbilities);
+
+            // Replaying an OLD log (rank 2 after the store knows 3) never regresses.
+            later.Apply(LogParser.Parse(
+                At(0, 5, "You have improved Combat Fury 2 at a cost of 2 ability points."))!);
+            Assert.Equal(3, later.Snapshot().AaAbilities.Single(a => a.Name == "Combat Fury").Rank);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void OverlappingFightsGroupIntoOnePullAndGapsSplitThem()
     {
         var s = Replay(

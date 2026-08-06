@@ -144,6 +144,7 @@ public sealed class MainWindow : Window
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
         AttachSpellStore();
+        _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
         _watcher = new LogWatcher(_stats);
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
