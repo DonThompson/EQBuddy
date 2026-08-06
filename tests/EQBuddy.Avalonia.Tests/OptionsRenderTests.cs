@@ -39,7 +39,11 @@ public class OptionsRenderTests : IDisposable
                     "AlertBanner": true, "AlertSound": true, "AlertSoundName": "Ding" },
                   { "Name": "CAST NOW", "Pattern": "CH -->", "Kind": 6, "Enabled": true,
                     "AlertBanner": true, "AlertSound": true, "AlertSoundName": "Alarm",
-                    "AlertDelaySeconds": 2.5 }
+                    "AlertDelaySeconds": 2.5 },
+                  { "Name": "Befriend dropped", "Pattern": "Befriend", "Kind": 5,
+                    "SpellFilter": 0, "Enabled": true },
+                  { "Name": "Any mez dropped", "Pattern": "keep this", "Kind": 5,
+                    "SpellFilter": 4, "Enabled": true }
                 ]
               }
               """);
@@ -84,7 +88,7 @@ public class OptionsRenderTests : IDisposable
             .Where(c => c.Items.Contains(AlertSoundCatalog.CustomChoice))
             .ToList();
 
-        Assert.Equal(2, soundPickers.Count);   // one per rule
+        Assert.Equal(main.Settings.TrackedRules.Count, soundPickers.Count); // one per rule
         Assert.NotEqual(soundPickers[0].SelectedIndex, soundPickers[1].SelectedIndex);
         options.Close();
         main.Close();
@@ -116,6 +120,63 @@ public class OptionsRenderTests : IDisposable
             .First(c => c.Items.Contains(OptionsViewModel.KindNames[0]));
 
         Assert.Equal(Enum.GetValues<WatchKind>().Length, kindPicker.Items.Count);
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void SpellFadeRulesOfferEveryClassAndHideIgnoredMatchText()
+    {
+        var (main, options) = Open();
+
+        var filterPickers = options.GetVisualDescendants().OfType<ComboBox>()
+            .Where(c => c.Items.Contains(OptionsViewModel.SpellFilterNames[0]))
+            .ToList();
+        Assert.Equal(main.Settings.TrackedRules.Count, filterPickers.Count);
+        Assert.All(filterPickers, picker =>
+            Assert.Equal(Enum.GetValues<SpellFilter>().Length, picker.Items.Count));
+        Assert.Equal(2, filterPickers.Count(picker => picker.IsVisible));
+
+        var namedPattern = options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => t.Text == "Befriend");
+        var classPattern = options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => t.Text == "keep this");
+        Assert.True(namedPattern.IsVisible);
+        Assert.False(classPattern.IsVisible);
+
+        var kindPickers = options.GetVisualDescendants().OfType<ComboBox>()
+            .Where(c => c.Items.Contains(OptionsViewModel.KindNames[0]))
+            .ToList();
+        kindPickers[0].SelectedIndex = (int)WatchKind.SpellFade;
+        Assert.Equal(WatchKind.SpellFade, main.Settings.TrackedRules[0].Kind);
+        Assert.True(filterPickers[0].IsVisible);
+
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void ChangingSpellFilterPersistsAndPreservesTheNamedPattern()
+    {
+        var (main, options) = Open();
+        var rule = main.Settings.TrackedRules.Single(r => r.Name == "Befriend dropped");
+        var filterPicker = options.GetVisualDescendants().OfType<ComboBox>()
+            .Where(c => c.Items.Contains(OptionsViewModel.SpellFilterNames[0]))
+            .Single(c => c.SelectedIndex == (int)SpellFilter.ByName && c.IsVisible);
+        var pattern = options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => t.Text == "Befriend");
+
+        filterPicker.SelectedIndex = (int)SpellFilter.Charm;
+
+        Assert.Equal(SpellFilter.Charm, rule.SpellFilter);
+        Assert.Equal("Befriend", rule.Pattern);
+        Assert.False(pattern.IsVisible);
+        Assert.Contains("\"SpellFilter\": 3", File.ReadAllText(Path.Combine(_profile, "settings.json")));
+
+        filterPicker.SelectedIndex = (int)SpellFilter.ByName;
+        Assert.True(pattern.IsVisible);
+        Assert.Equal("Befriend", pattern.Text);
+
         options.Close();
         main.Close();
     }
