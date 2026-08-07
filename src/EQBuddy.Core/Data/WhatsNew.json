@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.40.0",
+  "date": "2026-08-07",
+  "highlights": [
+   "Quest Tracker counts got honest: items the log sees LEAVE now subtract — merchant sales, destroys, and merges (two belts becoming one is minus one; looting a belt straight into a merge is zero, not plus one). \"Ready ×17\" when you own one super-belt is history. Counters rebuilt once from your log under the new rules; your manual counts, pins, hides, and completions were untouched.",
+   "The minimized 📈 XP chip now shows XP/HOUR (with the level ETA) instead of total percent — minimized is farming mode, and the rate is the number you actually watch (MorrolanTV's ask, filed an hour before this shipped).",
+   "Items acquired before EQBuddy could see your log still need one \"+ I have this\" — the log can't reach into the past. Everything after that stays true on its own."
+  ]
+ },
+ {
   "version": "1.39.0",
   "date": "2026-08-07",
   "highlights": [

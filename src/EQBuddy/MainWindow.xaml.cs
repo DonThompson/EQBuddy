@@ -1723,7 +1723,9 @@ public partial class MainWindow : Window
                 "motes" => Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
                     ? $"\U0001F52E {mo.Total} · {mo.PerHour:0.#}/hr" : "\U0001F52E 0",
                 "money" => $"\U0001F4B0 {StatsSnapshot.FormatCoin(s.Copper)}",
-                "xp" => $"\U0001F4C8 {s.XpPercent:0.0}%" +
+                // Rate, not total: minimized is farming mode, and "how fast am I
+                // gaining" is the number a farmer watches (MorrolanTV, discussion #63).
+                "xp" => $"\U0001F4C8 {s.XpPerHour:0.#}%/hr" +
                         (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : ""),
                 "deaths" => $"☠ {s.Deaths.Count}",
                 _ => "",
