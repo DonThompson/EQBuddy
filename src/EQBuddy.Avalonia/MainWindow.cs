@@ -96,6 +96,8 @@ public sealed class MainWindow : Window
     private readonly TextBlock _soldLabel = AppTheme.Heading("Sold to merchants");
     private readonly TextBlock _recentFightsLabel = AppTheme.Heading("Recent fights");
     private readonly ItemsControl _recentFightsList = new();
+    private readonly TextBlock _areaSpellLabel = AppTheme.Heading("Area spells (per cast)");
+    private readonly ItemsControl _areaSpellList = new();
     private readonly TextBlock _stanceLabel = AppTheme.Heading("By stance");
     private readonly ItemsControl _stanceList = new();
     private readonly TextBlock _invocationLabel = AppTheme.Heading("By invocation");
@@ -461,6 +463,10 @@ public sealed class MainWindow : Window
         _recentFightsLabel.Margin = new Thickness(0, 6, 0, 0);
         body.Children.Add(_recentFightsLabel);
         body.Children.Add(_recentFightsList);
+        _areaSpellLabel.Margin = new Thickness(0, 6, 0, 0);
+        _areaSpellLabel.IsVisible = false;
+        body.Children.Add(_areaSpellLabel);
+        body.Children.Add(_areaSpellList);
         _stanceLabel.Margin = new Thickness(0, 6, 0, 0);
         body.Children.Add(_stanceLabel);
         body.Children.Add(_stanceList);
@@ -800,11 +806,12 @@ public sealed class MainWindow : Window
     /// headless render tests can exercise the code path every refresh takes — which is where
     /// a card that mis-formats or dereferences null actually breaks — without a log folder,
     /// a network, or a five-second wait.</summary>
-    internal void RenderSnapshotForTest(StatsSnapshot s)
+    internal void RenderSnapshotForTest(StatsSnapshot s,
+        IReadOnlyDictionary<string, DateTime>? dueByRule = null)
     {
         ApplySessionSubsections();
         RefreshExpandedSections(s);
-        RenderTracked(s);
+        RenderTracked(s, dueByRule);
     }
 
     private void RefreshExpandedSections(StatsSnapshot s)
@@ -844,6 +851,12 @@ public sealed class MainWindow : Window
                 $"{f.DurationSeconds:0}s - {f.Dps:0.#} dps{(f.Outcome == "Timeout" ? " - ?" : "")}",
                 f.Dps / topFightDps, fightBrush,
                 $"{f.DamageOut:N0} damage over {f.DurationSeconds:0}s")).ToList();
+            // Per cast, not per target: one cast's total damage is the useful comparison
+            // when deciding whether an area spell is worthwhile for the pull size.
+            _areaSpellLabel.IsVisible = s.AreaSpells.Count > 0;
+            FillList(_areaSpellList, s.AreaSpells.Select(x =>
+                (x.Name, $"{x.DamagePerCast:N0}/cast - x{x.Casts} - {x.AvgTargets:0.#} targets" +
+                         (x.MaxTargets > x.AvgTargets + 0.05 ? $" (best {x.MaxTargets})" : ""))));
             _stanceLabel.IsVisible = s.Stances.Count > 0;
             FillList(_stanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg - {(int)x.CombatSeconds}s - {x.Dps:0.#} dps")));
@@ -969,7 +982,8 @@ public sealed class MainWindow : Window
     /// <summary>The floating alert tile, created on first use and owned by the widget.</summary>
     internal AlertWindow AlertTile => _alertWindow ??= new AlertWindow(_settings, this);
 
-    private void RenderTracked(StatsSnapshot s)
+    private void RenderTracked(StatsSnapshot s,
+        IReadOnlyDictionary<string, DateTime>? dueOverride = null)
     {
         var haveRules = _settings.TrackedRules.Count > 0 && !_settings.HiddenSections.Contains("tracked");
         if (_sections.TryGetValue("tracked", out var section))
@@ -980,17 +994,22 @@ public sealed class MainWindow : Window
         if (!_sections["tracked"].IsExpanded) return;
 
         _trackedPanel.Children.Clear();
+        var now = DateTime.Now;
+        var dueByRule = dueOverride ?? _delayedAlerts.NextDueByRule(now);
         foreach (var r in s.Tracked)
         {
             var head = new Grid { Margin = new Thickness(0, 4, 0, 0) };
             head.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
             head.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            var counting = dueByRule.TryGetValue(r.Id, out var dueAt);
             head.Children.Add(new TextBlock
             {
-                Text = r.Name.ToUpperInvariant(),
+                Text = counting
+                    ? $"{r.Name.ToUpperInvariant()} ⏳ {EQBuddy.UI.Shared.Countdown.Format(dueAt - now)}"
+                    : r.Name.ToUpperInvariant(),
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = AppTheme.AccentBrush,
+                Foreground = counting ? AppTheme.WarnBrush : AppTheme.AccentBrush,
             });
             var rate = AppTheme.DimText($"{r.TotalQuantity} total - {r.PerHour:0.#}/hr - {r.PerActiveHour:0.#}/active hr");
             Grid.SetColumn(rate, 1);

@@ -27,6 +27,11 @@ public sealed class OptionsWindow : Window
     private readonly ComboBox _windowCombo = new() { Width = 90, FontSize = 12 };
     private readonly ComboBox _soundCombo = new() { Width = 120, FontSize = 12 };
     private readonly TextBlock _soundFileNote = AppTheme.DimText("");
+    private readonly ScrollViewer _contentScroll = new()
+    {
+        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+    };
     private readonly StackPanel _rulesPanel = new() { Margin = new Thickness(0, 4, 0, 0) };
     private readonly Button _guideToggle = AppTheme.IconButton("> Show examples", "Worked examples for every rule kind");
     private readonly Border _guidePanel = new()
@@ -54,14 +59,16 @@ public sealed class OptionsWindow : Window
         ShowInTaskbar = false;
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        _contentScroll.Content = BuildContent();
         Content = new Border
         {
             Background = AppTheme.BgBrush,
             CornerRadius = new CornerRadius(10),
             BorderBrush = AppTheme.BorderBrush,
             BorderThickness = new Thickness(1),
-            Child = BuildContent(),
+            Child = _contentScroll,
         };
+        Opened += (_, _) => UpdateHeightLimit();
         PointerPressed += OnDrag;
         _scaleSlider.Value = main.UiScale;
         _opacitySlider.Value = main.WidgetOpacity;
@@ -144,6 +151,20 @@ public sealed class OptionsWindow : Window
         ToggleGuide(main.Settings.ShowWatchGuide, persist: false);
         UpdateLabels();
         _ready = true;
+    }
+
+    private void UpdateHeightLimit()
+    {
+        var screen = Screens.ScreenFromWindow(this);
+        if (screen is null) return;
+
+        // Size to the content while it fits, then give the ScrollViewer a real viewport
+        // once the options grow beyond the current monitor. Without this bound the window
+        // simply kept measuring taller and the lower controls became unreachable.
+        var workingHeight = screen.WorkingArea.Height / screen.Scaling;
+        var availableHeight = Math.Max(240, workingHeight - 40);
+        MaxHeight = availableHeight;
+        _contentScroll.MaxHeight = availableHeight - 2; // outer border
     }
 
     private Control BuildContent()
@@ -277,12 +298,6 @@ public sealed class OptionsWindow : Window
             foreach (var k in OptionsViewModel.KindNames) kind.Items.Add(k);
             kind.SelectedIndex = (int)rule.Kind;
             ToolTip.SetTip(kind, "What this rule watches");
-            kind.SelectionChanged += (_, _) =>
-            {
-                if (!_ready || kind.SelectedIndex < 0) return;
-                rule.Kind = (WatchKind)kind.SelectedIndex;
-                _main.PersistSettings();
-            };
             row.Children.Add(kind);
 
             var name = DarkBox(rule.Name, "Display name (also used as match text when the optional filter is empty)");
@@ -292,12 +307,59 @@ public sealed class OptionsWindow : Window
             Grid.SetColumn(name, 1);
             row.Children.Add(name);
 
-            var pattern = DarkBox(rule.Pattern, "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone");
+            // Spell-fade rules use this cell for a class picker plus optional match text.
+            // A class-wide filter ignores match text, so hide the box without clearing it:
+            // switching back to By name should restore exactly what the user entered.
+            var matchArea = new Grid();
+            matchArea.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            matchArea.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            Grid.SetColumn(matchArea, 2);
+            row.Children.Add(matchArea);
+
+            var spellFilter = new ComboBox
+            {
+                FontSize = 11,
+                MinWidth = 104,
+                Margin = new Thickness(0, 0, 4, 0),
+            };
+            foreach (var filter in OptionsViewModel.SpellFilterNames) spellFilter.Items.Add(filter);
+            spellFilter.SelectedIndex = (int)rule.SpellFilter;
+            ToolTip.SetTip(spellFilter,
+                "Spell class: watch one named spell (By name + match text), or a whole class with no match text needed");
+            matchArea.Children.Add(spellFilter);
+
+            var pattern = DarkBox(rule.Pattern,
+                "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone");
             pattern.PlaceholderText = "Match text (optional)";
             pattern.Margin = new Thickness(0, 0, 4, 0);
             pattern.LostFocus += (_, _) => { rule.Pattern = (pattern.Text ?? "").Trim(); _main.PersistSettings(); };
-            Grid.SetColumn(pattern, 2);
-            row.Children.Add(pattern);
+            Grid.SetColumn(pattern, 1);
+            matchArea.Children.Add(pattern);
+
+            void SyncMatchArea()
+            {
+                var isFade = rule.Kind == WatchKind.SpellFade;
+                var byName = rule.SpellFilter == SpellFilter.ByName;
+                spellFilter.IsVisible = isFade;
+                pattern.IsVisible = !isFade || byName;
+                Grid.SetColumnSpan(spellFilter, isFade && !byName ? 2 : 1);
+            }
+            SyncMatchArea();
+
+            kind.SelectionChanged += (_, _) =>
+            {
+                if (!_ready || kind.SelectedIndex < 0) return;
+                rule.Kind = (WatchKind)kind.SelectedIndex;
+                SyncMatchArea();
+                _main.PersistSettings();
+            };
+            spellFilter.SelectionChanged += (_, _) =>
+            {
+                if (!_ready || spellFilter.SelectedIndex < 0) return;
+                rule.SpellFilter = (SpellFilter)spellFilter.SelectedIndex;
+                SyncMatchArea();
+                _main.PersistSettings();
+            };
 
             row.Children.Add(RuleToggle("P", "Show this rule as a chip in the mini dashboard", 3,
                 rule.Pinned, v => rule.Pinned = v));

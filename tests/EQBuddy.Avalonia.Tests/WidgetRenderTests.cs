@@ -31,6 +31,7 @@ public class WidgetRenderTests : IDisposable
         // Isolate settings/history: constructing the widget opens a SQLite history db and
         // reads settings, and a test must not touch the real profile.
         Environment.SetEnvironmentVariable("EQBUDDY_APPDATA", _profile);
+        Environment.SetEnvironmentVariable("EQBUDDY_EXPAND", "1");
         Directory.CreateDirectory(Path.Combine(_profile, "logs"));
         File.WriteAllText(Path.Combine(_profile, "settings.json"),
             $$"""
@@ -42,6 +43,7 @@ public class WidgetRenderTests : IDisposable
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("EQBUDDY_APPDATA", null);
+        Environment.SetEnvironmentVariable("EQBUDDY_EXPAND", null);
         try { Directory.Delete(_profile, recursive: true); } catch { /* best effort */ }
     }
 
@@ -103,6 +105,62 @@ public class WidgetRenderTests : IDisposable
 
         var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void AreaSpellsAppearOnlyWhenTheSnapshotContainsThem()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot());
+        var heading = window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text == "Area spells (per cast)");
+        Assert.False(heading.IsVisible);
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            AreaSpells =
+            [
+                new AreaSpellInfo("Rain of Fire", 3, 2.5, 4, 3600, 1200),
+                new AreaSpellInfo("Circle of Flame", 2, 3, 3, 1000, 500),
+            ],
+        });
+
+        Assert.True(heading.IsVisible);
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("Rain of Fire", text);
+        Assert.Contains("1,200/cast - x3 - 2.5 targets (best 4)", text);
+        Assert.Contains("500/cast - x2 - 3 targets", text);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void PendingCueCountsDownInTheTrackedCardHeading()
+    {
+        var window = new MainWindow();
+        window.Show();
+        var rule = new TrackedRule { Name = "Respawn", Pattern = "placeholder" };
+        window.Settings.TrackedRules.Add(rule);
+        var dueAt = DateTime.Now.AddMinutes(8);
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            Tracked =
+            [
+                new TrackedRuleResult(rule.Name, 1, [], 1, 1,
+                    DateTime.Now, DateTime.Now, "placeholder", rule.Id),
+            ],
+        }, new Dictionary<string, DateTime> { [rule.Id] = dueAt });
+
+        var heading = window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text?.StartsWith("RESPAWN ⏳") == true);
+        Assert.Matches(@"RESPAWN ⏳ (7:5\d|8:00)", heading.Text!);
+        Assert.Same(AppTheme.WarnBrush, heading.Foreground);
+
         window.Close();
     }
 
