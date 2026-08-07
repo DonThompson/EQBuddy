@@ -804,11 +804,9 @@ public sealed class MainWindow : Window
         if (_settings.TrackSpawns)
         {
             // Sound only: the chip changing to DUE is already the visual notification.
-            foreach (var _ in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
-            {
-                if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
-                    PlayAlertSound(_settings.SpawnSound);
-            }
+            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
+                if (_spawnsVm.SoundFor(due.Zone, due.Name) is { } sound)
+                    PlayAlertSound(sound);
 
             // Chips are the ambient face and stay visible alongside the full browser.
             if (_spawnsVm.HasActiveTimers(DateTime.Now))

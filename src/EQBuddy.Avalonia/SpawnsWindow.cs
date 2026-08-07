@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
@@ -33,13 +34,11 @@ public sealed class SpawnsWindow : Window
     };
     private readonly TextBox _addName = DarkBox("", "Add a named the catalog doesn't know");
     private readonly TextBox _addDuration = DarkBox("", "Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40");
-    private readonly ComboBox _soundCombo = new() { FontSize = 11, MinWidth = 90 };
     private readonly DispatcherTimer _tick;
     private readonly List<TextBlock> _countdowns = [];
     private List<SpawnRow> _rows = [];
     private string _signature = "";
     private bool _syncingZone;
-    private bool _syncingSound;
     private string? _lastFollowedZone;
 
     public SpawnsWindow(MainWindow main, SpawnsViewModel vm, string? initialZone = null)
@@ -50,7 +49,7 @@ public sealed class SpawnsWindow : Window
         Title = "EQBuddy Spawns";
         // Rows can carry start, bell, clear, and delete actions. Give those controls a
         // permanent lane so starting a timer (which adds Clear) never reflows the inputs.
-        Width = 650;
+        Width = 740;
         SizeToContent = SizeToContent.Height;
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
@@ -62,11 +61,6 @@ public sealed class SpawnsWindow : Window
         _vm.RefreshZoneList();
         foreach (var zone in _vm.ZoneNames) _zoneCombo.Items.Add(zone);
         _followCheck.IsChecked = _settings.SpawnFollowZone;
-        foreach (var sound in (string[])["Off", .. AlertSoundCatalog.Names]) _soundCombo.Items.Add(sound);
-        _syncingSound = true;
-        _soundCombo.SelectedItem = AlertSoundCatalog.Normalize(_settings.SpawnSound);
-        if (_soundCombo.SelectedIndex < 0) _soundCombo.SelectedIndex = 0;
-        _syncingSound = false;
 
         Content = BuildContent();
         SelectZone(initialZone
@@ -76,7 +70,6 @@ public sealed class SpawnsWindow : Window
 
         _zoneCombo.SelectionChanged += (_, _) => OnZonePicked();
         _followCheck.IsCheckedChanged += (_, _) => OnFollowChanged();
-        _soundCombo.SelectionChanged += (_, _) => OnSoundPicked();
         PointerPressed += OnDrag;
         _tick = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _tick.Tick += (_, _) => RefreshRows();
@@ -127,7 +120,6 @@ public sealed class SpawnsWindow : Window
         addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         addRow.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(76)));
         addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-        addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         addRow.Children.Add(_addName);
         _addDuration.Margin = new Thickness(6, 0, 0, 0);
         Grid.SetColumn(_addDuration, 1);
@@ -145,10 +137,6 @@ public sealed class SpawnsWindow : Window
         };
         Grid.SetColumn(add, 2);
         addRow.Children.Add(add);
-        _soundCombo.Margin = new Thickness(10, 0, 0, 0);
-        ToolTip.SetTip(_soundCombo, "Sound when an enabled timer reaches zero");
-        Grid.SetColumn(_soundCombo, 3);
-        addRow.Children.Add(_soundCombo);
 
         var footer = new StackPanel { Margin = new Thickness(16, 4, 16, 14) };
         footer.Children.Add(AppTheme.DimText(
@@ -204,7 +192,7 @@ public sealed class SpawnsWindow : Window
         if (zone.Length == 0) return;
         _rows = _vm.RowsFor(zone, DateTime.Now);
         var signature = zone + "\u0001" + string.Join("\u0001", _rows.Select(r =>
-            $"{r.DisplayName}|{r.HasActiveTimer}|{r.IsDue}|{r.DurationText}|{r.Alert}|{r.IsCustom}"));
+            $"{r.DisplayName}|{r.HasActiveTimer}|{r.IsDue}|{r.DurationText}|{r.Alert}|{r.SoundName}|{r.IsCustom}"));
         if (signature != _signature)
         {
             if (_rowsPanel.GetVisualDescendants().OfType<TextBox>().Any(b => b.IsFocused)) return;
@@ -232,7 +220,7 @@ public sealed class SpawnsWindow : Window
             grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(72)));   // countdown
             grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(70)));   // duration
             grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(60)));   // died ago
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(142)));  // actions
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(232)));  // actions + sound
             var name = new TextBlock
             {
                 Text = row.DisplayName,
@@ -287,6 +275,7 @@ public sealed class SpawnsWindow : Window
             });
             bell.Opacity = row.Alert ? 1 : 0.45;
             buttons.Children.Add(bell);
+            buttons.Children.Add(BuildSoundPicker(row));
             if (row.HasActiveTimer)
                 buttons.Children.Add(RowButton("x", "Forget countdown", () =>
                 {
@@ -321,6 +310,73 @@ public sealed class SpawnsWindow : Window
         return box;
     }
 
+    private ComboBox BuildSoundPicker(SpawnRow row)
+    {
+        var picker = new ComboBox
+        {
+            FontSize = 10,
+            Width = 78,
+            Margin = new Thickness(4, 0, 0, 0),
+        };
+        foreach (var choice in (string[])["Default", "Off", .. AlertSoundCatalog.Names, "Custom…"])
+            picker.Items.Add(choice);
+        var custom = row.SoundName.Length > 0
+            && !string.Equals(row.SoundName, "Off", StringComparison.OrdinalIgnoreCase)
+            && !AlertSoundCatalog.Names.Contains(row.SoundName, StringComparer.OrdinalIgnoreCase);
+        picker.SelectedItem = row.SoundName.Length == 0 ? "Default"
+            : custom ? "Custom…"
+            : picker.Items.Cast<string>().First(choice =>
+                string.Equals(choice, row.SoundName, StringComparison.OrdinalIgnoreCase));
+        ToolTip.SetTip(picker, custom
+            ? $"Custom: {row.SoundName}"
+            : "Sound for this named; choosing a sound also enables its bell");
+
+        var ready = true;
+        picker.SelectionChanged += async (_, _) =>
+        {
+            if (!ready || picker.SelectedItem is not string choice) return;
+            switch (choice)
+            {
+                case "Default":
+                    _vm.SetSound(row.Zone, row.Name, "");
+                    break;
+                case "Off":
+                    _vm.SetSound(row.Zone, row.Name, "Off");
+                    break;
+                case "Custom…":
+                    var picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                    {
+                        Title = $"Choose a sound for \"{row.Name}\"",
+                        AllowMultiple = false,
+                        FileTypeFilter =
+                        [
+                            new FilePickerFileType("Sound files")
+                            {
+                                Patterns = ["*.wav", "*.mp3", "*.ogg"],
+                            },
+                        ],
+                    });
+                    if (picked.FirstOrDefault()?.TryGetLocalPath() is not { } path)
+                    {
+                        ready = false;
+                        picker.SelectedItem = row.SoundName.Length == 0 ? "Default"
+                            : custom ? "Custom…" : row.SoundName;
+                        ready = true;
+                        return;
+                    }
+                    _vm.SetSound(row.Zone, row.Name, path);
+                    _main.PlayAlertSound(path);
+                    break;
+                default:
+                    _vm.SetSound(row.Zone, row.Name, choice);
+                    _main.PlayAlertSound(choice);
+                    break;
+            }
+            Kick();
+        };
+        return picker;
+    }
+
     private static Button RowButton(string text, string tip, Action click)
     {
         var button = AppTheme.IconButton(text, tip);
@@ -350,15 +406,6 @@ public sealed class SpawnsWindow : Window
         _settings.SpawnFollowZone = _followCheck.IsChecked == true;
         _settings.Save();
         RefreshRows();
-    }
-
-    private void OnSoundPicked()
-    {
-        if (_syncingSound || _soundCombo.SelectedItem is not string sound) return;
-        _settings.SpawnSound = sound;
-        _settings.Save();
-        if (!string.Equals(sound, "Off", StringComparison.OrdinalIgnoreCase))
-            _main.PlayAlertSound(sound);
     }
 
     private void UpdateHeightLimit()

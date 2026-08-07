@@ -98,6 +98,8 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains(text, value => value.Contains("countdown starts from the log"));
         Assert.Contains(tracker.GetVisualDescendants().OfType<CheckBox>(),
             check => Equals(check.Content, "Follow"));
+        Assert.Contains(tracker.GetVisualDescendants().OfType<ComboBox>(),
+            combo => combo.Items.Contains("Custom…") && combo.Items.Contains("Chimes"));
 
         tracker.Close();
         main.Close();
