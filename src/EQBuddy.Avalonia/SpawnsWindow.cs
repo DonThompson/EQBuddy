@@ -46,7 +46,9 @@ public sealed class SpawnsWindow : Window
         _vm = vm;
         _settings = main.Settings;
         Title = "EQBuddy Spawns";
-        Width = 520;
+        // Rows can carry start, bell, clear, and delete actions. Give those controls a
+        // permanent lane so starting a timer (which adds Clear) never reflows the inputs.
+        Width = 650;
         SizeToContent = SizeToContent.Height;
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
@@ -217,10 +219,10 @@ public sealed class SpawnsWindow : Window
         {
             var grid = new Grid { Margin = new Thickness(0, 1) };
             grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(64)));
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(58)));
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(42)));
-            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(72)));   // countdown
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(70)));   // duration
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(60)));   // died ago
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(142)));  // actions
             var name = new TextBlock
             {
                 Text = row.DisplayName,
@@ -245,6 +247,7 @@ public sealed class SpawnsWindow : Window
             grid.Children.Add(countdown);
             _countdowns.Add(countdown);
             var duration = DarkBox(row.DurationText, "Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40");
+            duration.Margin = new Thickness(0, 0, 6, 0);
             duration.LostFocus += (_, _) =>
             {
                 if ((duration.Text ?? "").Trim() == row.DurationText) return;
@@ -254,10 +257,14 @@ public sealed class SpawnsWindow : Window
             Grid.SetColumn(duration, 2);
             grid.Children.Add(duration);
             var ago = DarkBox("", "Died how long ago? 5m, 90s; empty means now");
-            ago.Margin = new Thickness(4, 0, 0, 0);
+            ago.Margin = new Thickness(0, 0, 8, 0);
             Grid.SetColumn(ago, 3);
             grid.Children.Add(ago);
-            var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left,
+            };
             buttons.Children.Add(RowButton("▶", "Start countdown", () =>
             {
                 _vm.StartNow(row.Zone, row.Name, ago.Text ?? "");
@@ -360,7 +367,14 @@ public sealed class SpawnsWindow : Window
 
     private void OnDrag(object? sender, PointerPressedEventArgs e)
     {
-        if (e.Source is TextBox or Button or ComboBox or CheckBox) return;
+        // ComboBox clicks originate from template children (Border, ContentPresenter,
+        // arrow Path), not from the ComboBox itself. Checking only e.Source made those
+        // presses begin a window drag and immediately dismiss the popup.
+        if (e.Source is Visual source && source.GetSelfAndVisualAncestors().Any(IsInteractiveControl))
+            return;
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) BeginMoveDrag(e);
     }
+
+    private static bool IsInteractiveControl(Visual visual) =>
+        visual is TextBox or Button or ComboBox or CheckBox or ScrollBar;
 }
