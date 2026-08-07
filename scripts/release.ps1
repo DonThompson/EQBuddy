@@ -21,6 +21,9 @@ if (-not ($whatsNew | Where-Object { $_.version -eq $version })) {
     throw "No What's-new entry for $version in src\EQBuddy.Core\Data\WhatsNew.json — add one before releasing."
 }
 
+# Remember the running app so it comes back at the end — this kill used to be silent,
+# and David's widget vanished mid-fight when v1.39.0 shipped (2026-08-07).
+$runningApp = (Get-Process EQBuddy -ErrorAction SilentlyContinue | Select-Object -First 1).Path
 Get-Process EQBuddy -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
@@ -81,4 +84,9 @@ if ($Tag) {
         --title "EQBuddy $Tag" --generate-notes
     if ($LASTEXITCODE -ne 0) { throw 'gh release failed' }
     Write-Host "GitHub release $Tag published"
+}
+
+if ($runningApp -and (Test-Path $runningApp)) {
+    Start-Process -FilePath $runningApp | Out-Null
+    Write-Host "Relaunched $runningApp"
 }
