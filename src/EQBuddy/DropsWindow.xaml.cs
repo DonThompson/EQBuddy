@@ -23,6 +23,7 @@ public partial class DropsWindow : Window
     {
         InitializeComponent();
         _main = main;
+        WindowZoom.Attach(this, "drops", main.Settings);
     }
 
     /// <summary>Called on open and from MainWindow's tick while visible.</summary>

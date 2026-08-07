@@ -28,9 +28,14 @@ public partial class QuestsWindow : Window
         InitializeComponent();
         _main = main;
         _settings = main.Settings;
+        WindowZoom.Attach(this, "quests", _settings);
         ClassCombo.Items.Add("Any class");
         foreach (var c in QuestClassFilter.Classes) ClassCombo.Items.Add(c);
         ClassCombo.SelectedIndex = 0;
+        EraCombo.Items.Add("Any era");
+        foreach (var era in QuestEraLadder.Eras) EraCombo.Items.Add($"≤ {era}");
+        var savedEra = Array.IndexOf(QuestEraLadder.Eras, _settings.QuestEraFilter);
+        EraCombo.SelectedIndex = savedEra >= 0 ? savedEra + 1 : 0;
         ApplyModeVisual();
         ChipScale.Apply(this, 1.0);   // quests read at widget size, not chip size
         if (ScreenGuard.OnScreen(_settings.QuestsLeft, _settings.QuestsTop, Width, 200))
@@ -94,6 +99,15 @@ public partial class QuestsWindow : Window
     private string SelectedClass =>
         ClassCombo.SelectedItem is string s && s != "Any class" ? s : "";
 
+    private void OnEraChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (EraCombo.SelectedIndex < 0) return;
+        _settings.QuestEraFilter = EraCombo.SelectedIndex == 0
+            ? "" : QuestEraLadder.Eras[EraCombo.SelectedIndex - 1];
+        _settings.Save();
+        Refresh(force: true);
+    }
+
     /// <summary>Called from MainWindow's 1 s tick while visible; cheap unless the ledger
     /// or filters actually changed (signature idiom, same as the chip windows).</summary>
     public void MaybeRefresh()
@@ -121,7 +135,7 @@ public partial class QuestsWindow : Window
         var filter = FilterBox.Text.Trim();
         var cls = SelectedClass;
 
-        var sig = $"{key}|{filter}|{_mode}|{cls}|{_main.CurrentZoneName}" +
+        var sig = $"{key}|{filter}|{_mode}|{cls}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
             $"|{string.Join(";", tracked.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", hidden.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", completed.Select(kv => $"{kv.Key}:{kv.Value}"))}" +
@@ -131,7 +145,10 @@ public partial class QuestsWindow : Window
 
         QuestsPanel.Children.Clear();
 
-        bool ClassOk(QuestEntry q) => cls.Length == 0 || QuestClassFilter.Matches(q.Classes, cls);
+        var era = _settings.QuestEraFilter;
+        bool ClassOk(QuestEntry q) =>
+            (cls.Length == 0 || QuestClassFilter.Matches(q.Classes, cls))
+            && QuestEraLadder.Allowed(q.Era, era);
         QuestMatch Progressed(QuestEntry quest)
         {
             var progress = quest.Items

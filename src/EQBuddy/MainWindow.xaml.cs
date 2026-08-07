@@ -116,6 +116,7 @@ public partial class MainWindow : Window
 
         VersionMenuItem.Header = $"EQBuddy v{UpdateChecker.CurrentVersion}";
 
+        WindowZoom.Route(this, () => _settings.UiScale, SetUiScale);
         foreach (var (key, star) in StarButtons())
             star.IsChecked = _settings.MiniStats.Contains(key);
         ApplySectionLayout();
@@ -468,7 +469,7 @@ public partial class MainWindow : Window
     public void ShowItemInfo(string itemName)
     {
         if (_itemWindow is not { IsLoaded: true })
-            _itemWindow = new ItemInfoWindow(_wikiItems) { Owner = this };
+            _itemWindow = new ItemInfoWindow(_wikiItems, _settings) { Owner = this };
         _itemWindow.Show();
         _itemWindow.Activate();
         _itemWindow.Lookup(itemName);
@@ -892,7 +893,7 @@ public partial class MainWindow : Window
         {
             if (_mezWindow is not { IsLoaded: true })
             {
-                _mezWindow = new MezChipsWindow(_settings, MezChips);
+                _mezWindow = new MezChipsWindow(_settings, MezChips, SetChipScale);
                 _mezWindow.Show();
             }
             _mezWindow.RefreshChips(DateTime.Now);
@@ -1590,7 +1591,7 @@ public partial class MainWindow : Window
             _historyWindow.Activate();
             return;
         }
-        _historyWindow = new HistoryWindow(_repo);
+        _historyWindow = new HistoryWindow(_repo, _settings);
         _historyWindow.Show();
     }
 

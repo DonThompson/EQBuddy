@@ -25,6 +25,7 @@ public partial class OptionsWindow : Window
         Width = Math.Clamp(_vm.OptionsWidth, MinWidth, MaxWidth);
         // The handle only exists once the window is sourced; re-clamp on move because the
         // user may drag it to a monitor with a different size or DPI.
+        WindowZoom.Attach(this, "options", _main.Settings);
         SourceInitialized += (_, _) => ClampToMonitor();
         LocationChanged += (_, _) => ClampToMonitor();
 

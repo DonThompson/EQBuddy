@@ -49,6 +49,7 @@
    "Great Divide"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -77,6 +78,7 @@
    "Grobb"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -99,6 +101,7 @@
    "The Estate of Unrest",
    "Upper Guk"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -132,6 +135,7 @@
    "Qeynos",
    "Southern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -152,6 +156,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -177,6 +182,7 @@
   "relatedZones": [
    "Dragon Necropolis"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -197,6 +203,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -218,6 +225,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -238,6 +246,7 @@
    "Guides"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -258,6 +267,7 @@
    "Kael Drakkel",
    "Tower of Frozen Shadow"
   ],
+  "era": "Luclin",
   "repeatable": false
  },
  {
@@ -322,6 +332,7 @@
   "relatedZones": [
    "Iceclad Ocean"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -407,6 +418,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -462,6 +474,7 @@
    "Clan Runnyeye",
    "Dagnor's Cauldron"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -478,6 +491,7 @@
    "West Commonlands"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -514,6 +528,7 @@
    "East Commonlands",
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -551,6 +566,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -580,6 +596,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -633,6 +650,7 @@
    "The Feerrott",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -653,6 +671,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -677,6 +696,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -700,6 +720,7 @@
    "Misty Thicket"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -726,6 +747,7 @@
   "relatedZones": [
    "West Karana"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -768,6 +790,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -789,6 +812,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -908,6 +932,7 @@
    "Dreadlands"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -927,6 +952,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -986,6 +1012,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1004,6 +1031,7 @@
    "Bard Guides"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1021,6 +1049,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1069,6 +1098,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -1097,6 +1127,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -1128,6 +1159,7 @@
   "relatedZones": [
    "Erud's Crossing"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1166,6 +1198,7 @@
    "Butcherblock Mountains",
    "Rathe Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1193,6 +1226,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -1211,6 +1245,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1237,6 +1272,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1259,6 +1295,7 @@
    "Paineel",
    "Toxxulia Forest"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -1290,6 +1327,7 @@
    "Qeynos Hills"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1308,6 +1346,7 @@
    "Kithicor Forest"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1333,6 +1372,7 @@
   "relatedZones": [
    "Ak'Anon"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1358,6 +1398,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1383,6 +1424,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1408,6 +1450,7 @@
   "relatedZones": [
    "Halas"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1433,6 +1476,7 @@
   "relatedZones": [
    "South Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1458,6 +1502,7 @@
   "relatedZones": [
    "Neriak Commons"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1483,6 +1528,7 @@
   "relatedZones": [
    "Oggok"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1508,6 +1554,7 @@
   "relatedZones": [
    "Paineel"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1533,6 +1580,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1556,6 +1604,7 @@
    "Lake of Ill Omen",
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -1576,6 +1625,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1605,6 +1655,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -1624,6 +1675,7 @@
    "Neriak Third Gate"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1653,6 +1705,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1673,6 +1726,7 @@
   "relatedZones": [
    "Blackburrow"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1694,6 +1748,7 @@
    "Highpass",
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1717,6 +1772,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1737,6 +1793,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -1775,6 +1832,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1792,6 +1850,7 @@
   "relatedZones": [
    "Surefall Glade"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1813,6 +1872,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1834,6 +1894,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1853,6 +1914,7 @@
   "relatedZones": [
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -1871,6 +1933,7 @@
   "relatedZones": [
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -1890,6 +1953,7 @@
   "relatedZones": [
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1915,6 +1979,7 @@
   "relatedZones": [
    "Erud's Crossing"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1940,6 +2005,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -1982,6 +2048,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2008,6 +2075,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2031,6 +2099,7 @@
    "Field of Bone"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2057,6 +2126,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2080,6 +2150,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2095,6 +2166,7 @@
    "Repeatable Turn-in Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": true
  },
  {
@@ -2117,6 +2189,7 @@
    "West Cabilis"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2149,6 +2222,7 @@
   "relatedZones": [
    "Surefall Glade"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2175,6 +2249,7 @@
   "relatedZones": [
    "Neriak"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2199,6 +2274,7 @@
    "Repeatable Turn-in Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -2214,6 +2290,7 @@
    "Skyshrine"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -2237,6 +2314,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2257,6 +2335,7 @@
    "Ocean of Tears"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2296,6 +2375,7 @@
    "Karnor's Castle",
    "Trakanon's Teeth"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2335,6 +2415,7 @@
    "Karnor's Castle",
    "Trakanon's Teeth"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2348,6 +2429,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -2409,6 +2491,7 @@
    "Oasis of Marr",
    "Unrest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2429,6 +2512,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2450,6 +2534,7 @@
   "relatedZones": [
    "Najena"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -2475,6 +2560,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2507,6 +2593,7 @@
    "North Qeynos",
    "Western Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2535,6 +2622,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2568,6 +2656,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -2593,6 +2682,7 @@
   "relatedZones": [
    "Chardok"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2608,6 +2698,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2634,6 +2725,7 @@
    "Great Divide",
    "Velketor's Labyrinth"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -2655,6 +2747,7 @@
    "East Cabilis"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2672,6 +2765,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2698,6 +2792,7 @@
    "Lesser Faydark",
    "Rathe Mountains"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2735,6 +2830,7 @@
    "Mistmoore",
    "Nagafen's Lair"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -2768,6 +2864,7 @@
    "Karnor's Castle",
    "Trakanon's Teeth"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2801,6 +2898,7 @@
    "Karnor's Castle",
    "Trakanon's Teeth"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2876,6 +2974,7 @@
   "relatedZones": [
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -2893,6 +2992,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2920,6 +3020,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -2948,6 +3049,7 @@
    "Firiona Vie",
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -2968,6 +3070,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -2987,6 +3090,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3011,6 +3115,7 @@
    "Kerra Island",
    "Toxxulia Forest"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -3059,6 +3164,7 @@
    "Lake Rathetear",
    "Rathe Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3077,6 +3183,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3114,6 +3221,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3141,6 +3249,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3163,6 +3272,7 @@
    "The Estate of Unrest",
    "The Feerrott"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -3193,6 +3303,7 @@
    "Guides"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3214,6 +3325,7 @@
    "Ocean of Tears",
    "Rathe Mountains"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -3239,6 +3351,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3273,6 +3386,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3290,6 +3404,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3366,6 +3481,7 @@
    "Lake Rathetear"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -3438,6 +3554,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -3490,6 +3607,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3534,6 +3652,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -3555,6 +3674,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3576,6 +3696,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3615,6 +3736,7 @@
    "Kithicor Forest",
    "Misty Thicket"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3634,6 +3756,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -3654,6 +3777,7 @@
    "Rathe Mountains",
    "The Feerrott"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3682,6 +3806,7 @@
   "relatedZones": [
    "Neriak"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -3733,6 +3858,7 @@
    "South Kaladim",
    "West Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3779,6 +3905,7 @@
    "Qeynos Hills",
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -3801,6 +3928,7 @@
   "relatedZones": [
    "Eastern Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -3836,6 +3964,7 @@
    "Great Divide",
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -3924,6 +4053,7 @@
    "Siren's Grotto",
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4083,6 +4213,7 @@
    "Great Divide"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4110,6 +4241,7 @@
    "Great Divide",
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4133,6 +4265,7 @@
    "Rathe Mountains",
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4158,6 +4291,7 @@
    "Stonebrunt Mountains",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -4186,6 +4320,7 @@
   "relatedZones": [
    "Western Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -4209,6 +4344,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4233,6 +4369,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4251,6 +4388,7 @@
    "Iceclad Ocean"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4270,6 +4408,7 @@
   "relatedZones": [
    "Eastern Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4286,6 +4425,7 @@
   ],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4311,6 +4451,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4330,6 +4471,7 @@
   "relatedZones": [
    "Cobalt Scar"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4349,6 +4491,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4368,6 +4511,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4392,6 +4536,7 @@
   "relatedZones": [
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4417,6 +4562,7 @@
    "Plane of Growth",
    "Plane of Mischief"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4436,6 +4582,7 @@
    "The Wakening Land"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4460,6 +4607,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4484,6 +4632,7 @@
    "Innothule Swamp",
    "Neriak"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -4643,6 +4792,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -4660,6 +4810,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4707,6 +4858,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -4740,6 +4892,7 @@
   "relatedZones": [
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -4758,6 +4911,7 @@
    "Cobalt Scar"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4796,6 +4950,7 @@
    "Crystal Caverns",
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -4818,6 +4973,7 @@
    "Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4850,6 +5006,7 @@
    "Rivervale",
    "West Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -4874,6 +5031,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -4893,6 +5051,7 @@
    "Lake of Ill Omen",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -4920,6 +5079,7 @@
   "relatedZones": [
    "Field of Bone"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -4962,6 +5122,7 @@
    "Swamp of No Hope",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -4988,6 +5149,7 @@
    "Lake of Ill Omen",
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -5012,6 +5174,7 @@
    "Kael Drakkel"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5069,6 +5232,7 @@
    "Skyshrine"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5125,6 +5289,7 @@
    "Icewell Keep",
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5144,6 +5309,7 @@
    "West Commonlands"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -5164,6 +5330,7 @@
   "relatedZones": [
    "Icewell Keep"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5191,6 +5358,7 @@
    "Cazic Thule",
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -5218,6 +5386,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -5240,6 +5409,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -5267,6 +5437,7 @@
    "East Commonlands",
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -5317,6 +5488,7 @@
    "Plane of Mischief"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5346,6 +5518,7 @@
   "relatedZones": [
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5368,6 +5541,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -5401,6 +5575,7 @@
   "relatedZones": [
    "Temple of Droga"
   ],
+  "era": "Chardok Revamp",
   "repeatable": false
  },
  {
@@ -5423,6 +5598,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5443,6 +5619,7 @@
    "Eastern Wastes",
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5460,6 +5637,7 @@
    "Iceclad Ocean"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5484,6 +5662,7 @@
   "relatedZones": [
    "Halas"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -5500,6 +5679,7 @@
    "Neriak Third Gate"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -5515,6 +5695,7 @@
    "Temple of Veeshan"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5536,6 +5717,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5582,6 +5764,7 @@
    "The Overthere",
    "The Temple of Solusek Ro"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -5603,6 +5786,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -5626,6 +5810,7 @@
    "Dreadlands",
    "Firiona_Vie"
   ],
+  "era": "Kunark",
   "repeatable": true
  },
  {
@@ -5643,6 +5828,7 @@
    "Qeynos Aqueducts"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -5677,6 +5863,7 @@
   "relatedZones": [
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -5849,6 +6036,7 @@
    "Druid Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -5868,6 +6056,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -5916,6 +6105,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -5988,6 +6178,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6007,6 +6198,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6031,6 +6223,7 @@
    "All Classes Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6070,6 +6263,7 @@
    "Mistmoore Castle",
    "Upper Guk"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -6092,6 +6286,7 @@
    "Everfrost Peaks",
    "Solusek's Eye"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6136,6 +6331,7 @@
   "relatedZones": [
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6202,6 +6398,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6228,6 +6425,7 @@
   "relatedZones": [
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6249,6 +6447,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6375,6 +6574,7 @@
    "Erudin"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -6394,6 +6594,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6431,6 +6632,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6507,6 +6709,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6528,6 +6731,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -6549,6 +6753,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -6568,6 +6773,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6597,6 +6803,7 @@
   "relatedZones": [
    "Firiona Vie"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -6617,6 +6824,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6643,6 +6851,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6663,6 +6872,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6680,6 +6890,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -6700,6 +6911,7 @@
    "The Warrens"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6724,6 +6936,7 @@
   "relatedZones": [
    "Kerafyrm's Lair"
   ],
+  "era": "Chardok Revamp",
   "repeatable": false
  },
  {
@@ -6757,6 +6970,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6817,6 +7031,7 @@
    "Qeynos",
    "Rivervale"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -6854,6 +7069,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -6874,6 +7090,7 @@
    "Lake of Ill Omen"
   ],
   "relatedZones": [],
+  "era": "Luclin",
   "repeatable": false
  },
  {
@@ -6908,6 +7125,7 @@
    "Qeynos",
    "Rivervale"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6934,6 +7152,7 @@
    "North Karana",
    "South Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6947,6 +7166,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -6964,6 +7184,7 @@
    "The Wakening Land"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -6984,6 +7205,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7001,6 +7223,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7020,6 +7243,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7039,6 +7263,7 @@
   "relatedZones": [
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -7059,6 +7284,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7085,6 +7311,7 @@
    "Eastern Wastes",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7111,6 +7338,7 @@
   "relatedZones": [
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7137,6 +7365,7 @@
   "relatedZones": [
    "Nektulos Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7157,6 +7386,7 @@
   "relatedZones": [
    "Lavastorm Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7177,6 +7407,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7204,6 +7435,7 @@
    "Nektulos Forest",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7235,6 +7467,7 @@
    "Qeynos",
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7262,6 +7495,7 @@
    "Freeport",
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7285,6 +7519,7 @@
    "South Kaladim"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7300,6 +7535,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7335,6 +7571,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7375,6 +7612,7 @@
    "The Wakening Land"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7401,6 +7639,7 @@
    "Innothule Swamp",
    "The Feerrott"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7425,6 +7664,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7442,6 +7682,7 @@
    "Swamp of No Hope"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -7463,6 +7704,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7485,6 +7727,7 @@
    "Skyfire Mountains",
    "The Hole"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7510,6 +7753,7 @@
   "relatedZones": [
    "Kerafyrm's Lair"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7528,6 +7772,7 @@
    "Western Plains of Karana"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7547,6 +7792,7 @@
   "relatedZones": [
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7575,6 +7821,7 @@
    "Southern Karana",
    "Splitpaw Lair"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7597,6 +7844,7 @@
    "Swamp of No Hope",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -7621,6 +7869,7 @@
    "South Qeynos",
    "Surefall Glade"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7638,6 +7887,7 @@
   "relatedZones": [
    "Surefall Glade"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7665,6 +7915,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7685,6 +7936,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7709,6 +7961,7 @@
   "relatedZones": [
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7739,6 +7992,7 @@
    "Kael Drakkel",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -7764,6 +8018,7 @@
    "Qeynos",
    "Qeynos Hills"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7793,6 +8048,7 @@
    "Blackburrow",
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7827,6 +8083,7 @@
    "Everfrost Peaks",
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7844,6 +8101,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7867,6 +8125,7 @@
    "Highpass Hold"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7887,6 +8146,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7906,6 +8166,7 @@
    "Lake of Ill Omen",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -7926,6 +8187,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -7946,6 +8208,7 @@
   "relatedZones": [
    "Lake of Ill Omen"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -7963,6 +8226,7 @@
    "All Classes Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -7988,6 +8252,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -8013,6 +8278,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -8037,6 +8303,7 @@
   "relatedZones": [
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -8062,6 +8329,7 @@
   "relatedZones": [
    "The Feerrott"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -8079,6 +8347,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8104,6 +8373,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8122,6 +8392,7 @@
    "Monk Quests"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -8141,6 +8412,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8160,6 +8432,7 @@
   "relatedZones": [
    "City of Mist"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -8178,6 +8451,7 @@
    "Northern Karana"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8191,6 +8465,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -8209,6 +8484,7 @@
    "Cleric Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8227,6 +8503,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8247,6 +8524,7 @@
   "relatedZones": [
    "Northern Felwithe"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8265,6 +8543,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8290,6 +8569,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8315,6 +8595,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8335,6 +8616,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8355,6 +8637,7 @@
   "relatedZones": [
    "Erudin Palace"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8375,6 +8658,7 @@
   "relatedZones": [
    "Erudin Palace"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8393,6 +8677,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8411,6 +8696,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8429,6 +8715,7 @@
    "Cleric Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8447,6 +8734,7 @@
    "Enchanter Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8465,6 +8753,7 @@
    "Magician Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8483,6 +8772,7 @@
    "Necromancer Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8501,6 +8791,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8519,6 +8810,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8537,6 +8829,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8557,6 +8850,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8577,6 +8871,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8597,6 +8892,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8617,6 +8913,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8637,6 +8934,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8657,6 +8955,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8677,6 +8976,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8695,6 +8995,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8715,6 +9016,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8740,6 +9042,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8760,6 +9063,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8778,6 +9082,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8798,6 +9103,7 @@
   "relatedZones": [
    "Erudin Palace"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8816,6 +9122,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8834,6 +9141,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8854,6 +9162,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8874,6 +9183,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8894,6 +9204,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8919,6 +9230,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8937,6 +9249,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8957,6 +9270,7 @@
   "relatedZones": [
    "North Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8977,6 +9291,7 @@
   "relatedZones": [
    "North Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -8997,6 +9312,7 @@
   "relatedZones": [
    "Surefall Glade"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9015,6 +9331,7 @@
    "Enchanter Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9033,6 +9350,7 @@
    "Magician Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9051,6 +9369,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9071,6 +9390,7 @@
   "relatedZones": [
    "North Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9096,6 +9416,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9114,6 +9435,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9132,6 +9454,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9157,6 +9480,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9182,6 +9506,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9199,6 +9524,7 @@
    "Cleric Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9219,6 +9545,7 @@
   "relatedZones": [
    "Surefall Glade"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9237,6 +9564,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9257,6 +9585,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9275,6 +9604,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9295,6 +9625,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9320,6 +9651,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9345,6 +9677,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9370,6 +9703,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9395,6 +9729,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9420,6 +9755,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9440,6 +9776,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9460,6 +9797,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9485,6 +9823,7 @@
   "relatedZones": [
    "South Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9505,6 +9844,7 @@
   "relatedZones": [
    "Paineel"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9525,6 +9865,7 @@
   "relatedZones": [
    "Qeynos Catacombs"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9545,6 +9886,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9565,6 +9907,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9585,6 +9928,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9605,6 +9949,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9625,6 +9970,7 @@
   "relatedZones": [
    "North Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9645,6 +9991,7 @@
   "relatedZones": [
    "North Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9665,6 +10012,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9685,6 +10033,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9710,6 +10059,7 @@
   "relatedZones": [
    "Paineel"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9730,6 +10080,7 @@
   "relatedZones": [
    "Southern Felwithe"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9748,6 +10099,7 @@
    "Neriak Third Gate"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9766,6 +10118,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9786,6 +10139,7 @@
   "relatedZones": [
    "Paineel"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9804,6 +10158,7 @@
    "Neriak Commons"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9822,6 +10177,7 @@
    "Neriak Commons"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9840,6 +10196,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9860,6 +10217,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9878,6 +10236,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9903,6 +10262,7 @@
    "Najena",
    "Nektulos Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -9930,6 +10290,7 @@
    "Frontier Mountains",
    "Kaesora"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -9964,6 +10325,7 @@
    "Ocean of Tears",
    "The Estate of Unrest"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -9979,6 +10341,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -9998,6 +10361,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10013,6 +10377,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10030,6 +10395,7 @@
    "East Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10047,6 +10413,7 @@
    "North Kaladim"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10067,6 +10434,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10088,6 +10456,7 @@
    "Kerra Island",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10120,6 +10489,7 @@
    "Ocean of Tears",
    "Oggok"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10141,6 +10511,7 @@
    "Kael Drakkel",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -10166,6 +10537,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -10192,6 +10564,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10207,6 +10580,7 @@
    "Paineel"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10224,6 +10598,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10247,6 +10622,7 @@
    "Stonebrunt Mountains"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10268,6 +10644,7 @@
    "Kerra Island",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10289,6 +10666,7 @@
    "Kerra Island",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10318,6 +10696,7 @@
    "North Qeynos",
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10337,6 +10716,7 @@
    "High Keep",
    "Highpass Hold"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10375,6 +10755,7 @@
    "West Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10396,6 +10777,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10415,6 +10797,7 @@
   "relatedZones": [
    "Erud's Crossing"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10447,6 +10830,7 @@
   "relatedZones": [
    "Erud's Crossing"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10474,6 +10858,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10495,6 +10880,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10522,6 +10908,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10541,6 +10928,7 @@
   "relatedZones": [
    "Eastern Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10558,6 +10946,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10578,6 +10967,7 @@
   "relatedZones": [
    "Runnyeye Citadel"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10619,6 +11009,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -10651,6 +11042,7 @@
    "Innothule Swamp",
    "Neriak"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10669,6 +11061,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10694,6 +11087,7 @@
   "relatedZones": [
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10722,6 +11116,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10759,6 +11154,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10779,6 +11175,7 @@
   "relatedZones": [
    "Northern Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -10807,6 +11204,7 @@
   "relatedZones": [
    "Crypt of Dalnir"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -10828,6 +11226,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10848,6 +11247,7 @@
   "relatedZones": [
    "East Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10882,6 +11282,7 @@
    "East Commonlands",
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10911,6 +11312,7 @@
    "Butcherblock Mountains",
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -10940,6 +11342,7 @@
    "The Overthere",
    "Trakanon's Teeth"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -10961,6 +11364,7 @@
   "relatedZones": [
    "Lake of Ill Omen"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -11009,6 +11413,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11031,6 +11436,7 @@
    "Qeynos",
    "Upper Guk"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -11064,6 +11470,7 @@
    "Erudin",
    "Qeynos Aqueducts"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11082,6 +11489,7 @@
    "Erudin Palace"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11105,6 +11513,7 @@
   "relatedZones": [
    "Neriak Third Gate"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11176,6 +11585,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -11201,6 +11611,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11237,6 +11648,7 @@
    "Lesser Faydark",
    "Steamfont Mountains"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -11266,6 +11678,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11283,6 +11696,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -11300,6 +11714,7 @@
   "relatedZones": [
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11335,6 +11750,7 @@
    "Rathe Mountains",
    "Southern Desert of Ro"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -11367,6 +11783,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -11391,6 +11808,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -11412,6 +11830,7 @@
   "relatedZones": [
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -11439,6 +11858,7 @@
   "relatedZones": [
    "Siren's Grotto"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11454,6 +11874,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11475,6 +11896,7 @@
    "Charasis",
    "Kaesora"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -11504,6 +11926,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11522,6 +11945,7 @@
    "Dragon Necropolis"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11539,6 +11963,7 @@
    "Dragon Necropolis"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11567,6 +11992,7 @@
    "Temple of Veeshan",
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11591,6 +12017,7 @@
   "relatedZones": [
    "Southern Desert of Ro"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11672,6 +12099,7 @@
   "relatedZones": [
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11696,6 +12124,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11716,6 +12145,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11735,6 +12165,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11763,6 +12194,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11783,6 +12215,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11804,6 +12237,7 @@
    "The Overthere",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -11821,6 +12255,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11837,6 +12272,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -11863,6 +12299,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -11888,6 +12325,7 @@
    "Eastern Wastes",
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -11923,6 +12361,7 @@
    "Northern Karana",
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11946,6 +12385,7 @@
    "Repeatable Turn-in Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": true
  },
  {
@@ -11964,6 +12404,7 @@
    "West Cabilis"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -11990,6 +12431,7 @@
   "relatedZones": [
    "East Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12013,6 +12455,7 @@
   "relatedZones": [
    "Nektulos Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12060,6 +12503,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12083,6 +12527,7 @@
    "Highpass Hold",
    "Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12102,6 +12547,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12121,6 +12567,7 @@
   "relatedZones": [
    "Eastern Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12141,6 +12588,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12167,6 +12615,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12188,6 +12637,7 @@
   "relatedZones": [
    "The Feerrott"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12208,6 +12658,7 @@
   "relatedZones": [
    "The Feerrott"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12232,6 +12683,7 @@
   "relatedZones": [
    "The Feerrott"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12253,6 +12705,7 @@
   "relatedZones": [
    "The Feerrott"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12275,6 +12728,7 @@
   "relatedZones": [
    "The Feerrott"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12303,6 +12757,7 @@
   "relatedZones": [
    "Iceclad Ocean"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12320,6 +12775,7 @@
    "Crypt of Dalnir"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -12339,6 +12795,7 @@
   "relatedZones": [
    "Mistmoore"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12363,6 +12820,7 @@
    "West Commonlands",
    "Western Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12382,6 +12840,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12411,6 +12870,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12426,6 +12886,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12451,6 +12912,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12490,6 +12952,7 @@
    "Magician Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -12509,6 +12972,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12560,6 +13024,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12636,6 +13101,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12656,6 +13122,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12677,6 +13144,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12698,6 +13166,7 @@
    "Magician Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12726,6 +13195,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -12754,6 +13224,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12790,6 +13261,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12819,6 +13291,7 @@
    "Erud's Crossing",
    "Everfrost Peaks"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12842,6 +13315,7 @@
    "Field of Bone",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -12874,6 +13348,7 @@
    "Innothule Swamp",
    "Northern Desert of Ro"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12895,6 +13370,7 @@
    "North Freeport",
    "West Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -12915,6 +13391,7 @@
   "relatedZones": [
    "Dragon Necropolis"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12940,6 +13417,7 @@
   "relatedZones": [
    "Eastern Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -12981,6 +13459,7 @@
   "relatedZones": [
    "Cobalt Scar"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -13003,6 +13482,7 @@
    "Lake of Ill Omen",
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -13025,6 +13505,7 @@
    "Kaesora",
    "Karnor's Castle"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -13047,6 +13528,7 @@
    "Trakanon's Teeth",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -13074,6 +13556,7 @@
    "Kael Drakkel",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -13101,6 +13584,7 @@
    "Qeynos",
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13119,6 +13603,7 @@
   "relatedZones": [
    "Commonlands"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13141,6 +13626,7 @@
    "Highpass Hold",
    "West Commonlands"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13154,6 +13640,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13179,6 +13666,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13204,6 +13692,7 @@
   "relatedZones": [
    "Ocean of Tears"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13234,6 +13723,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13262,6 +13752,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -13285,6 +13776,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13305,6 +13797,7 @@
    "Greater Faydark",
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13326,6 +13819,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13368,6 +13862,7 @@
    "Cabilis",
    "Field of Bone"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -13460,6 +13955,7 @@
    "Monk Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -13482,6 +13978,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13501,6 +13998,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -13542,6 +14040,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13563,6 +14062,7 @@
    "Monk Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13589,6 +14089,7 @@
    "West Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13711,6 +14212,7 @@
    "Timorous Deep"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -13787,6 +14289,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -13815,6 +14318,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -13848,6 +14352,7 @@
    "Qeynos",
    "Rathe Mountains"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13882,6 +14387,7 @@
   "relatedZones": [
    "Blackburrow"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -13897,6 +14403,7 @@
    "Misty Thicket"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -13922,6 +14429,7 @@
    "Northern Ro",
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13947,6 +14455,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -13979,6 +14488,7 @@
   "relatedZones": [
    "Nektulos Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14001,6 +14511,7 @@
    "West Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -14019,6 +14530,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14044,6 +14556,7 @@
    "Plane of Hate",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -14065,6 +14578,7 @@
    "Field of Bone",
    "Lake of Ill Omen"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -14125,6 +14639,7 @@
    "Nektulos Forest"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -14144,6 +14659,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -14179,6 +14695,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14241,6 +14758,7 @@
    "West Cabilis"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14317,6 +14835,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -14338,6 +14857,7 @@
    "West Cabilis"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14357,6 +14877,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -14383,6 +14904,7 @@
    "The Estate of Unrest",
    "Upper Guk"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14409,6 +14931,7 @@
    "The Estate of Unrest",
    "The Feerrott"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14451,6 +14974,7 @@
    "The Feerrott",
    "Western Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14471,6 +14995,7 @@
    "Paineel"
   ],
   "relatedZones": [],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -14490,6 +15015,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14508,6 +15034,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14526,6 +15053,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14552,6 +15080,7 @@
    "Chardok"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -14585,6 +15114,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14613,6 +15143,7 @@
    "Innothule Swamp",
    "Rathe Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14643,6 +15174,7 @@
   "relatedZones": [
    "West Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14664,6 +15196,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14684,6 +15217,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14703,6 +15237,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14725,6 +15260,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -14743,6 +15279,7 @@
    "Erudin"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14778,6 +15315,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14813,6 +15351,7 @@
    "Permafrost",
    "Solusek's Eye"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14826,6 +15365,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -14856,6 +15396,7 @@
   "relatedZones": [
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14892,6 +15433,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14920,6 +15462,7 @@
    "East Commonlands",
    "Nektulos Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14939,6 +15482,7 @@
   "relatedZones": [
    "East Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -14967,6 +15511,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15006,6 +15551,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15030,6 +15576,7 @@
    "Repeatable Turn-in Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -15080,6 +15627,7 @@
    "Northern Desert of Ro",
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15102,6 +15650,7 @@
   "relatedZones": [
    "Qeynos Aqueducts"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15123,6 +15672,7 @@
    "Northern Desert of Ro",
    "Oasis of Marr"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15148,6 +15698,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15173,6 +15724,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15236,6 +15788,7 @@
    "Plane of Fear"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -15261,6 +15814,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15280,6 +15834,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -15312,6 +15867,7 @@
   "relatedZones": [
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15349,6 +15905,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15397,6 +15954,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -15425,6 +15983,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -15451,6 +16010,7 @@
    "Butcherblock Mountains",
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15474,6 +16034,7 @@
    "Befallen",
    "Qeynos Aqueducts"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15509,6 +16070,7 @@
    "Qeynos",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15534,6 +16096,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15558,6 +16121,7 @@
    "North Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15580,6 +16144,7 @@
    "Ocean of Tears"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15627,6 +16192,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15670,6 +16236,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15696,6 +16263,7 @@
    "Qeynos Hills",
    "Surefall Glade"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15730,6 +16298,7 @@
    "Plane of Mischief"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -15748,6 +16317,7 @@
    "Plane of Mischief"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -15828,6 +16398,7 @@
   "relatedZones": [
    "Plane of Sky"
   ],
+  "era": "Sky",
   "repeatable": false
  },
  {
@@ -15850,6 +16421,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15878,6 +16450,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15907,6 +16480,7 @@
    "Blackburrow",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15931,6 +16505,7 @@
   "relatedZones": [
    "Halas"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -15956,6 +16531,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -15983,6 +16559,7 @@
    "Everfrost Peaks"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16344,6 +16921,7 @@
   ],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -16378,6 +16956,7 @@
    "Siren's Grotto",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -16400,6 +16979,7 @@
   "relatedZones": [
    "Neriak"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16435,6 +17015,7 @@
    "Innothule Swamp",
    "Lake Rathetear"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16461,6 +17042,7 @@
   "relatedZones": [
    "Frontier Mountains"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -16492,6 +17074,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16582,6 +17165,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16642,6 +17226,7 @@
    "Steamfont Mountains",
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16663,6 +17248,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -16684,6 +17270,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -16705,6 +17292,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -16732,6 +17320,7 @@
    "Qeynos Hills",
    "Western Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16755,6 +17344,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16823,6 +17413,7 @@
    "Lesser Faydark",
    "The Feerrott"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -16852,6 +17443,7 @@
    "Skyshrine",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -16873,6 +17465,7 @@
    "Rathe Mountains",
    "The Feerrott"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -17025,6 +17618,7 @@
    "Ranger Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -17044,6 +17638,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -17096,6 +17691,7 @@
    "Ranger Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17172,6 +17768,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -17208,6 +17805,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -17237,6 +17835,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17262,6 +17861,7 @@
    "Lake of Ill Omen",
    "The Overthere"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -17311,6 +17911,7 @@
    "Qeynos Aqueducts",
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17329,6 +17930,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17366,6 +17968,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17383,6 +17986,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17411,6 +18015,7 @@
   "relatedZones": [
    "North Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17429,6 +18034,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17454,6 +18060,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17487,6 +18094,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17515,6 +18123,7 @@
    "Southern Desert of Ro"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17533,6 +18142,7 @@
    "Kithicor Forest"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17553,6 +18163,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17576,6 +18187,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17596,6 +18208,7 @@
   "relatedZones": [
    "Nagafen's Lair"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17628,6 +18241,7 @@
    "All Classes Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17651,6 +18265,7 @@
    "West Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17668,6 +18283,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17699,6 +18315,7 @@
    "Temple of Droga",
    "Warsliks Woods"
   ],
+  "era": "Chardok Revamp",
   "repeatable": false
  },
  {
@@ -17791,6 +18408,7 @@
    "Thurgadin",
    "Tower of Frozen Shadow"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -17819,6 +18437,7 @@
   "relatedZones": [
    "Crypt of Dalnir"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -17864,6 +18483,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -17909,6 +18529,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -17929,6 +18550,7 @@
    "Repeatable Turn-in Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -17948,6 +18570,7 @@
   "relatedZones": [
    "West Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -17970,6 +18593,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -17995,6 +18619,7 @@
   "relatedZones": [
    "Cazic Thule"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18017,6 +18642,7 @@
    "Permafrost",
    "Solusek's Eye"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -18056,6 +18682,7 @@
    "Rathe Mountains",
    "Upper Guk"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18080,6 +18707,7 @@
    "Stonebrunt Mountains"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18147,6 +18775,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -18167,6 +18796,7 @@
   "relatedZones": [
    "Highpass Hold"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -18186,6 +18816,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -18228,6 +18859,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -18297,6 +18929,7 @@
    "Solusek's Eye",
    "West Commonlands"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -18373,6 +19006,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -18409,6 +19043,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -18432,6 +19067,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -18455,6 +19091,7 @@
    "Southern Desert of Ro",
    "Upper Guk"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -18479,6 +19116,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18516,6 +19154,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18549,6 +19188,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18575,6 +19215,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18595,6 +19236,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18612,6 +19254,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -18634,6 +19277,7 @@
    "Lake of Ill Omen"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -18656,6 +19300,7 @@
    "Ocean of Tears",
    "Timorous Deep"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -18675,6 +19320,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -18730,6 +19376,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18780,6 +19427,7 @@
   "relatedZones": [
    "East Commonlands"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -18803,6 +19451,7 @@
    "Field of Bone"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -18823,6 +19472,7 @@
   "relatedZones": [
    "High Keep"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18848,6 +19498,7 @@
   "relatedZones": [
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18877,6 +19528,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18900,6 +19552,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -18949,6 +19602,7 @@
   "relatedZones": [
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -18962,6 +19616,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -18986,6 +19641,7 @@
   "relatedZones": [
    "Dragon Necropolis"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19023,6 +19679,7 @@
    "Timorous Deep",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -19052,6 +19709,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -19072,6 +19730,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19103,6 +19762,7 @@
   "relatedZones": [
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -19213,6 +19873,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -19273,6 +19934,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19304,6 +19966,7 @@
    "Unrest",
    "Upper Guk"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -19323,6 +19986,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19371,6 +20035,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19399,6 +20064,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19417,6 +20083,7 @@
   "relatedZones": [
    "Erudin"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19447,6 +20114,7 @@
   "relatedZones": [
    "West Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19487,6 +20155,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -19506,6 +20175,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19553,6 +20223,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19629,6 +20300,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -19701,6 +20373,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19722,6 +20395,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19743,6 +20417,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19764,6 +20439,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19788,6 +20464,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19808,6 +20485,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -19837,6 +20515,7 @@
    "East Freeport",
    "Ocean of Tears"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19866,6 +20545,7 @@
   "relatedZones": [
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -19888,6 +20568,7 @@
   "relatedZones": [
    "Field of Bone"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -19914,6 +20595,7 @@
    "Everfrost Peaks",
    "Steamfont Mountains"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -19936,6 +20618,7 @@
   "relatedZones": [
    "Upper Guk"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -19957,6 +20640,7 @@
   "relatedZones": [
    "Lower Guk"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -19980,6 +20664,7 @@
    "Erudin Palace"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -19999,6 +20684,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -20016,6 +20702,7 @@
    "Kael Drakkel"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20043,6 +20730,7 @@
   "relatedZones": [
    "Lavastorm Mountains"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -20072,6 +20760,7 @@
    "Eastern Plains of Karana"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20116,6 +20805,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -20158,6 +20848,7 @@
   "relatedZones": [
    "Butcherblock Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20179,6 +20870,7 @@
    "Kerra Island",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20222,6 +20914,7 @@
    "Cobalt Scar",
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20271,6 +20964,7 @@
   "relatedZones": [
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20289,6 +20983,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -20318,6 +21013,7 @@
    "North Qeynos",
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20340,6 +21036,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20366,6 +21063,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20386,6 +21084,7 @@
   "relatedZones": [
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20416,6 +21115,7 @@
    "Northern Karana",
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -20436,6 +21136,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -20464,6 +21165,7 @@
    "Thurgadin"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20487,6 +21189,7 @@
   "relatedZones": [
    "Swamp of No Hope"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -20512,6 +21215,7 @@
   "relatedZones": [
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20530,6 +21234,7 @@
    "Skyshrine"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20555,6 +21260,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20610,6 +21316,7 @@
   "relatedZones": [
    "Tower of Frozen Shadow"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20629,6 +21336,7 @@
   "relatedZones": [
    "Stonebrunt Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20664,6 +21372,7 @@
    "Howling Stones",
    "Old Sebilis"
   ],
+  "era": "Chardok Revamp",
   "repeatable": false
  },
  {
@@ -20687,6 +21396,7 @@
    "Solusek's Eye",
    "Temple of Solusek Ro"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -20745,6 +21455,7 @@
   "relatedZones": [
    "Highpass Hold"
   ],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -20765,6 +21476,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20784,6 +21496,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -20808,6 +21521,7 @@
    "Kael Drakkel",
    "Wakening Lands"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20831,6 +21545,7 @@
   "relatedZones": [
    "Dragon Necropolis"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20852,6 +21567,7 @@
   "relatedZones": [
    "Eastern Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -20865,6 +21581,7 @@
   "rewards": [],
   "categories": [],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20887,6 +21604,7 @@
    "Qeynos Hills",
    "Surefall Glade"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20918,6 +21636,7 @@
    "Qeynos Aqueducts",
    "Unrest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -20945,6 +21664,7 @@
    "Greater Faydark",
    "Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20968,6 +21688,7 @@
    "North Qeynos",
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -20987,6 +21708,7 @@
   "relatedZones": [
    "Cabilis"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21012,6 +21734,7 @@
   "relatedZones": [
    "Oggok"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21042,6 +21765,7 @@
    "Lesser Faydark",
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21061,6 +21785,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21081,6 +21806,7 @@
   "relatedZones": [
    "Crushbone"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21099,6 +21825,7 @@
   "relatedZones": [
    "Southern Desert of Ro"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21125,6 +21852,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -21170,6 +21898,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21192,6 +21921,7 @@
    "Temple of Veeshan"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21216,6 +21946,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21244,6 +21975,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21266,6 +21998,7 @@
    "Temple of Veeshan"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21288,6 +22021,7 @@
    "Temple of Veeshan"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21333,6 +22067,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21356,6 +22091,7 @@
    "Freeport",
    "The Feerrott"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21376,6 +22112,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -21410,6 +22147,7 @@
    "South Ro",
    "Surefall Glade"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21427,6 +22165,7 @@
   "relatedZones": [
    "Northern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21448,6 +22187,7 @@
   "relatedZones": [
    "Rivervale"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21471,6 +22211,7 @@
    "Paladin Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21491,6 +22232,7 @@
    "Repeatable Turn-in Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": true
  },
  {
@@ -21516,6 +22258,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21541,6 +22284,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21566,6 +22310,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21589,6 +22334,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21614,6 +22360,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21639,6 +22386,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21664,6 +22412,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21689,6 +22438,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21714,6 +22464,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21739,6 +22490,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21764,6 +22516,7 @@
   "relatedZones": [
    "Southern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21787,6 +22540,7 @@
    "Qeynos",
    "Steamfont Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21802,6 +22556,7 @@
    "Northern Desert of Ro"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21822,6 +22577,7 @@
    "Befallen",
    "Najena"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21842,6 +22598,7 @@
   "relatedZones": [
    "Misty Thicket"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21864,6 +22621,7 @@
   "relatedZones": [
    "Eastern Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21886,6 +22644,7 @@
   "relatedZones": [
    "Eastern Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21903,6 +22662,7 @@
   "relatedZones": [
    "South Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -21921,6 +22681,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21941,6 +22702,7 @@
   "relatedZones": [
    "Qeynos Hills"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21964,6 +22726,7 @@
   "relatedZones": [
    "Innothule Swamp"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22030,6 +22793,7 @@
    "Permafrost",
    "Rathe Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22059,6 +22823,7 @@
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22080,6 +22845,7 @@
    "Crushbone",
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22106,6 +22872,7 @@
   "relatedZones": [
    "Kedge Keep"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22149,6 +22916,7 @@
    "Plane of Sky"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22174,6 +22942,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22199,6 +22968,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -22228,6 +22998,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22249,6 +23020,7 @@
    "Great Divide",
    "Tower of Frozen Shadow"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22269,6 +23041,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22294,6 +23067,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22322,6 +23096,7 @@
   "relatedZones": [
    "Erud's Crossing"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22373,6 +23148,7 @@
    "Plane of Mischief"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22405,6 +23181,7 @@
    "Blackburrow",
    "Splitpaw Lair"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22449,6 +23226,7 @@
   "relatedZones": [
    "Ak'Anon"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22479,6 +23257,7 @@
   "relatedZones": [
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22502,6 +23281,7 @@
    "Permafrost",
    "Thurgadin"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22532,6 +23312,7 @@
    "Eastern Wastes",
    "Qeynos Hills"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22549,6 +23330,7 @@
    "Firiona Vie"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -22577,6 +23359,7 @@
   "relatedZones": [
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22598,6 +23381,7 @@
    "Chardok",
    "Karnor's Castle"
   ],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -22640,6 +23424,7 @@
    "Great Divide",
    "Iceclad Ocean"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22663,6 +23448,7 @@
    "Paineel"
   ],
   "relatedZones": [],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -22683,6 +23469,7 @@
   "relatedZones": [
    "Skyshrine"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22703,6 +23490,7 @@
   "relatedZones": [
    "High Keep"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22724,6 +23512,7 @@
    "Kerra Island",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22747,6 +23536,7 @@
   "relatedZones": [
    "Iceclad Ocean"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -22790,6 +23580,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22811,6 +23602,7 @@
    "Butcherblock Mountains",
    "Ocean of Tears"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22845,6 +23637,7 @@
    "Najena",
    "Unrest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22868,6 +23661,7 @@
    "The Overthere"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -22898,6 +23692,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -22924,6 +23719,7 @@
   "relatedZones": [
    "Lesser Faydark"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22944,6 +23740,7 @@
   "relatedZones": [
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22965,6 +23762,7 @@
    "East Commonlands",
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -22991,6 +23789,7 @@
    "East Cabilis"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -23009,6 +23808,7 @@
    "Magician Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23028,6 +23828,7 @@
   "relatedZones": [
    "Qeynos Aqueducts"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23044,6 +23845,7 @@
    "Northern Felwithe"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -23069,6 +23871,7 @@
   "relatedZones": [
    "Surefall Glade"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23123,6 +23926,7 @@
    "Swamp of No Hope",
    "Warsliks Woods"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -23142,6 +23946,7 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23162,6 +23967,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23187,6 +23993,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -23330,6 +24137,7 @@
    "The Warrens",
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -23374,6 +24182,7 @@
    "Splitpaw Lair",
    "The Estate of Unrest"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -23400,6 +24209,7 @@
    "Lesser Faydark",
    "Southern Desert of Ro"
   ],
+  "era": "Paineel",
   "repeatable": false
  },
  {
@@ -23428,6 +24238,7 @@
    "Najena",
    "Rathe Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23452,6 +24263,7 @@
   "relatedZones": [
    "Eastern Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -23477,6 +24289,7 @@
    "Crystal Caverns",
    "Great Divide"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -23496,6 +24309,7 @@
   "relatedZones": [
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -23521,6 +24335,7 @@
    "Najena",
    "The Estate of Unrest"
   ],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -23540,6 +24355,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23565,6 +24381,7 @@
   "relatedZones": [
    "Clan Runnyeye"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23582,6 +24399,7 @@
    "West Freeport"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23603,6 +24421,7 @@
    "Emerald Jungle",
    "The Overthere"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -23620,6 +24439,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23650,6 +24470,7 @@
    "South Karana",
    "Splitpaw Lair"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23672,6 +24493,7 @@
   "relatedZones": [
    "Message Intercept"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23712,6 +24534,7 @@
    "Misty Thicket",
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23742,6 +24565,7 @@
    "Iceclad Ocean",
    "Thurgadin"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23789,6 +24613,7 @@
    "The Hole",
    "The Wakening Land"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -23808,6 +24633,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23842,6 +24668,7 @@
    "Neriak",
    "Solusek's Eye"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23861,6 +24688,7 @@
   "relatedZones": [
    "Highpass Hold"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23876,6 +24704,7 @@
    "Guides"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23902,6 +24731,7 @@
   "relatedZones": [
    "Felwithe"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23933,6 +24763,7 @@
   "relatedZones": [
    "Befallen"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23953,6 +24784,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -23982,6 +24814,7 @@
   "relatedZones": [
    "Beholder's Maze"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -23999,6 +24832,7 @@
    "Ak'Anon"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24020,6 +24854,7 @@
   "relatedZones": [
    "Icewell Keep"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -24064,6 +24899,7 @@
   "relatedZones": [
    "Northern Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24094,6 +24930,7 @@
    "Everfrost Peaks",
    "Upper Guk"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -24113,6 +24950,7 @@
   "relatedZones": [
    "Stonebrunt Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24134,6 +24972,7 @@
   "relatedZones": [
    "Stonebrunt Mountains"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24154,6 +24993,7 @@
   "relatedZones": [
    "Ocean of Tears"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24174,6 +25014,7 @@
   "relatedZones": [
    "The Fiery Avenger"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24194,6 +25035,7 @@
    "North Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24217,6 +25059,7 @@
   "relatedZones": [
    "Ocean of Tears"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24237,6 +25080,7 @@
   "relatedZones": [
    "Iceclad Ocean"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -24256,6 +25100,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -24286,6 +25131,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -24305,6 +25151,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -24330,6 +25177,7 @@
    "Shaman Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24349,6 +25197,7 @@
   "relatedZones": [
    "East Commonlands"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24371,6 +25220,7 @@
   "relatedZones": [
    "Nektulos Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24390,6 +25240,7 @@
   "relatedZones": [
    "Halas"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24415,6 +25266,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24488,6 +25340,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -24543,6 +25396,7 @@
    "Kaladim",
    "Steamfont Mountains"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24575,6 +25429,7 @@
   "relatedZones": [
    "Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24593,6 +25448,7 @@
    "Qeynos",
    "South Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24627,6 +25483,7 @@
    "Ocean of Tears",
    "South Kaladim"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24660,6 +25517,7 @@
   "relatedZones": [
    "Greater Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24733,6 +25591,7 @@
    "Greater Faydark",
    "Lesser Faydark"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24770,6 +25629,7 @@
    "The Feerrott",
    "The Warrens"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24803,6 +25663,7 @@
   "relatedZones": [
    "Eastern Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -24820,6 +25681,7 @@
   "relatedZones": [
    "Western Plains of Karana"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24837,6 +25699,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24854,6 +25717,7 @@
   "relatedZones": [
    "North Qeynos"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24901,6 +25765,7 @@
    "Innothule Swamp",
    "Oggok"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -24918,6 +25783,7 @@
   "relatedZones": [
    "Eastern Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -24953,6 +25819,7 @@
    "Erudin",
    "Qeynos"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -24972,6 +25839,7 @@
    "Velious Era"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25042,6 +25910,7 @@
    "Wizard Equipment"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25075,6 +25944,7 @@
   "relatedZones": [
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25092,6 +25962,7 @@
    "Surefall Glade"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25112,6 +25983,7 @@
   "relatedZones": [
    "Crypt of Dalnir"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -25132,6 +26004,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25166,6 +26039,7 @@
    "Iceclad Ocean",
    "Tower of Frozen Shadow"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25186,6 +26060,7 @@
    "Great Divide",
    "Thurgadin"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25203,6 +26078,7 @@
    "Rivervale"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -25316,6 +26192,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -25343,6 +26220,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25394,6 +26272,7 @@
    "Warrior Quests"
   ],
   "relatedZones": [],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -25444,6 +26323,7 @@
   ],
   "categories": [],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -25492,6 +26372,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25520,6 +26401,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25546,6 +26428,7 @@
   "relatedZones": [
    "Lake of Ill Omen"
   ],
+  "era": "Kunark",
   "repeatable": false
  },
  {
@@ -25571,6 +26454,7 @@
   "relatedZones": [
    "Commonlands"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25594,6 +26478,7 @@
    "Mistmoore Castle",
    "Rathe Mountains"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -25612,6 +26497,7 @@
    "South Qeynos"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25633,6 +26519,7 @@
   "relatedZones": [
    "Western Wastes"
   ],
+  "era": "Velious",
   "repeatable": true
  },
  {
@@ -25659,6 +26546,7 @@
   "relatedZones": [
    "North Karana"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25683,6 +26571,7 @@
    "West Commonlands",
    "Western Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25703,6 +26592,7 @@
   "relatedZones": [
    "Permafrost"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25722,6 +26612,7 @@
   "relatedZones": [
    "Northern Karana"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25743,6 +26634,7 @@
    "Greater Faydark"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25767,6 +26659,7 @@
    "Temple of Veeshan"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25808,6 +26701,7 @@
    "Temple of Veeshan"
   ],
   "relatedZones": [],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25828,6 +26722,7 @@
   "relatedZones": [
    "Kerra Island"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25888,6 +26783,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "Epics",
   "repeatable": false
  },
  {
@@ -25907,6 +26803,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -25954,6 +26851,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -26030,6 +26928,7 @@
   "relatedZones": [
    "Temple of Veeshan"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -26051,6 +26950,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -26072,6 +26972,7 @@
    "Wizard Quests"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -26091,6 +26992,7 @@
   "relatedZones": [
    "Kael Drakkel"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -26121,6 +27023,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -26141,6 +27044,7 @@
    "Qeynos Hills"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -26159,6 +27063,7 @@
    "Kithicor Forest"
   ],
   "relatedZones": [],
+  "era": "",
   "repeatable": false
  },
  {
@@ -26199,6 +27104,7 @@
   "relatedZones": [
    "Everfrost Peaks"
   ],
+  "era": "",
   "repeatable": true
  },
  {
@@ -26225,6 +27131,7 @@
    "Lake Rathetear",
    "Permafrost"
   ],
+  "era": "Temple",
   "repeatable": false
  },
  {
@@ -26247,6 +27154,7 @@
    "East Freeport"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -26281,6 +27189,7 @@
   "relatedZones": [
    "Nektulos Forest"
   ],
+  "era": "",
   "repeatable": false
  },
  {
@@ -26304,6 +27213,7 @@
    "Neriak Commons"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -26324,6 +27234,7 @@
   "relatedZones": [
    "Skyshrine"
   ],
+  "era": "Velious",
   "repeatable": false
  },
  {
@@ -26348,6 +27259,7 @@
   "relatedZones": [
    "Oasis of Marr"
   ],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -26419,6 +27331,7 @@
    "Paladin Quests"
   ],
   "relatedZones": [],
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -26449,6 +27362,7 @@
   "relatedZones": [
    "Erud's Crossing"
   ],
+  "era": "",
   "repeatable": false
  }
 ]

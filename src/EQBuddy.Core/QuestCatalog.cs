@@ -31,6 +31,9 @@ public sealed class QuestEntry
     /// <summary>Wiki-confirmed repeatable (Category:Repeatable Turn-in Quests). A
     /// completed repeatable stays live and shows how many turn-ins you can afford.</summary>
     public bool Repeatable { get; set; }
+    /// <summary>The wiki's era banner ("Classic", "Kunark", "Velious", sub-eras like
+    /// "Sky"/"Epics"), or "" when the page carries none.</summary>
+    public string Era { get; set; } = "";
 
     /// <summary>Does the quest touch this zone? Names drift between the log, the wiki,
     /// and the atlas ("The Greater Faydark" / "Greater Faydark"), so match on the
@@ -56,17 +59,42 @@ public sealed class QuestEntry
     }
 }
 
+/// <summary>The era ladder for "weed out the out-of-era quests" (twidget76, discussion
+/// #62): picking an era shows quests from that era and everything before it. The
+/// ordering follows the game's content-release sequence; sub-era placement is our best
+/// reading of it and cheap to correct if a player knows better. Unmarked quests (a
+/// fifth of the catalog) always pass — a filter should hide only what it's sure about.</summary>
+public static class QuestEraLadder
+{
+    public static readonly string[] Eras =
+        ["Classic", "Sky", "Paineel", "Temple", "Epics", "Kunark",
+         "Chardok Revamp", "Velious", "Luclin"];
+
+    /// <summary>Is a quest of <paramref name="questEra"/> available when the world is
+    /// at <paramref name="throughEra"/>? Unknown eras on either side fail open.</summary>
+    public static bool Allowed(string questEra, string throughEra)
+    {
+        if (throughEra.Length == 0 || questEra.Length == 0) return true;
+        var q = Array.FindIndex(Eras, e => e.Equals(questEra, StringComparison.OrdinalIgnoreCase));
+        var t = Array.FindIndex(Eras, e => e.Equals(throughEra, StringComparison.OrdinalIgnoreCase));
+        return q < 0 || t < 0 || q <= t;
+    }
+}
+
 /// <summary>Class-restriction matching over the wiki's free-text Classes field
 /// ("ALL except NEC WIZ MAG ENC", "Cleric", "Bard, Cleric, Druid…").</summary>
 public static class QuestClassFilter
 {
+    /// <summary>Berserker is Legends' own addition to the classic fourteen — it was
+    /// missing from the first cut (twidget76, discussion #61).</summary>
     public static readonly string[] Classes =
-        ["Bard", "Cleric", "Druid", "Enchanter", "Magician", "Monk", "Necromancer",
-         "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman", "Warrior", "Wizard"];
+        ["Bard", "Berserker", "Cleric", "Druid", "Enchanter", "Magician", "Monk",
+         "Necromancer", "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman",
+         "Warrior", "Wizard"];
 
     private static readonly Dictionary<string, string[]> Abbrevs = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Bard"] = ["BRD"], ["Cleric"] = ["CLR"], ["Druid"] = ["DRU"],
+        ["Bard"] = ["BRD"], ["Berserker"] = ["BER", "BZK"], ["Cleric"] = ["CLR"], ["Druid"] = ["DRU"],
         ["Enchanter"] = ["ENC"], ["Magician"] = ["MAG"], ["Monk"] = ["MNK"],
         ["Necromancer"] = ["NEC"], ["Paladin"] = ["PAL"], ["Ranger"] = ["RNG"],
         ["Rogue"] = ["ROG"], ["Shadow Knight"] = ["SHD", "SK"], ["Shaman"] = ["SHM"],

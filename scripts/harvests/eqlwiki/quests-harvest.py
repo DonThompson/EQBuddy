@@ -185,6 +185,14 @@ def parse_quest(title, wikitext, quest_item_set):
     q["relatedZones"] = sorted({z.strip() for z in
                                 re.findall(LINK, related.group(1))} if related else set())
 
+    # Era banner template ({{Velious Era}}, {{Classic Era}}, …) → normalized era name.
+    # Case and naming drift on the wiki: "kunark Era", "EpicQuests Era", "Chardok Era".
+    era = re.search(r"\{\{\s*([A-Za-z' ]+?)\s+Era\s*\}\}", wikitext, re.IGNORECASE)
+    raw_era = era.group(1).strip().title() if era else ""
+    q["era"] = {
+        "Epicquests": "Epics", "Chardok": "Chardok Revamp", "Unknown": "",
+    }.get(raw_era, raw_era)
+
     # Repeatable: the category is the reliable marker; a "Repeatable:" infobox row
     # exists on a couple of pages as backup.
     q["repeatable"] = ("Repeatable Turn-in Quests" in q["categories"]

@@ -221,6 +221,36 @@ public class QuestTrackerTests : IDisposable
     }
 
     [Fact]
+    public void BerserkerIsAKnownClass()
+    {
+        // twidget76's #61: the class dropdown builds from this array.
+        Assert.Contains("Berserker", QuestClassFilter.Classes);
+        Assert.True(QuestClassFilter.Matches("Berserker", "Berserker"));
+        Assert.True(QuestClassFilter.Matches("ALL except BER", "Warrior"));
+        Assert.False(QuestClassFilter.Matches("ALL except BER", "Berserker"));
+    }
+
+    [Theory]
+    [InlineData("Classic", "Kunark", true)]     // older content stays available
+    [InlineData("Kunark", "Kunark", true)]
+    [InlineData("Velious", "Kunark", false)]    // the future is hidden
+    [InlineData("Luclin", "Velious", false)]
+    [InlineData("", "Kunark", true)]            // unmarked quests fail open
+    [InlineData("Sky", "", true)]               // no ceiling = everything
+    [InlineData("Weirdland", "Kunark", true)]   // unknown era fails open
+    public void EraLadderHidesOnlyTheFuture(string questEra, string through, bool expected)
+        => Assert.Equal(expected, QuestEraLadder.Allowed(questEra, through));
+
+    [Theory]
+    [InlineData(1.0, 1, 1.1)]
+    [InlineData(1.0, -1, 0.9)]
+    [InlineData(2.5, 1, 2.5)]     // clamps high
+    [InlineData(0.6, -1, 0.6)]    // clamps low
+    [InlineData(1.0, 120, 1.1)]   // raw wheel delta = one step, not twelve
+    public void ZoomStepsTenPercentClamped(double current, int delta, double expected)
+        => Assert.Equal(expected, EQBuddy.UI.Shared.WindowZoomMath.Step(current, delta), 3);
+
+    [Fact]
     public void QuestItemMarkerCoversTurnInsAndCategory()
     {
         var cat = Catalog();

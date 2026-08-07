@@ -19,6 +19,13 @@ public sealed class AppSettings
     public double ChipScale { get; set; } = 1.0;
     public double QuestsLeft { get; set; } = double.NaN;
     public double QuestsTop { get; set; } = double.NaN;
+    /// <summary>Quest Tracker era ceiling ("" = any): quests after this era are hidden
+    /// (discussion #62). Persisted app-wide — the world's era isn't per character.</summary>
+    public string QuestEraFilter { get; set; } = "";
+    /// <summary>Per-window Ctrl+wheel zoom factors, keyed by window kind ("drops",
+    /// "breakout:Damage", …) — the universal text-scaling answer (discussion #59;
+    /// David: "a more permanent scaling solution").</summary>
+    public Dictionary<string, double> WindowZooms { get; set; } = new();
     /// <summary>Opacity of the widget's background panel only — text stays fully opaque.</summary>
     public double BackgroundOpacity { get; set; } = 0.95;
     /// <summary>Empty finished-session logs automatically. Off = logs grow forever

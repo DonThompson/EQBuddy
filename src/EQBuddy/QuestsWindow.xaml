@@ -52,15 +52,19 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" TextChanged="OnFilterChanged"
                          ToolTip="Filter quests by name, zone, giver, or item"/>
-                <ComboBox x:Name="ClassCombo" Grid.Column="1" Width="92" FontSize="11"
+                <ComboBox x:Name="EraCombo" Grid.Column="1" Width="104" FontSize="11"
+                          Margin="6,0,0,0" SelectionChanged="OnEraChanged"
+                          ToolTip="Hide quests from later eras than the world has (unmarked quests always show)"/>
+                <ComboBox x:Name="ClassCombo" Grid.Column="2" Width="92" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnClassChanged"
                           ToolTip="Only quests this class can do (the wiki's restriction text decides)"/>
                 <!-- mine = your items + 📌 pins · zone = doable where you're standing ·
                      all = the whole catalog -->
-                <Border Grid.Column="2" BorderBrush="{DynamicResource BorderBrush}"
+                <Border Grid.Column="3" BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1" CornerRadius="9" Margin="6,0,0,0"
                         VerticalAlignment="Center" Padding="1">
                     <StackPanel Orientation="Horizontal">

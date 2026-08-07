@@ -85,6 +85,7 @@ public partial class BreakoutWindow : Window
         }
 
         Closed += (_, _) => SavePosition();
+        WindowZoom.Attach(this, $"breakout:{kind}", settings);
         if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
         if (_kind == BreakoutKind.Loot)
         {
