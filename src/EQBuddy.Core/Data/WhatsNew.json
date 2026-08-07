@@ -1,5 +1,17 @@
 [
  {
+  "version": "1.38.0",
+  "date": "2026-08-07",
+  "highlights": [
+   "ZOOM ANYTHING: Ctrl + mouse wheel over any EQBuddy window scales it — breakouts, Quest Tracker, Drops, Spawns, History, Options, item popups — up to 250%, remembered per window (garr71's 4K report). The same gesture on the main widget drives the widget-size setting, and on spawn/mez chips drives the chips slider. One habit for the whole app.",
+   "READABLE EVERYWHERE: every text button (Copy CSV, + Add watch rule, Next ▶ …) got real high-contrast styling — fill, border, and ink that adapt to your theme. On light themes like Solarized they were nearly invisible ghosts; not anymore.",
+   "NEW: Drops by creature… (right-click menu) — every creature you've looted this session with observed drop rates (kill counts always shown), filterable, and exportable as text or CSV. Built for LeBigNasty's plan to feed corrected drop tables back to eqlwiki for revamped zones — if you camp PoSky/Hate/Fear, your observations can make everyone's Target-drops smarter.",
+   "Quest Tracker: an ERA dropdown hides quests from beyond the world's current era (≤ Kunark hides Velious; unmarked quests always show) — twidget76's idea. Berserker joined the class filter (also twidget76 — Legends' fifteenth class was missing). ",
+   "Log cleanup can now ARCHIVE first: Options → \"Keep a timestamped copy before emptying\" saves each finished session as eqlog_name_server_YYYYMMDDHHMMSS.txt in Logs\\archive — joeymavity's ask, for people who want raw history kept.",
+   "Also merged today from contributors: Don Thompson's two Avalonia/Linux parity PRs (spawn windows, What's-new, options fixes) and ahaselden's rune absorption tracking (rune gains count as self-healing; blocked-hit streaks show in the Healing card)."
+  ]
+ },
+ {
   "version": "1.37.0",
   "date": "2026-08-07",
   "highlights": [
