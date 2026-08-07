@@ -32,7 +32,7 @@ public partial class MainWindow : Window
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
 
-    private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "money", "xp", "deaths"];
+    private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "motes", "money", "xp", "deaths"];
 
     // StatSort moved to BreakdownRows.cs (internal) when the breakout windows grew
     // their own sort bars — one enum, every surface.
@@ -48,6 +48,13 @@ public partial class MainWindow : Window
         AttachSpellStore();
         _mezTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "mez-durations.json"));
         _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
+        // Quest ledger rides the same replay: the catalog decides what's worth keeping,
+        // the store's time high-water mark keeps the replay from double-counting.
+        QuestCatalog = QuestCatalog.LoadEmbedded();
+        ZoneGraph = ZoneGraph.LoadEmbedded();
+        QuestLedger = new QuestLedgerStore(AppPaths.File("quest-ledger.json"))
+        { TrackFilter = QuestCatalog.IsTurnInItem };
+        _stats.QuestStore = QuestLedger;
         _watcher = new LogWatcher(_stats);
         _watcher.Mez = _mezTracker;
         // Spawn timers ride the watcher's event stream — wired before the first Select so
@@ -137,11 +144,22 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
-                         TrackedSection, MoneySection, ProgressSection, FactionSection, MiscSection })
+                         MotesSection, TrackedSection, MoneySection, ProgressSection, FactionSection,
+                         MiscSection })
                 ex.IsExpanded = true;
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
             StartCrowdControlCapture();
+
+        // Screenshot/debug hook, same family as EQBUDDY_OPTIONS: open the Quest Tracker
+        // after the startup replay has fed the ledger. "1" opens the default view;
+        // "zone"/"all" open that mode directly.
+        if (Environment.GetEnvironmentVariable("EQBUDDY_QUESTS") is { Length: > 0 } questsMode)
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() =>
+            {
+                ShowQuestsWindow();
+                if (questsMode is "zone" or "all") _questsWindow?.SetMode(questsMode);
+            }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
@@ -244,7 +262,8 @@ public partial class MainWindow : Window
     private Dictionary<string, UIElement> SectionMap() => new()
     {
         ["combat"] = CombatSection, ["healing"] = HealingSection, ["kills"] = KillsSection,
-        ["loot"] = LootSection, ["tracked"] = TrackedSection, ["money"] = MoneySection,
+        ["loot"] = LootSection, ["motes"] = MotesSection, ["tracked"] = TrackedSection,
+        ["money"] = MoneySection,
         ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
     };
 
@@ -265,6 +284,38 @@ public partial class MainWindow : Window
                 ((FrameworkElement)el).Visibility = _settings.HiddenSections.Contains(key)
                     ? Visibility.Collapsed : Visibility.Visible;
         }
+    }
+
+    internal QuestCatalog QuestCatalog { get; private set; } = new();
+    internal ZoneGraph ZoneGraph { get; private set; } = new();
+    internal QuestLedgerStore? QuestLedger { get; private set; }
+    internal string QuestCharacterKey => _stats.LedgerCharacterKey;
+
+    /// <summary>The zone the log last put us in — the Quest Tracker measures distances
+    /// from here.</summary>
+    internal string CurrentZoneName { get; private set; } = "";
+
+    /// <summary>A turn-in for at least one quest this character hasn't dismissed — the
+    /// signal behind the green tint and the 🗺 badge. Narrowed twice from "in the Quest
+    /// Items category" (David, 2026-08-07): only parsed turn-ins, and hiding every quest
+    /// that wants an item un-greens it.</summary>
+    internal bool IsActiveQuestItem(string name)
+    {
+        var wanting = QuestCatalog.QuestsWanting(name);
+        if (wanting.Count == 0) return false;
+        var hidden = QuestLedger?.HiddenFor(QuestCharacterKey);
+        return hidden is not { Count: > 0 } || wanting.Any(q => !hidden.Contains(q.Name));
+    }
+
+    internal Brush? QuestItemBrush(string name) =>
+        IsActiveQuestItem(name) ? (Brush)FindResource("GoodBrush") : null;
+
+    /// <summary>Prefix an item tooltip with the quest marker so the green explains itself.</summary>
+    internal string? QuestAwareTooltip(string name, string? baseTip)
+    {
+        if (!IsActiveQuestItem(name)) return baseTip;
+        const string marker = "🗺 Part of a quest — click the 🗺 to see which.";
+        return baseTip is { Length: > 0 } ? marker + "\n" + baseTip : marker;
     }
 
     public double UiScale => _settings.UiScale;
@@ -527,7 +578,9 @@ public partial class MainWindow : Window
         }
         TargetBlock.Visibility = Visibility.Visible;
         TargetHeader.Text = header;
-        FillList(TargetDropsList, rows, onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
+        FillList(TargetDropsList, rows, onNameClick: ShowItemInfo,
+            tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), nameBrush: QuestItemBrush,
+            questBadges: true);
     }
 
     /// <summary>Full tooltip text for an item, FETCHING from the wiki when the cache is
@@ -630,6 +683,23 @@ public partial class MainWindow : Window
         SetTrackSpawns(TrackSpawnsItem.IsChecked);
 
     private void OnSpawnsWindow(object sender, RoutedEventArgs e) => ShowSpawnsWindow();
+
+    private QuestsWindow? _questsWindow;
+
+    private void OnQuestsWindow(object sender, RoutedEventArgs e) => ShowQuestsWindow();
+
+    /// <summary>Open (or front) the Quest Tracker; with an item, jump straight to that
+    /// item's quests — the 🗺 badge path from the Loot views.</summary>
+    internal void ShowQuestsWindow(string? filterItem = null)
+    {
+        if (_questsWindow is not { IsLoaded: true })
+        {
+            _questsWindow = new QuestsWindow(this);
+            _questsWindow.Show();
+        }
+        if (filterItem is { Length: > 0 }) _questsWindow.FilterToItem(filterItem);
+        _questsWindow.Activate();
+    }
 
     /// <summary>Single switch for the spawn-timer feature: the setting, the menu check,
     /// and the Options checkbox stay in lockstep whichever of them the user touched.
@@ -757,6 +827,8 @@ public partial class MainWindow : Window
 
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
         // off the shared tick so a hidden window can't silence a camp.
+        if (_questsWindow is { IsLoaded: true, IsVisible: true } qw) qw.MaybeRefresh();
+
         if (_settings.TrackSpawns)
         {
             // Sound only — no banner. The chip flipping to DUE is the visual, and a
@@ -863,6 +935,7 @@ public partial class MainWindow : Window
         UpdateBreakouts(s);
 
         ZoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "—";
+        CurrentZoneName = s.CurrentZone;
         var active = TimeSpan.FromSeconds(s.ActiveSeconds);
         SessionText.Text = s.SessionStart is { } start
             ? $"session {(int)s.Elapsed.TotalHours}:{s.Elapsed.Minutes:D2} · active {(int)active.TotalMinutes}m (since {start:h:mm tt})"
@@ -875,6 +948,8 @@ public partial class MainWindow : Window
         LootHeader.Text = s.CraftedTotal > 0
             ? $"{s.LootTotal} items (+{s.CraftedTotal} made)"
             : $"{s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")}";
+        var motes = Motes.Summarize(s.Loot, s.Elapsed);
+        MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         MoneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         ProgressHeader.Text = $"{s.XpPercent:0.0}% xp"
             + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "")
@@ -1007,10 +1082,21 @@ public partial class MainWindow : Window
                 ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
                 : s.Loot;
             FillList(LootList, loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo,
-                tooltip: ItemHoverStats);
+                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), nameBrush: QuestItemBrush,
+                questBadges: true);
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
             RenderTargetDrops(s);
+        }
+
+        if (MotesSection.IsExpanded)
+        {
+            MotesSummaryText.Text = motes.Total > 0
+                ? $"{motes.PerHour:0.#} motes/hr this session"
+                : "No motes yet this session — every Mote of … Potential you loot " +
+                  "(or store as currency) lands here.";
+            FillList(MotesList, motes.Tiers.Select(t => (t.Item, $"×{t.Count}")),
+                onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
         }
 
         if (MoneySection.IsExpanded)
@@ -1511,6 +1597,7 @@ public partial class MainWindow : Window
         yield return ("pet", StarPet);
         yield return ("kills", StarKills);
         yield return ("loot", StarLoot);
+        yield return ("motes", StarMotes);
         yield return ("money", StarMoney);
         yield return ("xp", StarXp);
         yield return ("deaths", StarDeaths);
@@ -1603,6 +1690,8 @@ public partial class MainWindow : Window
                 "hps" => $"✚ {s.Hps:0.#} hps",
                 "pet" => $"🐾 {s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps",
                 "loot" => $"\U0001F392 {s.LootTotal}",
+                "motes" => Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
+                    ? $"\U0001F52E {mo.Total} · {mo.PerHour:0.#}/hr" : "\U0001F52E 0",
                 "money" => $"\U0001F4B0 {StatsSnapshot.FormatCoin(s.Copper)}",
                 "xp" => $"\U0001F4C8 {s.XpPercent:0.0}%" +
                         (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : ""),
@@ -1811,9 +1900,16 @@ public partial class MainWindow : Window
         RefreshUi();
     }
 
+    private void OnLootQuestMap(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        ShowQuestsWindow();
+    }
+
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
         Func<string, Brush>? valueBrush = null, Action<string>? onNameClick = null,
-        Func<string, string?>? tooltip = null)
+        Func<string, string?>? tooltip = null, Func<string, Brush?>? nameBrush = null,
+        bool questBadges = false)
     {
         var items = rows.ToList();
         list.Items.Clear();
@@ -1822,10 +1918,12 @@ public partial class MainWindow : Window
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var left = new TextBlock
             {
                 Text = name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
-                Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(0, 1, 8, 1),
+                Foreground = nameBrush?.Invoke(name) ?? (Brush)FindResource("TextBrush"),
+                Margin = new Thickness(0, 1, 8, 1),
             };
             if (tooltip?.Invoke(name) is { Length: > 0 } tip)
             {
@@ -1844,12 +1942,33 @@ public partial class MainWindow : Window
                 left.MouseLeftButtonDown += (_, ev) => ev.Handled = true;
                 left.MouseLeftButtonUp += (_, _) => onNameClick(clickName);
             }
+            if (questBadges && IsActiveQuestItem(name))
+            {
+                // 🗺 next to quest loot: one click shows which quests want the item, each
+                // with its 📌 as the invitation to track (David, 2026-08-07).
+                var badgeName = name;
+                var badge = new TextBlock
+                {
+                    Text = "🗺", FontSize = 11, Margin = new Thickness(0, 1, 6, 1),
+                    Cursor = System.Windows.Input.Cursors.Hand,
+                    ToolTip = "Show quests that want this item",
+                };
+                badge.SetResourceReference(TextBlock.ForegroundProperty, "GoodBrush");
+                badge.MouseLeftButtonDown += (_, ev) => ev.Handled = true;
+                badge.MouseLeftButtonUp += (_, ev) =>
+                {
+                    ev.Handled = true;
+                    ShowQuestsWindow(badgeName);
+                };
+                Grid.SetColumn(badge, 1);
+                grid.Children.Add(badge);
+            }
             var right = new TextBlock
             {
                 Text = value, FontSize = 12,
                 Foreground = valueBrush?.Invoke(value) ?? (Brush)FindResource("DimBrush"),
             };
-            Grid.SetColumn(right, 1);
+            Grid.SetColumn(right, 2);
             grid.Children.Add(left);
             grid.Children.Add(right);
             list.Items.Add(grid);

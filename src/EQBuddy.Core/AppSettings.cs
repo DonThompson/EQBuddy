@@ -17,6 +17,8 @@ public sealed class AppSettings
     /// <summary>Scale for the small floating windows — spawn/mez chips and the alert
     /// banner — independent of UiScale so 4K players can grow just those (discussion #47).</summary>
     public double ChipScale { get; set; } = 1.0;
+    public double QuestsLeft { get; set; } = double.NaN;
+    public double QuestsTop { get; set; } = double.NaN;
     /// <summary>Opacity of the widget's background panel only — text stays fully opaque.</summary>
     public double BackgroundOpacity { get; set; } = 0.95;
     /// <summary>Empty finished-session logs automatically. Off = logs grow forever

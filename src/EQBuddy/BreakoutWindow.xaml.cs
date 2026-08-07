@@ -465,7 +465,8 @@ public partial class BreakoutWindow : Window
     private Grid BuildItemRow(string name, string value, Brush barBrush)
     {
         var cachedTip = Main?.CachedItemStats(name);
-        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null);
+        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null,
+            nameBrush: Main?.QuestItemBrush(name));
         var tipText = new TextBlock
         {
             Text = cachedTip ?? "Looking up on eqlwiki…",

@@ -114,6 +114,7 @@ public static class OverlaySections
     public static readonly (string Key, string Title)[] Catalog =
     [
         ("combat", "Combat"), ("healing", "Healing"), ("kills", "Kills"), ("loot", "Loot"),
+        ("motes", "Motes"),
         // Key stays "tracked" — it's persisted in SectionOrder/HiddenSections. Only the
         // label follows the feature's rename from tracked loot to watch rules (#5).
         ("tracked", "Watch"), ("money", "Money"), ("progress", "Progress"),
