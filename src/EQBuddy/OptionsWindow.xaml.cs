@@ -32,6 +32,7 @@ public partial class OptionsWindow : Window
         ThemeCombo.SelectedIndex = _vm.ThemeIndex;
 
         ScaleSlider.Value = _vm.UiScale;
+        ChipScaleSlider.Value = Math.Clamp(_vm.ChipScale, ChipScaleSlider.Minimum, ChipScaleSlider.Maximum);
         OpacitySlider.Value = _vm.Opacity;
         BgOpacitySlider.Value = _vm.BackgroundOpacity;
         TruncateCheck.IsChecked = _vm.TruncateLogs;
@@ -79,8 +80,17 @@ public partial class OptionsWindow : Window
     private void UpdateLabels()
     {
         ScaleLabel.Text = _vm.ScaleLabel;
+        ChipScaleLabel.Text = _vm.ChipScaleLabel;
         OpacityLabel.Text = _vm.OpacityLabel;
         BgOpacityLabel.Text = _vm.BackgroundOpacityLabel;
+    }
+
+    private void OnChipScaleChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_ready) return;
+        _vm.ChipScale = ChipScaleSlider.Value;
+        _main.SetChipScale(_vm.ChipScale);
+        UpdateLabels();
     }
 
     private void OnScaleChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

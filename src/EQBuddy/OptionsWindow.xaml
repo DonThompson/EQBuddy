@@ -56,6 +56,16 @@
                     ValueChanged="OnScaleChanged"/>
 
             <Grid>
+                <TextBlock Text="Chips &amp; alerts size" FontSize="12"
+                           ToolTip="Spawn timer chips, mez chips, and the alert banner"/>
+                <TextBlock x:Name="ChipScaleLabel" Text="100%" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource AccentBrush}"/>
+            </Grid>
+            <Slider x:Name="ChipScaleSlider" Minimum="0.8" Maximum="2.0" TickFrequency="0.05"
+                    IsSnapToTickEnabled="True" Margin="0,4,0,12"
+                    ValueChanged="OnChipScaleChanged"/>
+
+            <Grid>
                 <TextBlock Text="Background see-through" FontSize="12"/>
                 <TextBlock x:Name="BgOpacityLabel" Text="95%" FontSize="12" HorizontalAlignment="Right"
                            Foreground="{DynamicResource AccentBrush}"/>

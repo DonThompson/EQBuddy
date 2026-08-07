@@ -276,6 +276,16 @@ public partial class MainWindow : Window
         _settings.Save();
     }
 
+    /// <summary>Live-apply the chips/alerts scale to whichever family windows exist right
+    /// now; windows created later pick it up in their constructors.</summary>
+    public void SetChipScale(double scale)
+    {
+        _settings.ChipScale = Math.Clamp(scale, 0.5, 2.0);
+        foreach (var w in new Window?[] { _chipsWindow, _mezWindow, _alertWindow })
+            if (w is not null) ChipScale.Apply(w, _settings.ChipScale);
+        _settings.Save();
+    }
+
     private void ApplyUiScale(double scale) =>
         RootBorder().LayoutTransform = Math.Abs(scale - 1.0) < 0.001
             ? null

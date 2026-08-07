@@ -152,6 +152,13 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     }
     public string ScaleLabel => $"{_settings.UiScale * 100:0}%";
 
+    public double ChipScale
+    {
+        get => _settings.ChipScale;
+        set { _settings.ChipScale = Math.Clamp(value, 0.5, 2.0); Changed(); Changed(nameof(ChipScaleLabel)); }
+    }
+    public string ChipScaleLabel => $"{_settings.ChipScale * 100:0}%";
+
     public double Opacity
     {
         get => _settings.Opacity;
