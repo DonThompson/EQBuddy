@@ -37,8 +37,9 @@ public sealed class TutorialWindow : Window
             "Because logging stays on permanently, EQBuddy automatically EMPTIES a character's " +
             "log after it has been quiet for 60+ minutes (a finished play session), so the files " +
             "never grow forever.\n\n" +
-            "If you keep your logs — for example to upload them to another parser — turn that " +
-            "off below. You can change this any time in ⚙ Options.",
+            "If you keep your logs because you run GINA or GamParse, or upload them to another " +
+            "parser, turn that off below. Cleanup never runs while the game, GINA, or GamParse " +
+            "is open. You can change this any time in ⚙ Options.",
             null, TruncationChoice: true),
 
         new("The widget",

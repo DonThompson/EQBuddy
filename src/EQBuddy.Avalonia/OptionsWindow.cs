@@ -207,7 +207,7 @@ public sealed class OptionsWindow : Window
             "Fades everything, text included.");
         panel.Children.Add(_truncateCheck);
         panel.Children.Add(AppTheme.DimText(
-            "Turn off if you upload your log files elsewhere - they will grow forever, so clean them up yourself occasionally.",
+            "Turn off if you use GINA/GamParse or upload your logs elsewhere - they will grow forever, so clean them up yourself occasionally. Cleanup already stands down whenever the game, GINA, or GamParse is running.",
             new Thickness(20, 2, 0, 0)));
         panel.Children.Add(_tutorialCheck);
         panel.Children.Add(_trackSpawnsCheck);
