@@ -221,6 +221,27 @@ public class QuestTrackerTests : IDisposable
     }
 
     [Fact]
+    public void UpgradeTiersFoldToTheBaseItem()
+    {
+        // David looted "Crushbone Shoulderpads +2" live and the tracker saw a stranger:
+        // Legends suffixes upgrade tiers, the wiki catalogs the base item.
+        Assert.Equal("Crushbone Shoulderpads", QuestCatalog.BaseItemName("Crushbone Shoulderpads +2"));
+        Assert.Equal("Crushbone Belt", QuestCatalog.BaseItemName("Crushbone Belt"));
+        Assert.Equal("Gold Ring +1", QuestCatalog.BaseItemName("Gold Ring +1 ") is var r && r == "Gold Ring" ? "Gold Ring +1" : "FAIL");
+
+        var cat = Catalog();
+        Assert.True(cat.IsTurnInItem("Bone Chips +3"));
+        Assert.Single(cat.QuestsWanting("Crushbone Belt +5"), q => q.Name == "Belt Collector");
+
+        // The ledger stores the base name, so quest matching just works.
+        var store = Store();
+        store.Normalize = QuestCatalog.BaseItemName;
+        store.RecordLoot("dranak_freeport", "Crushbone Belt +2", 1, T0);
+        store.RecordLoot("dranak_freeport", "Crushbone Belt +4", 1, T0.AddMinutes(1));
+        Assert.Equal(2, store.For("dranak_freeport")["Crushbone Belt"].Looted);
+    }
+
+    [Fact]
     public void MulticlassFilterIsAUnion()
     {
         // Legends: up to three active classes — a quest ANY of them can do stays visible.

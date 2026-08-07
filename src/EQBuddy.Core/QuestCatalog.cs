@@ -155,6 +155,12 @@ public sealed class QuestCatalog
     private HashSet<string>? _questItemSet;
     private Dictionary<string, List<QuestEntry>>? _byItem;
 
+    /// <summary>Legends upgrade tiers suffix item names ("Crushbone Shoulderpads +2");
+    /// the wiki catalogs the base item. Every quest-side lookup folds the tier off first
+    /// — David looted +2 shoulderpads live and the tracker saw a stranger (2026-08-07).</summary>
+    public static string BaseItemName(string itemName) =>
+        System.Text.RegularExpressions.Regex.Replace(itemName.Trim(), @"\s*\+\d+$", "");
+
     /// <summary>Item name → quests needing it as a turn-in. Case-insensitive; built lazily.</summary>
     public Dictionary<string, List<QuestEntry>> ByItem()
     {
@@ -176,18 +182,18 @@ public sealed class QuestCatalog
         _questItemSet ??= new HashSet<string>(
             QuestItems.Concat(Quests.SelectMany(q => q.Items.Select(i => i.Name))),
             StringComparer.OrdinalIgnoreCase);
-        return _questItemSet.Contains(itemName.Trim());
+        return _questItemSet.Contains(BaseItemName(itemName));
     }
 
     /// <summary>True when a PARSED quest wants this item as a turn-in — the Loot-view
     /// tint/badge signal. Deliberately narrower than <see cref="IsQuestItem"/>: the raw
     /// category is 4k items wide and painted half the loot green (David, 2026-08-07);
     /// green now always leads to an actual quest card.</summary>
-    public bool IsTurnInItem(string itemName) => ByItem().ContainsKey(itemName.Trim());
+    public bool IsTurnInItem(string itemName) => ByItem().ContainsKey(BaseItemName(itemName));
 
     /// <summary>The quests wanting this item as a turn-in (empty when none).</summary>
     public IReadOnlyList<QuestEntry> QuestsWanting(string itemName) =>
-        ByItem().TryGetValue(itemName.Trim(), out var quests) ? quests : [];
+        ByItem().TryGetValue(BaseItemName(itemName), out var quests) ? quests : [];
 
     public static QuestCatalog LoadEmbedded()
     {

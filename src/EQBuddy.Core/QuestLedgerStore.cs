@@ -55,6 +55,11 @@ public sealed class QuestLedgerStore
     /// the catalog in — a ledger that can't identify quest items shouldn't guess.</summary>
     public Func<string, bool> TrackFilter { get; set; } = _ => false;
 
+    /// <summary>Canonicalizes item names before storing/matching — wired to
+    /// QuestCatalog.BaseItemName so "Crushbone Shoulderpads +2" counts toward the quest
+    /// that wants plain "Crushbone Shoulderpads". Identity by default.</summary>
+    public Func<string, string> Normalize { get; set; } = s => s;
+
     public QuestLedgerStore(string path)
     {
         _path = path;
@@ -111,6 +116,7 @@ public sealed class QuestLedgerStore
     /// timestamp beats the item's high-water mark (see class remarks).</summary>
     public void RecordLoot(string characterKey, string item, int count, DateTime time)
     {
+        item = Normalize(item);
         if (characterKey.Length == 0 || count <= 0 || !TrackFilter(item)) return;
         lock (_lock)
         {
@@ -129,6 +135,7 @@ public sealed class QuestLedgerStore
     /// own statement of relevance.</summary>
     public void SetManual(string characterKey, string item, int count)
     {
+        item = Normalize(item);
         if (characterKey.Length == 0 || item.Trim().Length == 0) return;
         lock (_lock)
         {

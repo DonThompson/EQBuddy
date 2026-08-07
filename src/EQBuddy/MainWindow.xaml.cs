@@ -53,7 +53,7 @@ public partial class MainWindow : Window
         QuestCatalog = QuestCatalog.LoadEmbedded();
         ZoneGraph = ZoneGraph.LoadEmbedded();
         QuestLedger = new QuestLedgerStore(AppPaths.File("quest-ledger.json"))
-        { TrackFilter = QuestCatalog.IsTurnInItem };
+        { TrackFilter = QuestCatalog.IsTurnInItem, Normalize = QuestCatalog.BaseItemName };
         _stats.QuestStore = QuestLedger;
         _watcher = new LogWatcher(_stats);
         _watcher.Mez = _mezTracker;
@@ -1988,7 +1988,8 @@ public partial class MainWindow : Window
                 badge.MouseLeftButtonUp += (_, ev) =>
                 {
                     ev.Handled = true;
-                    ShowQuestsWindow(badgeName);
+                    // Base name, or a "+2"-suffixed loot line filters to zero quests.
+                    ShowQuestsWindow(QuestCatalog.BaseItemName(badgeName));
                 };
                 Grid.SetColumn(badge, 1);
                 grid.Children.Add(badge);
