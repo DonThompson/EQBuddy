@@ -955,7 +955,12 @@ public partial class MainWindow : Window
                 (s.Recent is { Hps: > 0 } rh
                     ? $"\nLast {(int)rh.Window.TotalMinutes}m: {rh.Hps:0.#} hps"
                     : "") +
-                (s.RegenTicks > 0 ? "\n" + RegenLine(s) : "");
+                (s.RegenTicks > 0 ? "\n" + RegenLine(s) : "") +
+                (s.RuneBlockCount > 0
+                    ? $"\nRune absorbed {s.RuneBlockCount} hit{(s.RuneBlockCount == 1 ? "" : "s")}" +
+                      $" (best streak {s.RuneBlockStreakMax}" +
+                      (s.RuneBlockStreak > 0 ? $", current {s.RuneBlockStreak}" : "") + ")"
+                    : "");
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;
