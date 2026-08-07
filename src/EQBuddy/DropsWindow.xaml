@@ -20,17 +20,15 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBox x:Name="FilterBox" FontSize="12" Padding="6,4"
-                     Background="{DynamicResource ComboBoxBrush}" Foreground="{DynamicResource TextBrush}"
-                     BorderBrush="{DynamicResource BorderBrush}" TextChanged="OnFilterChanged"
+            <TextBox x:Name="FilterBox" Style="{StaticResource InputBox}" TextChanged="OnFilterChanged"
                      ToolTip="Filter by creature or item name"/>
-            <Button x:Name="CopyTextBtn" Grid.Column="1" Content="Copy text" Style="{StaticResource IconButton}" FontSize="12"
+            <Button x:Name="CopyTextBtn" Grid.Column="1" Content="Copy text" Style="{StaticResource ActionButton}"
                     Margin="8,0,0,0" Padding="8,3" Click="OnCopyText"
                     ToolTip="Copy everything shown as readable text — pastes cleanly into Discord or a wiki page"/>
-            <Button x:Name="CopyCsvBtn" Grid.Column="2" Content="Copy CSV" Style="{StaticResource IconButton}" FontSize="12"
+            <Button x:Name="CopyCsvBtn" Grid.Column="2" Content="Copy CSV" Style="{StaticResource ActionButton}"
                     Margin="6,0,0,0" Padding="8,3" Click="OnCopyCsv"
                     ToolTip="Copy everything shown as CSV for a spreadsheet"/>
-            <Button x:Name="SaveCsvBtn" Grid.Column="3" Content="Save CSV…" Style="{StaticResource IconButton}" FontSize="12"
+            <Button x:Name="SaveCsvBtn" Grid.Column="3" Content="Save CSV…" Style="{StaticResource ActionButton}"
                     Margin="6,0,0,0" Padding="8,3" Click="OnSaveCsv"/>
         </Grid>
 

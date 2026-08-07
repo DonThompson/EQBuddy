@@ -169,7 +169,7 @@
             </Border>
             <!-- Shared-size scope so the header row's Auto columns track the rule rows'. -->
             <StackPanel x:Name="RulesPanel" Margin="0,4,0,0" Grid.IsSharedSizeScope="True"/>
-            <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource IconButton}"
+            <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource ActionButton}"
                     HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
             <CheckBox x:Name="PinChipsCheck" Margin="0,6,0,0"
                       Checked="OnPinChipsChanged" Unchecked="OnPinChipsChanged">

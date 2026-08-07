@@ -34,16 +34,18 @@
                     <ColumnDefinition Width="52"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="AddItemBox" Grid.Column="0" FontSize="12"
+                <TextBox x:Name="AddItemBox" Grid.Column="0" Style="{StaticResource InputBox}"
                          TextChanged="OnAddItemTyped" KeyDown="OnAddItemKey"
                          ToolTip="Item you already have in inventory (from before EQBuddy could see it)"/>
-                <TextBox x:Name="AddQtyBox" Grid.Column="1" FontSize="12" Text="1"
+                <TextBox x:Name="AddQtyBox" Grid.Column="1" Style="{StaticResource InputBox}" Text="1"
                          Margin="6,0,0,0" HorizontalContentAlignment="Center"
                          ToolTip="How many"/>
-                <Button x:Name="AddBtn" Grid.Column="2" Content="+ I have this" FontSize="12"
-                        Style="{StaticResource IconButton}" Margin="6,0,0,0" Click="OnAddItem"/>
+                <Button x:Name="AddBtn" Grid.Column="2" Content="+ I have this"
+                        Style="{StaticResource ActionButton}" Margin="6,0,0,0" Click="OnAddItem"/>
             </Grid>
             <ListBox x:Name="SuggestList" MaxHeight="120" FontSize="12" Visibility="Collapsed"
+                     Background="{DynamicResource ComboBoxBrush}" Foreground="{DynamicResource TextBrush}"
+                     BorderBrush="{DynamicResource BorderBrush}"
                      MouseUp="OnSuggestPicked"/>
             <Grid Margin="0,6,0,0">
                 <Grid.ColumnDefinitions>
@@ -51,7 +53,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="FilterBox" Grid.Column="0" FontSize="12" TextChanged="OnFilterChanged"
+                <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" TextChanged="OnFilterChanged"
                          ToolTip="Filter quests by name, zone, giver, or item"/>
                 <ComboBox x:Name="ClassCombo" Grid.Column="1" Width="92" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnClassChanged"
