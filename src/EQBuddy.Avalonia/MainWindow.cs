@@ -140,6 +140,7 @@ public sealed class MainWindow : Window
         Header = "Track spawns (named respawn timers)",
     };
     private AlertWindow? _alertWindow;
+    private IReadOnlyList<WhatsNewEntry> _whatsNewNotes = [];
     private StatSort _dmgOutSort = StatSort.Total;
     private StatSort _dmgInSort = StatSort.Total;
     private StatSort _healSort = StatSort.Total;
@@ -213,6 +214,8 @@ public sealed class MainWindow : Window
                 section.IsExpanded = true;
         FollowActiveCharacter();
 
+        PrepareWhatsNew();
+
         if (_settings.LogFolder is { } lf)
         {
             // Page one of the launch tour is the log-truncation consent question.
@@ -246,8 +249,39 @@ public sealed class MainWindow : Window
             RegisterGlobalHotkeys();
             if (_settings.ShowTutorial)
                 new TutorialWindow(this).Show(this);
+            else if (_whatsNewNotes.Count > 0)
+                new WhatsNewWindow(_whatsNewNotes).Show(this);
         };
     }
+
+    /// <summary>Records the running version before displaying release notes, so an
+    /// interrupted launch cannot show the same popup forever. Fresh installs use the
+    /// tutorial instead; installs predating this feature see only the current release.</summary>
+    private void PrepareWhatsNew()
+    {
+        var currentVersion = UpdateChecker.CurrentVersion.ToString();
+        if (_settings.ShowTutorial || _settings.LastSeenVersion == currentVersion)
+        {
+            if (_settings.LastSeenVersion != currentVersion)
+            {
+                _settings.LastSeenVersion = currentVersion;
+                _settings.Save();
+            }
+            return;
+        }
+
+        var lastSeen = _settings.LastSeenVersion.Length > 0
+            ? _settings.LastSeenVersion
+            : PreviousVersionBaseline(currentVersion);
+        _whatsNewNotes = WhatsNewCatalog.EntriesBetween(lastSeen, currentVersion);
+        _settings.LastSeenVersion = currentVersion;
+        _settings.Save();
+    }
+
+    internal static string PreviousVersionBaseline(string current) =>
+        Version.TryParse(current, out var version)
+            ? new Version(version.Major, Math.Max(0, version.Minor - 1), 0).ToString()
+            : current;
 
     public double UiScale => _settings.UiScale;
     public double WidgetOpacity => Opacity;

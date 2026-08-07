@@ -37,6 +37,7 @@ public class WidgetRenderTests : IDisposable
             $$"""
               { "LogFolder": {{System.Text.Json.JsonSerializer.Serialize(Path.Combine(_profile, "logs"))}},
                 "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
+                "LastSeenVersion": {{System.Text.Json.JsonSerializer.Serialize(UpdateChecker.CurrentVersion.ToString())}},
                 "Theme": "ParchmentBrass" }
               """);
     }
@@ -78,6 +79,29 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains(headings, h => h.Contains("Healing"));
         Assert.Contains(headings, h => h.Contains("Kills"));
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void WhatsNewPopupRendersSkippedReleasesAndHighlights()
+    {
+        var entries = WhatsNewCatalog.EntriesBetween("1.23.1", "1.25.0");
+        var window = new WhatsNewWindow(entries);
+        window.Show();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("What's new since your last version", text);
+        Assert.Contains("EQBuddy 1.25.0", text);
+        Assert.Contains("EQBuddy 1.24.0", text);
+        Assert.Contains(text, t => t.StartsWith("This popup!"));
+
+        window.Close();
+    }
+
+    [Fact]
+    public void PreFeatureBaselineSelectsOnlyTheCurrentMinorRelease()
+    {
+        Assert.Equal("1.24.0", MainWindow.PreviousVersionBaseline("1.25.0.0"));
     }
 
     [AvaloniaFact]

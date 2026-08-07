@@ -32,6 +32,7 @@ public class OptionsRenderTests : IDisposable
               {
                 "LogFolder": {{System.Text.Json.JsonSerializer.Serialize(Path.Combine(_profile, "logs"))}},
                 "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
+                "LastSeenVersion": {{System.Text.Json.JsonSerializer.Serialize(UpdateChecker.CurrentVersion.ToString())}},
                 "Theme": "ParchmentBrass",
                 "_comment": "DefaultRulesVersion is set so loading doesn't inject the built-in CC broke rule and change the rule count out from under these tests",
                 "DefaultRulesVersion": 1,
