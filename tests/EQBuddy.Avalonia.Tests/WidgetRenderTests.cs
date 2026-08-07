@@ -36,7 +36,8 @@ public class WidgetRenderTests : IDisposable
         File.WriteAllText(Path.Combine(_profile, "settings.json"),
             $$"""
               { "LogFolder": {{System.Text.Json.JsonSerializer.Serialize(Path.Combine(_profile, "logs"))}},
-                "TruncateLogs": false, "ShowTutorial": false, "Theme": "ParchmentBrass" }
+                "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
+                "Theme": "ParchmentBrass" }
               """);
     }
 
@@ -77,6 +78,29 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains(headings, h => h.Contains("Healing"));
         Assert.Contains(headings, h => h.Contains("Kills"));
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void SpawnTrackerRendersTheCatalogAndControls()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var catalog = SpawnCatalog.LoadEmbedded();
+        var overrides = SpawnOverrides.Load(Path.Combine(_profile, "spawn-test-overrides.json"));
+        var timers = new SpawnTimers(catalog, overrides, Path.Combine(_profile, "spawn-test-timers.json"));
+        var tracker = new SpawnsWindow(main, new SpawnsViewModel(catalog, overrides, timers));
+        tracker.Show(main);
+
+        Assert.NotNull(tracker.CaptureRenderedFrame());
+        var text = tracker.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains(text, value => value.Contains("Spawns"));
+        Assert.Contains(text, value => value.Contains("countdown starts from the log"));
+        Assert.Contains(tracker.GetVisualDescendants().OfType<CheckBox>(),
+            check => Equals(check.Content, "Follow"));
+
+        tracker.Close();
+        main.Close();
     }
 
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null

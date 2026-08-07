@@ -22,6 +22,9 @@ public sealed class MainWindow : Window
     private void AttachSpellStore() =>
         _stats.Spells.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "spell-categories.json"));
     private readonly LogWatcher _watcher;
+    private readonly SpawnTimers _spawnTimers;
+    private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
+    private SpawnsWindow? _spawnsWindow;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
@@ -131,6 +134,10 @@ public sealed class MainWindow : Window
     private X11HotkeyService? _hotkeys;
     private HistoryWindow? _historyWindow;
     private OptionsWindow? _optionsWindow;
+    private readonly MenuItem _trackSpawnsItem = new()
+    {
+        Header = "Track spawns (named respawn timers)",
+    };
     private AlertWindow? _alertWindow;
     private StatSort _dmgOutSort = StatSort.Total;
     private StatSort _dmgInSort = StatSort.Total;
@@ -148,6 +155,11 @@ public sealed class MainWindow : Window
         AttachSpellStore();
         _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
         _watcher = new LogWatcher(_stats);
+        var spawnCatalog = SpawnCatalog.LoadEmbedded();
+        var spawnOverrides = SpawnOverrides.Load(AppPaths.File("spawn-overrides.json"));
+        _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
+        _watcher.Spawns = _spawnTimers;
+        _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
@@ -224,6 +236,8 @@ public sealed class MainWindow : Window
             RegisterGlobalHotkeys();
             if (_settings.ShowTutorial)
                 new TutorialWindow(this).Show(this);
+            if (_settings.TrackSpawns)
+                ShowSpawnsWindow();
         };
     }
 
@@ -661,6 +675,8 @@ public sealed class MainWindow : Window
         marker.Click += (_, _) => DropCampMarker();
         var history = new MenuItem { Header = "Session history..." };
         history.Click += OnHistory;
+        SyncTrackSpawnsMenu();
+        _trackSpawnsItem.Click += (_, _) => SetTrackSpawns(!_settings.TrackSpawns);
         var choose = new MenuItem { Header = "Choose log folder..." };
         choose.Click += OnChooseLogFolder;
         var detect = new MenuItem { Header = "Auto-detect log folder" };
@@ -677,6 +693,7 @@ public sealed class MainWindow : Window
         menu.Items.Add(tutorial);
         menu.Items.Add(marker);
         menu.Items.Add(history);
+        menu.Items.Add(_trackSpawnsItem);
         menu.Items.Add(new Separator());
         menu.Items.Add(choose);
         menu.Items.Add(detect);
@@ -773,6 +790,16 @@ public sealed class MainWindow : Window
 
     private void RefreshUi()
     {
+        if (_settings.TrackSpawns)
+        {
+            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
+            {
+                AlertTile.ShowAlert($"⏰ {due.Name} due - {due.Zone}");
+                if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
+                    PlayAlertSound(_settings.SpawnSound);
+            }
+        }
+
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))
         {
             _lastCharScan = DateTime.Now;
@@ -1326,7 +1353,45 @@ public sealed class MainWindow : Window
         AlertTile.EnterPlacement();
     }
 
+    internal void RegisterOptionsWindow(OptionsWindow window) => _optionsWindow = window;
+
     private void OnTutorial(object? sender, EventArgs e) => new TutorialWindow(this).Show(this);
+
+    /// <summary>One switch keeps settings, menu, Options, and tracker window in sync.</summary>
+    internal void SetTrackSpawns(bool on)
+    {
+        _settings.TrackSpawns = on;
+        _settings.Save();
+        SyncTrackSpawnsMenu();
+        if (_optionsWindow is { IsVisible: true } options)
+            options.SyncTrackSpawns(on);
+        if (on)
+            ShowSpawnsWindow();
+        else if (_spawnsWindow is { } window)
+        {
+            _spawnsWindow = null;
+            window.Close();
+        }
+    }
+
+    internal void ShowSpawnsWindow()
+    {
+        if (_spawnsWindow is { IsVisible: true })
+        {
+            _spawnsWindow.Activate();
+            return;
+        }
+        var window = new SpawnsWindow(this, _spawnsVm);
+        window.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_spawnsWindow, window)) _spawnsWindow = null;
+        };
+        _spawnsWindow = window;
+        window.Show(this);
+    }
+
+    private void SyncTrackSpawnsMenu() => _trackSpawnsItem.Header =
+        (_settings.TrackSpawns ? "✓ " : "") + "Track spawns (named respawn timers)";
 
     private void OnHistory(object? sender, EventArgs e)
     {

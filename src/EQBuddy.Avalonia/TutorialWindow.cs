@@ -65,6 +65,15 @@ public sealed class TutorialWindow : Window
             "click-through and movable — drag it while Options is open.",
             "t-watch.png"),
 
+        new("Spawn timers",
+            "The 🕒 Spawns window counts down named-mob respawns for the zone you're in. " +
+            "Kill a named - or the placeholder that spawns in its spot - and its timer starts " +
+            "automatically from the log; press ▶ to start one by hand. Community respawn times " +
+            "are included, every duration is editable, and your edits survive updates. When a " +
+            "timer reaches zero you get an alert. Close the window to turn tracking off; re-enable " +
+            "it in Options or the right-click menu.",
+            null),
+
         new("Mini mode & hotkeys",
             "Star ★ the stats you care about, then minimize: a tiny pill shows just those, " +
             "plus watch-rule chips. Global hotkeys: Ctrl+Shift+H hide/show · Ctrl+Shift+T " +

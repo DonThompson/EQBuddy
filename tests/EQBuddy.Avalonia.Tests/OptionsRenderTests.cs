@@ -31,7 +31,8 @@ public class OptionsRenderTests : IDisposable
             $$"""
               {
                 "LogFolder": {{System.Text.Json.JsonSerializer.Serialize(Path.Combine(_profile, "logs"))}},
-                "TruncateLogs": false, "ShowTutorial": false, "Theme": "ParchmentBrass",
+                "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
+                "Theme": "ParchmentBrass",
                 "_comment": "DefaultRulesVersion is set so loading doesn't inject the built-in CC broke rule and change the rule count out from under these tests",
                 "DefaultRulesVersion": 1,
                 "TrackedRules": [
@@ -73,6 +74,25 @@ public class OptionsRenderTests : IDisposable
 
         Assert.NotNull(frame);
         Assert.True(frame!.Size.Width > 100, $"Options rendered only {frame.Size.Width}px wide");
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void SpawnTrackingToggleUpdatesTheSharedSetting()
+    {
+        var (main, options) = Open();
+        var toggle = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("Track spawns") == true);
+
+        Assert.False(toggle.IsChecked);
+        toggle.IsChecked = true;
+        Assert.True(main.Settings.TrackSpawns);
+
+        main.SetTrackSpawns(false);
+        Assert.False(toggle.IsChecked);
+        Assert.False(main.Settings.TrackSpawns);
+
         options.Close();
         main.Close();
     }

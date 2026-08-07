@@ -22,6 +22,7 @@ public sealed class OptionsWindow : Window
     private readonly Slider _opacitySlider = Slider(0.5, 1.0, 0.02);
     private readonly CheckBox _truncateCheck = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly CheckBox _tutorialCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
+    private readonly CheckBox _trackSpawnsCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly CheckBox _pinChipsCheck = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly ComboBox _themeCombo = new() { Width = 130, FontSize = 12 };
     private readonly ComboBox _windowCombo = new() { Width = 90, FontSize = 12 };
@@ -50,6 +51,7 @@ public sealed class OptionsWindow : Window
     public OptionsWindow(MainWindow main)
     {
         _main = main;
+        _main.RegisterOptionsWindow(this);
         Title = "EQBuddy Options";
         SizeToContent = SizeToContent.WidthAndHeight;
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
@@ -101,6 +103,18 @@ public sealed class OptionsWindow : Window
             if (!_ready) return;
             _main.Settings.ShowTutorial = _tutorialCheck.IsChecked == true;
             _main.PersistSettings();
+        };
+
+        _trackSpawnsCheck.Content = new TextBlock
+        {
+            Text = "🕒 Track spawns (named respawn timers)",
+            FontSize = 12,
+            Foreground = AppTheme.TextBrush,
+        };
+        _trackSpawnsCheck.IsChecked = main.Settings.TrackSpawns;
+        _trackSpawnsCheck.IsCheckedChanged += (_, _) =>
+        {
+            if (_ready) _main.SetTrackSpawns(_trackSpawnsCheck.IsChecked == true);
         };
 
         _pinChipsCheck.Content = new TextBlock
@@ -196,6 +210,10 @@ public sealed class OptionsWindow : Window
             "Turn off if you upload your log files elsewhere - they will grow forever, so clean them up yourself occasionally.",
             new Thickness(20, 2, 0, 0)));
         panel.Children.Add(_tutorialCheck);
+        panel.Children.Add(_trackSpawnsCheck);
+        panel.Children.Add(AppTheme.DimText(
+            "A second window counts down named-mob respawns for your zone. Kills start timers from the log; every duration is editable and your edits survive updates. Closing the window turns tracking off.",
+            new Thickness(20, 2, 0, 0)));
 
         panel.Children.Add(Row("Recent-rate window", _windowCombo, new Thickness(0, 12, 0, 0)));
         panel.Children.Add(AppTheme.DimText("The Last Xm figures on Combat, Kills, Money, and Progress."));
@@ -242,6 +260,15 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(AppTheme.DimText("Size also scales all text. Changes apply instantly and are saved.",
             new Thickness(0, 8, 0, 0)));
         return panel;
+    }
+
+    /// <summary>Keep an open Options window synchronized with the menu or tracker close.</summary>
+    internal void SyncTrackSpawns(bool on)
+    {
+        var ready = _ready;
+        _ready = false;
+        _trackSpawnsCheck.IsChecked = on;
+        _ready = ready;
     }
 
     /// <summary>Show or hide the worked examples, remembering the choice. Built on first
