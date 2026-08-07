@@ -109,6 +109,30 @@ public class WidgetRenderTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void CombatCardShowsSpellDamageAndCastCompletion()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            DotDamage = 1_250,
+            DirectSpellDamage = 875,
+            CastsStarted = 10,
+            CastsInterrupted = 1,
+            Fizzles = 2,
+            Resists = 3,
+        });
+
+        var summary = window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text?.StartsWith("Dealt ") == true).Text!;
+        Assert.Contains("Your spells: 1,250 over time / 875 direct", summary);
+        Assert.Contains("Casts 10 · 70% completed (1 interrupted · 2 fizzled · 3 resisted)", summary);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void AreaSpellsAppearOnlyWhenTheSnapshotContainsThem()
     {
         var window = new MainWindow();

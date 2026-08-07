@@ -212,6 +212,9 @@ public sealed class MainWindow : Window
             });
         }
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
+            StartCrowdControlCapture();
+
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
@@ -230,6 +233,26 @@ public sealed class MainWindow : Window
     public bool TruncateLogsValue => _settings.TruncateLogs;
     public AppSettings Settings => _settings;
     public void PersistSettings() => _settings.Save();
+
+    /// <summary>
+    /// Opt-in capture for CC-looking lines whose EQ Legends wording is not known yet.
+    /// Keep only distinct lines and cap the file so diagnostics cannot grow without bound.
+    /// </summary>
+    private static void StartCrowdControlCapture()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var path = AppPaths.File("cc-candidates.txt");
+        var gate = new object();
+        LogParser.UnmatchedCandidateSink = message =>
+        {
+            lock (gate)
+            {
+                if (seen.Count >= 500 || !seen.Add(message)) return;
+                try { File.AppendAllText(path, message + Environment.NewLine); }
+                catch { /* diagnostics must never interrupt log tailing */ }
+            }
+        };
+    }
 
     internal static readonly (string Key, string Title)[] SectionCatalog =
     [
@@ -837,7 +860,13 @@ public sealed class MainWindow : Window
                 $"Biggest hit: {s.MaxHit:N0} ({s.MaxHitDesc})\n" +
                 $"Taken {s.DamageTaken:N0} - avoided {s.AvoidedIncoming} of {incomingSwings} melee attacks ({avoidance:0}%)" +
                 (s.SpecialHits.Count > 0 ? "\n" + string.Join(" - ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}")) : "") +
-                (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
+                (s.DotDamage + s.DirectSpellDamage > 0
+                    ? $"\nYour spells: {s.DotDamage:N0} over time / {s.DirectSpellDamage:N0} direct"
+                    : "") +
+                (s.CastCompletion is { } completion
+                    ? $"\nCasts {s.CastsStarted} · {completion * 100:0}% completed" +
+                      $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted)"
+                    : s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             // Shares the damage sort bar above it — it's the same rows, one level down.
