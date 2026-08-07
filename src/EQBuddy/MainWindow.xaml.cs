@@ -135,10 +135,11 @@ public partial class MainWindow : Window
         if (_settings.LogFolder is { } lf)
         {
             var prune = _settings.TruncateLogs && !_settings.ShowTutorial;
+            var archive = _settings.ArchiveLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(lf);
-                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap, archive: archive);
             });
         }
 
@@ -154,6 +155,10 @@ public partial class MainWindow : Window
         // Screenshot/debug hook, same family as EQBUDDY_OPTIONS: open the Quest Tracker
         // after the startup replay has fed the ledger. "1" opens the default view;
         // "zone"/"all" open that mode directly.
+        if (Environment.GetEnvironmentVariable("EQBUDDY_DROPS") == "1")
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() => OnDropsWindow(this, new RoutedEventArgs()),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
         if (Environment.GetEnvironmentVariable("EQBUDDY_QUESTS") is { Length: > 0 } questsMode)
             Loaded += (_, _) => Dispatcher.BeginInvoke(() =>
             {
@@ -294,6 +299,13 @@ public partial class MainWindow : Window
     /// <summary>The zone the log last put us in — the Quest Tracker measures distances
     /// from here.</summary>
     internal string CurrentZoneName { get; private set; } = "";
+
+    /// <summary>Followed character identity for window titles and exports.</summary>
+    internal (string Character, string Server) Identity =>
+        (_stats.CharacterName ?? "", _stats.ServerName ?? "");
+
+    /// <summary>A fresh stats snapshot, for windows that refresh on their own cadence.</summary>
+    internal StatsSnapshot CurrentSnapshot() => _stats.Snapshot();
 
     /// <summary>A turn-in for at least one quest this character hasn't dismissed — the
     /// signal behind the green tint and the 🗺 badge. Narrowed twice from "in the Quest
@@ -685,6 +697,16 @@ public partial class MainWindow : Window
     private void OnSpawnsWindow(object sender, RoutedEventArgs e) => ShowSpawnsWindow();
 
     private QuestsWindow? _questsWindow;
+    private DropsWindow? _dropsWindow;
+
+    private void OnDropsWindow(object sender, RoutedEventArgs e)
+    {
+        if (_dropsWindow is not { IsLoaded: true })
+            _dropsWindow = new DropsWindow(this);
+        _dropsWindow.Update(_stats.Snapshot());
+        _dropsWindow.Show();
+        _dropsWindow.Activate();
+    }
 
     private void OnQuestsWindow(object sender, RoutedEventArgs e) => ShowQuestsWindow();
 
@@ -828,6 +850,7 @@ public partial class MainWindow : Window
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
         // off the shared tick so a hidden window can't silence a camp.
         if (_questsWindow is { IsLoaded: true, IsVisible: true } qw) qw.MaybeRefresh();
+        if (_dropsWindow is { IsLoaded: true, IsVisible: true } dw) dw.MaybeRefresh();
 
         if (_settings.TrackSpawns)
         {
@@ -899,10 +922,11 @@ public partial class MainWindow : Window
         {
             _lastJanitorRun = DateTime.Now;
             var prune = _settings.TruncateLogs;
+            var archive = _settings.ArchiveLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(folder);
-                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap, archive: archive);
             });
         }
 

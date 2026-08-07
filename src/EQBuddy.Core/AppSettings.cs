@@ -24,6 +24,11 @@ public sealed class AppSettings
     /// <summary>Empty finished-session logs automatically. Off = logs grow forever
     /// (for players who upload their logs elsewhere).</summary>
     public bool TruncateLogs { get; set; } = true;
+    /// <summary>Copy a log's content to Logs\archive\eqlog_name_server_STAMP.txt before
+    /// the janitor empties it — for players who want the raw history kept (discussion
+    /// #52, joeymavity). Off by default: most players run EQBuddy precisely so logs
+    /// stop accumulating.</summary>
+    public bool ArchiveLogs { get; set; }
     /// <summary>User-defined tracked-loot rules (TRACK-018: persisted).</summary>
     public List<TrackedRule> TrackedRules { get; set; } = [];
     /// <summary>Highest version of the built-in default watch rules already applied.
