@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.39.0",
+  "date": "2026-08-07",
+  "highlights": [
+   "Quest Tracker: the class filter is now MULTI-SELECT — Legends characters can run up to three classes, so pick yours from the checkbox list (the button shows \"PAL · NEC\" style) and quests any of them can do stay visible. Remembered per character, so your alts each keep their own set.",
+   "FIXED: upgraded loot now counts for quests — \"Crushbone Shoulderpads +2\" folds to the base item everywhere quests look, so tiered drops show green in the Loot list, the 🗺 jumps to the right quests, and the tracker counts them (caught live, mid-fight, same-day).",
+   "FIXED: common creatures with zone-split wiki pages (\"Orc Legionnaire (Crushbone)\" vs \"(Deathfist)\") resolve again — a broken wiki redirect could dead-end the Target-drops lookup at \"nothing known.\" The lookup now reads through zone suffixes and prefers the page matching the zone you're standing in (also caught live, mid-fight)."
+  ]
+ },
+ {
   "version": "1.38.0",
   "date": "2026-08-07",
   "highlights": [
