@@ -25,6 +25,7 @@ public sealed class MainWindow : Window
     private readonly SpawnTimers _spawnTimers;
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
+    private bool _hadSpawnTimers;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
@@ -227,6 +228,15 @@ public sealed class MainWindow : Window
         if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
             StartCrowdControlCapture();
 
+        // 1.20.0 could turn Follow off on a selection event the user never made.
+        // Repair affected profiles once; subsequent user choices are left alone.
+        if (!_settings.SpawnFollowRepaired)
+        {
+            _settings.SpawnFollowZone = true;
+            _settings.SpawnFollowRepaired = true;
+            _settings.Save();
+        }
+
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
@@ -236,8 +246,6 @@ public sealed class MainWindow : Window
             RegisterGlobalHotkeys();
             if (_settings.ShowTutorial)
                 new TutorialWindow(this).Show(this);
-            if (_settings.TrackSpawns)
-                ShowSpawnsWindow();
         };
     }
 
@@ -675,6 +683,8 @@ public sealed class MainWindow : Window
         marker.Click += (_, _) => DropCampMarker();
         var history = new MenuItem { Header = "Session history..." };
         history.Click += OnHistory;
+        var spawns = new MenuItem { Header = "Spawn timers..." };
+        spawns.Click += (_, _) => ShowSpawnsWindow();
         SyncTrackSpawnsMenu();
         _trackSpawnsItem.Click += (_, _) => SetTrackSpawns(!_settings.TrackSpawns);
         var choose = new MenuItem { Header = "Choose log folder..." };
@@ -693,6 +703,7 @@ public sealed class MainWindow : Window
         menu.Items.Add(tutorial);
         menu.Items.Add(marker);
         menu.Items.Add(history);
+        menu.Items.Add(spawns);
         menu.Items.Add(_trackSpawnsItem);
         menu.Items.Add(new Separator());
         menu.Items.Add(choose);
@@ -798,6 +809,19 @@ public sealed class MainWindow : Window
                 if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
                     PlayAlertSound(_settings.SpawnSound);
             }
+
+            // A new kill, or a timer recovered during startup replay, is information:
+            // pop the tracker on that timer's zone. An unchanged timer never re-pops.
+            var started = _spawnsVm.ConsumeNewTimers(DateTime.Now);
+            if (started.Count > 0)
+                ShowSpawnsWindow(started[^1].Zone);
+
+            // Only close on a real 1 -> 0 transition. A timer-free window opened from
+            // the menu is for browsing or starting a timer and must stay open.
+            var running = _spawnsVm.HasActiveTimers(DateTime.Now);
+            if (!running && _hadSpawnTimers && _spawnsWindow is { IsVisible: true } tracker)
+                tracker.Close();
+            _hadSpawnTimers = running;
         }
 
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))
@@ -1366,7 +1390,9 @@ public sealed class MainWindow : Window
         if (_optionsWindow is { IsVisible: true } options)
             options.SyncTrackSpawns(on);
         if (on)
-            ShowSpawnsWindow();
+        {
+            if (_spawnsVm.HasActiveTimers(DateTime.Now)) ShowSpawnsWindow();
+        }
         else if (_spawnsWindow is { } window)
         {
             _spawnsWindow = null;
@@ -1374,14 +1400,14 @@ public sealed class MainWindow : Window
         }
     }
 
-    internal void ShowSpawnsWindow()
+    internal void ShowSpawnsWindow(string? zone = null)
     {
         if (_spawnsWindow is { IsVisible: true })
         {
             _spawnsWindow.Activate();
             return;
         }
-        var window = new SpawnsWindow(this, _spawnsVm);
+        var window = new SpawnsWindow(this, _spawnsVm, zone);
         window.Closed += (_, _) =>
         {
             if (ReferenceEquals(_spawnsWindow, window)) _spawnsWindow = null;

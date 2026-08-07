@@ -212,7 +212,7 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(_tutorialCheck);
         panel.Children.Add(_trackSpawnsCheck);
         panel.Children.Add(AppTheme.DimText(
-            "A second window counts down named-mob respawns for your zone. Kills start timers from the log; every duration is editable and your edits survive updates. Closing the window turns tracking off.",
+            "Kill a named - or its placeholder - and the Spawns window pops up counting down its respawn. X hides it until the next kill, and it closes itself when the final timer expires. Every duration is editable and your edits survive updates. Open it any time from right-click -> Spawn timers.",
             new Thickness(20, 2, 0, 0)));
 
         panel.Children.Add(Row("Recent-rate window", _windowCombo, new Thickness(0, 12, 0, 0)));

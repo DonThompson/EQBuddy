@@ -103,6 +103,27 @@ public class WidgetRenderTests : IDisposable
         main.Close();
     }
 
+    [AvaloniaFact]
+    public void SpawnTrackerCanHideWithoutDisarmingTrackingAndOpensOnRequestedZone()
+    {
+        var main = new MainWindow();
+        main.Settings.TrackSpawns = true;
+        main.Show();
+        var catalog = SpawnCatalog.LoadEmbedded();
+        var overrides = SpawnOverrides.Load(Path.Combine(_profile, "spawn-lifecycle-overrides.json"));
+        var timers = new SpawnTimers(catalog, overrides, Path.Combine(_profile, "spawn-lifecycle-timers.json"));
+        var tracker = new SpawnsWindow(main,
+            new SpawnsViewModel(catalog, overrides, timers), "Befallen");
+        tracker.Show(main);
+
+        Assert.Contains(tracker.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "🕒 Spawns - Befallen");
+        tracker.Close();
+        Assert.True(main.Settings.TrackSpawns);
+
+        main.Close();
+    }
+
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null
     /// blows up — and it's the path every refresh takes.</summary>
     [AvaloniaFact]

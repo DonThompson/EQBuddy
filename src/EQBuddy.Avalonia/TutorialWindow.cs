@@ -66,12 +66,12 @@ public sealed class TutorialWindow : Window
             "t-watch.png"),
 
         new("Spawn timers",
-            "The 🕒 Spawns window counts down named-mob respawns for the zone you're in. " +
-            "Kill a named - or the placeholder that spawns in its spot - and its timer starts " +
-            "automatically from the log; press ▶ to start one by hand. Community respawn times " +
-            "are included, every duration is editable, and your edits survive updates. When a " +
-            "timer reaches zero you get an alert. Close the window to turn tracking off; re-enable " +
-            "it in Options or the right-click menu.",
+            "Kill a named mob - or the placeholder that spawns in its spot - and the 🕒 " +
+            "Spawns window pops up counting down its respawn, following you zone to zone. Press ▶ " +
+            "for camps you arrived at late. Community respawn times are included, every duration " +
+            "is editable, and your edits survive updates. The window hides itself when the last " +
+            "timer expires; X hides it until the next kill. Right-click -> Spawn timers opens it " +
+            "any time, and Track spawns in Options turns the feature off.",
             null),
 
         new("Mini mode & hotkeys",

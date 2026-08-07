@@ -14,7 +14,8 @@ namespace EQBuddy.Avalonia;
 /// <summary>
 /// Named-mob respawn countdowns for one zone. The shared view model owns matching,
 /// persistence, and edits; this class only renders rows and forwards user actions.
-/// In the 1.20 contract the window is the feature's on-state, so closing it opts out.
+/// Tracking stays armed while this window is hidden. New timers pop it open and the
+/// final timer expiring closes it; disabling tracking lives in Options/the main menu.
 /// </summary>
 public sealed class SpawnsWindow : Window
 {
@@ -39,8 +40,9 @@ public sealed class SpawnsWindow : Window
     private string _signature = "";
     private bool _syncingZone;
     private bool _syncingSound;
+    private string? _lastFollowedZone;
 
-    public SpawnsWindow(MainWindow main, SpawnsViewModel vm)
+    public SpawnsWindow(MainWindow main, SpawnsViewModel vm, string? initialZone = null)
     {
         _main = main;
         _vm = vm;
@@ -67,9 +69,10 @@ public sealed class SpawnsWindow : Window
         _syncingSound = false;
 
         Content = BuildContent();
-        SelectZone(_settings.SpawnFollowZone
-            ? _vm.CurrentZoneName ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? "")
-            : FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));
+        SelectZone(initialZone
+            ?? (_settings.SpawnFollowZone ? _vm.CurrentZoneName : null)
+            ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));
+        _lastFollowedZone = _vm.CurrentZoneName;
 
         _zoneCombo.SelectionChanged += (_, _) => OnZonePicked();
         _followCheck.IsCheckedChanged += (_, _) => OnFollowChanged();
@@ -99,9 +102,10 @@ public sealed class SpawnsWindow : Window
         _title.FontSize = 14;
         _title.FontWeight = FontWeight.Bold;
         _title.Foreground = AppTheme.AccentBrush;
-        var close = AppTheme.IconButton("x", "Close (turns spawn tracking off)");
+        var close = AppTheme.IconButton("x",
+            "Hide - the tracker returns on the next named kill; disable tracking in Options or the main menu");
         close.HorizontalAlignment = HorizontalAlignment.Right;
-        close.Click += (_, _) => _main.SetTrackSpawns(false);
+        close.Click += (_, _) => Close();
         var header = new Grid { Margin = new Thickness(16, 14, 16, 6) };
         header.Children.Add(_title);
         header.Children.Add(close);
@@ -187,8 +191,14 @@ public sealed class SpawnsWindow : Window
 
     internal void RefreshRows()
     {
-        if (_settings.SpawnFollowZone && _vm.CurrentZoneName is { } current && current != SelectedZone)
-            SelectZone(current);
+        // Follow zone CHANGES, not every tick. This lets the user browse another zone's
+        // list mid-camp without the dropdown immediately snapping back.
+        if (_settings.SpawnFollowZone && _vm.CurrentZoneName is { } current
+            && current != _lastFollowedZone)
+        {
+            _lastFollowedZone = current;
+            if (current != SelectedZone) SelectZone(current);
+        }
         var zone = SelectedZone;
         _title.Text = zone.Length > 0 ? $"🕒 Spawns - {zone}" : "🕒 Spawns";
         if (zone.Length == 0) return;
@@ -330,11 +340,6 @@ public sealed class SpawnsWindow : Window
     {
         if (_syncingZone || SelectedZone.Length == 0) return;
         _settings.SpawnZone = SelectedZone;
-        if (_settings.SpawnFollowZone && SelectedZone != _vm.CurrentZoneName)
-        {
-            _settings.SpawnFollowZone = false;
-            _followCheck.IsChecked = false;
-        }
         _settings.Save();
         Kick();
     }
