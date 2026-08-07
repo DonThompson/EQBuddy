@@ -25,6 +25,7 @@ public sealed class OptionsWindow : Window
     private readonly CheckBox _trackSpawnsCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly CheckBox _pinChipsCheck = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly ComboBox _themeCombo = new() { Width = 130, FontSize = 12 };
+    private readonly StackPanel _customColorsPanel = new() { IsVisible = false };
     private readonly ComboBox _windowCombo = new() { Width = 90, FontSize = 12 };
     private readonly ComboBox _soundCombo = new() { Width = 120, FontSize = 12 };
     private readonly TextBlock _soundFileNote = AppTheme.DimText("");
@@ -161,6 +162,7 @@ public sealed class OptionsWindow : Window
 
         BuildRulesEditor();
         BuildCardsEditor();
+        UpdateCustomColorsPanel();
         // Restore before _ready so this doesn't count as the user changing it.
         ToggleGuide(main.Settings.ShowWatchGuide, persist: false);
         UpdateLabels();
@@ -199,6 +201,7 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(title);
 
         panel.Children.Add(Row("Theme", _themeCombo, new Thickness(0, 0, 0, 12)));
+        panel.Children.Add(_customColorsPanel);
 
         AddSlider(panel, "Widget size", _scaleLabel, _scaleSlider);
         AddSlider(panel, "Background see-through", _bgOpacityLabel, _bgOpacitySlider,
@@ -565,6 +568,97 @@ public sealed class OptionsWindow : Window
         _main.PersistSettings();
         AppTheme.Apply(_main.Settings);
         _main.RefreshTheme();
+        UpdateCustomColorsPanel();
+    }
+
+    private static readonly string[] SwatchColors =
+    [
+        "#000000", "#1A1A1A", "#20242B", "#26211A", "#002B36", "#FDF6E3", "#FFFFFF",
+        "#EAEAEA", "#E3B341", "#FFD24D", "#5FA8D3", "#3FCFBE", "#7FBF5F", "#E0654A",
+        "#C080D0", "#9C9C9C",
+    ];
+
+    private void UpdateCustomColorsPanel()
+    {
+        _customColorsPanel.IsVisible = _main.Settings.Theme == CustomTheme.Key;
+        _customColorsPanel.Children.Clear();
+        if (!_customColorsPanel.IsVisible) return;
+
+        _customColorsPanel.Margin = new Thickness(0, -7, 0, 10);
+        _customColorsPanel.Children.Add(ColorRow("Background",
+            _main.Settings.CustomThemeBg ?? CustomTheme.DefaultBg,
+            value => _main.Settings.CustomThemeBg = value));
+        _customColorsPanel.Children.Add(ColorRow("Text",
+            _main.Settings.CustomThemeText ?? CustomTheme.DefaultText,
+            value => _main.Settings.CustomThemeText = value));
+        _customColorsPanel.Children.Add(ColorRow("Accent",
+            _main.Settings.CustomThemeAccent ?? CustomTheme.DefaultAccent,
+            value => _main.Settings.CustomThemeAccent = value));
+    }
+
+    private Control ColorRow(string label, string initial, Action<string> store)
+    {
+        var current = initial;
+        var row = new Grid { Margin = new Thickness(0, 3) };
+        row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(78)));
+        row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(76)));
+        row.Children.Add(new TextBlock
+        {
+            Text = label, FontSize = 11, Foreground = AppTheme.TextBrush,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var hex = DarkBox(current, "#RRGGBB");
+        hex.Width = 74;
+        void Commit(string? value)
+        {
+            if (CustomTheme.Valid(value) is not { } valid)
+            {
+                hex.Text = current;
+                return;
+            }
+            current = valid;
+            hex.Text = valid;
+            store(valid);
+            _main.PersistSettings();
+            AppTheme.Apply(_main.Settings);
+            _main.RefreshTheme();
+        }
+
+        var swatches = new WrapPanel { Margin = new Thickness(2, 0, 6, 0) };
+        foreach (var color in SwatchColors)
+        {
+            var swatch = new Border
+            {
+                Width = 15, Height = 15, Margin = new Thickness(1),
+                CornerRadius = new CornerRadius(2), BorderThickness = new Thickness(1),
+                BorderBrush = AppTheme.DimBrush,
+                Background = new SolidColorBrush(Color.Parse(color)),
+                Cursor = new Cursor(StandardCursorType.Hand),
+            };
+            ToolTip.SetTip(swatch, color);
+            swatch.PointerPressed += (_, e) =>
+            {
+                if (!e.GetCurrentPoint(swatch).Properties.IsLeftButtonPressed) return;
+                Commit(color);
+                e.Handled = true;
+            };
+            swatches.Children.Add(swatch);
+        }
+        Grid.SetColumn(swatches, 1);
+        row.Children.Add(swatches);
+
+        hex.LostFocus += (_, _) => Commit(hex.Text);
+        hex.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            Commit(hex.Text);
+            e.Handled = true;
+        };
+        Grid.SetColumn(hex, 2);
+        row.Children.Add(hex);
+        return row;
     }
 
     private async void OnSoundChanged(object? sender, SelectionChangedEventArgs e)

@@ -158,6 +158,28 @@ public class OptionsRenderTests : IDisposable
         main.Close();
     }
 
+    [AvaloniaFact]
+    public void CustomThemeShowsEditableColorsAndSwatches()
+    {
+        var (main, options) = Open();
+        var theme = options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(OptionsViewModel.ThemeLabels[0]));
+
+        theme.SelectedIndex = ThemeCatalog.IndexOf(CustomTheme.Key);
+
+        Assert.Equal(CustomTheme.Key, main.Settings.Theme);
+        var text = options.GetVisualDescendants().OfType<TextBox>()
+            .Select(t => t.Text).ToList();
+        Assert.Contains(CustomTheme.DefaultBg, text);
+        Assert.Contains(CustomTheme.DefaultText, text);
+        Assert.Contains(CustomTheme.DefaultAccent, text);
+        Assert.True(options.GetVisualDescendants().OfType<Border>()
+            .Count(b => b.Width == 15 && b.Height == 15) >= 16 * 3);
+
+        options.Close();
+        main.Close();
+    }
+
     /// <summary>Every watch-rule kind is offered here too — a kind that exists in Core but
     /// never reaches the Linux dropdown is unreachable for those users.</summary>
     [AvaloniaFact]
