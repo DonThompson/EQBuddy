@@ -138,6 +138,32 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void PendingCueCountsDownInTheTrackedCardHeading()
+    {
+        var window = new MainWindow();
+        window.Show();
+        var rule = new TrackedRule { Name = "Respawn", Pattern = "placeholder" };
+        window.Settings.TrackedRules.Add(rule);
+        var dueAt = DateTime.Now.AddMinutes(8);
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            Tracked =
+            [
+                new TrackedRuleResult(rule.Name, 1, [], 1, 1,
+                    DateTime.Now, DateTime.Now, "placeholder", rule.Id),
+            ],
+        }, new Dictionary<string, DateTime> { [rule.Id] = dueAt });
+
+        var heading = window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text?.StartsWith("RESPAWN ⏳") == true);
+        Assert.Matches(@"RESPAWN ⏳ (7:5\d|8:00)", heading.Text!);
+        Assert.Same(AppTheme.WarnBrush, heading.Foreground);
+
+        window.Close();
+    }
+
     /// <summary>A theme swap has to change what's on screen. Mutating brushes in place is
     /// clever but invisible to a compiler: this is the check that it actually repaints.</summary>
     [AvaloniaFact]

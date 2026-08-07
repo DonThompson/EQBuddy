@@ -808,11 +808,12 @@ public sealed class MainWindow : Window
     /// headless render tests can exercise the code path every refresh takes — which is where
     /// a card that mis-formats or dereferences null actually breaks — without a log folder,
     /// a network, or a five-second wait.</summary>
-    internal void RenderSnapshotForTest(StatsSnapshot s)
+    internal void RenderSnapshotForTest(StatsSnapshot s,
+        IReadOnlyDictionary<string, DateTime>? dueByRule = null)
     {
         ApplySessionSubsections();
         RefreshExpandedSections(s);
-        RenderTracked(s);
+        RenderTracked(s, dueByRule);
     }
 
     private void RefreshExpandedSections(StatsSnapshot s)
@@ -983,7 +984,8 @@ public sealed class MainWindow : Window
     /// <summary>The floating alert tile, created on first use and owned by the widget.</summary>
     internal AlertWindow AlertTile => _alertWindow ??= new AlertWindow(_settings, this);
 
-    private void RenderTracked(StatsSnapshot s)
+    private void RenderTracked(StatsSnapshot s,
+        IReadOnlyDictionary<string, DateTime>? dueOverride = null)
     {
         var haveRules = _settings.TrackedRules.Count > 0 && !_settings.HiddenSections.Contains("tracked");
         if (_sections.TryGetValue("tracked", out var section))
@@ -994,17 +996,22 @@ public sealed class MainWindow : Window
         if (!_sections["tracked"].IsExpanded) return;
 
         _trackedPanel.Children.Clear();
+        var now = DateTime.Now;
+        var dueByRule = dueOverride ?? _delayedAlerts.NextDueByRule(now);
         foreach (var r in s.Tracked)
         {
             var head = new Grid { Margin = new Thickness(0, 4, 0, 0) };
             head.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
             head.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            var counting = dueByRule.TryGetValue(r.Id, out var dueAt);
             head.Children.Add(new TextBlock
             {
-                Text = r.Name.ToUpperInvariant(),
+                Text = counting
+                    ? $"{r.Name.ToUpperInvariant()} ⏳ {EQBuddy.UI.Shared.Countdown.Format(dueAt - now)}"
+                    : r.Name.ToUpperInvariant(),
                 FontSize = 11,
                 FontWeight = FontWeight.SemiBold,
-                Foreground = AppTheme.AccentBrush,
+                Foreground = counting ? AppTheme.WarnBrush : AppTheme.AccentBrush,
             });
             var rate = AppTheme.DimText($"{r.TotalQuantity} total - {r.PerHour:0.#}/hr - {r.PerActiveHour:0.#}/active hr");
             Grid.SetColumn(rate, 1);
