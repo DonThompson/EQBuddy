@@ -22,6 +22,8 @@ public sealed class SpawnChipsWindow : Window
     private readonly List<TextBlock> _countdowns = [];
     private List<SpawnChip> _chips = [];
     private string _signature = "";
+    private PixelPoint _lastVisiblePosition;
+    private bool _haveVisiblePosition;
 
     public SpawnChipsWindow(MainWindow main, SpawnsViewModel vm)
     {
@@ -46,11 +48,26 @@ public sealed class SpawnChipsWindow : Window
                 Position = new PixelPoint((int)_settings.SpawnChipsLeft, (int)_settings.SpawnChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 40);
+            _lastVisiblePosition = Position;
+            _haveVisiblePosition = true;
+        };
+        // Position can be reset by the native backend while a window is closing. Capture
+        // moves only while it is visibly on screen, then persist that stable snapshot.
+        PositionChanged += (_, _) =>
+        {
+            if (!IsVisible) return;
+            _lastVisiblePosition = Position;
+            _haveVisiblePosition = true;
+            // Keep the live settings object current too, so a newly-created stack in the
+            // same session restores correctly even before Closed has flushed the file.
+            _settings.SpawnChipsLeft = Position.X;
+            _settings.SpawnChipsTop = Position.Y;
         };
         Closed += (_, _) =>
         {
-            _settings.SpawnChipsLeft = Position.X;
-            _settings.SpawnChipsTop = Position.Y;
+            var saved = _haveVisiblePosition ? _lastVisiblePosition : Position;
+            _settings.SpawnChipsLeft = saved.X;
+            _settings.SpawnChipsTop = saved.Y;
             _settings.Save();
         };
     }

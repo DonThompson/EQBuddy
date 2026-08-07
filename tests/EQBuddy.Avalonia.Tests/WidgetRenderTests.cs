@@ -145,7 +145,10 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("⏳ Asaka L`Rei", text);
         Assert.Contains(text, value => value.StartsWith("3:"));
 
+        chips.Position = new global::Avalonia.PixelPoint(321, 222);
         chips.Close();
+        Assert.Equal(321, main.Settings.SpawnChipsLeft);
+        Assert.Equal(222, main.Settings.SpawnChipsTop);
         main.Close();
     }
 
