@@ -500,7 +500,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            var result = await _wikiMobs.LookupAsync(name);
+            var result = await _wikiMobs.LookupAsync(name, CurrentZoneName);
             _targetResults[name] = result;
             RefreshUi();
         }

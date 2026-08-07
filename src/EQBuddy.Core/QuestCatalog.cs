@@ -101,6 +101,17 @@ public static class QuestClassFilter
         ["Warrior"] = ["WAR"], ["Wizard"] = ["WIZ"],
     };
 
+    /// <summary>Union match for a multiclass character (Legends allows up to three):
+    /// the quest passes if ANY selected class can do it; no selection = no filter.</summary>
+    public static bool MatchesAny(string classText, IReadOnlyCollection<string> classes) =>
+        classes.Count == 0 || classes.Any(c => Matches(classText, c));
+
+    /// <summary>Short label for a class ("CLR"), for the multi-select button face.</summary>
+    public static string Abbrev(string className) =>
+        Abbrevs.TryGetValue(className, out var a) ? a[0]
+        : className.Length <= 3 ? className.ToUpperInvariant()
+        : className[..3].ToUpperInvariant();
+
     /// <summary>Can this class do a quest with this restriction text? Unknown or
     /// unrestricted text says yes — a filter should hide only what it's sure about.</summary>
     public static bool Matches(string classText, string className)

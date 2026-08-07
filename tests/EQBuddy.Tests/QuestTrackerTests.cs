@@ -221,6 +221,30 @@ public class QuestTrackerTests : IDisposable
     }
 
     [Fact]
+    public void MulticlassFilterIsAUnion()
+    {
+        // Legends: up to three active classes — a quest ANY of them can do stays visible.
+        string[] pal = ["Paladin"];
+        string[] palNec = ["Paladin", "Necromancer"];
+        Assert.False(QuestClassFilter.MatchesAny("ALL except NEC WIZ MAG ENC", []) == false); // empty = no filter
+        Assert.True(QuestClassFilter.MatchesAny("Cleric, Paladin", pal));
+        Assert.True(QuestClassFilter.MatchesAny("ALL except PAL", palNec));   // the necro side passes
+        Assert.False(QuestClassFilter.MatchesAny("Cleric", palNec));
+        Assert.Equal("SHD", QuestClassFilter.Abbrev("Shadow Knight"));
+        Assert.Equal("BER", QuestClassFilter.Abbrev("Berserker"));
+    }
+
+    [Fact]
+    public void CharacterClassesPersistPerCharacter()
+    {
+        var store = Store();
+        store.SetClasses("dranak_legends", ["Paladin", "Necromancer", "paladin"]);   // dedup
+        var reloaded = new QuestLedgerStore(_path);
+        Assert.Equal(["Paladin", "Necromancer"], reloaded.ClassesFor("dranak_legends"));
+        Assert.Empty(reloaded.ClassesFor("vex_legends"));
+    }
+
+    [Fact]
     public void BerserkerIsAKnownClass()
     {
         // twidget76's #61: the class dropdown builds from this array.

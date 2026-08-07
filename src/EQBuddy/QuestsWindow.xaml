@@ -59,9 +59,20 @@
                 <ComboBox x:Name="EraCombo" Grid.Column="1" Width="104" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnEraChanged"
                           ToolTip="Hide quests from later eras than the world has (unmarked quests always show)"/>
-                <ComboBox x:Name="ClassCombo" Grid.Column="2" Width="92" FontSize="11"
-                          Margin="6,0,0,0" SelectionChanged="OnClassChanged"
-                          ToolTip="Only quests this class can do (the wiki's restriction text decides)"/>
+                <!-- Multiclass filter (Legends: up to 3 active classes): a checkbox
+                     popup, selection remembered per character. -->
+                <Button x:Name="ClassBtn" Grid.Column="2" Content="Any class"
+                        Style="{StaticResource ActionButton}" FontSize="11" Padding="8,2"
+                        Margin="6,0,0,0" Click="OnClassBtn"
+                        ToolTip="Pick your class(es) — quests any of them can do stay visible"/>
+                <Popup x:Name="ClassPopup" PlacementTarget="{Binding ElementName=ClassBtn}"
+                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                    <Border Background="{DynamicResource PopupBrush}" CornerRadius="6"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            Padding="10,8">
+                        <StackPanel x:Name="ClassChecks"/>
+                    </Border>
+                </Popup>
                 <!-- mine = your items + 📌 pins · zone = doable where you're standing ·
                      all = the whole catalog -->
                 <Border Grid.Column="3" BorderBrush="{DynamicResource BorderBrush}"

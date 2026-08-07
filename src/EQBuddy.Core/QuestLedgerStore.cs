@@ -41,6 +41,10 @@ public sealed class QuestLedgerStore
         public List<string> Hidden { get; set; } = [];
         /// <summary>Quest name → how many times it's been marked completed.</summary>
         public Dictionary<string, int> Completed { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>The character's classes for quest filtering — Legends allows up to
+        /// three active classes (David, 2026-08-07), and a character's classes don't
+        /// change per session, so the selection belongs to the character.</summary>
+        public List<string> Classes { get; set; } = [];
     }
 
     private readonly string _path;
@@ -71,7 +75,8 @@ public sealed class QuestLedgerStore
                 // reparse it and carry the items over (no tracked quests existed yet).
                 if (stored.Count > 0
                     && stored.Values.All(c => c.Items.Count == 0 && c.Tracked.Count == 0
-                                              && c.Hidden.Count == 0 && c.Completed.Count == 0))
+                                              && c.Hidden.Count == 0 && c.Completed.Count == 0
+                                              && c.Classes.Count == 0))
                 {
                     try
                     {
@@ -97,6 +102,7 @@ public sealed class QuestLedgerStore
                         Tracked = kv.Value.Tracked,
                         Hidden = kv.Value.Hidden,
                         Completed = new Dictionary<string, int>(kv.Value.Completed, StringComparer.OrdinalIgnoreCase),
+                        Classes = kv.Value.Classes,
                     }),
                 StringComparer.OrdinalIgnoreCase);
     }
@@ -217,6 +223,24 @@ public sealed class QuestLedgerStore
                 entry.Manual = Math.Max(entry.Manual - item.Qty, -entry.Looted);
             }
             c.Completed[questName] = c.Completed.TryGetValue(questName, out var n) ? n + 1 : 1;
+            Save();
+        }
+    }
+
+    /// <summary>The character's selected classes for quest filtering (copy).</summary>
+    public List<string> ClassesFor(string characterKey)
+    {
+        lock (_lock)
+            return _byCharacter.TryGetValue(characterKey, out var c) ? [.. c.Classes] : [];
+    }
+
+    public void SetClasses(string characterKey, IEnumerable<string> classes)
+    {
+        if (characterKey.Length == 0) return;
+        lock (_lock)
+        {
+            CharacterFor(characterKey).Classes =
+                classes.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             Save();
         }
     }

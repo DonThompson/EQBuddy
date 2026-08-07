@@ -46,7 +46,7 @@ public sealed partial class EqlWikiMobService
         _search = searchOverride ?? SearchFromApi;
     }
 
-    public async Task<MobLookupResult> LookupAsync(string creatureName)
+    public async Task<MobLookupResult> LookupAsync(string creatureName, string currentZone = "")
     {
         var title = creatureName.Trim();
         if (title.Length == 0) return new MobLookupResult(null, ItemLookupState.NotFound, null);
@@ -74,11 +74,21 @@ public sealed partial class EqlWikiMobService
         // only under the spawn catalog's fuzzy rule (bounded edit distance on folded
         // names, exact-first doctrine) — typos and punctuation drift resolve, but a
         // vaguely-related page can never masquerade as the creature (David, 2026-08-06).
+        //
+        // The compare runs on the title with any "(Zone)" suffix stripped: common mobs
+        // live at zone-disambiguated pages ("Orc Legionnaire (Crushbone)"), and the
+        // bare-name page can be a broken redirect left over from the split — David hit
+        // exactly that mid-fight, 2026-08-07. When several zone pages match, the
+        // player's current zone picks; zoneless pages come before foreign-zone ones.
         try
         {
-            foreach (var found in (await _search(title).ConfigureAwait(false)).Take(5))
+            var hits = (await _search(title).ConfigureAwait(false)).Take(5)
+                .Where(found => SpawnCatalog.NameMatchesFuzzy(StripZoneSuffix(found), title))
+                .OrderBy(found => ZoneSuffix(found) is { } zone
+                    ? zone.Equals(currentZone.Trim(), StringComparison.OrdinalIgnoreCase) ? 0 : 2
+                    : 1);
+            foreach (var found in hits)
             {
-                if (!SpawnCatalog.NameMatchesFuzzy(found, title)) continue;
                 var wikitext = await _fetch(found).ConfigureAwait(false);
                 if (wikitext is null) continue;
                 WriteCache(title, found, wikitext);
@@ -92,6 +102,16 @@ public sealed partial class EqlWikiMobService
                 : new MobLookupResult(null, ItemLookupState.Offline, null);
         }
         return new MobLookupResult(null, ItemLookupState.NotFound, null);
+    }
+
+    private static string StripZoneSuffix(string title) =>
+        System.Text.RegularExpressions.Regex.Replace(title, @"\s*\([^)]*\)$", "");
+
+    /// <summary>The "(Zone)" disambiguation suffix, or null when the title has none.</summary>
+    private static string? ZoneSuffix(string title)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(title, @"\(([^)]*)\)$");
+        return m.Success ? m.Groups[1].Value.Trim() : null;
     }
 
     private static async Task<List<string>> SearchFromApi(string query)
