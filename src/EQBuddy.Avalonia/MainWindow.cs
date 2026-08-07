@@ -25,7 +25,7 @@ public sealed class MainWindow : Window
     private readonly SpawnTimers _spawnTimers;
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
-    private bool _hadSpawnTimers;
+    private SpawnChipsWindow? _spawnChipsWindow;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
@@ -803,26 +803,33 @@ public sealed class MainWindow : Window
     {
         if (_settings.TrackSpawns)
         {
-            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
+            // Sound only: the chip changing to DUE is already the visual notification.
+            foreach (var _ in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
             {
-                AlertTile.ShowAlert($"⏰ {due.Name} due - {due.Zone}");
                 if (!string.Equals(_settings.SpawnSound, "Off", StringComparison.OrdinalIgnoreCase))
                     PlayAlertSound(_settings.SpawnSound);
             }
 
-            // A new kill, or a timer recovered during startup replay, is information:
-            // pop the tracker on that timer's zone. An unchanged timer never re-pops.
-            var started = _spawnsVm.ConsumeNewTimers(DateTime.Now);
-            if (started.Count > 0)
-                ShowSpawnsWindow(started[^1].Zone);
-
-            // Only close on a real 1 -> 0 transition. A timer-free window opened from
-            // the menu is for browsing or starting a timer and must stay open.
-            var running = _spawnsVm.HasActiveTimers(DateTime.Now);
-            if (!running && _hadSpawnTimers && _spawnsWindow is { IsVisible: true } tracker)
-                tracker.Close();
-            _hadSpawnTimers = running;
+            // Chips are the ambient face and stay visible alongside the full browser.
+            if (_spawnsVm.HasActiveTimers(DateTime.Now))
+            {
+                if (_spawnChipsWindow is not { IsVisible: true })
+                {
+                    var chips = new SpawnChipsWindow(this, _spawnsVm);
+                    chips.Closed += (_, _) =>
+                    {
+                        if (ReferenceEquals(_spawnChipsWindow, chips)) _spawnChipsWindow = null;
+                    };
+                    _spawnChipsWindow = chips;
+                    chips.Show(this);
+                }
+                _spawnChipsWindow.RefreshChips(DateTime.Now);
+            }
+            else
+                CloseSpawnChips();
         }
+        else
+            CloseSpawnChips();
 
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))
         {
@@ -1389,14 +1396,14 @@ public sealed class MainWindow : Window
         SyncTrackSpawnsMenu();
         if (_optionsWindow is { IsVisible: true } options)
             options.SyncTrackSpawns(on);
-        if (on)
+        if (!on)
         {
-            if (_spawnsVm.HasActiveTimers(DateTime.Now)) ShowSpawnsWindow();
-        }
-        else if (_spawnsWindow is { } window)
-        {
-            _spawnsWindow = null;
-            window.Close();
+            CloseSpawnChips();
+            if (_spawnsWindow is { } window)
+            {
+                _spawnsWindow = null;
+                window.Close();
+            }
         }
     }
 
@@ -1418,6 +1425,13 @@ public sealed class MainWindow : Window
 
     private void SyncTrackSpawnsMenu() => _trackSpawnsItem.Header =
         (_settings.TrackSpawns ? "✓ " : "") + "Track spawns (named respawn timers)";
+
+    private void CloseSpawnChips()
+    {
+        if (_spawnChipsWindow is not { } chips) return;
+        _spawnChipsWindow = null;
+        chips.Close();
+    }
 
     private void OnHistory(object? sender, EventArgs e)
     {

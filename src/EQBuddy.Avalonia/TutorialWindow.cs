@@ -66,12 +66,12 @@ public sealed class TutorialWindow : Window
             "t-watch.png"),
 
         new("Spawn timers",
-            "Kill a named mob - or the placeholder that spawns in its spot - and the 🕒 " +
-            "Spawns window pops up counting down its respawn, following you zone to zone. Press ▶ " +
-            "for camps you arrived at late. Community respawn times are included, every duration " +
-            "is editable, and your edits survive updates. The window hides itself when the last " +
-            "timer expires; X hides it until the next kill. Right-click -> Spawn timers opens it " +
-            "any time, and Track spawns in Options turns the feature off.",
+            "Kill a named mob - or its placeholder - and a compact countdown chip appears: " +
+            "⏳ Asaka L`Rei 3:12. Chips stack, drag anywhere as one, and keep every timer " +
+            "running across zones. At zero a chip turns DUE (with a sound if enabled) until " +
+            "dismissed. Double-click a chip - or use right-click -> Spawn timers - for the full " +
+            "zone list. Community times are editable there and your correction survives updates; " +
+            "▶ starts a timer manually and + adds a missing named.",
             null),
 
         new("Mini mode & hotkeys",

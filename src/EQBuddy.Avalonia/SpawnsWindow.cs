@@ -152,7 +152,7 @@ public sealed class SpawnsWindow : Window
 
         var footer = new StackPanel { Margin = new Thickness(16, 4, 16, 14) };
         footer.Children.Add(AppTheme.DimText(
-            "Kill a named (or its placeholder) and its countdown starts from the log. ▶ starts one by hand; enter how long ago it died first, or leave it empty for now. Edit any duration - your edits survive updates.",
+            "Kill a named (or its placeholder) and its countdown starts from the log. ▶ starts one by hand. Community times are a starting point: edit any discrepancy you see in game; your value wins and survives updates.",
             new Thickness(0, 0, 0, 6)));
         footer.Children.Add(addRow);
 

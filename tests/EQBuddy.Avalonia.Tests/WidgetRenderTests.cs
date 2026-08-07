@@ -124,6 +124,29 @@ public class WidgetRenderTests : IDisposable
         main.Close();
     }
 
+    [AvaloniaFact]
+    public void SpawnCountdownsRenderAsCompactChips()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var catalog = SpawnCatalog.LoadEmbedded();
+        var overrides = SpawnOverrides.Load(Path.Combine(_profile, "spawn-chip-overrides.json"));
+        var timers = new SpawnTimers(catalog, overrides, Path.Combine(_profile, "spawn-chip-timers.json"));
+        timers.StartManual("Befallen", "Asaka L`Rei", 210);
+        var chips = new SpawnChipsWindow(main, new SpawnsViewModel(catalog, overrides, timers));
+        chips.RefreshChips(DateTime.Now);
+        chips.Show(main);
+
+        Assert.NotNull(chips.CaptureRenderedFrame());
+        var text = chips.GetVisualDescendants().OfType<TextBlock>()
+            .Select(block => block.Text ?? "").ToList();
+        Assert.Contains("⏳ Asaka L`Rei", text);
+        Assert.Contains(text, value => value.StartsWith("3:"));
+
+        chips.Close();
+        main.Close();
+    }
+
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null
     /// blows up — and it's the path every refresh takes.</summary>
     [AvaloniaFact]
