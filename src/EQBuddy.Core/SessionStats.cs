@@ -701,13 +701,21 @@ public sealed class SessionStats
                     Bump(Mob(l.Source).Loot, l.Item);
                     // Quest ledger rides the same event; the store's own filter and
                     // time high-water mark decide whether anything actually lands.
-                    QuestStore?.RecordLoot(AaCharacterKey, l.Item, l.Count, l.Time);
+                    // Loot-MERGE lines ("looted a Belt +2 ... to create a Belt +4") are
+                    // net zero for the quest count: the corpse's item and the held item
+                    // became one, so possession didn't change (David, 2026-08-07 —
+                    // "ready ×17" was counting every merge-consumed belt).
+                    if (l.UpgradeResult is null)
+                        QuestStore?.RecordLoot(AaCharacterKey, l.Item, l.Count, l.Time);
                     break;
                 case CraftEvent c:
                     Bump(_crafted, c.Item);
+                    // A manual merge turned two held items into one.
+                    QuestStore?.RecordConsumed(AaCharacterKey, c.Item, 1, c.Time);
                     break;
                 case ItemDestroyedEvent d:
                     _lastDestroyed = (d.Item, d.Count, d.Time);
+                    QuestStore?.RecordConsumed(AaCharacterKey, d.Item, d.Count, d.Time);
                     break;
                 case MoneyEvent { Vendor: true } m:
                     _vendorCopper += m.Copper; _salesCount++;
@@ -719,6 +727,11 @@ public sealed class SessionStats
                             : ("Loot window sale", 1);
                     var sv = _soldItems.TryGetValue(soldName, out var sc) ? sc : (0, 0L);
                     _soldItems[soldName] = (sv.Item1 + soldCount, sv.Item2 + m.Copper);
+                    // A NAMED sale is a held item leaving. Nameless loot-window sales
+                    // already subtracted via their preceding "successfully destroyed"
+                    // line — subtracting here too would double-count the exit.
+                    if (m.Item is { } soldItem)
+                        QuestStore?.RecordConsumed(AaCharacterKey, soldItem, 1, m.Time);
                     break;
                 case MoneyEvent m:
                     _copper += m.Copper; _coinDrops++;

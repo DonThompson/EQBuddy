@@ -99,7 +99,7 @@
         </ScrollViewer>
 
         <TextBlock Grid.Row="3" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="16,8,16,14"
-                   Text="Counts items you loot plus what you add above. Hand-ins aren't in the log — after turning items in, right-click an item row here to clear its count. Click a quest name for the full wiki walkthrough."/>
+                   Text="Counts what you loot, minus what the log sees leave (sales, merges, destroys), plus what you add above. Hand-ins aren't in the log — click ✔ ready when you turn in, or right-click an item row to clear it. Click a quest name for the full wiki walkthrough."/>
       </Grid>
     </Border>
 </Window>

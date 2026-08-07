@@ -26,8 +26,11 @@ public sealed class QuestLedgerStore
     {
         public int Looted { get; set; }
         public int Manual { get; set; }
+        /// <summary>Items the log saw leave: merchant sales, destroys, and merges (two
+        /// become one). Hand-ins still aren't logged — that stays the ✔ click.</summary>
+        public int Consumed { get; set; }
         public DateTime LastTime { get; set; }
-        public int Total => Looted + Manual;
+        public int Total => Math.Max(0, Looted + Manual - Consumed);
     }
 
     /// <summary>One character's slice: owned items plus the quests they chose to 📌-track
@@ -60,10 +63,40 @@ public sealed class QuestLedgerStore
     /// that wants plain "Crushbone Shoulderpads". Identity by default.</summary>
     public Func<string, string> Normalize { get; set; } = s => s;
 
+    /// <summary>Bump when the counting rules change enough that stored loot counters
+    /// are wrong. v2: sales/merges/destroys subtract, loot-merge lines net zero (David,
+    /// 2026-08-07: "ready ×17" counted every merge-consumed belt). On mismatch the
+    /// LOG-DERIVED counters reset (Looted/Consumed/LastTime) so the next full-log
+    /// replay rebuilds them under the current rules; manual counts, pins, hides,
+    /// completions, and classes are user statements and always survive.</summary>
+    private const int CountingRulesVersion = 2;
+
     public QuestLedgerStore(string path)
     {
         _path = path;
         _byCharacter = Load(path);
+        ResetCountersIfRulesChanged();
+    }
+
+    private void ResetCountersIfRulesChanged()
+    {
+        var marker = _path + ".rules";
+        try
+        {
+            if (File.Exists(marker) &&
+                int.TryParse(File.ReadAllText(marker).Trim(), out var v) &&
+                v >= CountingRulesVersion)
+                return;
+            foreach (var entry in _byCharacter.Values.SelectMany(c => c.Items.Values))
+            {
+                entry.Looted = 0;
+                entry.Consumed = 0;
+                entry.LastTime = DateTime.MinValue;
+            }
+            Save();
+            File.WriteAllText(marker, CountingRulesVersion.ToString());
+        }
+        catch (Exception ex) { CoreLog.Error(ex); }
     }
 
     private static Dictionary<string, CharacterLedger> Load(string path)
@@ -128,6 +161,23 @@ public sealed class QuestLedgerStore
         }
     }
 
+    /// <summary>The item left the world: a merchant sale, a destroy, or a merge (two
+    /// tiers became one). Same filter, normalization, and replay-safe time gate as
+    /// <see cref="RecordLoot"/> — the startup replay re-offers these too.</summary>
+    public void RecordConsumed(string characterKey, string item, int count, DateTime time)
+    {
+        item = Normalize(item);
+        if (characterKey.Length == 0 || count <= 0 || !TrackFilter(item)) return;
+        lock (_lock)
+        {
+            var entry = EntryFor(characterKey, item);
+            if (time <= entry.LastTime) return;
+            entry.Consumed += count;
+            entry.LastTime = time;
+            Save();
+        }
+    }
+
     /// <summary>Set the manual adjustment: positive = "already had these before EQBuddy",
     /// negative = a hand-in offset against the looted history (clamped so Total never
     /// goes below zero — you can't owe the ledger items). Zero removes an entry with no
@@ -153,7 +203,11 @@ public sealed class QuestLedgerStore
         lock (_lock)
             return _byCharacter.TryGetValue(characterKey, out var c)
                 ? c.Items.ToDictionary(kv => kv.Key,
-                    kv => new Entry { Looted = kv.Value.Looted, Manual = kv.Value.Manual, LastTime = kv.Value.LastTime },
+                    kv => new Entry
+                    {
+                        Looted = kv.Value.Looted, Manual = kv.Value.Manual,
+                        Consumed = kv.Value.Consumed, LastTime = kv.Value.LastTime,
+                    },
                     StringComparer.OrdinalIgnoreCase)
                 : new(StringComparer.OrdinalIgnoreCase);
     }

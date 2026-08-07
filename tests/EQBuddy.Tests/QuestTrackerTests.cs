@@ -6,7 +6,11 @@ public class QuestTrackerTests : IDisposable
 {
     private readonly string _path = Path.Combine(Path.GetTempPath(), $"quest-ledger-{Guid.NewGuid():N}.json");
 
-    public void Dispose() { try { File.Delete(_path); } catch { } }
+    public void Dispose()
+    {
+        try { File.Delete(_path); } catch { }
+        try { File.Delete(_path + ".rules"); } catch { }
+    }
 
     private QuestLedgerStore Store() => new(_path) { TrackFilter = _ => true };
 
@@ -151,11 +155,15 @@ public class QuestTrackerTests : IDisposable
     [Fact]
     public void PreTrackingLedgerShapeMigrates()
     {
-        // The one-day-old shape: char → item → entry, no Tracked list.
+        // The one-day-old shape: char → item → entry, no Tracked list. Its items carry
+        // over — and because that shape predates the v2 counting rules, the rules bump
+        // clears the LOG-derived counter (replay rebuilds it) while the manual count,
+        // being the user's own statement, survives.
         File.WriteAllText(_path,
             """{"dranak_legends":{"Bone Chips":{"Looted":3,"Manual":1,"LastTime":"2026-08-07T12:00:00"}}}""");
         var store = new QuestLedgerStore(_path);
-        Assert.Equal(4, store.For("dranak_legends")["Bone Chips"].Total);
+        Assert.Equal(0, store.For("dranak_legends")["Bone Chips"].Looted);
+        Assert.Equal(1, store.For("dranak_legends")["Bone Chips"].Total);
         Assert.Empty(store.TrackedFor("dranak_legends"));
     }
 
@@ -218,6 +226,49 @@ public class QuestTrackerTests : IDisposable
         Assert.True(q.TouchesZone("south kaladim"));
         Assert.False(q.TouchesZone("Qeynos"));
         Assert.False(q.TouchesZone(""));
+    }
+
+    [Fact]
+    public void SalesMergesAndDestroysSubtract()
+    {
+        var store = Store();
+        store.Normalize = QuestCatalog.BaseItemName;
+        store.RecordLoot("dranak_freeport", "Crushbone Belt +2", 1, T0);
+        store.RecordLoot("dranak_freeport", "Crushbone Belt +2", 1, T0.AddMinutes(1));
+        store.RecordLoot("dranak_freeport", "Crushbone Belt +2", 1, T0.AddMinutes(2));
+        // Manual merge: two belts became one.
+        store.RecordConsumed("dranak_freeport", "Crushbone Belt +4", 1, T0.AddMinutes(3));
+        Assert.Equal(2, store.For("dranak_freeport")["Crushbone Belt"].Total);
+        // Sold one.
+        store.RecordConsumed("dranak_freeport", "Crushbone Belt +4", 1, T0.AddMinutes(4));
+        Assert.Equal(1, store.For("dranak_freeport")["Crushbone Belt"].Total);
+        // Replay re-offers everything: the time gate bounces it all.
+        store.RecordConsumed("dranak_freeport", "Crushbone Belt +4", 1, T0.AddMinutes(3));
+        store.RecordLoot("dranak_freeport", "Crushbone Belt +2", 1, T0);
+        Assert.Equal(1, store.For("dranak_freeport")["Crushbone Belt"].Total);
+        // Consumption of pre-tracking items can't drive Total negative.
+        store.RecordConsumed("dranak_freeport", "Crushbone Belt", 9, T0.AddMinutes(9));
+        Assert.Equal(0, store.For("dranak_freeport")["Crushbone Belt"].Total);
+    }
+
+    [Fact]
+    public void CountingRulesBumpResetsLogCountersButKeepsUserStatements()
+    {
+        var store = Store();
+        store.RecordLoot("dranak_freeport", "Crushbone Belt", 5, T0);
+        store.SetManual("dranak_freeport", "Crushbone Belt", 2);
+        store.SetTracked("dranak_freeport", "Orc Vest", true);
+        // Simulate an old-rules ledger: remove the rules marker and reload.
+        File.Delete(_path + ".rules");
+        var reloaded = new QuestLedgerStore(_path);
+        var entry = reloaded.For("dranak_freeport")["Crushbone Belt"];
+        Assert.Equal(0, entry.Looted);            // log-derived: reset, replay rebuilds
+        Assert.Equal(2, entry.Manual);            // the user's statement survives
+        Assert.Equal(["Orc Vest"], reloaded.TrackedFor("dranak_freeport").ToArray());
+        // And the replay can now re-record from time zero.
+        reloaded.TrackFilter = _ => true;
+        reloaded.RecordLoot("dranak_freeport", "Crushbone Belt", 1, T0);
+        Assert.Equal(1, reloaded.For("dranak_freeport")["Crushbone Belt"].Looted);
     }
 
     [Fact]
