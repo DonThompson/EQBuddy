@@ -1062,6 +1062,7 @@ public sealed class MainWindow : Window
     // Keyed by TrackedRule.Id — a display name can be shared by two rules, and keying
     // on it made same-named rules share baselines and cooldowns.
     private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _watchExpandedRules = new(StringComparer.Ordinal);
     private readonly EQBuddy.UI.Shared.AlertCooldowns _ruleCooldowns = new();
     private readonly EQBuddy.UI.Shared.SoundGate _soundGate = new();
     private string? _alertBaselinePath;
@@ -1103,18 +1104,40 @@ public sealed class MainWindow : Window
             head.Children.Add(rate);
             _trackedPanel.Children.Add(head);
 
-            foreach (var item in r.Items)
-                _trackedPanel.Children.Add(new TextBlock
-                {
-                    Text = $"{item.Name}   x{item.Count}",
-                    FontSize = 12,
-                    Foreground = AppTheme.TextBrush,
-                    Margin = new Thickness(6, 1, 0, 0),
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                });
             _trackedPanel.Children.Add(AppTheme.DimText(
-                r.LastMatch is { } lm ? $"last match {FormatAge(DateTime.Now - lm)} ago" : "no matches yet",
+                r.LastMatch is { } lm && !string.IsNullOrWhiteSpace(r.LastItem)
+                    ? $"last: {r.LastItem} · {FormatAge(now - lm)} ago"
+                    : "no matches yet",
                 new Thickness(6, 1, 0, 2)));
+
+            if (r.Items.Count > 1)
+            {
+                var expanded = _watchExpandedRules.Contains(r.Id);
+                if (expanded)
+                    foreach (var item in r.Items)
+                        _trackedPanel.Children.Add(new TextBlock
+                        {
+                            Text = $"{item.Name}   x{item.Count}",
+                            FontSize = 12,
+                            Foreground = AppTheme.TextBrush,
+                            Margin = new Thickness(12, 1, 0, 0),
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                        });
+
+                var ruleId = r.Id;
+                var toggle = AppTheme.DimText(
+                    expanded ? "▾ less" : $"▸ all {r.Items.Count} kinds",
+                    new Thickness(6, 1, 0, 2));
+                toggle.Cursor = new Cursor(StandardCursorType.Hand);
+                toggle.PointerPressed += (_, e) =>
+                {
+                    if (!_watchExpandedRules.Remove(ruleId))
+                        _watchExpandedRules.Add(ruleId);
+                    RenderTracked(CurrentSnapshot());
+                    e.Handled = true;
+                };
+                _trackedPanel.Children.Add(toggle);
+            }
         }
     }
 

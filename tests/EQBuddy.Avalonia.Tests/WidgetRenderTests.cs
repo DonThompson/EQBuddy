@@ -261,6 +261,33 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void WatchCardLeadsWithLastMatchAndCollapsesMultipleKinds()
+    {
+        var window = new MainWindow();
+        window.Show();
+        var rule = new TrackedRule { Name = "Buff fades", Pattern = "placeholder" };
+        window.Settings.TrackedRules.Add(rule);
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            Tracked =
+            [
+                new TrackedRuleResult(rule.Name, 3,
+                    [new NameCount("Haste", 2), new NameCount("Echoing Light", 1)],
+                    3, 3, DateTime.Now, DateTime.Now.AddSeconds(-5), "Haste", rule.Id),
+            ],
+        });
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains(text, t => t.StartsWith("last: Haste · ") && t.EndsWith(" ago"));
+        Assert.Contains("▸ all 2 kinds", text);
+        Assert.DoesNotContain("Haste   x2", text);
+
+        window.Close();
+    }
+
     /// <summary>A theme swap has to change what's on screen. Mutating brushes in place is
     /// clever but invisible to a compiler: this is the check that it actually repaints.</summary>
     [AvaloniaFact]
