@@ -312,6 +312,33 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void PetAbilitiesDefaultCollapsedAndExpandFromTheSavedSetting()
+    {
+        var window = new MainWindow();
+        window.Show();
+        var snapshot = new StatsSnapshot
+        {
+            PetAbilities = [new SourceDamage("Slash", 2, 30)],
+        };
+
+        window.Settings.ShowPetAbilities = false;
+        window.RenderSnapshotForTest(snapshot);
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("▸ Pet abilities (1)", text);
+        Assert.DoesNotContain("Slash", text);
+
+        window.Settings.ShowPetAbilities = true;
+        window.RenderSnapshotForTest(snapshot);
+        text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("▾ Pet abilities", text);
+        Assert.Contains("Slash", text);
+
+        window.Close();
+    }
+
     /// <summary>A theme swap has to change what's on screen. Mutating brushes in place is
     /// clever but invisible to a compiler: this is the check that it actually repaints.</summary>
     [AvaloniaFact]

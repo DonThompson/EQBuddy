@@ -536,6 +536,10 @@ public sealed class MainWindow : Window
         body.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits,
             out _dmgOutSortAvg, out _dmgOutSortDps, OnSortDmgOut, rateText: "dps"));
         body.Children.Add(_damageSourceList);
+        _petAbilityLabel.Cursor = new Cursor(StandardCursorType.Hand);
+        ToolTip.SetTip(_petAbilityLabel,
+            "What your pet is using, split out of its Pet row above — click to expand");
+        _petAbilityLabel.PointerPressed += OnPetAbilitiesToggled;
         body.Children.Add(_petAbilityLabel);
         body.Children.Add(_petAbilityList);
         body.Children.Add(SortHeader("Damage taken from", out _dmgInSortTotal, out _dmgInSortHits,
@@ -564,6 +568,15 @@ public sealed class MainWindow : Window
         set(!current);
         PersistSettings();
         RefreshUi();
+    }
+
+    private void OnPetAbilitiesToggled(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(_petAbilityLabel).Properties.IsLeftButtonPressed) return;
+        _settings.ShowPetAbilities = !_settings.ShowPetAbilities;
+        PersistSettings();
+        RefreshUi();
+        e.Handled = true;
     }
 
     private void ApplySessionSubsections()
@@ -960,8 +973,15 @@ public sealed class MainWindow : Window
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             // Shares the damage sort bar above it — it's the same rows, one level down.
+            // The overall Pet row is already visible above, so keep this potentially long
+            // per-ability list folded until the player asks for it.
             _petAbilityLabel.IsVisible = s.PetAbilities.Count > 0;
-            FillBreakdown(_petAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
+            _petAbilityLabel.Text = _settings.ShowPetAbilities
+                ? "▾ Pet abilities"
+                : $"▸ Pet abilities ({s.PetAbilities.Count})";
+            _petAbilityList.IsVisible = _settings.ShowPetAbilities && s.PetAbilities.Count > 0;
+            if (_petAbilityList.IsVisible)
+                FillBreakdown(_petAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(_damageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
             var topFightDps = Math.Max(0.1, s.RecentEncounters.Count > 0
