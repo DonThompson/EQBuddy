@@ -1573,12 +1573,7 @@ public sealed class MainWindow : Window
                 if (info is not null && UpdateChecker.IsNewer(info))
                 {
                     _pendingUpdate = info;
-                    // "Click here to install" is only true where the staged installer can
-                    // actually run (Windows); Linux always goes to the download page.
-                    _updateText.Text = OperatingSystem.IsWindows()
-                            && (info.SetupPath is not null || info.DownloadUrl is not null)
-                        ? $"Update v{info.Latest} is ready - click here to install."
-                        : $"Update v{info.Latest} is available - click to open the download page.";
+                    _updateText.Text = UpdateOffer.OfferText(info, OperatingSystem.IsWindows());
                     _updateBanner.IsVisible = true;
                 }
                 else if (manual)
@@ -1735,28 +1730,21 @@ public sealed class MainWindow : Window
         e.Handled = true;
         if (_pendingUpdate is not { } info || _installingUpdate) return;
 
-        // The staged file is always a Windows EQBuddySetup.exe run with an Inno Setup
-        // /SILENT flag — there's nothing installable that way on Linux, so a GitHub-sourced
-        // update there always goes to the release page, same as when no installer asset
-        // is attached at all. OneDrive-sourced updates (SetupPath) predate this and are a
-        // Windows-only distribution channel already, so they're unaffected by this check.
-        var canAutoInstall = OperatingSystem.IsWindows() && (info.SetupPath is not null || info.DownloadUrl is not null);
-        if (!canAutoInstall)
+        if (!UpdateOffer.CanAutoInstall(info, OperatingSystem.IsWindows()))
         {
+            var target = UpdateOffer.BrowserTarget(info, OperatingSystem.IsWindows());
             try
             {
-                Process.Start(new ProcessStartInfo(UpdateChecker.GitHubLatestPage) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
                 _pendingUpdate = null;
-                // On Linux the setup exe means nothing — say what actually works there
-                // (issue #30: the old text told Linux users to run a Windows installer).
-                _updateText.Text = OperatingSystem.IsWindows()
-                    ? "Download page opened - run the new EQBuddySetup.exe to update."
-                    : "Download page opened - get EQBuddy-linux-x64.tar.gz and extract it over this install.";
+                _updateText.Text = UpdateOffer.OpenedText(info, OperatingSystem.IsWindows());
                 _upToDateNoticeUntil = DateTime.Now.AddSeconds(10);
             }
             catch (Exception ex)
             {
                 App.LogError(ex);
+                // A URL the user must retype should be the short release page, even when
+                // the click would have gone straight to the tarball asset.
                 _updateText.Text = $"Couldn't open browser - visit {UpdateChecker.GitHubLatestPage}";
             }
             return;
