@@ -1647,18 +1647,25 @@ public sealed class MainWindow : Window
                 { } other => other,
             };
             var named = Array.Find(AlertSounds, x => x.Name == choice);
-            var file = named.File is { } systemFile ? FindFreeDesktopSound(systemFile) : choice;
+            var file = named.File is { } systemFile
+                ? FindDesktopSound(systemFile)
+                : choice;
+            // Sound themes are not required to carry every freedesktop event. A named
+            // built-in should still make noise when its preferred clip is absent.
+            if (file.Length == 0 && named.File is not null)
+                file = FindDesktopSound("bell.oga");
             if (file.Length > 0 && File.Exists(file))
             {
-                if (TryStart("pw-play", file) || TryStart("paplay", file) || TryStart("aplay", file))
-                    return;
+                _ = Task.Run(() => PlaySoundFile(file));
+                return;
             }
+            App.LogError($"Alert sound file was not found: {choiceOrPath}");
             Console.Beep();
         }
         catch (Exception ex) { App.LogError(ex); }
     }
 
-    private static string FindFreeDesktopSound(string fileName)
+    private static string FindDesktopSound(string fileName)
     {
         var dataDirs = new List<string>();
         var userData = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
@@ -1677,17 +1684,66 @@ public sealed class MainWindow : Window
             var path = System.IO.Path.Combine(dataDir, "sounds", "freedesktop", "stereo", fileName);
             if (File.Exists(path)) return path;
         }
+
+        // Ubuntu, Fedora, and desktop environments often install the clip only in the
+        // active theme (Yaru, Oxygen, etc.). Prefer freedesktop above for consistency,
+        // then accept the same event from any installed theme.
+        foreach (var dataDir in dataDirs)
+        {
+            var sounds = System.IO.Path.Combine(dataDir, "sounds");
+            if (!Directory.Exists(sounds)) continue;
+            try
+            {
+                var match = Directory.EnumerateFiles(sounds, fileName, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (match is not null) return match;
+            }
+            catch { /* an unreadable theme must not prevent the remaining locations */ }
+        }
         return "";
     }
 
-    private static bool TryStart(string command, string file)
+    /// <summary>Try Linux audio backends in order and verify their exit status. Merely
+    /// starting pw-play is not success: it can launch and immediately fail to connect or
+    /// decode an .oga file, which used to swallow the alert without trying paplay.</summary>
+    private static void PlaySoundFile(string file)
+    {
+        var players = new (string Command, string[] Args)[]
+        {
+            ("canberra-gtk-play", ["--file", file]),
+            ("pw-play", [file]),
+            ("paplay", [file]),
+            ("aplay", [file]),
+        };
+        foreach (var (command, args) in players)
+            if (TryPlay(command, args)) return;
+
+        try { Console.Beep(); }
+        catch { }
+        App.LogError($"Alert sound could not be played by any available backend: {file}");
+    }
+
+    private static bool TryPlay(string command, IReadOnlyList<string> args)
     {
         try
         {
-            var start = new ProcessStartInfo(command) { UseShellExecute = false };
-            start.ArgumentList.Add(file);
-            Process.Start(start);
-            return true;
+            var start = new ProcessStartInfo(command)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+            };
+            foreach (var arg in args) start.ArgumentList.Add(arg);
+            using var process = Process.Start(start);
+            if (process is null) return false;
+            _ = process.StandardError.ReadToEndAsync(); // drain it so a noisy failure cannot block WaitForExit
+            if (!process.WaitForExit(10_000))
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch { }
+                return false;
+            }
+            return process.ExitCode == 0;
         }
         catch { return false; }
     }
