@@ -212,7 +212,7 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(_tutorialCheck);
         panel.Children.Add(_trackSpawnsCheck);
         panel.Children.Add(AppTheme.DimText(
-            "Kill a named - or its placeholder - and a compact countdown chip appears. Chips stack, move together, show timers from every zone, and turn DUE until dismissed. Double-click one (or use right-click -> Spawn timers) for the full zone list. Community timers are editable and your value wins through updates.",
+            "Kill a named - or its placeholder - and a compact countdown chip appears. Chips stack, move together, show timers from every zone, and turn DUE for one minute (click to dismiss sooner). Double-click one (or use right-click -> Spawn timers) for the full zone list. Community timers are editable and your value wins through updates.",
             new Thickness(20, 2, 0, 0)));
 
         panel.Children.Add(Row("Recent-rate window", _windowCombo, new Thickness(0, 12, 0, 0)));

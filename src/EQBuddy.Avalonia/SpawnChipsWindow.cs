@@ -11,7 +11,8 @@ namespace EQBuddy.Avalonia;
 /// <summary>
 /// Compact ambient face of spawn tracking. Every active timer on the current server is
 /// one chip; the stack moves as a unit and exists only while timers do. The full spawn
-/// browser remains available independently through a double-click or the main menu.
+/// browser remains available independently through a double-click or the main menu. A
+/// due chip remains for one minute, then Core expires it if it was not clicked sooner.
 /// </summary>
 public sealed class SpawnChipsWindow : Window
 {

@@ -329,7 +329,7 @@ public sealed class SpawnsWindow : Window
                 string.Equals(choice, row.SoundName, StringComparison.OrdinalIgnoreCase));
         ToolTip.SetTip(picker, custom
             ? $"Custom: {row.SoundName}"
-            : "Sound for this named; choosing a sound also enables its bell");
+            : "Sound for this named; Default is Alarm, and choosing a concrete sound enables its bell");
 
         var ready = true;
         picker.SelectionChanged += async (_, _) =>
