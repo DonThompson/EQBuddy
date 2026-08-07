@@ -36,7 +36,9 @@ public class WidgetRenderTests : IDisposable
         File.WriteAllText(Path.Combine(_profile, "settings.json"),
             $$"""
               { "LogFolder": {{System.Text.Json.JsonSerializer.Serialize(Path.Combine(_profile, "logs"))}},
-                "TruncateLogs": false, "ShowTutorial": false, "Theme": "ParchmentBrass" }
+                "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
+                "LastSeenVersion": {{System.Text.Json.JsonSerializer.Serialize(UpdateChecker.CurrentVersion.ToString())}},
+                "Theme": "ParchmentBrass" }
               """);
     }
 
@@ -79,6 +81,101 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void WhatsNewPopupRendersSkippedReleasesAndHighlights()
+    {
+        var entries = WhatsNewCatalog.EntriesBetween("1.23.1", "1.25.0");
+        var window = new WhatsNewWindow(entries);
+        window.Show();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("What's new since your last version", text);
+        Assert.Contains("EQBuddy 1.25.0", text);
+        Assert.Contains("EQBuddy 1.24.0", text);
+        Assert.Contains(text, t => t.StartsWith("This popup!"));
+
+        window.Close();
+    }
+
+    [Fact]
+    public void PreFeatureBaselineSelectsOnlyTheCurrentMinorRelease()
+    {
+        Assert.Equal("1.24.0", MainWindow.PreviousVersionBaseline("1.25.0.0"));
+    }
+
+    [AvaloniaFact]
+    public void SpawnTrackerRendersTheCatalogAndControls()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var catalog = SpawnCatalog.LoadEmbedded();
+        var overrides = SpawnOverrides.Load(Path.Combine(_profile, "spawn-test-overrides.json"));
+        var timers = new SpawnTimers(catalog, overrides, Path.Combine(_profile, "spawn-test-timers.json"));
+        var tracker = new SpawnsWindow(main, new SpawnsViewModel(catalog, overrides, timers));
+        tracker.Show(main);
+
+        Assert.NotNull(tracker.CaptureRenderedFrame());
+        var text = tracker.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains(text, value => value.Contains("Spawns"));
+        Assert.Contains(text, value => value.Contains("countdown starts from the log"));
+        Assert.Contains(tracker.GetVisualDescendants().OfType<CheckBox>(),
+            check => Equals(check.Content, "Follow"));
+        Assert.Contains(tracker.GetVisualDescendants().OfType<ComboBox>(),
+            combo => combo.Items.Contains("Custom…") && combo.Items.Contains("Chimes"));
+
+        tracker.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void SpawnTrackerCanHideWithoutDisarmingTrackingAndOpensOnRequestedZone()
+    {
+        var main = new MainWindow();
+        main.Settings.TrackSpawns = true;
+        main.Show();
+        var catalog = SpawnCatalog.LoadEmbedded();
+        var overrides = SpawnOverrides.Load(Path.Combine(_profile, "spawn-lifecycle-overrides.json"));
+        var timers = new SpawnTimers(catalog, overrides, Path.Combine(_profile, "spawn-lifecycle-timers.json"));
+        var tracker = new SpawnsWindow(main,
+            new SpawnsViewModel(catalog, overrides, timers), "Befallen");
+        tracker.Show(main);
+
+        Assert.Contains(tracker.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "🕒 Spawns - Befallen");
+        tracker.Close();
+        Assert.True(main.Settings.TrackSpawns);
+
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void SpawnCountdownsRenderAsCompactChips()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var catalog = SpawnCatalog.LoadEmbedded();
+        var overrides = SpawnOverrides.Load(Path.Combine(_profile, "spawn-chip-overrides.json"));
+        var timers = new SpawnTimers(catalog, overrides, Path.Combine(_profile, "spawn-chip-timers.json"));
+        timers.StartManual("Befallen", "Asaka L`Rei", 210);
+        var chips = new SpawnChipsWindow(main, new SpawnsViewModel(catalog, overrides, timers));
+        chips.RefreshChips(DateTime.Now);
+        chips.Show(main);
+
+        Assert.NotNull(chips.CaptureRenderedFrame());
+        var text = chips.GetVisualDescendants().OfType<TextBlock>()
+            .Select(block => block.Text ?? "").ToList();
+        Assert.Contains("⏳ Asaka L`Rei", text);
+        Assert.Contains(text, value => value.StartsWith("3:"));
+
+        chips.Position = new global::Avalonia.PixelPoint(321, 222);
+        chips.Close();
+        Assert.Equal(321, main.Settings.SpawnChipsLeft);
+        Assert.Equal(222, main.Settings.SpawnChipsTop);
+        main.Close();
+    }
+
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null
     /// blows up — and it's the path every refresh takes.</summary>
     [AvaloniaFact]
@@ -105,6 +202,30 @@ public class WidgetRenderTests : IDisposable
 
         var frame = window.CaptureRenderedFrame();
         Assert.NotNull(frame);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void CombatCardShowsSpellDamageAndCastCompletion()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            DotDamage = 1_250,
+            DirectSpellDamage = 875,
+            CastsStarted = 10,
+            CastsInterrupted = 1,
+            Fizzles = 2,
+            Resists = 3,
+        });
+
+        var summary = window.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text?.StartsWith("Dealt ") == true).Text!;
+        Assert.Contains("Your spells: 1,250 over time / 875 direct", summary);
+        Assert.Contains("Casts 10 · 70% completed (1 interrupted · 2 fizzled · 3 resisted)", summary);
+
         window.Close();
     }
 
@@ -160,6 +281,60 @@ public class WidgetRenderTests : IDisposable
             .Single(t => t.Text?.StartsWith("RESPAWN ⏳") == true);
         Assert.Matches(@"RESPAWN ⏳ (7:5\d|8:00)", heading.Text!);
         Assert.Same(AppTheme.WarnBrush, heading.Foreground);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void WatchCardLeadsWithLastMatchAndCollapsesMultipleKinds()
+    {
+        var window = new MainWindow();
+        window.Show();
+        var rule = new TrackedRule { Name = "Buff fades", Pattern = "placeholder" };
+        window.Settings.TrackedRules.Add(rule);
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            Tracked =
+            [
+                new TrackedRuleResult(rule.Name, 3,
+                    [new NameCount("Haste", 2), new NameCount("Echoing Light", 1)],
+                    3, 3, DateTime.Now, DateTime.Now.AddSeconds(-5), "Haste", rule.Id),
+            ],
+        });
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains(text, t => t.StartsWith("last: Haste · ") && t.EndsWith(" ago"));
+        Assert.Contains("▸ all 2 kinds", text);
+        Assert.DoesNotContain("Haste   x2", text);
+
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void PetAbilitiesDefaultCollapsedAndExpandFromTheSavedSetting()
+    {
+        var window = new MainWindow();
+        window.Show();
+        var snapshot = new StatsSnapshot
+        {
+            PetAbilities = [new SourceDamage("Slash", 2, 30)],
+        };
+
+        window.Settings.ShowPetAbilities = false;
+        window.RenderSnapshotForTest(snapshot);
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("▸ Pet abilities (1)", text);
+        Assert.DoesNotContain("Slash", text);
+
+        window.Settings.ShowPetAbilities = true;
+        window.RenderSnapshotForTest(snapshot);
+        text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("▾ Pet abilities", text);
+        Assert.Contains("Slash", text);
 
         window.Close();
     }

@@ -22,6 +22,10 @@ public sealed class MainWindow : Window
     private void AttachSpellStore() =>
         _stats.Spells.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "spell-categories.json"));
     private readonly LogWatcher _watcher;
+    private readonly SpawnTimers _spawnTimers;
+    private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
+    private SpawnsWindow? _spawnsWindow;
+    private SpawnChipsWindow? _spawnChipsWindow;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
@@ -130,7 +134,12 @@ public sealed class MainWindow : Window
     private bool _clickThrough;
     private HistoryWindow? _historyWindow;
     private OptionsWindow? _optionsWindow;
+    private readonly MenuItem _trackSpawnsItem = new()
+    {
+        Header = "Track spawns (named respawn timers)",
+    };
     private AlertWindow? _alertWindow;
+    private IReadOnlyList<WhatsNewEntry> _whatsNewNotes = [];
     private StatSort _dmgOutSort = StatSort.Total;
     private StatSort _dmgInSort = StatSort.Total;
     private StatSort _healSort = StatSort.Total;
@@ -147,6 +156,11 @@ public sealed class MainWindow : Window
         AttachSpellStore();
         _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
         _watcher = new LogWatcher(_stats);
+        var spawnCatalog = SpawnCatalog.LoadEmbedded();
+        var spawnOverrides = SpawnOverrides.Load(AppPaths.File("spawn-overrides.json"));
+        _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
+        _watcher.Spawns = _spawnTimers;
+        _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
@@ -199,6 +213,8 @@ public sealed class MainWindow : Window
                 section.IsExpanded = true;
         FollowActiveCharacter();
 
+        PrepareWhatsNew();
+
         if (_settings.LogFolder is { } lf)
         {
             // Page one of the launch tour is the log-truncation consent question.
@@ -211,6 +227,18 @@ public sealed class MainWindow : Window
             });
         }
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
+            StartCrowdControlCapture();
+
+        // 1.20.0 could turn Follow off on a selection event the user never made.
+        // Repair affected profiles once; subsequent user choices are left alone.
+        if (!_settings.SpawnFollowRepaired)
+        {
+            _settings.SpawnFollowZone = true;
+            _settings.SpawnFollowRepaired = true;
+            _settings.Save();
+        }
+
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
@@ -219,8 +247,39 @@ public sealed class MainWindow : Window
             UpdateWindowHeightLimit();
             if (_settings.ShowTutorial)
                 new TutorialWindow(this).Show(this);
+            else if (_whatsNewNotes.Count > 0)
+                new WhatsNewWindow(_whatsNewNotes).Show(this);
         };
     }
+
+    /// <summary>Records the running version before displaying release notes, so an
+    /// interrupted launch cannot show the same popup forever. Fresh installs use the
+    /// tutorial instead; installs predating this feature see only the current release.</summary>
+    private void PrepareWhatsNew()
+    {
+        var currentVersion = UpdateChecker.CurrentVersion.ToString();
+        if (_settings.ShowTutorial || _settings.LastSeenVersion == currentVersion)
+        {
+            if (_settings.LastSeenVersion != currentVersion)
+            {
+                _settings.LastSeenVersion = currentVersion;
+                _settings.Save();
+            }
+            return;
+        }
+
+        var lastSeen = _settings.LastSeenVersion.Length > 0
+            ? _settings.LastSeenVersion
+            : PreviousVersionBaseline(currentVersion);
+        _whatsNewNotes = WhatsNewCatalog.EntriesBetween(lastSeen, currentVersion);
+        _settings.LastSeenVersion = currentVersion;
+        _settings.Save();
+    }
+
+    internal static string PreviousVersionBaseline(string current) =>
+        Version.TryParse(current, out var version)
+            ? new Version(version.Major, Math.Max(0, version.Minor - 1), 0).ToString()
+            : current;
 
     public double UiScale => _settings.UiScale;
     public double WidgetOpacity => Opacity;
@@ -228,6 +287,26 @@ public sealed class MainWindow : Window
     public bool TruncateLogsValue => _settings.TruncateLogs;
     public AppSettings Settings => _settings;
     public void PersistSettings() => _settings.Save();
+
+    /// <summary>
+    /// Opt-in capture for CC-looking lines whose EQ Legends wording is not known yet.
+    /// Keep only distinct lines and cap the file so diagnostics cannot grow without bound.
+    /// </summary>
+    private static void StartCrowdControlCapture()
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var path = AppPaths.File("cc-candidates.txt");
+        var gate = new object();
+        LogParser.UnmatchedCandidateSink = message =>
+        {
+            lock (gate)
+            {
+                if (seen.Count >= 500 || !seen.Add(message)) return;
+                try { File.AppendAllText(path, message + Environment.NewLine); }
+                catch { /* diagnostics must never interrupt log tailing */ }
+            }
+        };
+    }
 
     internal static readonly (string Key, string Title)[] SectionCatalog =
     [
@@ -455,6 +534,10 @@ public sealed class MainWindow : Window
         body.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits,
             out _dmgOutSortAvg, out _dmgOutSortDps, OnSortDmgOut, rateText: "dps"));
         body.Children.Add(_damageSourceList);
+        _petAbilityLabel.Cursor = new Cursor(StandardCursorType.Hand);
+        ToolTip.SetTip(_petAbilityLabel,
+            "What your pet is using, split out of its Pet row above — click to expand");
+        _petAbilityLabel.PointerPressed += OnPetAbilitiesToggled;
         body.Children.Add(_petAbilityLabel);
         body.Children.Add(_petAbilityList);
         body.Children.Add(SortHeader("Damage taken from", out _dmgInSortTotal, out _dmgInSortHits,
@@ -483,6 +566,15 @@ public sealed class MainWindow : Window
         set(!current);
         PersistSettings();
         RefreshUi();
+    }
+
+    private void OnPetAbilitiesToggled(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(_petAbilityLabel).Properties.IsLeftButtonPressed) return;
+        _settings.ShowPetAbilities = !_settings.ShowPetAbilities;
+        PersistSettings();
+        RefreshUi();
+        e.Handled = true;
     }
 
     private void ApplySessionSubsections()
@@ -636,6 +728,10 @@ public sealed class MainWindow : Window
         marker.Click += (_, _) => DropCampMarker();
         var history = new MenuItem { Header = "Session history..." };
         history.Click += OnHistory;
+        var spawns = new MenuItem { Header = "Spawn timers..." };
+        spawns.Click += (_, _) => ShowSpawnsWindow();
+        SyncTrackSpawnsMenu();
+        _trackSpawnsItem.Click += (_, _) => SetTrackSpawns(!_settings.TrackSpawns);
         var choose = new MenuItem { Header = "Choose log folder..." };
         choose.Click += OnChooseLogFolder;
         var detect = new MenuItem { Header = "Auto-detect log folder" };
@@ -652,6 +748,8 @@ public sealed class MainWindow : Window
         menu.Items.Add(tutorial);
         menu.Items.Add(marker);
         menu.Items.Add(history);
+        menu.Items.Add(spawns);
+        menu.Items.Add(_trackSpawnsItem);
         menu.Items.Add(new Separator());
         menu.Items.Add(choose);
         menu.Items.Add(detect);
@@ -748,6 +846,34 @@ public sealed class MainWindow : Window
 
     private void RefreshUi()
     {
+        if (_settings.TrackSpawns)
+        {
+            // Sound only: the chip changing to DUE is already the visual notification.
+            foreach (var due in _spawnsVm.ConsumeDueAlerts(DateTime.Now))
+                if (_spawnsVm.SoundFor(due.Zone, due.Name) is { } sound)
+                    PlayAlertSound(sound);
+
+            // Chips are the ambient face and stay visible alongside the full browser.
+            if (_spawnsVm.HasActiveTimers(DateTime.Now))
+            {
+                if (_spawnChipsWindow is not { IsVisible: true })
+                {
+                    var chips = new SpawnChipsWindow(this, _spawnsVm);
+                    chips.Closed += (_, _) =>
+                    {
+                        if (ReferenceEquals(_spawnChipsWindow, chips)) _spawnChipsWindow = null;
+                    };
+                    _spawnChipsWindow = chips;
+                    chips.Show(this);
+                }
+                _spawnChipsWindow.RefreshChips(DateTime.Now);
+            }
+            else
+                CloseSpawnChips();
+        }
+        else
+            CloseSpawnChips();
+
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))
         {
             _lastCharScan = DateTime.Now;
@@ -835,12 +961,25 @@ public sealed class MainWindow : Window
                 $"Biggest hit: {s.MaxHit:N0} ({s.MaxHitDesc})\n" +
                 $"Taken {s.DamageTaken:N0} - avoided {s.AvoidedIncoming} of {incomingSwings} melee attacks ({avoidance:0}%)" +
                 (s.SpecialHits.Count > 0 ? "\n" + string.Join(" - ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}")) : "") +
-                (s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
+                (s.DotDamage + s.DirectSpellDamage > 0
+                    ? $"\nYour spells: {s.DotDamage:N0} over time / {s.DirectSpellDamage:N0} direct"
+                    : "") +
+                (s.CastCompletion is { } completion
+                    ? $"\nCasts {s.CastsStarted} · {completion * 100:0}% completed" +
+                      $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted)"
+                    : s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} - resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             // Shares the damage sort bar above it — it's the same rows, one level down.
+            // The overall Pet row is already visible above, so keep this potentially long
+            // per-ability list folded until the player asks for it.
             _petAbilityLabel.IsVisible = s.PetAbilities.Count > 0;
-            FillBreakdown(_petAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
+            _petAbilityLabel.Text = _settings.ShowPetAbilities
+                ? "▾ Pet abilities"
+                : $"▸ Pet abilities ({s.PetAbilities.Count})";
+            _petAbilityList.IsVisible = _settings.ShowPetAbilities && s.PetAbilities.Count > 0;
+            if (_petAbilityList.IsVisible)
+                FillBreakdown(_petAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
             FillStatList(_damageTakenList, s.DamageByAttacker, _dmgInSort, "hit");
             _recentFightsLabel.IsVisible = s.RecentEncounters.Count > 0;
             var topFightDps = Math.Max(0.1, s.RecentEncounters.Count > 0
@@ -975,6 +1114,7 @@ public sealed class MainWindow : Window
     // Keyed by TrackedRule.Id — a display name can be shared by two rules, and keying
     // on it made same-named rules share baselines and cooldowns.
     private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _watchExpandedRules = new(StringComparer.Ordinal);
     private readonly EQBuddy.UI.Shared.AlertCooldowns _ruleCooldowns = new();
     private readonly EQBuddy.UI.Shared.SoundGate _soundGate = new();
     private string? _alertBaselinePath;
@@ -1016,18 +1156,40 @@ public sealed class MainWindow : Window
             head.Children.Add(rate);
             _trackedPanel.Children.Add(head);
 
-            foreach (var item in r.Items)
-                _trackedPanel.Children.Add(new TextBlock
-                {
-                    Text = $"{item.Name}   x{item.Count}",
-                    FontSize = 12,
-                    Foreground = AppTheme.TextBrush,
-                    Margin = new Thickness(6, 1, 0, 0),
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                });
             _trackedPanel.Children.Add(AppTheme.DimText(
-                r.LastMatch is { } lm ? $"last match {FormatAge(DateTime.Now - lm)} ago" : "no matches yet",
+                r.LastMatch is { } lm && !string.IsNullOrWhiteSpace(r.LastItem)
+                    ? $"last: {r.LastItem} · {FormatAge(now - lm)} ago"
+                    : "no matches yet",
                 new Thickness(6, 1, 0, 2)));
+
+            if (r.Items.Count > 1)
+            {
+                var expanded = _watchExpandedRules.Contains(r.Id);
+                if (expanded)
+                    foreach (var item in r.Items)
+                        _trackedPanel.Children.Add(new TextBlock
+                        {
+                            Text = $"{item.Name}   x{item.Count}",
+                            FontSize = 12,
+                            Foreground = AppTheme.TextBrush,
+                            Margin = new Thickness(12, 1, 0, 0),
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                        });
+
+                var ruleId = r.Id;
+                var toggle = AppTheme.DimText(
+                    expanded ? "▾ less" : $"▸ all {r.Items.Count} kinds",
+                    new Thickness(6, 1, 0, 2));
+                toggle.Cursor = new Cursor(StandardCursorType.Hand);
+                toggle.PointerPressed += (_, e) =>
+                {
+                    if (!_watchExpandedRules.Remove(ruleId))
+                        _watchExpandedRules.Add(ruleId);
+                    RenderTracked(CurrentSnapshot());
+                    e.Handled = true;
+                };
+                _trackedPanel.Children.Add(toggle);
+            }
         }
     }
 
@@ -1295,7 +1457,54 @@ public sealed class MainWindow : Window
         AlertTile.EnterPlacement();
     }
 
+    internal void RegisterOptionsWindow(OptionsWindow window) => _optionsWindow = window;
+
     private void OnTutorial(object? sender, EventArgs e) => new TutorialWindow(this).Show(this);
+
+    /// <summary>One switch keeps settings, menu, Options, and tracker window in sync.</summary>
+    internal void SetTrackSpawns(bool on)
+    {
+        _settings.TrackSpawns = on;
+        _settings.Save();
+        SyncTrackSpawnsMenu();
+        if (_optionsWindow is { IsVisible: true } options)
+            options.SyncTrackSpawns(on);
+        if (!on)
+        {
+            CloseSpawnChips();
+            if (_spawnsWindow is { } window)
+            {
+                _spawnsWindow = null;
+                window.Close();
+            }
+        }
+    }
+
+    internal void ShowSpawnsWindow(string? zone = null)
+    {
+        if (_spawnsWindow is { IsVisible: true })
+        {
+            _spawnsWindow.Activate();
+            return;
+        }
+        var window = new SpawnsWindow(this, _spawnsVm, zone);
+        window.Closed += (_, _) =>
+        {
+            if (ReferenceEquals(_spawnsWindow, window)) _spawnsWindow = null;
+        };
+        _spawnsWindow = window;
+        window.Show(this);
+    }
+
+    private void SyncTrackSpawnsMenu() => _trackSpawnsItem.Header =
+        (_settings.TrackSpawns ? "✓ " : "") + "Track spawns (named respawn timers)";
+
+    private void CloseSpawnChips()
+    {
+        if (_spawnChipsWindow is not { } chips) return;
+        _spawnChipsWindow = null;
+        chips.Close();
+    }
 
     private void OnHistory(object? sender, EventArgs e)
     {
@@ -1415,18 +1624,25 @@ public sealed class MainWindow : Window
                 { } other => other,
             };
             var named = Array.Find(AlertSounds, x => x.Name == choice);
-            var file = named.File is { } systemFile ? FindFreeDesktopSound(systemFile) : choice;
+            var file = named.File is { } systemFile
+                ? FindDesktopSound(systemFile)
+                : choice;
+            // Sound themes are not required to carry every freedesktop event. A named
+            // built-in should still make noise when its preferred clip is absent.
+            if (file.Length == 0 && named.File is not null)
+                file = FindDesktopSound("bell.oga");
             if (file.Length > 0 && File.Exists(file))
             {
-                if (TryStart("pw-play", file) || TryStart("paplay", file) || TryStart("aplay", file))
-                    return;
+                _ = Task.Run(() => PlaySoundFile(file));
+                return;
             }
+            App.LogError($"Alert sound file was not found: {choiceOrPath}");
             Console.Beep();
         }
         catch (Exception ex) { App.LogError(ex); }
     }
 
-    private static string FindFreeDesktopSound(string fileName)
+    private static string FindDesktopSound(string fileName)
     {
         var dataDirs = new List<string>();
         var userData = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
@@ -1445,17 +1661,66 @@ public sealed class MainWindow : Window
             var path = System.IO.Path.Combine(dataDir, "sounds", "freedesktop", "stereo", fileName);
             if (File.Exists(path)) return path;
         }
+
+        // Ubuntu, Fedora, and desktop environments often install the clip only in the
+        // active theme (Yaru, Oxygen, etc.). Prefer freedesktop above for consistency,
+        // then accept the same event from any installed theme.
+        foreach (var dataDir in dataDirs)
+        {
+            var sounds = System.IO.Path.Combine(dataDir, "sounds");
+            if (!Directory.Exists(sounds)) continue;
+            try
+            {
+                var match = Directory.EnumerateFiles(sounds, fileName, SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (match is not null) return match;
+            }
+            catch { /* an unreadable theme must not prevent the remaining locations */ }
+        }
         return "";
     }
 
-    private static bool TryStart(string command, string file)
+    /// <summary>Try Linux audio backends in order and verify their exit status. Merely
+    /// starting pw-play is not success: it can launch and immediately fail to connect or
+    /// decode an .oga file, which used to swallow the alert without trying paplay.</summary>
+    private static void PlaySoundFile(string file)
+    {
+        var players = new (string Command, string[] Args)[]
+        {
+            ("canberra-gtk-play", ["--file", file]),
+            ("pw-play", [file]),
+            ("paplay", [file]),
+            ("aplay", [file]),
+        };
+        foreach (var (command, args) in players)
+            if (TryPlay(command, args)) return;
+
+        try { Console.Beep(); }
+        catch { }
+        App.LogError($"Alert sound could not be played by any available backend: {file}");
+    }
+
+    private static bool TryPlay(string command, IReadOnlyList<string> args)
     {
         try
         {
-            var start = new ProcessStartInfo(command) { UseShellExecute = false };
-            start.ArgumentList.Add(file);
-            Process.Start(start);
-            return true;
+            var start = new ProcessStartInfo(command)
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardError = true,
+            };
+            foreach (var arg in args) start.ArgumentList.Add(arg);
+            using var process = Process.Start(start);
+            if (process is null) return false;
+            _ = process.StandardError.ReadToEndAsync(); // drain it so a noisy failure cannot block WaitForExit
+            if (!process.WaitForExit(10_000))
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch { }
+                return false;
+            }
+            return process.ExitCode == 0;
         }
         catch { return false; }
     }

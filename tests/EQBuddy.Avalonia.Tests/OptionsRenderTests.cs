@@ -31,7 +31,9 @@ public class OptionsRenderTests : IDisposable
             $$"""
               {
                 "LogFolder": {{System.Text.Json.JsonSerializer.Serialize(Path.Combine(_profile, "logs"))}},
-                "TruncateLogs": false, "ShowTutorial": false, "Theme": "ParchmentBrass",
+                "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
+                "LastSeenVersion": {{System.Text.Json.JsonSerializer.Serialize(UpdateChecker.CurrentVersion.ToString())}},
+                "Theme": "ParchmentBrass",
                 "_comment": "DefaultRulesVersion is set so loading doesn't inject the built-in CC broke rule and change the rule count out from under these tests",
                 "DefaultRulesVersion": 1,
                 "TrackedRules": [
@@ -73,6 +75,25 @@ public class OptionsRenderTests : IDisposable
 
         Assert.NotNull(frame);
         Assert.True(frame!.Size.Width > 100, $"Options rendered only {frame.Size.Width}px wide");
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void SpawnTrackingToggleUpdatesTheSharedSetting()
+    {
+        var (main, options) = Open();
+        var toggle = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("Track spawns") == true);
+
+        Assert.False(toggle.IsChecked);
+        toggle.IsChecked = true;
+        Assert.True(main.Settings.TrackSpawns);
+
+        main.SetTrackSpawns(false);
+        Assert.False(toggle.IsChecked);
+        Assert.False(main.Settings.TrackSpawns);
+
         options.Close();
         main.Close();
     }
@@ -133,6 +154,28 @@ public class OptionsRenderTests : IDisposable
             .Select(t => t.Text ?? "").ToList();
 
         Assert.Contains("2.5", texts);
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void CustomThemeShowsEditableColorsAndSwatches()
+    {
+        var (main, options) = Open();
+        var theme = options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(OptionsViewModel.ThemeLabels[0]));
+
+        theme.SelectedIndex = ThemeCatalog.IndexOf(CustomTheme.Key);
+
+        Assert.Equal(CustomTheme.Key, main.Settings.Theme);
+        var text = options.GetVisualDescendants().OfType<TextBox>()
+            .Select(t => t.Text).ToList();
+        Assert.Contains(CustomTheme.DefaultBg, text);
+        Assert.Contains(CustomTheme.DefaultText, text);
+        Assert.Contains(CustomTheme.DefaultAccent, text);
+        Assert.True(options.GetVisualDescendants().OfType<Border>()
+            .Count(b => b.Width == 15 && b.Height == 15) >= 16 * 3);
+
         options.Close();
         main.Close();
     }
