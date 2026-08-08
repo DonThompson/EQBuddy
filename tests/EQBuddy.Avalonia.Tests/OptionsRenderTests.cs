@@ -120,6 +120,25 @@ public class OptionsRenderTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void TargetDropsToggleAndAlertColorControlsAreAvailable()
+    {
+        var (main, options) = Open();
+        var targetDrops = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("known drops") == true);
+        Assert.True(targetDrops.IsChecked);
+        targetDrops.IsChecked = false;
+        Assert.False(main.Settings.ShowTargetDrops);
+
+        var colorDots = options.GetVisualDescendants().OfType<Button>()
+            .Where(button => Equals(button.Content, "●"))
+            .ToList();
+        Assert.Equal(main.Settings.TrackedRules.Count, colorDots.Count);
+
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
     public void LongOptionsContentHasABoundedScrollableViewport()
     {
         var main = new MainWindow();

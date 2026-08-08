@@ -405,6 +405,66 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void ProgressCardShowsPersistentAaLedger()
+    {
+        var window = new MainWindow();
+        window.Show();
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            AaAbilities =
+            [
+                new AaAbilityInfo("Spell Casting Mastery", 3, new DateTime(2026, 8, 8)),
+                new AaAbilityInfo("Natural Durability", 1, new DateTime(2026, 8, 7)),
+            ],
+        });
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("AA abilities", text);
+        Assert.Contains("Spell Casting Mastery", text);
+        Assert.Contains("rank 3", text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void DamageBreakoutRendersFightAbilityBars()
+    {
+        var settings = AppSettings.Load();
+        var window = new BreakoutWindow(settings, BreakoutKind.Damage);
+        window.Update(new StatsSnapshot
+        {
+            LastFight = new LastFightInfo("a froglok", 10, 150, 8, 0, 15, 0,
+                "slain", false,
+                [new SourceDamage("Backstab", 2, 100), new SourceDamage("Slash", 5, 50)],
+                [], []),
+        });
+        window.Show();
+
+        Assert.NotNull(window.CaptureRenderedFrame());
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("⚔ Your damage", text);
+        Assert.Contains("Backstab", text);
+        Assert.Contains("100 · 10 dps", text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FeedbackWindowExplainsThatGitHubReviewsTheDraft()
+    {
+        var window = new FeedbackWindow();
+        window.Show();
+
+        Assert.NotNull(window.CaptureRenderedFrame());
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("💡 Feature request", text);
+        Assert.Contains("🐛 Bug report", text);
+        Assert.Contains(text, t => t.Contains("nothing is sent from the app"));
+        window.Close();
+    }
+
     /// <summary>A theme swap has to change what's on screen. Mutating brushes in place is
     /// clever but invisible to a compiler: this is the check that it actually repaints.</summary>
     [AvaloniaFact]
