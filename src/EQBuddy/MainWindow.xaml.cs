@@ -515,6 +515,27 @@ public partial class MainWindow : Window
     /// is targeted; picking one made the list cycle — David's live report), and items
     /// fold to their base names so "Leather Whip +2" and the wiki's "Leather Whip"
     /// are one row (David's screenshot, same session). "" header = no target.</summary>
+    /// <summary>Why the target-drops list is empty, in words that say what we actually
+    /// know: a wiki page with no drops recorded is an invitation, not a failure
+    /// (David vs the orc thaumaturgist, 2026-08-07 — page exists, loot fields blank).</summary>
+    internal string TargetEmptyNote(StatsSnapshot s)
+    {
+        var targets = s.CurrentTargets;
+        if (targets.Count != 1) return "Nothing known for these creatures yet.";
+        return _targetResults.GetValueOrDefault(targets[0]) switch
+        {
+            null => "Looking up on eqlwiki…",
+            { State: ItemLookupState.Offline } => "Wiki unreachable — drops will fill in when it's back.",
+            { State: ItemLookupState.NotFound } =>
+                $"{targets[0]} has no eqlwiki page yet.",
+            { Mob.Drops.Count: 0 } =>
+                $"The wiki page for {targets[0]} lists no drops yet — nothing you loot\n" +
+                "is wasted though: Drops by creature… (right-click menu) exports your\n" +
+                "observations, and the wiki takes edits.",
+            _ => "Nothing known for this creature yet.",
+        };
+    }
+
     internal (string Header, List<(string Name, string Value)> Rows) TargetDropsContent(StatsSnapshot s)
     {
         var targets = _settings.ShowTargetDrops ? s.CurrentTargets : [];

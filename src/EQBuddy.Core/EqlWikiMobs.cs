@@ -227,9 +227,14 @@ public sealed partial class EqlWikiMobService
             info.Zone = EqlWikiText.StripLinks(zone);
         if (fields.TryGetValue("level", out var level))
             info.Level = level.Trim();
-        if (fields.TryGetValue("known_loot", out var loot))
-            foreach (Match m in DropRx().Matches(loot))
-                info.Drops.Add((m.Groups[1].Value.Trim(), m.Groups[2].Value.Trim()));
+        // Some pages fill common_loot instead of (or as well as) known_loot — read both,
+        // deduped by item (the orc thaumaturgist hunt, David 2026-08-07, found the split).
+        var dropSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var fieldName in (string[])["known_loot", "common_loot"])
+            if (fields.TryGetValue(fieldName, out var loot))
+                foreach (Match m in DropRx().Matches(loot))
+                    if (dropSeen.Add(m.Groups[1].Value.Trim()))
+                        info.Drops.Add((m.Groups[1].Value.Trim(), m.Groups[2].Value.Trim()));
         return info;
     }
 }

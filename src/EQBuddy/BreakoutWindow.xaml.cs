@@ -427,7 +427,7 @@ public partial class BreakoutWindow : Window
             SubText.Text = hasTarget ? header.Replace("🎯 Fighting: ", "🎯 ") : "No target";
             rows = targetRows;
             emptyText = hasTarget
-                ? "Nothing known for this creature yet."
+                ? Main?.TargetEmptyNote(s) ?? "Nothing known for this creature yet."
                 : "Swing at something — or /consider it — and its\npossible drops appear here.";
         }
         else
