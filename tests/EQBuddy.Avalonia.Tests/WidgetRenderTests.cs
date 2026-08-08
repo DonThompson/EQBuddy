@@ -176,6 +176,34 @@ public class WidgetRenderTests : IDisposable
         main.Close();
     }
 
+    [AvaloniaFact]
+    public void MezTargetsRenderInTheirOwnMovableChipStack()
+    {
+        var settings = AppSettings.Load();
+        var now = new DateTime(2026, 8, 8, 15, 0, 0);
+        var mezzes = new[]
+        {
+            new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-10), now.AddSeconds(20)),
+            new MezState("an orc oracle", "Entrance", "Aenari", now.AddSeconds(-5), null),
+        };
+        var chips = new MezChipsWindow(settings);
+        chips.RefreshChips(mezzes, now);
+        chips.Show();
+
+        Assert.NotNull(chips.CaptureRenderedFrame());
+        var text = chips.GetVisualDescendants().OfType<TextBlock>()
+            .Select(block => block.Text ?? "").ToList();
+        Assert.Contains("💤 an orc centurion", text);
+        Assert.Contains("0:20", text);
+        Assert.Contains("💤 an orc oracle", text);
+        Assert.Contains("?", text);
+
+        chips.Position = new global::Avalonia.PixelPoint(432, 234);
+        chips.Close();
+        Assert.Equal(432, settings.MezChipsLeft);
+        Assert.Equal(234, settings.MezChipsTop);
+    }
+
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null
     /// blows up — and it's the path every refresh takes.</summary>
     [AvaloniaFact]

@@ -26,6 +26,8 @@ public sealed class MainWindow : Window
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
     private SpawnChipsWindow? _spawnChipsWindow;
+    private MezChipsWindow? _mezChipsWindow;
+    private readonly MezTracker _mezTracker = new();
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
@@ -155,7 +157,9 @@ public sealed class MainWindow : Window
         // everything learned in earlier sessions (issue #29).
         AttachSpellStore();
         _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
+        _mezTracker.AttachStore(AppPaths.File("mez-durations.json"));
         _watcher = new LogWatcher(_stats);
+        _watcher.Mez = _mezTracker;
         var spawnCatalog = SpawnCatalog.LoadEmbedded();
         var spawnOverrides = SpawnOverrides.Load(AppPaths.File("spawn-overrides.json"));
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
@@ -874,6 +878,26 @@ public sealed class MainWindow : Window
         else
             CloseSpawnChips();
 
+        // Combat-urgent mez targets use their own movable stack rather than mixing with
+        // ambient spawn timers. The stack exists only while a mez is believed active.
+        var mezzes = _mezTracker.Snapshot(DateTime.Now);
+        if (mezzes.Count > 0)
+        {
+            if (_mezChipsWindow is not { IsVisible: true })
+            {
+                var chips = new MezChipsWindow(_settings, MezChipsWindow.BuildChips);
+                chips.Closed += (_, _) =>
+                {
+                    if (ReferenceEquals(_mezChipsWindow, chips)) _mezChipsWindow = null;
+                };
+                _mezChipsWindow = chips;
+                chips.Show(this);
+            }
+            _mezChipsWindow.RefreshChips(mezzes, DateTime.Now);
+        }
+        else
+            CloseMezChips();
+
         if (DateTime.Now - _lastCharScan > TimeSpan.FromSeconds(5))
         {
             _lastCharScan = DateTime.Now;
@@ -1508,6 +1532,13 @@ public sealed class MainWindow : Window
     {
         if (_spawnChipsWindow is not { } chips) return;
         _spawnChipsWindow = null;
+        chips.Close();
+    }
+
+    private void CloseMezChips()
+    {
+        if (_mezChipsWindow is not { } chips) return;
+        _mezChipsWindow = null;
         chips.Close();
     }
 
