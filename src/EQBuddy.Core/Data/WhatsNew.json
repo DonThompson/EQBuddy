@@ -3,6 +3,7 @@
   "version": "1.42.0",
   "date": "2026-08-08",
   "highlights": [
+   "Drops by Creature now knows what EQLWIKI doesn't: an amber ✦ marks every drop that's missing from the creature's wiki page — including pages with empty loot lists and creatures with no page at all (headers say which). A new ✦ Copy for wiki button builds a paste-ready contribution pack: each creature gets its direct edit link and a block in the wiki's own house style, with rarity labels suggested only when your kill count can honestly carry them (10+ kills, using the wiki's published bands). Nothing publishes automatically — you review and save on the wiki (Frankthetankk's ask, #65; auto-publish waits on the wiki admins' blessing).",
    "Watch rules now hear YOUR OWN buffs fade: the wear-off catalog grew from 61 hand-fed lines to 386 straight from the wiki — 903 spells covered. When a buff fades off YOU the log prints flavor text (\"The spirit of the puma departs.\"), never the spell's name; now a By-name Spell Fade rule on Spirit of the Puma just works, soloing included (skulldugger's ask, #64).",
    "Linux: the update banner now sends you straight to EQBuddy-linux-x64.tar.gz instead of a release page whose biggest button is a Windows installer (promised when #56 closed). Falls back to the release page if CI hasn't attached the tarball yet."
   ]

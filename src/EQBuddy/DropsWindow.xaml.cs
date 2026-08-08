@@ -50,11 +50,18 @@ public partial class DropsWindow : Window
         return mobs.ToList();
     }
 
+    /// <summary>Wiki knowledge per creature, via MainWindow's target-drops memo (#65):
+    /// lookups fire for every creature shown, results land async, and the signature
+    /// carries each item's status so rows re-render as answers arrive.</summary>
+    private WikiDropStatus Status(MobSummary mob, MobLoot l) =>
+        WikiContribution.Classify(_main.WikiMobResult(mob.Name), l.Item);
+
     private void Render()
     {
         var mobs = Filtered();
+        foreach (var m in mobs) _main.EnsureMobLookup(m.Name);
         var sig = string.Join("|", mobs.Select(m =>
-            $"{m.Name}:{m.Kills}:{string.Join(",", m.Loot.Select(l => $"{l.Item}{l.Count}"))}"));
+            $"{m.Name}:{m.Kills}:{string.Join(",", m.Loot.Select(l => $"{l.Item}{l.Count}{(int)Status(m, l)}"))}"));
         if (sig == _signature) return;
         _signature = sig;
 
@@ -65,9 +72,16 @@ public partial class DropsWindow : Window
             : "EQBuddy — Drops by Creature";
         foreach (var mob in mobs)
         {
+            var pageStatus = mob.Loot.Count > 0 ? Status(mob, mob.Loot[0]) : WikiDropStatus.Unknown;
             var header = new TextBlock
             {
-                Text = $"{mob.Name} — {mob.Kills} kill{(mob.Kills == 1 ? "" : "s")}",
+                Text = $"{mob.Name} — {mob.Kills} kill{(mob.Kills == 1 ? "" : "s")}"
+                    + pageStatus switch
+                    {
+                        WikiDropStatus.PageMissing => "  ·  no wiki page yet",
+                        WikiDropStatus.PageHasNoLoot => "  ·  wiki page lists no loot yet",
+                        _ => "",
+                    },
                 FontSize = 13, FontWeight = FontWeights.SemiBold,
                 Margin = new Thickness(0, 8, 0, 2),
             };
@@ -75,7 +89,7 @@ public partial class DropsWindow : Window
             MobsPanel.Children.Add(header);
 
             foreach (var l in mob.Loot)
-                MobsPanel.Children.Add(ItemRow(l, mob.Kills));
+                MobsPanel.Children.Add(ItemRow(l, mob.Kills, Status(mob, l)));
         }
         if (mobs.Count == 0)
         {
@@ -95,7 +109,7 @@ public partial class DropsWindow : Window
     /// window that we track drops in"): click the name → the item's wiki page, hover →
     /// its stats fetched live, and quest items carry the 🗺 that opens the Quest
     /// Tracker filtered to the quests that want them.</summary>
-    private StackPanel ItemRow(MobLoot l, int kills)
+    private StackPanel ItemRow(MobLoot l, int kills, WikiDropStatus wikiStatus)
     {
         var row = new StackPanel
         {
@@ -150,6 +164,28 @@ public partial class DropsWindow : Window
             row.Children.Add(badge);
         }
 
+        // The ✦ David asked for (#65): color says "this observation is news to the
+        // wiki" — the whole point of the window once the wiki already knows the rest.
+        if (wikiStatus is WikiDropStatus.NewToPage or WikiDropStatus.PageHasNoLoot
+            or WikiDropStatus.PageMissing)
+        {
+            var star = new TextBlock
+            {
+                Text = " ✦", FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = wikiStatus switch
+                {
+                    WikiDropStatus.PageMissing =>
+                        "This creature has no eqlwiki page — Copy for wiki prepares one",
+                    WikiDropStatus.PageHasNoLoot =>
+                        "The creature's wiki page lists no loot — Copy for wiki prepares the list",
+                    _ => "Not in this creature's wiki loot list yet — Copy for wiki prepares the edit",
+                },
+            };
+            star.SetResourceReference(TextBlock.ForegroundProperty, "WarnBrush");
+            row.Children.Add(star);
+        }
+
         var counts = new TextBlock
         {
             Text = $"  ×{l.Count}" + (l.DropRatePct is { } pct ? $"  ·  {pct:0.#}% of {kills}" : ""),
@@ -174,6 +210,14 @@ public partial class DropsWindow : Window
 
     private void OnCopyCsv(object sender, RoutedEventArgs e) =>
         TryClipboard(DropsReport.ToCsv(Filtered()));
+
+    private void OnCopyWiki(object sender, RoutedEventArgs e)
+    {
+        var (character, server) = _main.Identity;
+        TryClipboard(WikiContribution.BuildExport(
+            Filtered().Select(m => new WikiContribution.MobObservation(m, _main.WikiMobResult(m.Name))),
+            character, server, _main.CurrentZoneName, DateTime.Now));
+    }
 
     private static void TryClipboard(string text)
     {

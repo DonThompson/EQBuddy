@@ -8,6 +8,9 @@ namespace EQBuddy.Core;
 public sealed class MobInfo
 {
     public string Name { get; set; } = "";
+    /// <summary>The wiki page title that actually answered (may differ from Name via
+    /// redirects or "(Zone)" disambiguation) — edit links must target this.</summary>
+    public string PageTitle { get; set; } = "";
     public string Zone { get; set; } = "";
     public string Level { get; set; } = "";
     /// <summary>Wiki-listed drops in page order. Rarity is the wiki's own word ("Common",
@@ -218,6 +221,7 @@ public sealed partial class EqlWikiMobService
         var info = new MobInfo
         {
             Name = title,
+            PageTitle = title,
             WikiUrl = "https://eqlwiki.com/" + Uri.EscapeDataString(title.Replace(' ', '_')),
         };
         var fields = EqlWikiText.TemplateFields(wikitext, "Namedmobpage");

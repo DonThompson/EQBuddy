@@ -504,6 +504,20 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, MobLookupResult?> _targetResults =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>DropsWindow's window into the target-drops memo (WIKI-NEW, #65): the
+    /// Drops view flags observations the wiki doesn't know, reusing the same lookups
+    /// and cache the Loot card fires — no extra wiki traffic for creatures already
+    /// seen, and anything it does request benefits the Loot card too.</summary>
+    internal MobLookupResult? WikiMobResult(string name) =>
+        _targetResults.GetValueOrDefault(name);
+
+    internal void EnsureMobLookup(string name)
+    {
+        if (_targetResults.ContainsKey(name)) return;
+        _targetResults[name] = null;
+        _ = LookupTargetAsync(name);
+    }
+
     private async Task LookupTargetAsync(string name)
     {
         try
