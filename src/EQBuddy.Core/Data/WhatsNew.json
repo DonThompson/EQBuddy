@@ -1,5 +1,15 @@
 [
  {
+  "version": "1.43.0",
+  "date": "2026-08-08",
+  "highlights": [
+   "FIXED: mez chips showing impossible durations (Taendar's report — Mesmerization V wearing a 1:10 timer on a 24-second mez). Chain-mez artifacts from an old version could write inflated durations into the learned file, and \"only ever learn longer\" meant they never healed. Learned durations now have a sanity ceiling (double the spell's base — real rank upgrades like 24s→36s still learn fine), and your install quarantines any old poison automatically on update.",
+   "Dismissing a breakout window with its ✕ now announces itself on the alert banner with the re-enable path (⚙ Options → Breakout windows) — the ✕ is a small target floating over a game screen, and a stray click could silently hide a window forever (ask David where his DPS breakout went).",
+   "FIXED: dismissing the last spawn-timer chip left a ghost chip painted until the stack closed — a bug Don Thompson caught while porting the chips to Linux, fixed on both sides.",
+   "Linux/Avalonia: Don Thompson's parity work through 1.32 is merged — breakout windows (damage/healing/pet), the full encounter review in Session History, mez chips, target drops on the Loot card, item info popups, Send feedback, alert volume with proper per-backend handling, and per-rule banner colors. The Linux build is catching up fast."
+  ]
+ },
+ {
   "version": "1.42.0",
   "date": "2026-08-08",
   "highlights": [
