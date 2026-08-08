@@ -1735,6 +1735,13 @@ public partial class MainWindow : Window
                         if (!_settings.DisabledBreakouts.Contains(k.ToString()))
                             _settings.DisabledBreakouts.Add(k.ToString());
                         _settings.Save();
+                        // The ✕ is a small target floating over a game screen, and until
+                        // now the only trace of hitting it was a window that quietly never
+                        // came back — David lost his DPS breakout to exactly that
+                        // (2026-08-08) with no way to reconstruct when or how. A permanent
+                        // state change must announce itself, and leave a timestamp behind.
+                        AlertTile.ShowAlert($"{k} breakout hidden — re-enable in ⚙ Options → Breakout windows");
+                        CoreLog.Error($"{k} breakout hidden via its ✕ (re-enable: Options → Breakout windows)");
                     };
                 }
                 if (!w.IsVisible) w.Show();
