@@ -34,10 +34,12 @@ public enum WikiDropStatus
 /// </summary>
 public static class WikiContribution
 {
-    /// <summary>Tier suffixes fold ("Vest +2" → "Vest") and backticks drop (wikis
-    /// strip EQ's backticks — the Skeleton L`rodd lesson), then case-insensitive.</summary>
+    /// <summary>Tier suffixes fold ("Vest +2" → "Vest"), and backticks AND apostrophes
+    /// drop — wikis strip both (the Skeleton L`rodd lesson, then Frankthetankk's ✦ on
+    /// "Packmaster's Lash" when the page lists {{:Packmasters Lash}}, #65 test report).
+    /// Then case-insensitive.</summary>
     private static string Fold(string item) =>
-        QuestCatalog.BaseItemName(item).Replace("`", "");
+        QuestCatalog.BaseItemName(item).Replace("`", "").Replace("'", "").Replace("’", "");
 
     public static WikiDropStatus Classify(MobLookupResult? lookup, string item) => lookup switch
     {
@@ -167,10 +169,30 @@ public static class WikiContribution
                 break;
         }
         sb.AppendLine();
+        // Last-seen log times ride along (Frankthetankk, #65): a contributor double-
+        // checking their own claim can jump straight to the moment in their log file.
         sb.AppendLine("Suggested edit summary: EQBuddy-observed drops — " +
             string.Join("; ", news.Select(n =>
                 $"{n.Loot.Item} ×{n.Loot.Count} in {mob.Kills} kill{(mob.Kills == 1 ? "" : "s")}"
                 + (n.Loot.DropRatePct is { } pct ? $" ({pct:0.#}%)" : ""))) + ".");
+        var stamped = news.Where(n => n.Loot.LastAt is not null).ToList();
+        if (stamped.Count > 0)
+            sb.AppendLine("Log reference (for your own records, not the wiki): " +
+                string.Join("; ", stamped.Select(n => $"{n.Loot.Item} last at {n.Loot.LastAt:HH:mm:ss}")) + ".");
+
+        // The other half of the loop (#65 test report): each item's own page carries a
+        // dropsfrom list that may not name this creature. No lookup is made here — the
+        // contributor eyeballs the page the link opens and pastes only if it's missing.
+        sb.AppendLine();
+        sb.AppendLine("Each item's own page has a \"Drops from\" list — if this creature is missing");
+        sb.AppendLine("there, add the line under the dropsfrom field" +
+                      (currentZone.Length > 0 ? $" (zone heading [[{currentZone}]]):" : ":"));
+        foreach (var (l, _) in news)
+        {
+            var item = QuestCatalog.BaseItemName(l.Item);
+            sb.AppendLine($"  {EditUrl(item)}");
+            sb.AppendLine($"    * [[{mob.Name}]]");
+        }
     }
 
     /// <summary>One loot entry in page style: {{:Item}} transclusion (their tooltip

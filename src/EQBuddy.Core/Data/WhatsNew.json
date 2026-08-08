@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.44.0",
+  "date": "2026-08-08",
+  "highlights": [
+   "Mez durations, third time honest (rahvynn's report): 1.43's sanity ceiling clipped genuine mote-upgraded durations — a 44s Mesmerization shrank to its 24s base. The truth is simpler than any cap: a Legends mez holds a FIXED duration unless damage breaks it, and broken mezzes never reach the learner — so the tracker now trusts the latest clean fade in BOTH directions. Chain-mez artifacts and stale values alike heal on the very next honest observation, and long upgraded durations stick.",
+   "FIXED: the default \"CC broke\" rule pinged when a mob stunned YOU (rahvynn again — \"You are no longer stunned.\" joined the fade catalog in 1.42 and the CC filters heard it). Self-recovery lines no longer satisfy CC filters, which mean \"MY control of a mob ended\"; By-name and Any-spell rules still hear your own buffs fade, as designed.",
+   "✦ wiki flagging, first field report applied (Frankthetankk): apostrophes now fold when comparing against wiki loot lists ({{:Packmasters Lash}} vs \"Packmaster's Lash\" was a false ✦), the contribution pack adds a paste line + edit link for each ITEM page's own Drops-from list, and drops carry their last-seen log time so you can find the moment in your own log again."
+  ]
+ },
+ {
   "version": "1.43.0",
   "date": "2026-08-08",
   "highlights": [

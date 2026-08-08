@@ -200,6 +200,8 @@ public sealed class SessionStats
         public double Xp;
         public long Copper;
         public readonly Dictionary<string, int> Loot = new(StringComparer.OrdinalIgnoreCase);
+        /// <summary>Last time each item dropped — rides into MobLoot.LastAt (#65).</summary>
+        public readonly Dictionary<string, DateTime> LootLast = new(StringComparer.OrdinalIgnoreCase);
     }
     private static readonly TimeSpan EncounterTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan RewardWindow = TimeSpan.FromSeconds(3);
@@ -699,6 +701,7 @@ public sealed class SessionStats
                     _lootCount += l.Count;
                     // Loot lines name the corpse — explicit creature correlation (CORRELATE-005).
                     Bump(Mob(l.Source).Loot, l.Item);
+                    Mob(l.Source).LootLast[l.Item] = l.Time;
                     // Quest ledger rides the same event; the store's own filter and
                     // time high-water mark decide whether anything actually lands.
                     // Loot-MERGE lines ("looted a Belt +2 ... to create a Belt +4") are
@@ -784,6 +787,7 @@ public sealed class SessionStats
                     _lootCount += asell.Count;
                     var mobLoot = Mob(asell.Source).Loot;
                     mobLoot[asell.Item] = mobLoot.TryGetValue(asell.Item, out var mlc) ? mlc + asell.Count : asell.Count;
+                    Mob(asell.Source).LootLast[asell.Item] = asell.Time;
                     _vendorCopper += asell.Copper; _salesCount++;
                     var scur = _soldItems.TryGetValue(asell.Item, out var sval) ? sval : (0, 0L);
                     _soldItems[asell.Item] = (scur.Item1 + asell.Count, scur.Item2 + asell.Copper);
@@ -822,6 +826,12 @@ public sealed class SessionStats
             SessionRolledOver?.Invoke();
         }
     }
+
+    /// <summary>The filters that mean "my crowd control of a MOB ended" — the ones a
+    /// first-person self-fade line must never satisfy (see the BuffFadeEvent match).</summary>
+    private static bool IsCcFilter(SpellFilter f) => f is SpellFilter.AnyCrowdControl
+        or SpellFilter.Charm or SpellFilter.Mesmerize or SpellFilter.Root
+        or SpellFilter.Lull or SpellFilter.Stun;
 
     /// <summary>A SpellFade rule matches either one named spell or a whole class of them.
     /// Class filters are evaluated against the catalog, so they keep working as a
@@ -1361,9 +1371,16 @@ public sealed class SessionStats
                             // Buff/HoT fades carry candidate spells (the log named
                             // none); the rule fires if ANY candidate satisfies it, and
                             // the row shows the catalog label ("Haste") since we can't
-                            // know which haste it was.
+                            // know which haste it was. CC filters are excluded: these
+                            // flavor lines are first-person — something wore off YOU —
+                            // while the CC filters mean "my control of a MOB ended".
+                            // rahvynn (#69): once the fade catalog learned "You are no
+                            // longer stunned.", the default CC-broke rule fired every
+                            // time an NPC's stun on HIM wore off. ByName/AnySpell/HoT
+                            // still hear self-fades — watching your own buffs is their job.
                             (WatchKind.SpellFade, BuffFadeEvent bf)
-                                when bf.Spells.Any(sp => SpellFadeMatches(rule, sp))
+                                when !IsCcFilter(rule.SpellFilter)
+                                     && bf.Spells.Any(sp => SpellFadeMatches(rule, sp))
                                 => (bf.Label, 1),
                             // Re-matched here rather than trusted from ingest: the journal
                             // holds lines kept for ANY text rule, so each rule still has to
@@ -1509,7 +1526,10 @@ public sealed class SessionStats
                         kv.Value.Xp, kv.Value.Copper,
                         kv.Value.Loot.OrderByDescending(l => l.Value)
                             .Select(l => new MobLoot(l.Key, l.Value,
-                                kv.Value.Kills > 0 ? 100.0 * l.Value / kv.Value.Kills : null))
+                                kv.Value.Kills > 0 ? 100.0 * l.Value / kv.Value.Kills : null)
+                            {
+                                LastAt = kv.Value.LootLast.TryGetValue(l.Key, out var at) ? at : null,
+                            })
                             .ToList()))
                     .ToList(),
                 AreaSpells = BuildAreaSpells(),

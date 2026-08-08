@@ -34,10 +34,16 @@ public sealed record MezState(
 ///
 /// Durations: catalog first (Data/MezSpells.json — null until researched), overridden by
 /// learned values. Only the CASTER's log sees "Your X spell has worn off of Y.", so only
-/// the caster's EQBuddy can measure real durations; it learns the LONGEST land→fade gap
-/// per exact spell name (rank included — ranks lengthen mezzes), because early breaks
-/// shorten gaps but nothing lengthens them. Learned values persist via
-/// <see cref="AttachStore"/> and flow to the rest of the group through catalog updates.
+/// the caster's EQBuddy can measure real durations. The learner trusts the LATEST clean
+/// observation per exact spell name (rank included), in BOTH directions: a Legends mez
+/// holds a fixed duration unless damage breaks it, damage-broken chips are dropped
+/// before their fade line can reach the learner (plus the brokeRecently guard), so a
+/// surviving natural fade IS the true duration. "Only ever learn longer" sounded safe
+/// but made chain-mez artifacts immortal (Taendar's 1:10 chip on a 24s mez, #68), and
+/// the 2× ceiling that replaced it clipped genuine mote-upgraded durations (rahvynn's
+/// 44s Mesmerization shrank to the 24s base, #69) — an occasionally-wrong-for-one-cycle
+/// value that self-heals beats a permanently wrong one under either policy. Learned
+/// values persist via <see cref="AttachStore"/>.
 /// </summary>
 public sealed class MezTracker
 {
@@ -62,15 +68,6 @@ public sealed class MezTracker
     /// Aenari: learned timers ran 2-3s past the real wake — the dangerous direction).</summary>
     public const double ServerTickSeconds = 6;
 
-    /// <summary>Ranks lengthen mezzes, but not without limit: the one measured pair we
-    /// have (Taendar, discussion #68 — Mesmerization rank V holds the 24s base, the
-    /// upgrade 36s) says ×1.5 at those ranks, so double the catalog base leaves honest
-    /// headroom while rejecting the poison this guard exists for. Store files written
-    /// before the issue-#32 re-mez fix carry chain-mez artifacts (a 24s mez chained
-    /// twice measured as 72s against its FIRST landing), and since learning only ever
-    /// grows, a poisoned value could never heal — Taendar's 1:10 chip on a 24s mez.
-    /// A genuine rank past ×2 would pin at the cap and get this constant revisited.</summary>
-    public const double RankStretchCeiling = 2.0;
 
     // No AA correction on purpose: the full eqlwiki AA sweep (2026-08-06, AaCatalog)
     // found NO EQ Legends AA that extends detrimental mez/charm durations — unlike live
@@ -131,9 +128,7 @@ public sealed class MezTracker
                     var ticked = Math.Floor(seconds / ServerTickSeconds) * ServerTickSeconds;
                     var floor = _catalog.TryGetValue(SpellCatalog.BaseName(spell), out var info)
                         ? info.DurationSeconds ?? 0 : 0;
-                    if (ticked is > 0 and < 600 && ticked >= floor
-                        && (floor <= 0 || ticked <= floor * RankStretchCeiling))
-                        _learned.TryAdd(spell, ticked);
+                    if (ticked is > 0 and < 600 && ticked >= floor) _learned.TryAdd(spell, ticked);
                 }
         }
         catch { /* corrupt store: rewritten on next learn */ }
@@ -287,9 +282,11 @@ public sealed class MezTracker
             ? info.DurationSeconds ?? 0 : 0;
         var brokeRecently = _awake.TryGetValue(name, out var aw)
             && (wo.Time - aw.Last).Duration() <= TimeSpan.FromSeconds(3);
+        // Latest clean observation wins, longer OR shorter (see class summary): a
+        // chain-mez artifact heals on the next single mez, a stale short value heals
+        // on the next upgraded cast — either way one honest fade fixes the chip.
         if (observed is > 3 and < 600 && observed >= baseFloor && !brokeRecently
-            && (baseFloor <= 0 || observed <= baseFloor * RankStretchCeiling)
-            && (!_learned.TryGetValue(entry.Spell, out var known) || observed > known))
+            && (!_learned.TryGetValue(entry.Spell, out var known) || Math.Abs(observed - known) > 0.5))
         {
             _learned[entry.Spell] = Math.Round(observed, 1);
             SaveStore();

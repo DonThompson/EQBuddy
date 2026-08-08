@@ -111,7 +111,13 @@ public static class EncounterGrouping
             .ToList();
 }
 
-public sealed record MobLoot(string Item, int Count, double? DropRatePct);
+/// <summary>LastAt is when this item last dropped (log time) — the wiki contribution
+/// pack includes it so contributors can find the moment in their own log again
+/// (Frankthetankk's ask, #65). Null on records from before the field existed.</summary>
+public sealed record MobLoot(string Item, int Count, double? DropRatePct)
+{
+    public DateTime? LastAt { get; init; }
+}
 
 /// <summary>Per-creature farming aggregate (MOB-*). Drop rates are observed personal
 /// rates — the kill denominator is always surfaced next to the percentage.</summary>
