@@ -67,16 +67,26 @@ public sealed class MezChipsWindow : Window
         };
     }
 
-    internal static List<SpawnChip> BuildChips(IReadOnlyList<MezState> mezzes, DateTime now) =>
-        mezzes.Select(mez =>
+    /// <summary>Same-named targets remain separate and are numbered in snapshot order.
+    /// The log cannot identify which physical creature is which, but collapsing them
+    /// would hide an active mez and make one break appear to clear both.</summary>
+    internal static List<SpawnChip> BuildChips(IReadOnlyList<MezState> mezzes, DateTime now)
+    {
+        var totals = mezzes.GroupBy(mez => mez.Target, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        var seen = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        return mezzes.Select(mez =>
         {
+            var number = seen[mez.Target] = seen.GetValueOrDefault(mez.Target) + 1;
+            var name = totals[mez.Target] > 1 ? $"{mez.Target} ({number})" : mez.Target;
             var remaining = mez.RemainingSeconds(now);
             var countdown = remaining is { } seconds
                 ? $"{(int)seconds / 60}:{(int)seconds % 60:00}"
                 : "?";
-            return new SpawnChip("", mez.Target, countdown, remaining is <= 6,
+            return new SpawnChip("", name, countdown, remaining is <= 6,
                 $"{mez.Spell} by {mez.Caster} · landed {mez.LandedAt:h:mm:ss tt}", "💤");
         }).ToList();
+    }
 
     /// <summary>Called from the main window's one-second refresh while mezzes exist.</summary>
     internal void RefreshChips(IReadOnlyList<MezState> mezzes, DateTime now)

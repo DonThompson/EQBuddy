@@ -184,6 +184,7 @@ public class WidgetRenderTests : IDisposable
         var mezzes = new[]
         {
             new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-10), now.AddSeconds(20)),
+            new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-8), now.AddSeconds(22)),
             new MezState("an orc oracle", "Entrance", "Aenari", now.AddSeconds(-5), null),
         };
         var chips = new MezChipsWindow(settings);
@@ -193,7 +194,8 @@ public class WidgetRenderTests : IDisposable
         Assert.NotNull(chips.CaptureRenderedFrame());
         var text = chips.GetVisualDescendants().OfType<TextBlock>()
             .Select(block => block.Text ?? "").ToList();
-        Assert.Contains("💤 an orc centurion", text);
+        Assert.Contains("💤 an orc centurion (1)", text);
+        Assert.Contains("💤 an orc centurion (2)", text);
         Assert.Contains("0:20", text);
         Assert.Contains("💤 an orc oracle", text);
         Assert.Contains("?", text);
