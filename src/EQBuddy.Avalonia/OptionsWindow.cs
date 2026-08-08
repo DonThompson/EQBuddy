@@ -20,9 +20,12 @@ public sealed class OptionsWindow : Window
     private readonly Slider _scaleSlider = Slider(0.8, 1.6, 0.05);
     private readonly Slider _bgOpacitySlider = Slider(0.15, 1.0, 0.05);
     private readonly Slider _opacitySlider = Slider(0.5, 1.0, 0.02);
+    private readonly Slider _alertVolumeSlider = Slider(0.1, 1.0, 0.05);
+    private readonly TextBlock _alertVolumeLabel = LabelValue();
     private readonly CheckBox _truncateCheck = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly CheckBox _tutorialCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly CheckBox _trackSpawnsCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
+    private readonly CheckBox _targetDropsCheck = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly CheckBox _pinChipsCheck = new() { Margin = new Thickness(0, 6, 0, 0) };
     private readonly ComboBox _themeCombo = new() { Width = 130, FontSize = 12 };
     private readonly StackPanel _customColorsPanel = new() { IsVisible = false };
@@ -76,9 +79,17 @@ public sealed class OptionsWindow : Window
         _scaleSlider.Value = main.UiScale;
         _opacitySlider.Value = main.WidgetOpacity;
         _bgOpacitySlider.Value = main.BackgroundOpacityValue;
+        _alertVolumeSlider.Value = Math.Clamp(main.Settings.AlertVolume, 0.1, 1.0);
         Subscribe(_scaleSlider, () => _main.SetUiScale(_scaleSlider.Value));
         Subscribe(_bgOpacitySlider, () => _main.SetBackgroundOpacity(_bgOpacitySlider.Value));
         Subscribe(_opacitySlider, () => _main.SetWindowOpacity(_opacitySlider.Value));
+        Subscribe(_alertVolumeSlider, () =>
+        {
+            _main.Settings.AlertVolume = _alertVolumeSlider.Value;
+            _alertVolumeLabel.Text = $"{_alertVolumeSlider.Value:P0}";
+            _main.PersistSettings();
+        });
+        _alertVolumeLabel.Text = $"{_alertVolumeSlider.Value:P0}";
 
         _truncateCheck.Content = new TextBlock
         {
@@ -116,6 +127,20 @@ public sealed class OptionsWindow : Window
         _trackSpawnsCheck.IsCheckedChanged += (_, _) =>
         {
             if (_ready) _main.SetTrackSpawns(_trackSpawnsCheck.IsChecked == true);
+        };
+
+        _targetDropsCheck.Content = new TextBlock
+        {
+            Text = "Show known drops for your current target",
+            FontSize = 12,
+            Foreground = AppTheme.TextBrush,
+        };
+        _targetDropsCheck.IsChecked = main.Settings.ShowTargetDrops;
+        _targetDropsCheck.IsCheckedChanged += (_, _) =>
+        {
+            if (!_ready) return;
+            _main.Settings.ShowTargetDrops = _targetDropsCheck.IsChecked == true;
+            _main.PersistSettings();
         };
 
         _pinChipsCheck.Content = new TextBlock
@@ -217,6 +242,10 @@ public sealed class OptionsWindow : Window
         panel.Children.Add(AppTheme.DimText(
             "Kill a named - or its placeholder - and a compact countdown chip appears. Chips stack, move together, show timers from every zone, and turn DUE for one minute (click to dismiss sooner). Double-click one (or use right-click -> Spawn timers) for the full zone list. Community timers are editable and your value wins through updates.",
             new Thickness(20, 2, 0, 0)));
+        panel.Children.Add(_targetDropsCheck);
+        panel.Children.Add(AppTheme.DimText(
+            "Looks up the selected mob on the EQ community wiki and lists its known loot in the Loot card.",
+            new Thickness(20, 2, 0, 0)));
 
         panel.Children.Add(Row("Recent-rate window", _windowCombo, new Thickness(0, 12, 0, 0)));
         panel.Children.Add(AppTheme.DimText("The Last Xm figures on Combat, Kills, Money, and Progress."));
@@ -250,6 +279,7 @@ public sealed class OptionsWindow : Window
         test.Click += (_, _) => _main.PlayAlertSound();
         soundRow.Children.Add(test);
         panel.Children.Add(Row("Alert sound", soundRow, new Thickness(0, 8, 0, 0)));
+        AddSlider(panel, "Alert volume", _alertVolumeLabel, _alertVolumeSlider);
         panel.Children.Add(_soundFileNote);
         panel.Children.Add(AppTheme.DimText(
             "While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus.",
@@ -321,7 +351,7 @@ public sealed class OptionsWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));
             row.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(115)));
             row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            for (var i = 0; i < 5; i++)   // pin, banner, sound, delay, delete
+            for (var i = 0; i < 6; i++)   // pin, banner, color, sound, delay, delete
                 row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
 
             var kind = new ComboBox { FontSize = 11, Margin = new Thickness(0, 0, 4, 0) };
@@ -395,6 +425,30 @@ public sealed class OptionsWindow : Window
                 rule.Pinned, v => rule.Pinned = v));
             row.Children.Add(RuleToggle("B", "Banner alert on match", 4, rule.AlertBanner, v => rule.AlertBanner = v));
 
+            var colorDot = AppTheme.IconButton("●", "Banner color");
+            colorDot.Padding = new Thickness(2, 0);
+            colorDot.Margin = new Thickness(2, 0, 2, 0);
+            void PaintDot()
+            {
+                var hex = AlertColors.Hex(rule.AlertColor);
+                colorDot.Foreground = hex.Length > 0
+                    ? new SolidColorBrush(Color.Parse(hex))
+                    : AppTheme.AccentBrush;
+                var choice = AlertColors.Choices[AlertColors.IndexOf(rule.AlertColor)].Name;
+                ToolTip.SetTip(colorDot, $"Banner color: {choice} - click to change");
+            }
+            PaintDot();
+            colorDot.Click += (_, _) =>
+            {
+                var next = (AlertColors.IndexOf(rule.AlertColor) + 1) % AlertColors.Choices.Length;
+                var picked = AlertColors.Choices[next].Name;
+                rule.AlertColor = picked == "Default" ? "" : picked;
+                PaintDot();
+                _main.PersistSettings();
+            };
+            Grid.SetColumn(colorDot, 5);
+            row.Children.Add(colorDot);
+
             // Per-rule sound, replacing the old on/off toggle. Telling rules apart by ear is
             // the entire point — and it matters most for delayed alerts, where the usual
             // setup is two rules on one match ("heard it" now, "cast now" later) that are
@@ -440,7 +494,7 @@ public sealed class OptionsWindow : Window
                 if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
                     _main.PlayAlertSound(preview);
             };
-            Grid.SetColumn(sound, 5);
+            Grid.SetColumn(sound, 6);
             row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
@@ -460,7 +514,7 @@ public sealed class OptionsWindow : Window
                 delay.Text = DelayText.Format(rule.AlertDelaySeconds);
                 _main.PersistSettings();
             };
-            Grid.SetColumn(delay, 6);
+            Grid.SetColumn(delay, 7);
             row.Children.Add(delay);
 
             var del = AppTheme.IconButton("x", "Delete rule");
@@ -470,7 +524,7 @@ public sealed class OptionsWindow : Window
                 _main.PersistSettings();
                 BuildRulesEditor();
             };
-            Grid.SetColumn(del, 7);
+            Grid.SetColumn(del, 8);
             row.Children.Add(del);
             _rulesPanel.Children.Add(row);
         }

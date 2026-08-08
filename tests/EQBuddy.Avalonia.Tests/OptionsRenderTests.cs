@@ -34,6 +34,7 @@ public class OptionsRenderTests : IDisposable
                 "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
                 "LastSeenVersion": {{System.Text.Json.JsonSerializer.Serialize(UpdateChecker.CurrentVersion.ToString())}},
                 "Theme": "ParchmentBrass",
+                "AlertVolume": 0.35,
                 "_comment": "DefaultRulesVersion is set so loading doesn't inject the built-in CC broke rule and change the rule count out from under these tests",
                 "DefaultRulesVersion": 1,
                 "TrackedRules": [
@@ -80,6 +81,26 @@ public class OptionsRenderTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void AlertVolumeSliderLoadsAndPersistsTheSharedSetting()
+    {
+        var (main, options) = Open();
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "Alert volume");
+        var slider = options.GetVisualDescendants().OfType<Slider>()
+            .Single(control => Math.Abs(control.Minimum - 0.1) < 0.001
+                && Math.Abs(control.Maximum - 1.0) < 0.001
+                && Math.Abs(control.Value - 0.35) < 0.001);
+
+        slider.Value = 0.7;
+
+        Assert.Equal(0.7, main.Settings.AlertVolume, 3);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text?.Contains("70") == true && text.Text.Contains('%'));
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
     public void SpawnTrackingToggleUpdatesTheSharedSetting()
     {
         var (main, options) = Open();
@@ -93,6 +114,25 @@ public class OptionsRenderTests : IDisposable
         main.SetTrackSpawns(false);
         Assert.False(toggle.IsChecked);
         Assert.False(main.Settings.TrackSpawns);
+
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void TargetDropsToggleAndAlertColorControlsAreAvailable()
+    {
+        var (main, options) = Open();
+        var targetDrops = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("known drops") == true);
+        Assert.True(targetDrops.IsChecked);
+        targetDrops.IsChecked = false;
+        Assert.False(main.Settings.ShowTargetDrops);
+
+        var colorDots = options.GetVisualDescendants().OfType<Button>()
+            .Where(button => Equals(button.Content, "●"))
+            .ToList();
+        Assert.Equal(main.Settings.TrackedRules.Count, colorDots.Count);
 
         options.Close();
         main.Close();

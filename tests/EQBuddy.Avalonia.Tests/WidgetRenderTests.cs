@@ -169,11 +169,77 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("⏳ Asaka L`Rei", text);
         Assert.Contains(text, value => value.StartsWith("3:"));
 
+        var active = Assert.Single(new SpawnsViewModel(catalog, overrides, timers).Chips(DateTime.Now));
+        chips.DismissChip(active);
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(chips.GetVisualDescendants().OfType<TextBlock>(),
+            block => block.Text == "⏳ Asaka L`Rei");
+
         chips.Position = new global::Avalonia.PixelPoint(321, 222);
         chips.Close();
         Assert.Equal(321, main.Settings.SpawnChipsLeft);
         Assert.Equal(222, main.Settings.SpawnChipsTop);
         main.Close();
+    }
+
+    [AvaloniaFact]
+    public void MezTargetsRenderInTheirOwnMovableChipStack()
+    {
+        var settings = AppSettings.Load();
+        var now = new DateTime(2026, 8, 8, 15, 0, 0);
+        var mezzes = new[]
+        {
+            new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-10), now.AddSeconds(20)),
+            new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-8), now.AddSeconds(22)),
+            new MezState("an orc oracle", "Entrance", "Aenari", now.AddSeconds(-5), null),
+        };
+        var chips = new MezChipsWindow(settings);
+        chips.RefreshChips(mezzes, now);
+        chips.Show();
+
+        Assert.NotNull(chips.CaptureRenderedFrame());
+        var text = chips.GetVisualDescendants().OfType<TextBlock>()
+            .Select(block => block.Text ?? "").ToList();
+        Assert.Contains("💤 an orc centurion (1)", text);
+        Assert.Contains("💤 an orc centurion (2)", text);
+        Assert.Contains("0:20", text);
+        Assert.Contains("💤 an orc oracle", text);
+        Assert.Contains("?", text);
+
+        chips.Position = new global::Avalonia.PixelPoint(432, 234);
+        chips.Close();
+        Assert.Equal(432, settings.MezChipsLeft);
+        Assert.Equal(234, settings.MezChipsTop);
+    }
+
+    [AvaloniaFact]
+    public void ItemInfoPopupRendersWikiSectionsAndSourceState()
+    {
+        var service = new EqlWikiItemService(Path.Combine(_profile, "item-cache"),
+            _ => Task.FromResult<string?>(null));
+        var window = new ItemInfoWindow(service);
+        window.Render(new ItemLookupResult(new ItemInfo
+        {
+            Name = "Cloak of Flames",
+            StatsLines = ["MAGIC ITEM", "Slot: BACK", "AC: 10"],
+            MerchantValue = "5g",
+            DropsFrom = [("Nagafen's Lair", ["Lord Nagafen"])],
+            Quests = ["A Fiery Favor"],
+            WikiUrl = "https://eqlwiki.com/Cloak_of_Flames",
+        }, ItemLookupState.Cached, new DateTime(2026, 8, 5)));
+        window.Show();
+
+        Assert.NotNull(window.CaptureRenderedFrame());
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(block => block.Text ?? "").ToList();
+        Assert.Contains("Cloak of Flames", text);
+        Assert.Contains("CACHED 8/5", text);
+        Assert.Contains("MAGIC ITEM", text);
+        Assert.Contains("Lord Nagafen — Nagafen's Lair", text);
+        Assert.Contains("A Fiery Favor", text);
+        Assert.Contains("Open wiki page ↗", text);
+
+        window.Close();
     }
 
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null
@@ -336,6 +402,66 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("▾ Pet abilities", text);
         Assert.Contains("Slash", text);
 
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ProgressCardShowsPersistentAaLedger()
+    {
+        var window = new MainWindow();
+        window.Show();
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            AaAbilities =
+            [
+                new AaAbilityInfo("Spell Casting Mastery", 3, new DateTime(2026, 8, 8)),
+                new AaAbilityInfo("Natural Durability", 1, new DateTime(2026, 8, 7)),
+            ],
+        });
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("AA abilities", text);
+        Assert.Contains("Spell Casting Mastery", text);
+        Assert.Contains("rank 3", text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void DamageBreakoutRendersFightAbilityBars()
+    {
+        var settings = AppSettings.Load();
+        var window = new BreakoutWindow(settings, BreakoutKind.Damage);
+        window.Update(new StatsSnapshot
+        {
+            LastFight = new LastFightInfo("a froglok", 10, 150, 8, 0, 15, 0,
+                "slain", false,
+                [new SourceDamage("Backstab", 2, 100), new SourceDamage("Slash", 5, 50)],
+                [], []),
+        });
+        window.Show();
+
+        Assert.NotNull(window.CaptureRenderedFrame());
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("⚔ Your damage", text);
+        Assert.Contains("Backstab", text);
+        Assert.Contains("100 · 10 dps", text);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FeedbackWindowExplainsThatGitHubReviewsTheDraft()
+    {
+        var window = new FeedbackWindow();
+        window.Show();
+
+        Assert.NotNull(window.CaptureRenderedFrame());
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("💡 Feature request", text);
+        Assert.Contains("🐛 Bug report", text);
+        Assert.Contains(text, t => t.Contains("nothing is sent from the app"));
         window.Close();
     }
 

@@ -134,7 +134,7 @@ public sealed class SpawnChipsWindow : Window
                 Margin = new Thickness(0, 0, 0, 3),
                 Cursor = new Cursor(StandardCursorType.Hand),
             };
-            ToolTip.SetTip(border, chip.Detail);
+            ToolTip.SetTip(border, chip.Detail + "\nRight-click: dismiss this timer");
             border.PointerPressed += OnChipPressed;
             _panel.Children.Add(border);
         }
@@ -143,6 +143,12 @@ public sealed class SpawnChipsWindow : Window
     private void OnChipPressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is not Border { Tag: SpawnChip chip }) return;
+        if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.RightButtonPressed)
+        {
+            DismissChip(chip);
+            e.Handled = true;
+            return;
+        }
         if (e.ClickCount == 2)
         {
             _main.ShowSpawnsWindow(chip.Zone);
@@ -152,12 +158,22 @@ public sealed class SpawnChipsWindow : Window
         if (chip.IsDue)
         {
             _vm.ClearTimer(chip.Zone, chip.Name);
-            _signature = "";
+            _signature = "\uFFFF";
             RefreshChips(DateTime.Now);
             e.Handled = true;
             return;
         }
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
+    }
+
+    internal void DismissChip(SpawnChip chip)
+    {
+        if (chip.Zone.Length == 0) return;
+        _vm.ClearTimer(chip.Zone, chip.Name);
+        // A sentinel is required when dismissing the last chip: its new signature is
+        // the empty string, so resetting to "" would incorrectly skip the rebuild.
+        _signature = "\uFFFF";
+        RefreshChips(DateTime.Now);
     }
 }

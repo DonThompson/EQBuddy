@@ -80,6 +80,9 @@ public sealed class SpawnsWindow : Window
             if (ScreenGuard.OnScreen(this, _settings.SpawnLeft, _settings.SpawnTop, Width, Height))
                 Position = new PixelPoint((int)_settings.SpawnLeft, (int)_settings.SpawnTop);
         };
+        // Follow the window between monitors; primary-only/open-time caps waste most of
+        // a portrait secondary's height.
+        PositionChanged += (_, _) => UpdateHeightLimit();
         Closed += (_, _) =>
         {
             _tick.Stop();
