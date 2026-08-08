@@ -138,14 +138,14 @@ public partial class DropsWindow : Window
             var badge = new TextBlock
             {
                 Text = " 🗺", FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
-                ToolTip = "Show this item's quests in the Quest Tracker",
+                ToolTip = "Part of a quest — click for its quest info",
                 VerticalAlignment = VerticalAlignment.Center,
             };
             badge.SetResourceReference(TextBlock.ForegroundProperty, "GoodBrush");
             badge.MouseLeftButtonUp += (_, e) =>
             {
                 e.Handled = true;
-                _main.ShowQuestsWindow(QuestCatalog.BaseItemName(l.Item));
+                _main.OpenQuestInfoForItem(l.Item);
             };
             row.Children.Add(badge);
         }

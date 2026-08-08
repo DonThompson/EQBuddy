@@ -308,16 +308,26 @@ public partial class MainWindow : Window
     /// <summary>A fresh stats snapshot, for windows that refresh on their own cadence.</summary>
     internal StatsSnapshot CurrentSnapshot() => _stats.Snapshot();
 
-    /// <summary>A turn-in for at least one quest this character hasn't dismissed — the
-    /// signal behind the 🗺 badge (the green tint retired 2026-08-07: "keep the loot
-    /// lines normal and just have that symbol next to quest loot" — David). Hiding
-    /// every quest that wants an item removes its badge.</summary>
+    /// <summary>The 🗺 badge signal: a known quest's turn-in OR a member of the wiki's
+    /// Quest Items category (back to the broad set once the loud green retired — a
+    /// quiet glyph can afford the coverage; David's Crushbone pass, 2026-08-07). When
+    /// known quests want the item and ALL are dismissed, the badge goes too.</summary>
     internal bool IsActiveQuestItem(string name)
     {
         var wanting = QuestCatalog.QuestsWanting(name);
-        if (wanting.Count == 0) return false;
+        if (wanting.Count == 0) return QuestCatalog.IsQuestItem(name);
         var hidden = QuestLedger?.HiddenFor(QuestCharacterKey);
         return hidden is not { Count: > 0 } || wanting.Any(q => !hidden.Contains(q.Name));
+    }
+
+    /// <summary>Badge click, one behavior everywhere: quests we can name open in the
+    /// Quest Tracker; a category-only item opens its own wiki page, where the quest
+    /// that wants it is documented.</summary>
+    internal void OpenQuestInfoForItem(string itemName)
+    {
+        var baseName = QuestCatalog.BaseItemName(itemName);
+        if (QuestCatalog.QuestsWanting(baseName).Count > 0) ShowQuestsWindow(baseName);
+        else OpenWikiPage(baseName);
     }
 
     /// <summary>Prefix an item tooltip with the quest marker so the green explains itself.</summary>
@@ -2001,14 +2011,14 @@ public partial class MainWindow : Window
                 {
                     Text = "🗺", FontSize = 11, Margin = new Thickness(0, 1, 6, 1),
                     Cursor = System.Windows.Input.Cursors.Hand,
-                    ToolTip = "Show this item's quests in the Quest Tracker",
+                    ToolTip = "Part of a quest — click for its quest info",
                 };
                 badge.SetResourceReference(TextBlock.ForegroundProperty, "GoodBrush");
                 badge.MouseLeftButtonDown += (_, ev) => ev.Handled = true;
                 badge.MouseLeftButtonUp += (_, ev) =>
                 {
                     ev.Handled = true;
-                    ShowQuestsWindow(QuestCatalog.BaseItemName(badgeName));
+                    OpenQuestInfoForItem(badgeName);
                 };
                 Grid.SetColumn(badge, 1);
                 grid.Children.Add(badge);

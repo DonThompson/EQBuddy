@@ -479,7 +479,7 @@ public partial class BreakoutWindow : Window
                 Text = "🗺", FontSize = 11, Margin = new Thickness(6, 0, 0, 0),
                 Cursor = System.Windows.Input.Cursors.Hand,
                 VerticalAlignment = VerticalAlignment.Center,
-                ToolTip = "Show this item's quests in the Quest Tracker",
+                ToolTip = "Part of a quest — click for its quest info",
             };
             badge.SetResourceReference(TextBlock.ForegroundProperty, "GoodBrush");
             var badgeItem = name;
@@ -487,7 +487,7 @@ public partial class BreakoutWindow : Window
             badge.MouseLeftButtonUp += (_, e) =>
             {
                 e.Handled = true;
-                m.ShowQuestsWindow(EQBuddy.Core.QuestCatalog.BaseItemName(badgeItem));
+                m.OpenQuestInfoForItem(badgeItem);
             };
         }
 

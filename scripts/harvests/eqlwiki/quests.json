@@ -88,7 +88,24 @@
   "questGiver": "Vilissia",
   "minLevel": 26,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Bonechipped Mask",
+    "qty": 1
+   },
+   {
+    "name": "Darkbone Skull",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Mask",
+    "qty": 1
+   },
+   {
+    "name": "Patch of Shadow",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Acumen Mask"
   ],
@@ -364,6 +381,10 @@
     "qty": 1
    },
    {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
     "name": "Fairy Dust",
     "qty": 1
    },
@@ -373,6 +394,14 @@
    },
    {
     "name": "Kilij Plans",
+    "qty": 1
+   },
+   {
+    "name": "Melatite",
+    "qty": 1
+   },
+   {
+    "name": "Mistmoore Granite",
     "qty": 1
    },
    {
@@ -410,6 +439,14 @@
    {
     "name": "Rotten Shark Meat",
     "qty": 1
+   },
+   {
+    "name": "Sand of Ro",
+    "qty": 1
+   },
+   {
+    "name": "Sol Cauldron",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -431,11 +468,27 @@
   "items": [
    {
     "name": "Enchanted Platinum Bar",
-    "qty": 1
+    "qty": 2
    },
    {
     "name": "Galvanized Platinum Bar",
     "qty": 2
+   },
+   {
+    "name": "Icon of the Ardent",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Constant",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Fervent",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Penitent",
+    "qty": 1
    },
    {
     "name": "Icon of the Reliant",
@@ -446,11 +499,39 @@
     "qty": 1
    },
    {
+    "name": "Ingot of the Ardent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Constant",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Fervent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Penitent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Reliant",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Reverent",
+    "qty": 1
+   },
+   {
     "name": "Lianna's Flute",
     "qty": 1
    },
    {
     "name": "Magnetized Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Tumpy Tonic",
     "qty": 1
    },
    {
@@ -681,7 +762,16 @@
   "questGiver": "Azzar Habbib",
   "minLevel": 20,
   "classes": "Cleric, Necromancer, Shadow Knight, Shaman, Warrior",
-  "items": [],
+  "items": [
+   {
+    "name": "Bear Paw's Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Gold Thread",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Dreadful Cap"
   ],
@@ -832,6 +922,10 @@
     "qty": 1
    },
    {
+    "name": "Chromodrac Gut",
+    "qty": 1
+   },
+   {
     "name": "Forpar's Note to Himself",
     "qty": 1
    },
@@ -868,6 +962,10 @@
     "qty": 1
    },
    {
+    "name": "Mechanical Doll",
+    "qty": 1
+   },
+   {
     "name": "Mystical Lute",
     "qty": 1
    },
@@ -888,6 +986,10 @@
     "qty": 1
    },
    {
+    "name": "Onyx Drake Gut",
+    "qty": 1
+   },
+   {
     "name": "Petrified Werewolf Skull",
     "qty": 1
    },
@@ -900,11 +1002,19 @@
     "qty": 1
    },
    {
+    "name": "Red Wurm Gut",
+    "qty": 1
+   },
+   {
     "name": "Ripped Qeynos Bards Guild Flyer",
     "qty": 1
    },
    {
     "name": "Solusek Mining Company Invoice",
+    "qty": 1
+   },
+   {
+    "name": "Torch of Misty",
     "qty": 1
    },
    {
@@ -942,7 +1052,36 @@
   "questGiver": "Bygloirn Omorden",
   "minLevel": 50,
   "classes": "Bard",
-  "items": [],
+  "items": [
+   {
+    "name": "Troubadour's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Troubadour's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Troubadour's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Troubadour's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Troubadour's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Troubadour's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Troubadour's Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Bard Quests",
@@ -1061,6 +1200,18 @@
   "classes": "Bard",
   "items": [
    {
+    "name": "Boots of Twilight",
+    "qty": 1
+   },
+   {
+    "name": "Bracer of Twilight",
+    "qty": 1
+   },
+   {
+    "name": "Breastplate of Twilight",
+    "qty": 1
+   },
+   {
     "name": "Crushed Black Marble",
     "qty": 1
    },
@@ -1086,6 +1237,22 @@
    },
    {
     "name": "Flawless Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Gauntlets of Twilight",
+    "qty": 1
+   },
+   {
+    "name": "Greaves of Twilight",
+    "qty": 1
+   },
+   {
+    "name": "Helm of Twilight",
+    "qty": 1
+   },
+   {
+    "name": "Vambraces of Twilight",
     "qty": 1
    }
   ],
@@ -1115,6 +1282,34 @@
    },
    {
     "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Boots",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Helm",
+    "qty": 1
+   },
+   {
+    "name": "Resonant Vambraces",
     "qty": 1
    }
   ],
@@ -1307,7 +1502,23 @@
   "classes": "All",
   "items": [
    {
+    "name": "Bear-hide Belt",
+    "qty": 1
+   },
+   {
+    "name": "Bear-hide Boots",
+    "qty": 1
+   },
+   {
+    "name": "Bear-hide Cape",
+    "qty": 1
+   },
+   {
     "name": "High Quality Bear Skin",
+    "qty": 1
+   },
+   {
+    "name": "Low Quality Bear Skin",
     "qty": 1
    },
    {
@@ -2453,6 +2664,10 @@
     "qty": 1
    },
    {
+    "name": "Forest Barley",
+    "qty": 1
+   },
+   {
     "name": "Freeport Stout",
     "qty": 1
    },
@@ -2474,6 +2689,10 @@
    },
    {
     "name": "Rat Sandwich",
+    "qty": 1
+   },
+   {
+    "name": "Summoned: Globe of Water",
     "qty": 1
    }
   ],
@@ -2522,7 +2741,24 @@
   "questGiver": "Vira",
   "minLevel": 33,
   "classes": "Magician Quest is doable and spell confirmed usable by SHM and SHD.",
-  "items": [],
+  "items": [
+   {
+    "name": "A Broom",
+    "qty": 1
+   },
+   {
+    "name": "Cyclops Toes",
+    "qty": 1
+   },
+   {
+    "name": "Griffon Feathers",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Broom of Trilon"
   ],
@@ -2777,6 +3013,14 @@
   "classes": "Cleric",
   "items": [
    {
+    "name": "Icon of Sacrament",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of Sacrament",
+    "qty": 1
+   },
+   {
     "name": "Magnetized Platinum Bar",
     "qty": 2
    }
@@ -2812,7 +3056,31 @@
     "qty": 1
    },
    {
+    "name": "Burnt Sash",
+    "qty": 1
+   },
+   {
+    "name": "Electrum-Bladed Wakizashi",
+    "qty": 1
+   },
+   {
+    "name": "Gift",
+    "qty": 1
+   },
+   {
+    "name": "Love Letter (Sealed)",
+    "qty": 1
+   },
+   {
+    "name": "Note of Credit",
+    "qty": 1
+   },
+   {
     "name": "Poacher's Head",
+    "qty": 1
+   },
+   {
+    "name": "Symbol of Achievement",
     "qty": 1
    }
   ],
@@ -2848,6 +3116,18 @@
    {
     "name": "Dread Diamond",
     "qty": 1
+   },
+   {
+    "name": "Greyish Bone Chips",
+    "qty": 1
+   },
+   {
+    "name": "Strange Ochre Clay",
+    "qty": 1
+   },
+   {
+    "name": "Yun Shaman Powder",
+    "qty": 1
    }
   ],
   "rewards": [
@@ -2881,6 +3161,18 @@
    },
    {
     "name": "Dread Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Greyish Bone Chips",
+    "qty": 1
+   },
+   {
+    "name": "Strange Ochre Clay",
+    "qty": 1
+   },
+   {
+    "name": "Yun Shaman Powder",
     "qty": 1
    }
   ],
@@ -3036,7 +3328,19 @@
     "qty": 1
    },
    {
+    "name": "Honey Mush Bread",
+    "qty": 1
+   },
+   {
+    "name": "Sewer Catfish",
+    "qty": 1
+   },
+   {
     "name": "Sharp Cutting Disk",
+    "qty": 1
+   },
+   {
+    "name": "Shrub Lettuce",
     "qty": 1
    }
   ],
@@ -3135,7 +3439,23 @@
     "qty": 1
    },
    {
+    "name": "Candle of Bravery",
+    "qty": 1
+   },
+   {
+    "name": "Cape of Underfoot",
+    "qty": 1
+   },
+   {
+    "name": "Chalice of Conquest",
+    "qty": 1
+   },
+   {
     "name": "Foot of Candlestick",
+    "qty": 1
+   },
+   {
+    "name": "Holy Partisan of Underfoot",
     "qty": 1
    },
    {
@@ -3259,7 +3579,24 @@
   "questGiver": "Joyce",
   "minLevel": 30,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Globe of Mist",
+    "qty": 1
+   },
+   {
+    "name": "Ring of Evoluoy",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Water Ring",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Circlet of Mist"
   ],
@@ -3313,7 +3650,12 @@
   "questGiver": "Joyce",
   "minLevel": 25,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Rune of Clay",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Clay Bracelet"
   ],
@@ -3543,6 +3885,34 @@
    {
     "name": "Jaundice Gem",
     "qty": 1
+   },
+   {
+    "name": "Templar's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Templar's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Templar's Chestplate",
+    "qty": 1
+   },
+   {
+    "name": "Templar's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Templar's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Templar's Leggings",
+    "qty": 1
+   },
+   {
+    "name": "Templar's Vambraces",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -3618,6 +3988,34 @@
   "minLevel": 50,
   "classes": "Cleric",
   "items": [
+   {
+    "name": "Akkirus' Boots of the Risen",
+    "qty": 1
+   },
+   {
+    "name": "Akkirus' Bracelet of the Risen",
+    "qty": 1
+   },
+   {
+    "name": "Akkirus' Chestplate of the Risen",
+    "qty": 1
+   },
+   {
+    "name": "Akkirus' Crown of the Risen",
+    "qty": 1
+   },
+   {
+    "name": "Akkirus' Gauntlets of the Risen",
+    "qty": 1
+   },
+   {
+    "name": "Akkirus' Greaves of the Risen",
+    "qty": 1
+   },
+   {
+    "name": "Akkirus' Vambraces of the Risen",
+    "qty": 1
+   },
    {
     "name": "Black Marble",
     "qty": 1
@@ -3746,7 +4144,36 @@
   "questGiver": "Loremaster Dorinan",
   "minLevel": 45,
   "classes": "Cleric",
-  "items": [],
+  "items": [
+   {
+    "name": "Boots of Forbidden Rites",
+    "qty": 1
+   },
+   {
+    "name": "Bracers of Forbidden Rites",
+    "qty": 1
+   },
+   {
+    "name": "Breastplate of Forbidden Rites",
+    "qty": 1
+   },
+   {
+    "name": "Crown of Forbidden Rites",
+    "qty": 1
+   },
+   {
+    "name": "Gauntlets of Forbidden Rites",
+    "qty": 1
+   },
+   {
+    "name": "Greaves of Forbidden Rites",
+    "qty": 1
+   },
+   {
+    "name": "Vambraces of Forbidden Rites",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Cleric Quests",
@@ -3766,7 +4193,12 @@
   "questGiver": "Clurg (NPC)",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Lizard Tail",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "All Classes Quests",
@@ -3817,6 +4249,10 @@
   "minLevel": 35,
   "classes": "Enchanter",
   "items": [
+   {
+    "name": "Coin Pouch",
+    "qty": 1
+   },
    {
     "name": "Coin of Tash",
     "qty": 1
@@ -3915,7 +4351,32 @@
   "questGiver": "Gkrean Prophet of Tallon",
   "minLevel": 50,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Book of Tactics",
+    "qty": 1
+   },
+   {
+    "name": "Bracelet of Sacrifice",
+    "qty": 1
+   },
+   {
+    "name": "Brell's Divine Strategy",
+    "qty": 1
+   },
+   {
+    "name": "Circlet of Tallon",
+    "qty": 1
+   },
+   {
+    "name": "Gauntlets of Iron Tactics",
+    "qty": 1
+   },
+   {
+    "name": "War Tactics of the Frostreavers",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Book of Tactics",
    "Bracelet of Sacrifice",
@@ -3976,7 +4437,59 @@
   "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
   "items": [
    {
+    "name": "Blank Rune",
+    "qty": 1
+   },
+   {
+    "name": "Bottle of Milk",
+    "qty": 1
+   },
+   {
+    "name": "Burin",
+    "qty": 1
+   },
+   {
+    "name": "Ceramic Lining",
+    "qty": 1
+   },
+   {
+    "name": "Ceramic Lining Sketch",
+    "qty": 1
+   },
+   {
+    "name": "Clump of Dough",
+    "qty": 1
+   },
+   {
+    "name": "Crystalline Silk",
+    "qty": 3
+   },
+   {
+    "name": "Crystalline Silk Fiber",
+    "qty": 15
+   },
+   {
+    "name": "Crystalline Silk Thread",
+    "qty": 75
+   },
+   {
+    "name": "Cup of Flour",
+    "qty": 1
+   },
+   {
+    "name": "Cutlassfish Oil",
+    "qty": 1
+   },
+   {
+    "name": "Drakkel Wolf Whisker",
+    "qty": 2
+   },
+   {
     "name": "Embroidered Coldain Prayer Shawl",
+    "qty": 1
+   },
+   {
+    "name": "Embroidered Shawl Pattern",
     "qty": 1
    },
    {
@@ -3984,11 +4497,119 @@
     "qty": 1
    },
    {
+    "name": "Enchanted Velium Powder",
+    "qty": 1
+   },
+   {
+    "name": "Etched Rune",
+    "qty": 1
+   },
+   {
+    "name": "Etched Rune Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Fish Oil Extractor",
+    "qty": 1
+   },
+   {
+    "name": "Fletching Kit",
+    "qty": 1
+   },
+   {
+    "name": "Frost Giant Toes",
+    "qty": 1
+   },
+   {
     "name": "Fur-Lined Coldain Prayer Shawl",
     "qty": 1
    },
    {
+    "name": "Glass Shard",
+    "qty": 2
+   },
+   {
+    "name": "Glowing Bile Soaker",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Crystalline  Silk Piece",
+    "qty": 5
+   },
+   {
+    "name": "Glowing Worm Bile",
+    "qty": 5
+   },
+   {
     "name": "Hand Made Backpack",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Firing Sheet",
+    "qty": 1
+   },
+   {
+    "name": "Iceclad Cutlassfish",
+    "qty": 3
+   },
+   {
+    "name": "Jug of Sauces",
+    "qty": 1
+   },
+   {
+    "name": "Kromrif Head",
+    "qty": 10
+   },
+   {
+    "name": "Large Block of Clay",
+    "qty": 1
+   },
+   {
+    "name": "Liquid Velium",
+    "qty": 1
+   },
+   {
+    "name": "Loaf of Bread",
+    "qty": 1
+   },
+   {
+    "name": "Manticore Mane",
+    "qty": 2
+   },
+   {
+    "name": "Metal Bits",
+    "qty": 1
+   },
+   {
+    "name": "Mixing Bowl",
+    "qty": 1
+   },
+   {
+    "name": "Molkor Hide",
+    "qty": 1
+   },
+   {
+    "name": "Mortar and Pestle",
+    "qty": 1
+   },
+   {
+    "name": "Pie Tin",
+    "qty": 1
+   },
+   {
+    "name": "Pie Tin Mold",
+    "qty": 1
+   },
+   {
+    "name": "Platinum Bar",
+    "qty": 2
+   },
+   {
+    "name": "Pot",
+    "qty": 1
+   },
+   {
+    "name": "Pot Sketch",
     "qty": 1
    },
    {
@@ -3996,7 +4617,51 @@
     "qty": 1
    },
    {
+    "name": "Quality Firing Sheet",
+    "qty": 1
+   },
+   {
+    "name": "Royal Kromrif Blood",
+    "qty": 1
+   },
+   {
+    "name": "Rubbing Alcohol",
+    "qty": 1
+   },
+   {
+    "name": "Rune Casing",
+    "qty": 1
+   },
+   {
+    "name": "Rune Casing Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Runed Coldain Prayer Shawl",
+    "qty": 1
+   },
+   {
     "name": "Runed Prayer Shawl Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Runed Sea Shell",
+    "qty": 1
+   },
+   {
+    "name": "Runed Sea Shell (Enduring Breath)",
+    "qty": 1
+   },
+   {
+    "name": "Sacred Velium Ink",
+    "qty": 1
+   },
+   {
+    "name": "Saucy Bearmeat",
+    "qty": 1
+   },
+   {
+    "name": "Saucy Bunnymeat",
     "qty": 1
    },
    {
@@ -4004,7 +4669,111 @@
     "qty": 1
    },
    {
+    "name": "Siren Hair",
+    "qty": 2
+   },
+   {
+    "name": "Small Block of Clay",
+    "qty": 1
+   },
+   {
+    "name": "Small Brick of Velium",
+    "qty": 2
+   },
+   {
+    "name": "Small Piece of Ore",
+    "qty": 2
+   },
+   {
+    "name": "Small Piece of Velium",
+    "qty": 4
+   },
+   {
+    "name": "Snake Egg",
+    "qty": 1
+   },
+   {
+    "name": "Snow Bunny Meat",
+    "qty": 2
+   },
+   {
+    "name": "Snow Bunny Stew",
+    "qty": 1
+   },
+   {
+    "name": "Snow Griffin Egg",
+    "qty": 4
+   },
+   {
+    "name": "Snow Griffin Souffle",
+    "qty": 1
+   },
+   {
+    "name": "Spices",
+    "qty": 1
+   },
+   {
+    "name": "Spicy Ulthork Meat",
+    "qty": 1
+   },
+   {
+    "name": "Spool of Sacred Coldain Thread",
+    "qty": 1
+   },
+   {
+    "name": "Swordfish Tooth",
+    "qty": 1
+   },
+   {
     "name": "Tanik's note",
+    "qty": 1
+   },
+   {
+    "name": "Tundra Kodiak Meat",
+    "qty": 1
+   },
+   {
+    "name": "Tundrabear Sandwich",
+    "qty": 1
+   },
+   {
+    "name": "Ulthork Meat",
+    "qty": 2
+   },
+   {
+    "name": "Ulthork Meat Pie",
+    "qty": 1
+   },
+   {
+    "name": "Ulthork Tusks",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Ceramic Lining",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Pot",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Rune",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Velium Vial",
+    "qty": 1
+   },
+   {
+    "name": "Velium Etched Rune",
+    "qty": 1
+   },
+   {
+    "name": "Velium Purifier",
+    "qty": 1
+   },
+   {
+    "name": "Velium Vial",
     "qty": 1
    },
    {
@@ -4012,7 +4781,19 @@
     "qty": 1
    },
    {
+    "name": "Vinegar",
+    "qty": 1
+   },
+   {
+    "name": "Water Flask",
+    "qty": 2
+   },
+   {
     "name": "Woven Coldain Prayer Shawl",
+    "qty": 1
+   },
+   {
+    "name": "Woven Frost Giant Beard",
     "qty": 1
    }
   ],
@@ -4069,6 +4850,14 @@
     "qty": 1
    },
    {
+    "name": "Arctic Mussels",
+    "qty": 1
+   },
+   {
+    "name": "Bottle",
+    "qty": 1
+   },
+   {
     "name": "Broken Axe",
     "qty": 1
    },
@@ -4114,10 +4903,22 @@
    },
    {
     "name": "High Quality Cougarskin",
-    "qty": 1
+    "qty": 2
    },
    {
     "name": "High Quality Tundra Kodiak Pelt",
+    "qty": 2
+   },
+   {
+    "name": "High Quality Walrus Hide",
+    "qty": 1
+   },
+   {
+    "name": "Ice Wyvern Stinger",
+    "qty": 1
+   },
+   {
+    "name": "Iceball",
     "qty": 1
    },
    {
@@ -4129,7 +4930,15 @@
     "qty": 1
    },
    {
+    "name": "Mind Melt",
+    "qty": 1
+   },
+   {
     "name": "Mithril Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Note from Kromrif",
     "qty": 1
    },
    {
@@ -4153,11 +4962,23 @@
     "qty": 1
    },
    {
+    "name": "Seahorse Scales",
+    "qty": 1
+   },
+   {
     "name": "Shackle Key",
     "qty": 1
    },
    {
     "name": "Silver Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Skinning Rock",
+    "qty": 1
+   },
+   {
+    "name": "Wooly Rhino Horn",
     "qty": 1
    }
   ],
@@ -4275,7 +5096,32 @@
   "questGiver": "Collier",
   "minLevel": 20,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Bloodclaw Battle Axe",
+    "qty": 1
+   },
+   {
+    "name": "Bloodclaw Dagger",
+    "qty": 1
+   },
+   {
+    "name": "Bloodclaw Long Sword",
+    "qty": 1
+   },
+   {
+    "name": "Bloodclaw Mace",
+    "qty": 1
+   },
+   {
+    "name": "Bloodclaw Rapier",
+    "qty": 1
+   },
+   {
+    "name": "Bloodclaw Scimitar",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Bloodclaw Battle Axe",
    "Bloodclaw Dagger",
@@ -4435,7 +5281,64 @@
   "questGiver": "Shakrn Meadowgreen, Ulan Meadowgreen",
   "minLevel": 25,
   "classes": "Warrior",
-  "items": [],
+  "items": [
+   {
+    "name": "Aviak Charm",
+    "qty": 1
+   },
+   {
+    "name": "Bottom of a Fractured Rune",
+    "qty": 1
+   },
+   {
+    "name": "Bunch of Optic Nerves",
+    "qty": 1
+   },
+   {
+    "name": "Dark Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Goblin Fire Totem",
+    "qty": 1
+   },
+   {
+    "name": "Goblin Frost Totem",
+    "qty": 1
+   },
+   {
+    "name": "Griffon Eye",
+    "qty": 1
+   },
+   {
+    "name": "Middle of a Fractured Rune",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Top of a Fractured Rune",
+    "qty": 1
+   },
+   {
+    "name": "Werewolf Talon",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Crafted Bracers",
    "Crafted Breastplate",
@@ -4572,7 +5475,40 @@
   "questGiver": "Eysa Florawhisper",
   "minLevel": 45,
   "classes": "Ranger, Druid",
-  "items": [],
+  "items": [
+   {
+    "name": "Bag of Caynar Nuts",
+    "qty": 1
+   },
+   {
+    "name": "Emerald Orange",
+    "qty": 1
+   },
+   {
+    "name": "Flarefire Seeds",
+    "qty": 1
+   },
+   {
+    "name": "Marr Cherries",
+    "qty": 1
+   },
+   {
+    "name": "Misty Acorn",
+    "qty": 1
+   },
+   {
+    "name": "Rathe Berries",
+    "qty": 1
+   },
+   {
+    "name": "Ripened Heartfruit",
+    "qty": 1
+   },
+   {
+    "name": "Vineclinger Berries",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Crest of the Wood Nymphs"
   ],
@@ -4692,7 +5628,23 @@
     "qty": 1
    },
    {
+    "name": "Greenish Metal Shard",
+    "qty": 1
+   },
+   {
+    "name": "Greenmist",
+    "qty": 1
+   },
+   {
     "name": "Greenmist Design Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Greenmist Khukri Blade",
+    "qty": 1
+   },
+   {
+    "name": "Hammer of 1406",
     "qty": 1
    },
    {
@@ -4705,6 +5657,10 @@
    },
    {
     "name": "Knight's Khukri",
+    "qty": 1
+   },
+   {
+    "name": "Lord of Pain's Khukri",
     "qty": 1
    },
    {
@@ -4769,6 +5725,10 @@
    },
    {
     "name": "The Visceral Dagger",
+    "qty": 1
+   },
+   {
+    "name": "Tome Binder",
     "qty": 1
    },
    {
@@ -5340,7 +6300,88 @@
   "questGiver": "an undead knight",
   "minLevel": 33,
   "classes": "Shadow Knight",
-  "items": [],
+  "items": [
+   {
+    "name": "Broken Minotaur Lord's Horn",
+    "qty": 1
+   },
+   {
+    "name": "Damaged Militia Helm",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Chainmail",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Helm",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Left Boot",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Left Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Left Gauntlet",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Left Legplate",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Left Vambrace",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Boot",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Gauntlet",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Legplate",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Vambrace",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Visor",
+    "qty": 1
+   },
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Fairy Dust",
+    "qty": 1
+   },
+   {
+    "name": "Melatite",
+    "qty": 1
+   },
+   {
+    "name": "Qeynos Kite Shield",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Darkforge Boots",
    "Darkforge Bracer",
@@ -5776,8 +6817,104 @@
   "classes": "Shadow Knight",
   "items": [
    {
+    "name": ":Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": ":Banded Leggings",
+    "qty": 1
+   },
+   {
+    "name": ":Bloodgill Scales",
+    "qty": 1
+   },
+   {
+    "name": ":Boots of Zorash",
+    "qty": 1
+   },
+   {
+    "name": ":Grachnist's Head",
+    "qty": 1
+   },
+   {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Banded Helm",
+    "qty": 1
+   },
+   {
+    "name": "Banded Mail",
+    "qty": 1
+   },
+   {
+    "name": "Banded Mask",
+    "qty": 1
+   },
+   {
+    "name": "Banded Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Cactus Quills",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Golra Skin",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Sarnak Berserker Head",
+    "qty": 1
+   },
+   {
+    "name": "Sarnak Knight's Sword",
+    "qty": 1
+   },
+   {
+    "name": "Sarnak War Braid",
+    "qty": 1
+   },
+   {
+    "name": "Scorpion Chitin",
+    "qty": 1
+   },
+   {
+    "name": "Skeletal Feet",
+    "qty": 1
+   },
+   {
     "name": "Skeletal Hand",
     "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 2
+   },
+   {
+    "name": "Wings of the Drixie Queen",
+    "qty": 1
+   },
+   {
+    "name": "ruby",
+    "qty": 1
+   },
+   {
+    "name": "sapphire",
+    "qty": 2
    }
   ],
   "rewards": [],
@@ -5891,6 +7028,10 @@
     "qty": 1
    },
    {
+    "name": "Chilled Tundra Root",
+    "qty": 1
+   },
+   {
     "name": "Chunk of Tundra",
     "qty": 1
    },
@@ -5991,6 +7132,10 @@
     "qty": 1
    },
    {
+    "name": "Ripened Heartfruit",
+    "qty": 1
+   },
+   {
     "name": "Rose of Firiona",
     "qty": 1
    },
@@ -6008,6 +7153,14 @@
    },
    {
     "name": "Softly glowing stone",
+    "qty": 1
+   },
+   {
+    "name": "Speckled Molded Mushroom",
+    "qty": 1
+   },
+   {
+    "name": "Sweetened Mudroot",
     "qty": 1
    },
    {
@@ -6046,7 +7199,36 @@
   "questGiver": "Jaglorm Ygorr",
   "minLevel": 50,
   "classes": "Druid",
-  "items": [],
+  "items": [
+   {
+    "name": "Nature Walker's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Nature Walker's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Nature Walker's Chestguard",
+    "qty": 1
+   },
+   {
+    "name": "Nature Walker's Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Nature Walker's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Nature Walker's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Nature Walker's Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Druid Quests",
@@ -6167,6 +7349,34 @@
    {
     "name": "Unadorned Leather Tunic",
     "qty": 1
+   },
+   {
+    "name": "Woven Grass Boots",
+    "qty": 1
+   },
+   {
+    "name": "Woven Grass Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Woven Grass Chestguard",
+    "qty": 1
+   },
+   {
+    "name": "Woven Grass Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Woven Grass Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Woven Grass Headband",
+    "qty": 1
+   },
+   {
+    "name": "Woven Grass Vambraces",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -6188,7 +7398,36 @@
   "questGiver": "Cobi Frostbeard",
   "minLevel": 45,
   "classes": "Druid",
-  "items": [],
+  "items": [
+   {
+    "name": "Rowyl's Boots of Nature",
+    "qty": 1
+   },
+   {
+    "name": "Rowyl's Bracer of Nature",
+    "qty": 1
+   },
+   {
+    "name": "Rowyl's Chestguard of Nature",
+    "qty": 1
+   },
+   {
+    "name": "Rowyl's Circlet of Nature",
+    "qty": 1
+   },
+   {
+    "name": "Rowyl's Gauntlets of Nature",
+    "qty": 1
+   },
+   {
+    "name": "Rowyl's Greaves of Nature",
+    "qty": 1
+   },
+   {
+    "name": "Rowyl's Vambraces of Nature",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Druid Quests",
@@ -6209,6 +7448,10 @@
   "minLevel": 6,
   "classes": "All",
   "items": [
+   {
+    "name": "Daily Log",
+    "qty": 1
+   },
    {
     "name": "Scrap Metal",
     "qty": 1
@@ -6273,7 +7516,20 @@
   "questGiver": "Frosti Bramblebrew",
   "minLevel": 1,
   "classes": "??",
-  "items": [],
+  "items": [
+   {
+    "name": "Dew of First Light",
+    "qty": 1
+   },
+   {
+    "name": "Emberberry Cluster",
+    "qty": 1
+   },
+   {
+    "name": "Frostbitten Hide",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Chapter IV, Of Flame and Frost",
    "Holiday Gift"
@@ -6483,6 +7739,10 @@
     "qty": 1
    },
    {
+    "name": "Charm and Sacrifice",
+    "qty": 1
+   },
+   {
     "name": "Copy of Notes",
     "qty": 1
    },
@@ -6511,6 +7771,14 @@
     "qty": 1
    },
    {
+    "name": "Essence of a Ghost",
+    "qty": 1
+   },
+   {
+    "name": "Essence of a Vampire",
+    "qty": 1
+   },
+   {
     "name": "Gift to Bozlum",
     "qty": 1
    },
@@ -6519,7 +7787,15 @@
     "qty": 1
    },
    {
+    "name": "Head of the Serpent",
+    "qty": 1
+   },
+   {
     "name": "Ink of the Dark",
+    "qty": 1
+   },
+   {
+    "name": "Innoruuk's Word",
     "qty": 1
    },
    {
@@ -6528,6 +7804,10 @@
    },
    {
     "name": "Large Muddy Sandals",
+    "qty": 1
+   },
+   {
+    "name": "Lost Scroll",
     "qty": 1
    },
    {
@@ -6543,6 +7823,10 @@
     "qty": 1
    },
    {
+    "name": "Sands of the Mystics",
+    "qty": 1
+   },
+   {
     "name": "Scribbled Parchment",
     "qty": 1
    },
@@ -6555,11 +7839,23 @@
     "qty": 1
    },
    {
+    "name": "Spoon",
+    "qty": 1
+   },
+   {
     "name": "Staff of the Serpent",
     "qty": 1
    },
    {
+    "name": "The One Key",
+    "qty": 1
+   },
+   {
     "name": "White Paper",
+    "qty": 1
+   },
+   {
+    "name": "Xolion Rod",
     "qty": 1
    }
   ],
@@ -6584,7 +7880,36 @@
   "questGiver": "Stoem Lekbar",
   "minLevel": 50,
   "classes": "Enchanter",
-  "items": [],
+  "items": [
+   {
+    "name": "Dazzling Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Dazzling Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Dazzling Robe",
+    "qty": 1
+   },
+   {
+    "name": "Dazzling Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Dazzling Slippers",
+    "qty": 1
+   },
+   {
+    "name": "Dazzling Trousers",
+    "qty": 1
+   },
+   {
+    "name": "Dazzling Wristguard",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Enchanter Quests",
@@ -6661,6 +7986,34 @@
    },
    {
     "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Headband",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Pantaloons",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Slippers",
+    "qty": 1
+   },
+   {
+    "name": "Illusionist's Wristguard",
     "qty": 1
    },
    {
@@ -6763,7 +8116,36 @@
   "questGiver": "Lorekeeper Brita",
   "minLevel": 45,
   "classes": "Enchanter",
-  "items": [],
+  "items": [
+   {
+    "name": "Beguiler's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Beguiler's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Beguiler's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Beguiler's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Beguiler's Slippers",
+    "qty": 1
+   },
+   {
+    "name": "Beguiler's Trousers",
+    "qty": 1
+   },
+   {
+    "name": "Beguiler's Wristguard",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Enchanter Quests",
@@ -7273,7 +8655,16 @@
   "questGiver": "Feskr Drinkmaker",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Backpack",
+    "qty": 1
+   },
+   {
+    "name": "Fire Beetle Leg",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Rough Leather Sack"
   ],
@@ -7396,7 +8787,12 @@
   "questGiver": "Shazda Asad",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Emissary Head",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Shazda Turban"
   ],
@@ -7417,7 +8813,12 @@
   "questGiver": "Roary Fishpouncer",
   "minLevel": 1,
   "classes": "Bard, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior",
-  "items": [],
+  "items": [
+   {
+    "name": "Raw Darkwater Piranha",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Kerran Fishing Spear"
   ],
@@ -7583,7 +8984,23 @@
   "classes": "Ranger, Druid",
   "items": [
    {
+    "name": "Bag of Caynar Nuts",
+    "qty": 1
+   },
+   {
+    "name": "Bag of Crushed Herbs",
+    "qty": 1
+   },
+   {
     "name": "Bag of Seeds",
+    "qty": 1
+   },
+   {
+    "name": "Bag of Sulfur",
+    "qty": 1
+   },
+   {
+    "name": "Crystallized Sulfur",
     "qty": 1
    },
    {
@@ -7591,7 +9008,23 @@
     "qty": 1
    },
    {
+    "name": "Emerald Orange",
+    "qty": 1
+   },
+   {
+    "name": "Empty Seed Collection Bag",
+    "qty": 1
+   },
+   {
+    "name": "Flarefire Seeds",
+    "qty": 1
+   },
+   {
     "name": "Kromrif Laborer Pick",
+    "qty": 1
+   },
+   {
+    "name": "Kromzek Architect Blueprints",
     "qty": 1
    },
    {
@@ -7600,6 +9033,30 @@
    },
    {
     "name": "Kromzek Surveyor Scope",
+    "qty": 1
+   },
+   {
+    "name": "Marr Cherries",
+    "qty": 1
+   },
+   {
+    "name": "Misty Acorn",
+    "qty": 1
+   },
+   {
+    "name": "Pile of Rubble",
+    "qty": 1
+   },
+   {
+    "name": "Rathe Berries",
+    "qty": 1
+   },
+   {
+    "name": "Ripened Heartfruit",
+    "qty": 1
+   },
+   {
+    "name": "Vineclinger Berries",
     "qty": 1
    }
   ],
@@ -7714,7 +9171,24 @@
   "questGiver": "Makil Rargon",
   "minLevel": 40,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Fusible Coral Ore",
+    "qty": 1
+   },
+   {
+    "name": "Fusible Earthen Ore",
+    "qty": 1
+   },
+   {
+    "name": "Fusible Igneous Ore",
+    "qty": 1
+   },
+   {
+    "name": "Fusible Velium Ore",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Strength of the Elements"
   ],
@@ -8383,7 +9857,20 @@
   "questGiver": "Grim Oakfist",
   "minLevel": 25,
   "classes": "Monk",
-  "items": [],
+  "items": [
+   {
+    "name": "Peculiar Tiger Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Strange Tiger Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Unusual Tiger Pelt",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Collar of Neshika"
   ],
@@ -8422,7 +9909,16 @@
   "questGiver": "Gearin Gaxx",
   "minLevel": 36,
   "classes": "?",
-  "items": [],
+  "items": [
+   {
+    "name": "Scribbled Note",
+    "qty": 1
+   },
+   {
+    "name": "Trooper Shield",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Guard of Ik"
   ],
@@ -10276,6 +11772,10 @@
    {
     "name": "Dark Oak Shillelagh",
     "qty": 1
+   },
+   {
+    "name": "Mantrap Root",
+    "qty": 1
    }
   ],
   "rewards": [
@@ -10444,7 +11944,20 @@
   "questGiver": "Errrak Thickshank",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Odd Kobold Paw",
+    "qty": 1
+   },
+   {
+    "name": "Snake Fang",
+    "qty": 1
+   },
+   {
+    "name": "Tiger Skin",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Bone Talisman"
   ],
@@ -10499,7 +12012,16 @@
   "questGiver": "Tunarean Earthmelder",
   "minLevel": 46,
   "classes": "Ranger",
-  "items": [],
+  "items": [
+   {
+    "name": "Frostgiant Overseers Head",
+    "qty": 1
+   },
+   {
+    "name": "Kallis' Head",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Helm of the Tracker"
   ],
@@ -10767,6 +12289,10 @@
   "classes": "",
   "items": [
    {
+    "name": "Ruby Pendant",
+    "qty": 1
+   },
+   {
     "name": "Torn Parchment",
     "qty": 1
    }
@@ -10987,7 +12513,23 @@
     "qty": 1
    },
    {
+    "name": "Lexicon of Relinar",
+    "qty": 1
+   },
+   {
     "name": "Rune of Bleve",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Concentration",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Eradication",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Revenge",
     "qty": 1
    },
    {
@@ -11164,7 +12706,20 @@
   "questGiver": "Quartermaster Nellian",
   "minLevel": 1,
   "classes": "??",
-  "items": [],
+  "items": [
+   {
+    "name": "Chilled Berries",
+    "qty": 1
+   },
+   {
+    "name": "Mammoth Meat",
+    "qty": 1
+   },
+   {
+    "name": "Snow Bunny Stew",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Aurillias' Winter Broth",
    "Holiday Gift"
@@ -11324,6 +12879,14 @@
   "classes": "Enchanter",
   "items": [
    {
+    "name": "Heart of Ice",
+    "qty": 1
+   },
+   {
+    "name": "Sabertooth Tiger Mane",
+    "qty": 1
+   },
+   {
     "name": "Ton Warrior Totem",
     "qty": 1
    }
@@ -11384,6 +12947,14 @@
     "qty": 1
    },
    {
+    "name": "Gleaming Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Gloves",
+    "qty": 1
+   },
+   {
     "name": "Glowing Mask",
     "qty": 1
    },
@@ -11393,6 +12964,10 @@
    },
    {
     "name": "Pouch of Silver Dust",
+    "qty": 1
+   },
+   {
+    "name": "Radiant Gloves",
     "qty": 1
    },
    {
@@ -11545,6 +13120,10 @@
     "qty": 1
    },
    {
+    "name": "Missing Teir`Dal Crate",
+    "qty": 1
+   },
+   {
     "name": "Receipt for Provisions Crate",
     "qty": 1
    },
@@ -11597,6 +13176,18 @@
   "classes": "All",
   "items": [
    {
+    "name": "Barbarian Femur",
+    "qty": 1
+   },
+   {
+    "name": "Barbarian Jaw",
+    "qty": 1
+   },
+   {
+    "name": "Barbarian Skull",
+    "qty": 1
+   },
+   {
     "name": "Box of Remains",
     "qty": 1
    }
@@ -11627,7 +13218,43 @@
     "qty": 1
    },
    {
+    "name": "Broken Bow Part A",
+    "qty": 1
+   },
+   {
+    "name": "Broken Bow Part B",
+    "qty": 1
+   },
+   {
+    "name": "Cyclops Charm",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Heart of Fire",
+    "qty": 1
+   },
+   {
     "name": "Mistmoore Granite",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Ivy",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Skull of Meldrath",
     "qty": 1
    },
    {
@@ -11635,7 +13262,15 @@
     "qty": 1
    },
    {
+    "name": "Star Ruby",
+    "qty": 1
+   },
+   {
     "name": "Star of Odus",
+    "qty": 1
+   },
+   {
+    "name": "Water Ring",
     "qty": 1
    }
   ],
@@ -11936,7 +13571,16 @@
   "questGiver": "Neb",
   "minLevel": 55,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Vaniki's Heart",
+    "qty": 1
+   },
+   {
+    "name": "Zlandicar's Heart",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Jaled Dar's Tomb Key",
    "Neb's Warbone"
@@ -12265,7 +13909,92 @@
   "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
   "minLevel": 30,
   "classes": "Bard",
-  "items": [],
+  "items": [
+   {
+    "name": "Basalt Carapace",
+    "qty": 1
+   },
+   {
+    "name": "Black Silk Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Fiery Vambraces",
+    "qty": 1
+   },
+   {
+    "name": "Fire Opal",
+    "qty": 1
+   },
+   {
+    "name": "Firewalker Boots",
+    "qty": 1
+   },
+   {
+    "name": "Griffenne Charm",
+    "qty": 1
+   },
+   {
+    "name": "Gypsy Lute",
+    "qty": 1
+   },
+   {
+    "name": "Icy Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Fire Opal",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Star Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Mudwater Rune",
+    "qty": 1
+   },
+   {
+    "name": "Opoline Helm",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Rune of the One Eye",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Shin Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Shin Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Bard Quests",
@@ -12284,7 +14013,19 @@
   "classes": "Warrior",
   "items": [
    {
+    "name": "Langseax",
+    "qty": 1
+   },
+   {
+    "name": "Langseax of the Wolves",
+    "qty": 1
+   },
+   {
     "name": "Lion Delight",
+    "qty": 1
+   },
+   {
+    "name": "Sweaty Shirt",
     "qty": 1
    }
   ],
@@ -12337,11 +14078,27 @@
   "classes": "All",
   "items": [
    {
+    "name": "Alligator Skin",
+    "qty": 1
+   },
+   {
     "name": "Dragoon Dirk",
     "qty": 1
    },
    {
+    "name": "Grizzly Bear Skin",
+    "qty": 1
+   },
+   {
     "name": "Leatherfoot Skullcap",
+    "qty": 1
+   },
+   {
+    "name": "Polar Bear Skin",
+    "qty": 1
+   },
+   {
+    "name": "Shark Skin",
     "qty": 1
    }
   ],
@@ -12924,7 +14681,67 @@
   "classes": "Magician",
   "items": [
    {
+    "name": "Blazing Wand",
+    "qty": 1
+   },
+   {
+    "name": "Broom of Trilon",
+    "qty": 1
+   },
+   {
+    "name": "Burning Embers",
+    "qty": 1
+   },
+   {
+    "name": "Crown of Elemental Mastery",
+    "qty": 1
+   },
+   {
+    "name": "Dirt of Underfoot",
+    "qty": 1
+   },
+   {
+    "name": "Element of Earth",
+    "qty": 1
+   },
+   {
+    "name": "Element of Fire",
+    "qty": 1
+   },
+   {
+    "name": "Element of Water",
+    "qty": 1
+   },
+   {
     "name": "Element of Wind",
+    "qty": 1
+   },
+   {
+    "name": "Elemental Binder",
+    "qty": 1
+   },
+   {
+    "name": "Orb of Mastery",
+    "qty": 1
+   },
+   {
+    "name": "Pegasus Feather Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Power of Earth",
+    "qty": 1
+   },
+   {
+    "name": "Power of Fire",
+    "qty": 1
+   },
+   {
+    "name": "Power of Water",
+    "qty": 1
+   },
+   {
+    "name": "Power of Wind",
     "qty": 1
    },
    {
@@ -12933,6 +14750,58 @@
    },
    {
     "name": "Power of the Orb",
+    "qty": 1
+   },
+   {
+    "name": "Rain of Karana",
+    "qty": 1
+   },
+   {
+    "name": "Shovel of Ponz",
+    "qty": 1
+   },
+   {
+    "name": "Staff of Elemental Mastery: Earth",
+    "qty": 1
+   },
+   {
+    "name": "Staff of Elemental Mastery: Water",
+    "qty": 1
+   },
+   {
+    "name": "Tears of Erollisi",
+    "qty": 1
+   },
+   {
+    "name": "Torch of the Elements",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Magi`kot pg. 1",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Magi`kot pg. 2",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Magi`kot pg. 3",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Mastery Earth",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Mastery Fire",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Mastery Water",
+    "qty": 1
+   },
+   {
+    "name": "Torn Page of Mastery Wind",
     "qty": 1
    },
    {
@@ -12962,7 +14831,36 @@
   "questGiver": "Mjeldor Felstorm",
   "minLevel": 50,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Summoner's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Summoner's Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Summoner's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Summoner's Pantaloons",
+    "qty": 1
+   },
+   {
+    "name": "Summoner's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Summoner's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Summoner's Warband",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -13057,6 +14955,34 @@
    },
    {
     "name": "Nephrite",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Headband",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Trousers",
+    "qty": 1
+   },
+   {
+    "name": "Prestidigitator's Wristband",
     "qty": 1
    },
    {
@@ -13177,6 +15103,34 @@
   "minLevel": 45,
   "classes": "Magician",
   "items": [
+   {
+    "name": "Arch Mage's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Arch Mage's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Arch Mage's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Arch Mage's Pantaloons",
+    "qty": 1
+   },
+   {
+    "name": "Arch Mage's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Arch Mage's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Arch Mage's Warband",
+    "qty": 1
+   },
    {
     "name": "Crushed Onyx Sapphire",
     "qty": 1
@@ -13839,6 +15793,14 @@
     "qty": 1
    },
    {
+    "name": "Dried Tongue",
+    "qty": 1
+   },
+   {
+    "name": "Hollow Skull (Skull of the Tower Cook)",
+    "qty": 1
+   },
+   {
     "name": "Preserved Eye (Left)",
     "qty": 1
    },
@@ -13965,7 +15927,28 @@
   "questGiver": "Phin Esrinap, Togahn Sorast",
   "minLevel": 1,
   "classes": "Monk",
-  "items": [],
+  "items": [
+   {
+    "name": "Blackburrow Gnoll Pelt",
+    "qty": 2
+   },
+   {
+    "name": "Blackburrow Gnoll Skin",
+    "qty": 1
+   },
+   {
+    "name": "Gnoll Pup Scalp",
+    "qty": 4
+   },
+   {
+    "name": "Putrid Rib Bone",
+    "qty": 3
+   },
+   {
+    "name": "White Headband",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Orange Headband",
    "Purple Headband",
@@ -13988,7 +15971,36 @@
   "questGiver": "Dagron Stonecutter",
   "minLevel": 50,
   "classes": "Monk",
-  "items": [],
+  "items": [
+   {
+    "name": "Fist of the Golden Star",
+    "qty": 1
+   },
+   {
+    "name": "Golden Star Arm Wraps",
+    "qty": 1
+   },
+   {
+    "name": "Golden Star Chest Wraps",
+    "qty": 1
+   },
+   {
+    "name": "Golden Star Headband",
+    "qty": 1
+   },
+   {
+    "name": "Golden Star Pants",
+    "qty": 1
+   },
+   {
+    "name": "Golden Star Slippers",
+    "qty": 1
+   },
+   {
+    "name": "Golden Star Wrist Wraps",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -14074,7 +16086,51 @@
   "classes": "Monk",
   "items": [
    {
+    "name": "Blackened Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Blackened Wand",
+    "qty": 1
+   },
+   {
+    "name": "Bone Chips",
+    "qty": 1
+   },
+   {
+    "name": "Cutthroat Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Deathfist Pawn Scalp",
+    "qty": 1
+   },
+   {
     "name": "Deathfist Slashed Belt",
+    "qty": 1
+   },
+   {
+    "name": "Desert Tarantula Chitin",
+    "qty": 1
+   },
+   {
+    "name": "Giant Snake Rattle",
+    "qty": 1
+   },
+   {
+    "name": "Greater Lightstone",
+    "qty": 1
+   },
+   {
+    "name": "Legionnaire's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Orange Sash of Order",
+    "qty": 1
+   },
+   {
+    "name": "Snake Fang",
     "qty": 1
    }
   ],
@@ -14102,6 +16158,10 @@
   "items": [
    {
     "name": "An Outlander's Head",
+    "qty": 1
+   },
+   {
+    "name": "Coppernickel Key",
     "qty": 1
    },
    {
@@ -14133,6 +16193,10 @@
     "qty": 1
    },
    {
+    "name": "Iksar Bandit Mask",
+    "qty": 1
+   },
+   {
     "name": "Iksar Left Hand",
     "qty": 1
    },
@@ -14146,6 +16210,10 @@
    },
    {
     "name": "Large Scorpion Pincer",
+    "qty": 1
+   },
+   {
+    "name": "Part of a Large Key",
     "qty": 1
    },
    {
@@ -14174,6 +16242,10 @@
    },
    {
     "name": "Shackle of Stone",
+    "qty": 1
+   },
+   {
+    "name": "Skipping Stone",
     "qty": 1
    },
    {
@@ -14240,6 +16312,10 @@
     "qty": 1
    },
    {
+    "name": "Fist of the White Lotus",
+    "qty": 1
+   },
+   {
     "name": "Flawed Emerald",
     "qty": 1
    },
@@ -14278,6 +16354,30 @@
    {
     "name": "Unadorned Leather Tunic",
     "qty": 1
+   },
+   {
+    "name": "White Lotus Arm Wraps",
+    "qty": 1
+   },
+   {
+    "name": "White Lotus Chest Wraps",
+    "qty": 1
+   },
+   {
+    "name": "White Lotus Headband",
+    "qty": 1
+   },
+   {
+    "name": "White Lotus Pants",
+    "qty": 1
+   },
+   {
+    "name": "White Lotus Slippers",
+    "qty": 1
+   },
+   {
+    "name": "White Lotus Wrist Wraps",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -14307,6 +16407,34 @@
    {
     "name": "Eroded Leather Bracelet",
     "qty": 1
+   },
+   {
+    "name": "Fist of the Grand Master",
+    "qty": 1
+   },
+   {
+    "name": "Grand Master's Arm Wraps",
+    "qty": 1
+   },
+   {
+    "name": "Grand Master's Chest Wraps",
+    "qty": 1
+   },
+   {
+    "name": "Grand Master's Headband",
+    "qty": 1
+   },
+   {
+    "name": "Grand Master's Leg Wraps",
+    "qty": 1
+   },
+   {
+    "name": "Grand Master's Slippers",
+    "qty": 1
+   },
+   {
+    "name": "Grand Master's Wrist Wraps",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -14330,11 +16458,47 @@
   "classes": "Monk",
   "items": [
    {
+    "name": "Code of Zan Fi",
+    "qty": 1
+   },
+   {
+    "name": "Gather Shadows",
+    "qty": 1
+   },
+   {
     "name": "Needle of the Void",
     "qty": 1
    },
    {
+    "name": "Purple Headband",
+    "qty": 1
+   },
+   {
     "name": "Rare Robe Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Red Sash of Order",
+    "qty": 1
+   },
+   {
+    "name": "Robe of the Lost Circle",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Silk",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Wolf Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Silk Swatch",
+    "qty": 1
+   },
+   {
+    "name": "The Idol",
     "qty": 1
    }
   ],
@@ -14525,6 +16689,10 @@
    {
     "name": "Full Muffin Crate",
     "qty": 1
+   },
+   {
+    "name": "Muffin",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -14566,7 +16734,20 @@
   "questGiver": "Keeper Bile",
   "minLevel": 6,
   "classes": "Necromancer",
-  "items": [],
+  "items": [
+   {
+    "name": "Brittle Iksar Skull",
+    "qty": 1
+   },
+   {
+    "name": "Large Scorpion Pincer",
+    "qty": 1
+   },
+   {
+    "name": "Sabertooth Cub Canine",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Necromancer"
   ],
@@ -14590,6 +16771,10 @@
   "classes": "Necromancer",
   "items": [
    {
+    "name": "Black Silk Cape",
+    "qty": 1
+   },
+   {
     "name": "Cloak of Spiroc Feathers",
     "qty": 1
    },
@@ -14606,6 +16791,10 @@
     "qty": 1
    },
    {
+    "name": "Manisi Herb",
+    "qty": 1
+   },
+   {
     "name": "Rolling Stone Moss",
     "qty": 1
    },
@@ -14618,7 +16807,15 @@
     "qty": 1
    },
    {
+    "name": "Silver Disc",
+    "qty": 1
+   },
+   {
     "name": "Slime Blood of Cazic Thule",
+    "qty": 1
+   },
+   {
+    "name": "Spiroc Feathers",
     "qty": 1
    },
    {
@@ -14649,7 +16846,36 @@
   "questGiver": "Bjarorm Mjlorn",
   "minLevel": 50,
   "classes": "Necromancer",
-  "items": [],
+  "items": [
+   {
+    "name": "Plague Bearer's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Plague Bearer's Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Plague Bearer's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Plague Bearer's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Plague Bearer's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Plague Bearer's Trousers",
+    "qty": 1
+   },
+   {
+    "name": "Plague Bearer's Wristguard",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -14707,6 +16933,10 @@
   "classes": "Necromancer",
   "items": [
    {
+    "name": "A Cracked Femur",
+    "qty": 1
+   },
+   {
     "name": "Apprentice Skullcap - 2nd Rank",
     "qty": 1
    },
@@ -14715,7 +16945,51 @@
     "qty": 1
    },
    {
+    "name": "Bone Granite Powder",
+    "qty": 1
+   },
+   {
+    "name": "Creeper Cabbage",
+    "qty": 1
+   },
+   {
     "name": "Dark Binder Skullcap",
+    "qty": 1
+   },
+   {
+    "name": "Embalming Fluid (Item)",
+    "qty": 1
+   },
+   {
+    "name": "Evergreen Ivy Ringband",
+    "qty": 1
+   },
+   {
+    "name": "Eye of RokGus",
+    "qty": 1
+   },
+   {
+    "name": "Forge Hammer of Dalnir",
+    "qty": 1
+   },
+   {
+    "name": "Forsaken Pariah Mask",
+    "qty": 1
+   },
+   {
+    "name": "Gem of Yet to Come",
+    "qty": 1
+   },
+   {
+    "name": "Green Death Rum",
+    "qty": 1
+   },
+   {
+    "name": "Intact Brutling Choppers",
+    "qty": 1
+   },
+   {
+    "name": "Jewel of Ganak",
     "qty": 1
    },
    {
@@ -14735,7 +17009,27 @@
     "qty": 1
    },
    {
+    "name": "Sarnak Raider Brain",
+    "qty": 1
+   },
+   {
+    "name": "Shiny Emerald",
+    "qty": 1
+   },
+   {
     "name": "Sorcerer Skullcap",
+    "qty": 1
+   },
+   {
+    "name": "Spectacle",
+    "qty": 1
+   },
+   {
+    "name": "Stein",
+    "qty": 1
+   },
+   {
+    "name": "Stem of Candlestick",
     "qty": 1
    },
    {
@@ -14795,6 +17089,34 @@
    },
    {
     "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Boots",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Crown",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Robe",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Trousers",
+    "qty": 1
+   },
+   {
+    "name": "Rotting Wristguard",
     "qty": 1
    },
    {
@@ -14867,7 +17189,36 @@
   "questGiver": "Lorekeeper Zorik",
   "minLevel": 45,
   "classes": "Necromancer",
-  "items": [],
+  "items": [
+   {
+    "name": "Warlock's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Warlock's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Warlock's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Warlock's Pantaloons",
+    "qty": 1
+   },
+   {
+    "name": "Warlock's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Warlock's Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Warlock's Wristguard",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Necromancer Quests",
@@ -14914,7 +17265,56 @@
   "questGiver": "X`Ta Timpi",
   "minLevel": 46,
   "classes": "Necromancer",
-  "items": [],
+  "items": [
+   {
+    "name": "Bloodstone",
+    "qty": 1
+   },
+   {
+    "name": "Charred Dagger",
+    "qty": 1
+   },
+   {
+    "name": "Dull Bone Chips",
+    "qty": 2
+   },
+   {
+    "name": "Ebon Wand",
+    "qty": 2
+   },
+   {
+    "name": "Eye of Fright",
+    "qty": 1
+   },
+   {
+    "name": "Festering Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Globe of Fear",
+    "qty": 1
+   },
+   {
+    "name": "Iced Bone Chips",
+    "qty": 2
+   },
+   {
+    "name": "Jasper",
+    "qty": 1
+   },
+   {
+    "name": "Pearl",
+    "qty": 1
+   },
+   {
+    "name": "Star Rose Quartz",
+    "qty": 1
+   },
+   {
+    "name": "Stone of the Wraith",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Words of Detachment",
    "Words of Requisition",
@@ -14986,7 +17386,23 @@
   "classes": "All",
   "items": [
    {
+    "name": "Bat Wing",
+    "qty": 1
+   },
+   {
+    "name": "Fire Beetle Eye",
+    "qty": 1
+   },
+   {
+    "name": "Rat Ears",
+    "qty": 1
+   },
+   {
     "name": "Small Sealed Bag",
+    "qty": 1
+   },
+   {
+    "name": "Snake Egg",
     "qty": 1
    }
   ],
@@ -15752,6 +18168,10 @@
     "qty": 1
    },
    {
+    "name": "Ghoulbane",
+    "qty": 1
+   },
+   {
     "name": "Gleaming Crested Breastplate",
     "qty": 1
    },
@@ -15772,7 +18192,15 @@
     "qty": 1
    },
    {
+    "name": "SoulFire",
+    "qty": 1
+   },
+   {
     "name": "Tainted Darksteel Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Tainted Darksteel Shield",
     "qty": 1
    },
    {
@@ -15824,7 +18252,36 @@
   "questGiver": "Barlek Stonefist",
   "minLevel": 50,
   "classes": "Paladin",
-  "items": [],
+  "items": [
+   {
+    "name": "Shining Boots",
+    "qty": 1
+   },
+   {
+    "name": "Shining Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Shining Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Shining Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Shining Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Shining Helm",
+    "qty": 1
+   },
+   {
+    "name": "Shining Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -15943,6 +18400,34 @@
    {
     "name": "Flawless Diamond",
     "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Knight's Vambraces",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -15971,6 +18456,34 @@
    },
    {
     "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Runed Protector's Vambraces",
     "qty": 1
    }
   ],
@@ -16020,7 +18533,36 @@
   "questGiver": "Vin Moltor",
   "minLevel": 29,
   "classes": "Cleric, Druid, Shaman",
-  "items": [],
+  "items": [
+   {
+    "name": "Bottle of Kalish",
+    "qty": 3
+   },
+   {
+    "name": "Copper Ring (Ring of Opolla)",
+    "qty": 1
+   },
+   {
+    "name": "Gold Ring (Ring of Opolla)",
+    "qty": 1
+   },
+   {
+    "name": "Platinum Ring",
+    "qty": 1
+   },
+   {
+    "name": "Rat Ear Pie",
+    "qty": 1
+   },
+   {
+    "name": "Severed Paw",
+    "qty": 1
+   },
+   {
+    "name": "Silver Ring (Ring of Opolla)",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Paw of Opolla"
   ],
@@ -16933,7 +19475,19 @@
   "classes": "Wizard",
   "items": [
    {
+    "name": "Dragon Blood",
+    "qty": 1
+   },
+   {
+    "name": "Dragonbane Herb",
+    "qty": 1
+   },
+   {
     "name": "Giant Loyalist Token",
+    "qty": 1
+   },
+   {
+    "name": "Giant Scalebound Tome",
     "qty": 1
    },
    {
@@ -17094,7 +19648,19 @@
     "qty": 1
    },
    {
+    "name": "Head of Azibelle Spavin",
+    "qty": 1
+   },
+   {
     "name": "Head of Donally Stultz",
+    "qty": 1
+   },
+   {
+    "name": "Head of Markus Cachexia",
+    "qty": 1
+   },
+   {
+    "name": "Head of Morley Murrain",
     "qty": 1
    },
    {
@@ -17206,6 +19772,10 @@
    },
    {
     "name": "Odd Cold Iron Necklace",
+    "qty": 1
+   },
+   {
+    "name": "Regent Symbol of Quellious",
     "qty": 1
    },
    {
@@ -17365,11 +19935,19 @@
    },
    {
     "name": "Clump of Gorilla Hair",
+    "qty": 2
+   },
+   {
+    "name": "Crate for Tonics",
     "qty": 1
    },
    {
     "name": "Crate of Tonic",
     "qty": 1
+   },
+   {
+    "name": "Fuzzlecutter Formula 5000",
+    "qty": 10
    },
    {
     "name": "Lock of Hair",
@@ -17385,6 +19963,10 @@
    },
    {
     "name": "Rain Caller",
+    "qty": 1
+   },
+   {
+    "name": "Small Lantern",
     "qty": 1
    },
    {
@@ -17425,7 +20007,19 @@
   "classes": "All",
   "items": [
    {
+    "name": "A chipped fang",
+    "qty": 1
+   },
+   {
     "name": "Glanitar's Imbued Talisman",
+    "qty": 1
+   },
+   {
+    "name": "Head of Staff Sergeant Drioc",
+    "qty": 1
+   },
+   {
+    "name": "Teachings of Gkrean",
     "qty": 1
    }
   ],
@@ -17497,6 +20091,10 @@
     "qty": 1
    },
    {
+    "name": "Crushed Pot",
+    "qty": 1
+   },
+   {
     "name": "Dark Metal Coin",
     "qty": 1
    },
@@ -17537,7 +20135,15 @@
     "qty": 1
    },
    {
+    "name": "Jade Reaver",
+    "qty": 1
+   },
+   {
     "name": "Platinum Speckled Powder",
+    "qty": 1
+   },
+   {
+    "name": "Pulsing Green Stone",
     "qty": 1
    },
    {
@@ -17550,6 +20156,10 @@
    },
    {
     "name": "Refined Mithril Blade",
+    "qty": 1
+   },
+   {
+    "name": "Ripened Heartfruit",
     "qty": 1
    },
    {
@@ -17585,6 +20195,18 @@
     "qty": 1
    },
    {
+    "name": "Speckled Molded Mushroom",
+    "qty": 1
+   },
+   {
+    "name": "Summoned: Firefly Globe",
+    "qty": 1
+   },
+   {
+    "name": "Sweetened Mudroot",
+    "qty": 1
+   },
+   {
     "name": "Swiftwind",
     "qty": 1
    },
@@ -17602,6 +20224,10 @@
    },
    {
     "name": "Worn Dark Metal Coin",
+    "qty": 1
+   },
+   {
+    "name": "Worn note",
     "qty": 1
    }
   ],
@@ -17628,7 +20254,36 @@
   "questGiver": "Gragek Mjlorkigar",
   "minLevel": 50,
   "classes": "Ranger",
-  "items": [],
+  "items": [
+   {
+    "name": "Forest Stalker's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Forest Stalker's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Forest Stalker's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Forest Stalker's Coif",
+    "qty": 1
+   },
+   {
+    "name": "Forest Stalker's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Forest Stalker's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Forest Stalker's Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -17731,6 +20386,34 @@
     "qty": 1
    },
    {
+    "name": "Golden Leaf Boots",
+    "qty": 1
+   },
+   {
+    "name": "Golden Leaf Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Golden Leaf Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Golden Leaf Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Golden Leaf Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Golden Leaf Helm",
+    "qty": 1
+   },
+   {
+    "name": "Golden Leaf Vambraces",
+    "qty": 1
+   },
+   {
     "name": "Unadorned Chain Boots",
     "qty": 1
    },
@@ -17793,6 +20476,34 @@
    },
    {
     "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Runed Scout's Vambraces",
     "qty": 1
    }
   ],
@@ -18152,7 +20863,12 @@
   "questGiver": "Feren",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Scrrrumptious Fish Meat",
+    "qty": 3
+   }
+  ],
   "rewards": [
    "Kerran Fishingpole"
   ],
@@ -18197,7 +20913,16 @@
   "questGiver": "Karam Dragonforge",
   "minLevel": 45,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Red Dragon Scales",
+    "qty": 1
+   },
+   {
+    "name": "Vial of Swirling Smoke",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Red Dragonscale Armor"
   ],
@@ -18295,11 +21020,31 @@
   "classes": "All",
   "items": [
    {
+    "name": "Di'Zok Signet of Service",
+    "qty": 1
+   },
+   {
+    "name": "Drogan Warlord's Insignia",
+    "qty": 1
+   },
+   {
+    "name": "Forged Note to Courier",
+    "qty": 1
+   },
+   {
+    "name": "Head of Skargus",
+    "qty": 1
+   },
+   {
     "name": "Regal Band of Bathezid",
     "qty": 1
    },
    {
     "name": "Report to Skargus",
+    "qty": 1
+   },
+   {
+    "name": "Traitor's note",
     "qty": 1
    }
   ],
@@ -18420,7 +21165,23 @@
   "classes": "Necromancer",
   "items": [
    {
+    "name": "Cockatrice Egg",
+    "qty": 1
+   },
+   {
+    "name": "Frost Crystal",
+    "qty": 1
+   },
+   {
     "name": "Full Components Chest",
+    "qty": 1
+   },
+   {
+    "name": "Giant Hornet Egg",
+    "qty": 1
+   },
+   {
+    "name": "Plains Pebble",
     "qty": 1
    },
    {
@@ -18629,7 +21390,20 @@
   "questGiver": "Joyce",
   "minLevel": 25,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Fire Goblin Skin",
+    "qty": 1
+   },
+   {
+    "name": "Frost Goblin Skin",
+    "qty": 1
+   },
+   {
+    "name": "Twice-Woven Cloak",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Robe of the Elements"
   ],
@@ -18727,6 +21501,10 @@
     "qty": 1
    },
    {
+    "name": "Burning Rapier",
+    "qty": 1
+   },
+   {
     "name": "Cazic Quill",
     "qty": 1
    },
@@ -18735,7 +21513,15 @@
     "qty": 1
    },
    {
+    "name": "Fleshripper",
+    "qty": 1
+   },
+   {
     "name": "General's Pouch",
+    "qty": 1
+   },
+   {
+    "name": "Gigantic Zweihander",
     "qty": 1
    },
    {
@@ -18743,7 +21529,27 @@
     "qty": 1
    },
    {
+    "name": "Mithril Two-Handed Sword",
+    "qty": 1
+   },
+   {
+    "name": "Painbringer",
+    "qty": 1
+   },
+   {
     "name": "Ragebringer",
+    "qty": 1
+   },
+   {
+    "name": "Robe of the Ishva",
+    "qty": 1
+   },
+   {
+    "name": "Robe of the Kedge",
+    "qty": 1
+   },
+   {
+    "name": "Robe of the Oracle",
     "qty": 1
    },
    {
@@ -18752,6 +21558,10 @@
    },
    {
     "name": "Sealed Box",
+    "qty": 1
+   },
+   {
+    "name": "Shining Metallic Robes",
     "qty": 1
    },
    {
@@ -18806,7 +21616,36 @@
   "questGiver": "Kelenek Bluadfeth",
   "minLevel": 50,
   "classes": "Rogue",
-  "items": [],
+  "items": [
+   {
+    "name": "Deceiver's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Deceiver's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Deceiver's Chestguard",
+    "qty": 1
+   },
+   {
+    "name": "Deceiver's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Deceiver's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Deceiver's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Deceiver's Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -18875,11 +21714,35 @@
     "qty": 1
    },
    {
+    "name": "Blackburrow Cask",
+    "qty": 1
+   },
+   {
+    "name": "Blackburrow Gnoll Skin",
+    "qty": 1
+   },
+   {
+    "name": "Blackburrow Swig",
+    "qty": 1
+   },
+   {
+    "name": "Blood Spirit",
+    "qty": 1
+   },
+   {
     "name": "Bottle Crate",
     "qty": 1
    },
    {
     "name": "Case of Spirits",
+    "qty": 1
+   },
+   {
+    "name": "Clockwork Oil Stout",
+    "qty": 1
+   },
+   {
+    "name": "Frozen Toe Rum",
     "qty": 1
    },
    {
@@ -18895,7 +21758,23 @@
     "qty": 1
    },
    {
+    "name": "Gnoll Pup Scalp",
+    "qty": 1
+   },
+   {
+    "name": "Lendel's Grand Lager",
+    "qty": 1
+   },
+   {
     "name": "Never Stop Chopping",
+    "qty": 1
+   },
+   {
+    "name": "Ol'Tujim's Fierce Brew",
+    "qty": 1
+   },
+   {
+    "name": "Sealed Note",
     "qty": 1
    },
    {
@@ -18904,6 +21783,18 @@
    },
    {
     "name": "Tiny Key",
+    "qty": 1
+   },
+   {
+    "name": "Tunare's Finest",
+    "qty": 1
+   },
+   {
+    "name": "Underfoot Triple Bock",
+    "qty": 1
+   },
+   {
+    "name": "Vasty Deep Ale",
     "qty": 1
    }
   ],
@@ -18969,6 +21860,34 @@
     "qty": 1
    },
    {
+    "name": "Shadow Boots",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Chestguard",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Crown",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Shadow Vambraces",
+    "qty": 1
+   },
+   {
     "name": "Unadorned Chain Boots",
     "qty": 1
    },
@@ -19017,6 +21936,34 @@
   "minLevel": 45,
   "classes": "Rogue",
   "items": [
+   {
+    "name": "Brigand's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Brigand's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Brigand's Chestguard",
+    "qty": 1
+   },
+   {
+    "name": "Brigand's Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Brigand's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Brigand's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Brigand's Vambraces",
+    "qty": 1
+   },
    {
     "name": "Corroded Chain Boots",
     "qty": 1
@@ -19287,7 +22234,24 @@
   "questGiver": "Bloogy Shellcracker",
   "minLevel": 50,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Fish Eggs",
+    "qty": 1
+   },
+   {
+    "name": "Saltwater Seaweed",
+    "qty": 2
+   },
+   {
+    "name": "Sea Dragon Meat",
+    "qty": 1
+   },
+   {
+    "name": "Thunder Salmon",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Othmir Prexus Totem"
   ],
@@ -19310,7 +22274,120 @@
   "questGiver": "Zazlan Furscale, Shezlie Furscale",
   "minLevel": 20,
   "classes": "Shaman",
-  "items": [],
+  "items": [
+   {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
+    "name": "Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Banded Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Banded Helm",
+    "qty": 1
+   },
+   {
+    "name": "Banded Leggings",
+    "qty": 1
+   },
+   {
+    "name": "Banded Mail",
+    "qty": 1
+   },
+   {
+    "name": "Banded Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Bargynn's Digger",
+    "qty": 1
+   },
+   {
+    "name": "Coercion Implant",
+    "qty": 1
+   },
+   {
+    "name": "Exiled Iksar Head",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Forest Giant Hammer",
+    "qty": 1
+   },
+   {
+    "name": "Frenzied Gnawer Tail",
+    "qty": 1
+   },
+   {
+    "name": "Froglok Treated Planks",
+    "qty": 1
+   },
+   {
+    "name": "Gooey Adhesive",
+    "qty": 1
+   },
+   {
+    "name": "Nectar of Isolation",
+    "qty": 1
+   },
+   {
+    "name": "Rhino Hoof",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Sarnak Recruitment Letter",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller Beads",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Sythrax Building Plans",
+    "qty": 1
+   },
+   {
+    "name": "Venomous Parchment",
+    "qty": 1
+   },
+   {
+    "name": "Warlord Drawing Pen",
+    "qty": 1
+   },
+   {
+    "name": "Watchman's Spectacles",
+    "qty": 1
+   },
+   {
+    "name": "Worn Charbone",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Category:Armor Sets"
   ],
@@ -19387,6 +22464,30 @@
   "minLevel": 1,
   "classes": "??",
   "items": [
+   {
+    "name": "Chapter I, The Shatter Sky",
+    "qty": 1
+   },
+   {
+    "name": "Chapter II, Of Bards and Bitter Winters",
+    "qty": 1
+   },
+   {
+    "name": "Chapter III, When Stars Forget Their Light",
+    "qty": 1
+   },
+   {
+    "name": "Chapter IV, Of Flame and Frost",
+    "qty": 1
+   },
+   {
+    "name": "Chapter V, Ashes in the Margins",
+    "qty": 1
+   },
+   {
+    "name": "Chapter VI, The First Frost",
+    "qty": 1
+   },
    {
     "name": "Discarded Packaging",
     "qty": 1
@@ -19653,7 +22754,31 @@
   "classes": "All",
   "items": [
    {
+    "name": "Medallion of the Jarsath",
+    "qty": 1
+   },
+   {
+    "name": "Medallion of the Kunzar",
+    "qty": 1
+   },
+   {
+    "name": "Medallion of the Kylong",
+    "qty": 1
+   },
+   {
+    "name": "Medallion of the Nathsar",
+    "qty": 1
+   },
+   {
+    "name": "Medallion of the Obulus",
+    "qty": 1
+   },
+   {
     "name": "Trakanon Idol",
+    "qty": 1
+   },
+   {
+    "name": "Trakanon's Tooth",
     "qty": 1
    }
   ],
@@ -19846,7 +22971,19 @@
     "qty": 1
    },
    {
+    "name": "Heart of Kyrenna",
+    "qty": 1
+   },
+   {
     "name": "Heart of the Innocent",
+    "qty": 1
+   },
+   {
+    "name": "Innoruuk's Curse",
+    "qty": 1
+   },
+   {
+    "name": "Letter to Duriek",
     "qty": 1
    },
    {
@@ -19855,6 +22992,10 @@
    },
    {
     "name": "Soul Leech, Dark Sword of Blood",
+    "qty": 1
+   },
+   {
+    "name": "Soulcase",
     "qty": 1
    },
    {
@@ -19976,7 +23117,36 @@
   "questGiver": "Veldern Blackhammer",
   "minLevel": 50,
   "classes": "Shadow Knight",
-  "items": [],
+  "items": [
+   {
+    "name": "Malevolent Boots",
+    "qty": 1
+   },
+   {
+    "name": "Malevolent Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Malevolent Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Malevolent Crown",
+    "qty": 1
+   },
+   {
+    "name": "Malevolent Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Malevolent Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Malevolent Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -19997,6 +23167,34 @@
   "minLevel": 50,
   "classes": "Shadowknight",
   "items": [
+   {
+    "name": "Blood Lord's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Blood Lord's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Blood Lord's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Blood Lord's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Blood Lord's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Blood Lord's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Blood Lord's Vambraces",
+    "qty": 1
+   },
    {
     "name": "Crushed Black Marble",
     "qty": 1
@@ -20053,6 +23251,34 @@
    {
     "name": "Crushed Flame Emerald",
     "qty": 1
+   },
+   {
+    "name": "Dark Runed Boots",
+    "qty": 1
+   },
+   {
+    "name": "Dark Runed Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Dark Runed Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Dark Runed Crown",
+    "qty": 1
+   },
+   {
+    "name": "Dark Runed Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Dark Runed Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Dark Runed Vambraces",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -20099,6 +23325,22 @@
     "qty": 1
    },
    {
+    "name": "Blessed Oil Flask",
+    "qty": 1
+   },
+   {
+    "name": "Sack of Cursed Hay",
+    "qty": 1
+   },
+   {
+    "name": "Sack of Hay",
+    "qty": 1
+   },
+   {
+    "name": "Sack of Writhing Hay",
+    "qty": 1
+   },
+   {
     "name": "Wee Harvester",
     "qty": 1
    }
@@ -20126,11 +23368,31 @@
   "classes": "Shaman",
   "items": [
    {
+    "name": "Black Dire Pelt",
+    "qty": 1
+   },
+   {
     "name": "Black Fur Boots",
     "qty": 1
    },
    {
+    "name": "Child's Tear",
+    "qty": 1
+   },
+   {
+    "name": "Envy",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the High Scale",
+    "qty": 1
+   },
+   {
     "name": "Iksar Scale",
+    "qty": 1
+   },
+   {
+    "name": "Marr's Promise",
     "qty": 1
    },
    {
@@ -20143,6 +23405,10 @@
    },
    {
     "name": "Tiny Gem",
+    "qty": 1
+   },
+   {
+    "name": "Woe",
     "qty": 1
    }
   ],
@@ -20165,7 +23431,36 @@
   "questGiver": "Yeeldan Spiritcaller",
   "minLevel": 50,
   "classes": "Shaman",
-  "items": [],
+  "items": [
+   {
+    "name": "Spirit Caller's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller's Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -20271,6 +23566,14 @@
     "qty": 1
    },
    {
+    "name": "Logrin Skull",
+    "qty": 1
+   },
+   {
+    "name": "Morgl Skull",
+    "qty": 1
+   },
+   {
     "name": "Piece of Totem",
     "qty": 1
    },
@@ -20284,6 +23587,10 @@
    },
    {
     "name": "Ton Warrior Totem",
+    "qty": 1
+   },
+   {
+    "name": "Waz Skull",
     "qty": 1
    }
   ],
@@ -20361,6 +23668,34 @@
    },
    {
     "name": "Unadorned Chain Tunic",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Wolf Caller's Vambraces",
     "qty": 1
    }
   ],
@@ -20452,6 +23787,34 @@
   "items": [
    {
     "name": "Corroded Chain Leggings",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Helm",
+    "qty": 1
+   },
+   {
+    "name": "Rune Crafter's Vambraces",
     "qty": 1
    }
   ],
@@ -20580,6 +23943,14 @@
   "classes": "Cleric",
   "items": [
    {
+    "name": "Icon of the Devout",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Devout",
+    "qty": 1
+   },
+   {
     "name": "Vulcanized Platinum Bar",
     "qty": 1
    }
@@ -20605,7 +23976,32 @@
   "questGiver": "Melixis",
   "minLevel": 25,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Copper Ring (Ring of Opolla)",
+    "qty": 1
+   },
+   {
+    "name": "Degenerated Guk Weed",
+    "qty": 1
+   },
+   {
+    "name": "Faerix Spores",
+    "qty": 1
+   },
+   {
+    "name": "Gold Ring (Ring of Opolla)",
+    "qty": 1
+   },
+   {
+    "name": "Guk Bracket Mildew",
+    "qty": 1
+   },
+   {
+    "name": "Silver Ring (Ring of Opolla)",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Copper Ring (Ring of Opolla)",
    "Gold Ring (Ring of Opolla)",
@@ -20674,7 +24070,24 @@
   "questGiver": "Vira",
   "minLevel": 33,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "A Shovel",
+    "qty": 1
+   },
+   {
+    "name": "Gargoyle Eye",
+    "qty": 1
+   },
+   {
+    "name": "Hill Giant Toes",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Shovel of Ponz"
   ],
@@ -20858,7 +24271,12 @@
   "questGiver": "Urkath Greyface",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Skunk Scent Gland",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Worn Leather Shoulderpads"
   ],
@@ -21177,6 +24595,26 @@
   "classes": "Monk",
   "items": [
    {
+    "name": "Full Pouch of Leech Husks",
+    "qty": 1
+   },
+   {
+    "name": "Leech Husk",
+    "qty": 4
+   },
+   {
+    "name": "Leech Husk Pouch",
+    "qty": 1
+   },
+   {
+    "name": "Monk Training Bag",
+    "qty": 1
+   },
+   {
+    "name": "Pile of Granite Pebbles",
+    "qty": 3
+   },
+   {
     "name": "Training Bag Husk",
     "qty": 1
    }
@@ -21271,6 +24709,10 @@
   "minLevel": 35,
   "classes": "Any",
   "items": [
+   {
+    "name": "Fading Soul Orb",
+    "qty": 1
+   },
    {
     "name": "Kejek Spirit Powder",
     "qty": 1
@@ -21382,7 +24824,28 @@
   "questGiver": "Gardern",
   "minLevel": 30,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Darkwood Staff",
+    "qty": 1
+   },
+   {
+    "name": "Heart of Fire",
+    "qty": 1
+   },
+   {
+    "name": "Heart of Frost",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Rod of Bone",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Staff of Temperate Flux"
   ],
@@ -21486,7 +24949,28 @@
   "questGiver": "Vira",
   "minLevel": 33,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Frost Giant Toes",
+    "qty": 1
+   },
+   {
+    "name": "Ice Giant Toes",
+    "qty": 1
+   },
+   {
+    "name": "Mermaid Scale",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Stein (of Water)",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Stein of Ulissa"
   ],
@@ -21795,7 +25279,12 @@
   "questGiver": "Tergon Brenclog",
   "minLevel": 15,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Tergon's Spellbook",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Faction"
   ],
@@ -22101,7 +25590,24 @@
   "questGiver": "a gleaming sphere of light",
   "minLevel": 50,
   "classes": "Enchanter",
-  "items": [],
+  "items": [
+   {
+    "name": "First Half of Al`Tarlkal's Tome",
+    "qty": 1
+   },
+   {
+    "name": "First Half of Vin`Pekir's Tome",
+    "qty": 1
+   },
+   {
+    "name": "Second Half of Al`Tarlkal's Tome",
+    "qty": 1
+   },
+   {
+    "name": "Second Half of Vin`Pekir's Tome",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Wreath of Nature"
   ],
@@ -22805,11 +26311,19 @@
   "classes": "Shadow Knight",
   "items": [
    {
+    "name": "Crystalline Orb",
+    "qty": 1
+   },
+   {
     "name": "Monstrous Zombie Heart",
     "qty": 1
    },
    {
     "name": "Pulsating Hyacinth Telesm",
+    "qty": 1
+   },
+   {
+    "name": "White Gold Necklace",
     "qty": 1
    }
   ],
@@ -22833,7 +26347,20 @@
   "questGiver": "General Jyleel",
   "minLevel": 22,
   "classes": "Paladin",
-  "items": [],
+  "items": [
+   {
+    "name": "Black Heart",
+    "qty": 1
+   },
+   {
+    "name": "Blue Orc Head",
+    "qty": 1
+   },
+   {
+    "name": "Large Locked Crate",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Falchion of the Koada'Vie"
   ],
@@ -22888,6 +26415,10 @@
     "qty": 1
    },
    {
+    "name": "Fiery Defender",
+    "qty": 1
+   },
+   {
     "name": "Ghoulbane",
     "qty": 1
    },
@@ -22905,6 +26436,14 @@
    },
    {
     "name": "SoulFire",
+    "qty": 1
+   },
+   {
+    "name": "Torn, Frost covered book",
+    "qty": 1
+   },
+   {
+    "name": "Torn, burnt book",
     "qty": 1
    }
   ],
@@ -23008,7 +26547,24 @@
   "questGiver": "Windscribe Thaloria",
   "minLevel": 1,
   "classes": "??",
-  "items": [],
+  "items": [
+   {
+    "name": "Forgotten Page 1",
+    "qty": 1
+   },
+   {
+    "name": "Forgotten Page 2",
+    "qty": 1
+   },
+   {
+    "name": "Forgotten Page 3",
+    "qty": 1
+   },
+   {
+    "name": "Forgotten Page 4",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Chapter III, When Stars Forget Their Light",
    "Holiday Gift"
@@ -23030,7 +26586,24 @@
   "questGiver": "Guardian of Takish",
   "minLevel": 55,
   "classes": "Cleric",
-  "items": [],
+  "items": [
+   {
+    "name": "Idol of Corruption",
+    "qty": 1
+   },
+   {
+    "name": "Idol of Decay",
+    "qty": 1
+   },
+   {
+    "name": "Idol of Disease",
+    "qty": 1
+   },
+   {
+    "name": "Idol of Erosion",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Symbol of Tunarian Worship"
   ],
@@ -23083,6 +26656,18 @@
     "qty": 1
    },
    {
+    "name": "Geologist's Hammer",
+    "qty": 1
+   },
+   {
+    "name": "Incomplete Tool Kit",
+    "qty": 1
+   },
+   {
+    "name": "Magnifying Glass",
+    "qty": 1
+   },
+   {
     "name": "Yelesom's Reports",
     "qty": 1
    }
@@ -23108,7 +26693,19 @@
   "classes": "All",
   "items": [
    {
+    "name": "A Crazy Cleric Doll",
+    "qty": 1
+   },
+   {
     "name": "A Library Card",
+    "qty": 1
+   },
+   {
+    "name": "A Maleficent Necromancer Doll",
+    "qty": 1
+   },
+   {
+    "name": "A Wily Warlock Doll",
     "qty": 1
    },
    {
@@ -23125,6 +26722,22 @@
    },
    {
     "name": "Funny Money",
+    "qty": 1
+   },
+   {
+    "name": "Mad Monkey Doll",
+    "qty": 1
+   },
+   {
+    "name": "Shamanistic Shenannigan Doll",
+    "qty": 1
+   },
+   {
+    "name": "Sly Summoner Doll",
+    "qty": 1
+   },
+   {
+    "name": "Twisted Druid Doll",
     "qty": 1
    },
    {
@@ -23161,6 +26774,14 @@
   "items": [
    {
     "name": "Gnoll Slayer",
+    "qty": 1
+   },
+   {
+    "name": "Gnoll's Eye",
+    "qty": 1
+   },
+   {
+    "name": "Journal of Greater Enchantment",
     "qty": 1
    }
   ],
@@ -23267,7 +26888,20 @@
   "questGiver": "Watcher Aenwen",
   "minLevel": 1,
   "classes": "??",
-  "items": [],
+  "items": [
+   {
+    "name": "Dreadlands Resonance Crystal",
+    "qty": 1
+   },
+   {
+    "name": "Permafrost Resonance Crystal",
+    "qty": 1
+   },
+   {
+    "name": "Thurgadin Resonance Crystal",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Chapter I, The Shatter Sky",
    "Holiday Gift"
@@ -23401,11 +27035,27 @@
     "qty": 1
    },
    {
+    "name": "First part of an Iceclad Map",
+    "qty": 1
+   },
+   {
+    "name": "Fourth part of an Iceclad Map",
+    "qty": 1
+   },
+   {
     "name": "Map Binding",
     "qty": 1
    },
    {
     "name": "Pieces of the Iceclad Map",
+    "qty": 1
+   },
+   {
+    "name": "Second part of an Iceclad Map",
+    "qty": 1
+   },
+   {
+    "name": "Third part of an Iceclad Map",
     "qty": 1
    },
    {
@@ -23458,7 +27108,24 @@
   "questGiver": "a mosscovered treant",
   "minLevel": 55,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "Tome of Elemental Cognizance",
+    "qty": 1
+   },
+   {
+    "name": "Tome of Elemental Contemplation",
+    "qty": 1
+   },
+   {
+    "name": "Tome of Elemental Thought",
+    "qty": 1
+   },
+   {
+    "name": "Tome of Elemental Understanding",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Chord of Vines"
   ],
@@ -23500,7 +27167,12 @@
   "questGiver": "Allix",
   "minLevel": 1,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Ajrah Leaf",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Erudehide Tunic"
   ],
@@ -23679,6 +27351,10 @@
    {
     "name": "Flask of Nitrates",
     "qty": 1
+   },
+   {
+    "name": "Rusty Dagger",
+    "qty": 1
    }
   ],
   "rewards": [
@@ -23729,7 +27405,24 @@
   "questGiver": "Ghil Starn",
   "minLevel": 3,
   "classes": "Rogue",
-  "items": [],
+  "items": [
+   {
+    "name": "Bat Fur",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Bear Skin",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Wolf Skin",
+    "qty": 1
+   },
+   {
+    "name": "Snake Scales",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Brown Leather Gloves"
   ],
@@ -24017,6 +27710,10 @@
     "qty": 1
    },
    {
+    "name": "Blade skin-10th fold",
+    "qty": 1
+   },
+   {
     "name": "Bronzewood Staff",
     "qty": 1
    },
@@ -24025,7 +27722,39 @@
     "qty": 1
    },
    {
+    "name": "Chunk of Chronium Ore",
+    "qty": 1
+   },
+   {
+    "name": "Clay coated blade",
+    "qty": 1
+   },
+   {
+    "name": "Clay/water mixture",
+    "qty": 1
+   },
+   {
+    "name": "Complete raw blade",
+    "qty": 1
+   },
+   {
+    "name": "Complete shaped blade",
+    "qty": 1
+   },
+   {
     "name": "Dragon Crafted Urn",
+    "qty": 1
+   },
+   {
+    "name": "Dragonbone Dust",
+    "qty": 1
+   },
+   {
+    "name": "Dragonwing Skin",
+    "qty": 1
+   },
+   {
+    "name": "Dusted Starmetal Block",
     "qty": 1
    },
    {
@@ -24042,10 +27771,18 @@
    },
    {
     "name": "Flawless Diamond",
+    "qty": 2
+   },
+   {
+    "name": "Forging Hammer",
     "qty": 1
    },
    {
     "name": "Gold Tinted Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Gray Colored Ice",
     "qty": 1
    },
    {
@@ -24065,11 +27802,27 @@
     "qty": 1
    },
    {
+    "name": "Portion of Starmetal",
+    "qty": 1
+   },
+   {
+    "name": "Remaining Bone dust",
+    "qty": 1
+   },
+   {
     "name": "Sanctified bone dust",
     "qty": 1
    },
    {
     "name": "Sanctum Guardian's Earring",
+    "qty": 1
+   },
+   {
+    "name": "Shaped blade core",
+    "qty": 1
+   },
+   {
+    "name": "Starmetal Ore",
     "qty": 1
    },
    {
@@ -24194,7 +27947,23 @@
   "classes": "Cleric",
   "items": [
    {
+    "name": "Charred Bone Chips",
+    "qty": 1
+   },
+   {
+    "name": "Embalming Dust",
+    "qty": 1
+   },
+   {
     "name": "Mundane Helm",
+    "qty": 1
+   },
+   {
+    "name": "Vial of Tunare's Breath",
+    "qty": 1
+   },
+   {
+    "name": "Zombie Skin",
     "qty": 1
    }
   ],
@@ -24221,7 +27990,23 @@
   "classes": "Cleric",
   "items": [
    {
+    "name": "Basalt Drake Scales",
+    "qty": 1
+   },
+   {
+    "name": "Eye of Urd",
+    "qty": 1
+   },
+   {
+    "name": "Lens of Lord Soptyvr",
+    "qty": 1
+   },
+   {
     "name": "Mundane Mask",
+    "qty": 1
+   },
+   {
+    "name": "Widowmistress Hair",
     "qty": 1
    }
   ],
@@ -24319,7 +28104,40 @@
   "questGiver": "Ryshon Hunsti",
   "minLevel": 30,
   "classes": "Paladin",
-  "items": [],
+  "items": [
+   {
+    "name": "A Ghoul's Heart",
+    "qty": 1
+   },
+   {
+    "name": "A Pendant",
+    "qty": 1
+   },
+   {
+    "name": "Amstaf's Scroll",
+    "qty": 1
+   },
+   {
+    "name": "Blade of Nobility",
+    "qty": 1
+   },
+   {
+    "name": "Hilt of the Nobleman",
+    "qty": 1
+   },
+   {
+    "name": "Nobleman's Bag",
+    "qty": 1
+   },
+   {
+    "name": "Note to Kanthuk",
+    "qty": 1
+   },
+   {
+    "name": "Note to Ruathey",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Ghoulbane"
   ],
@@ -24453,6 +28271,10 @@
    {
     "name": "Pestilence Scythe",
     "qty": 1
+   },
+   {
+    "name": "SoulFire",
+    "qty": 1
    }
   ],
   "rewards": [
@@ -24513,7 +28335,23 @@
     "qty": 1
    },
    {
+    "name": "Cat Skull Cap",
+    "qty": 1
+   },
+   {
+    "name": "Fractured Femur",
+    "qty": 1
+   },
+   {
+    "name": "Humerus Handled Mace",
+    "qty": 1
+   },
+   {
     "name": "Puab's Token",
+    "qty": 1
+   },
+   {
+    "name": "Ribcage Chest Armor",
     "qty": 1
    },
    {
@@ -24581,7 +28419,15 @@
     "qty": 1
    },
    {
+    "name": "Bent Metallic Crystal",
+    "qty": 1
+   },
+   {
     "name": "Elbaite Focus",
+    "qty": 1
+   },
+   {
+    "name": "Heavy Metallic Crystal",
     "qty": 1
    },
    {
@@ -24590,6 +28436,10 @@
    },
    {
     "name": "Phenocryst's Focus",
+    "qty": 1
+   },
+   {
+    "name": "Reddish Crystal",
     "qty": 1
    },
    {
@@ -24717,6 +28567,10 @@
   "items": [
    {
     "name": "A Sealed Letter (Thex Dagger Quest)",
+    "qty": 1
+   },
+   {
+    "name": "Tearon's Bracer",
     "qty": 1
    },
    {
@@ -24911,6 +28765,10 @@
   "classes": "Wizard",
   "items": [
    {
+    "name": "Barbarian Head (Head of Wulfthan)",
+    "qty": 1
+   },
+   {
     "name": "Shadowed Ball",
     "qty": 1
    },
@@ -24940,7 +28798,24 @@
   "questGiver": "Sejako Mujan",
   "minLevel": 40,
   "classes": "?",
-  "items": [],
+  "items": [
+   {
+    "name": "Ancient Snake Rattle",
+    "qty": 1
+   },
+   {
+    "name": "Giant Leopard Fang",
+    "qty": 1
+   },
+   {
+    "name": "Giant Sabertooth Fang",
+    "qty": 1
+   },
+   {
+    "name": "Gigantic Gorilla Fang",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Staff of the Moribund Spirits"
   ],
@@ -24960,7 +28835,44 @@
   "questGiver": "Akbaq Salid",
   "minLevel": 45,
   "classes": "?",
-  "items": [],
+  "items": [
+   {
+    "name": "Ancient Snake Skin",
+    "qty": 1
+   },
+   {
+    "name": "Astral Cloak of the Titans",
+    "qty": 1
+   },
+   {
+    "name": "Astral Leggings of the Titans",
+    "qty": 1
+   },
+   {
+    "name": "Gargantuan Panda Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Giant Leopard Hide",
+    "qty": 1
+   },
+   {
+    "name": "Giant White Sabertooth Hide",
+    "qty": 1
+   },
+   {
+    "name": "Gigantic Gorilla Hide",
+    "qty": 1
+   },
+   {
+    "name": "Platinum Thread",
+    "qty": 1
+   },
+   {
+    "name": "Scaled Robe of the Elder Serpent",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Astral Cloak of the Titans",
    "Astral Leggings of the Titans",
@@ -25090,7 +29002,24 @@
   "questGiver": "Vira",
   "minLevel": 33,
   "classes": "Magician",
-  "items": [],
+  "items": [
+   {
+    "name": "A Torch",
+    "qty": 1
+   },
+   {
+    "name": "Fire Drake Scale",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Fire Giant Toes",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Torch of Alna"
   ],
@@ -25161,7 +29090,120 @@
   "questGiver": "Vrynn, Kyralynn",
   "minLevel": 0,
   "classes": "Shaman",
-  "items": [],
+  "items": [
+   {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
+    "name": "Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Banded Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Banded Helm",
+    "qty": 1
+   },
+   {
+    "name": "Banded Leggings",
+    "qty": 1
+   },
+   {
+    "name": "Banded Mail",
+    "qty": 1
+   },
+   {
+    "name": "Banded Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Basalt Drake Scales",
+    "qty": 1
+   },
+   {
+    "name": "Bone Barbs",
+    "qty": 1
+   },
+   {
+    "name": "Bull Elephant Tooth",
+    "qty": 1
+   },
+   {
+    "name": "Cauldron Shell",
+    "qty": 1
+   },
+   {
+    "name": "Charger Hoof Chips",
+    "qty": 1
+   },
+   {
+    "name": "Chief's Tongue",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Driftwood Pipe",
+    "qty": 1
+   },
+   {
+    "name": "Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Ghoul Carrion",
+    "qty": 1
+   },
+   {
+    "name": "Glacier Bear Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Griffenne Downfeather",
+    "qty": 1
+   },
+   {
+    "name": "Grizzleknot Bark",
+    "qty": 1
+   },
+   {
+    "name": "Ground Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Lancer Swordfish Fin",
+    "qty": 1
+   },
+   {
+    "name": "Mammoth Rib Bone",
+    "qty": 1
+   },
+   {
+    "name": "Ogreskin Chamois",
+    "qty": 1
+   },
+   {
+    "name": "Permafrost Snowball",
+    "qty": 1
+   },
+   {
+    "name": "Powdered Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Terror Spines",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Totemic Boots",
    "Totemic Bracers",
@@ -25278,7 +29320,39 @@
   "classes": "Warrior",
   "items": [
    {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
     "name": "Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Banded Helm",
+    "qty": 1
+   },
+   {
+    "name": "Banded Leggings",
+    "qty": 1
+   },
+   {
+    "name": "Banded Mail",
+    "qty": 1
+   },
+   {
+    "name": "Banded Mantle",
+    "qty": 1
+   },
+   {
+    "name": "Banded Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Bottle",
     "qty": 1
    },
    {
@@ -25291,10 +29365,18 @@
    },
    {
     "name": "Fire Emerald",
-    "qty": 1
+    "qty": 2
    },
    {
     "name": "Froglok Goo",
+    "qty": 1
+   },
+   {
+    "name": "Gray Colored Ice",
+    "qty": 1
+   },
+   {
+    "name": "Grayish Liquid",
     "qty": 1
    },
    {
@@ -25306,6 +29388,10 @@
     "qty": 1
    },
    {
+    "name": "Hopeless Willow Moss",
+    "qty": 1
+   },
+   {
     "name": "Iron Bound Tome",
     "qty": 1
    },
@@ -25314,16 +29400,28 @@
     "qty": 1
    },
    {
-    "name": "Ruby",
+    "name": "Pondfish Spine",
+    "qty": 2
+   },
+   {
+    "name": "Pot",
     "qty": 1
    },
    {
+    "name": "Ruby",
+    "qty": 3
+   },
+   {
     "name": "Sapphire",
+    "qty": 2
+   },
+   {
+    "name": "Spine Poison Extract",
     "qty": 1
    },
    {
     "name": "Star Ruby",
-    "qty": 1
+    "qty": 2
    },
    {
     "name": "Straeven's Head",
@@ -25331,6 +29429,10 @@
    },
    {
     "name": "Traitor's Heart",
+    "qty": 1
+   },
+   {
+    "name": "Water Flask",
     "qty": 1
    }
   ],
@@ -25557,6 +29659,10 @@
     "qty": 1
    },
    {
+    "name": "Pouch of Red Dust",
+    "qty": 1
+   },
+   {
     "name": "Powder of Unanimation",
     "qty": 1
    },
@@ -25573,7 +29679,15 @@
     "qty": 1
    },
    {
+    "name": "Thick Caustic Fluid",
+    "qty": 1
+   },
+   {
     "name": "Warden Symbol of Tunare",
+    "qty": 1
+   },
+   {
+    "name": "White Hellebore",
     "qty": 1
    }
   ],
@@ -25603,12 +29717,20 @@
   "classes": "All",
   "items": [
    {
+    "name": "Green river sludge",
+    "qty": 1
+   },
+   {
     "name": "Reagent pouch",
     "qty": 3
    },
    {
     "name": "Sealed Jar",
     "qty": 1
+   },
+   {
+    "name": "Vile Substance",
+    "qty": 2
    },
    {
     "name": "putrid substance",
@@ -25709,7 +29831,20 @@
   "questGiver": "Unsar Koldhagon",
   "minLevel": 1,
   "classes": "Any",
-  "items": [],
+  "items": [
+   {
+    "name": "Bat Wing",
+    "qty": 1
+   },
+   {
+    "name": "Rat Whiskers",
+    "qty": 1
+   },
+   {
+    "name": "Snake Scales",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "South Qeynos"
@@ -25972,7 +30107,24 @@
   "questGiver": "Lord Qyzar",
   "minLevel": 30,
   "classes": "?",
-  "items": [],
+  "items": [
+   {
+    "name": "Dagger Hilt",
+    "qty": 1
+   },
+   {
+    "name": "Forge Hammer of Dalnir",
+    "qty": 1
+   },
+   {
+    "name": "Jagged Metal Shard",
+    "qty": 1
+   },
+   {
+    "name": "Sharp Metal Shard",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "The Visceral Dagger"
   ],
@@ -26090,6 +30242,14 @@
   "classes": "Warrior",
   "items": [
    {
+    "name": "Ancient Blade",
+    "qty": 1
+   },
+   {
+    "name": "Ancient Sword Blade",
+    "qty": 1
+   },
+   {
     "name": "Ball of Everliving Golem",
     "qty": 1
    },
@@ -26103,6 +30263,10 @@
    },
    {
     "name": "Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Finely Crafted Dragon Head Hilt",
     "qty": 1
    },
    {
@@ -26123,6 +30287,14 @@
    },
    {
     "name": "Jacinth",
+    "qty": 1
+   },
+   {
+    "name": "Jagged Blade of War",
+    "qty": 1
+   },
+   {
+    "name": "Jeweled Dragon Head Hilt",
     "qty": 1
    },
    {
@@ -26202,7 +30374,36 @@
   "questGiver": "Kragek Thunderforge",
   "minLevel": 50,
   "classes": "Warrior",
-  "items": [],
+  "items": [
+   {
+    "name": "Warlord's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Warlord's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Warlord's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Warlord's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Warlord's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Warlord's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Warlord's Vambraces",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Warlord's Boots",
    "Warlord's Bracer",
@@ -26244,7 +30445,23 @@
     "qty": 1
    },
    {
+    "name": "Bixie Berry Pie",
+    "qty": 1
+   },
+   {
+    "name": "Froglok Escort Fife",
+    "qty": 1
+   },
+   {
+    "name": "Geozite Tool",
+    "qty": 1
+   },
+   {
     "name": "Goblin Warlord Warbeads",
+    "qty": 1
+   },
+   {
+    "name": "Iksar Head",
     "qty": 1
    },
    {
@@ -26335,6 +30552,22 @@
   "classes": "Warrior",
   "items": [
    {
+    "name": "Boots of the Myrmidon",
+    "qty": 1
+   },
+   {
+    "name": "Bracer of the Myrmidon",
+    "qty": 1
+   },
+   {
+    "name": "Breastplate of the Myrmidon",
+    "qty": 1
+   },
+   {
+    "name": "Crown of the Myrmidon",
+    "qty": 1
+   },
+   {
     "name": "Crushed Black Marble",
     "qty": 1
    },
@@ -26361,6 +30594,18 @@
    {
     "name": "Flawless Diamond",
     "qty": 1
+   },
+   {
+    "name": "Gauntlets of the Myrmidon",
+    "qty": 1
+   },
+   {
+    "name": "Greaves of the Myrmidon",
+    "qty": 1
+   },
+   {
+    "name": "Vambraces of the Myrmidon",
+    "qty": 1
    }
   ],
   "rewards": [],
@@ -26383,6 +30628,34 @@
   "minLevel": 45,
   "classes": "Warrior",
   "items": [
+   {
+    "name": "Champion's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Champion's Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Champion's Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Champion's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Champion's Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Champion's Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Champion's Vambraces",
+    "qty": 1
+   },
    {
     "name": "Corroded Plate Bracer",
     "qty": 1
@@ -26464,7 +30737,24 @@
   "questGiver": "Gardern",
   "minLevel": 25,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Bloodblack Wand",
+    "qty": 1
+   },
+   {
+    "name": "Scepter",
+    "qty": 1
+   },
+   {
+    "name": "Silver Wand",
+    "qty": 1
+   },
+   {
+    "name": "Twice-Woven Silk",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Weeping Wand"
   ],
@@ -26507,7 +30797,12 @@
   "questGiver": "Fjokar Frozenshard",
   "minLevel": 45,
   "classes": "Rogue",
-  "items": [],
+  "items": [
+   {
+    "name": "Frozen Shard",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Frozen Shard"
   ],
@@ -26556,7 +30851,12 @@
   "questGiver": "Karg IceBear",
   "minLevel": 25,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Werewolf Pelt",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Werewolf Skin Cloak"
   ],
@@ -26581,7 +30881,20 @@
   "questGiver": "Karam Dragonforge",
   "minLevel": 45,
   "classes": "All",
-  "items": [],
+  "items": [
+   {
+    "name": "Black Sapphire Platinum Necklace",
+    "qty": 1
+   },
+   {
+    "name": "Platinum Diamond Wedding Ring",
+    "qty": 1
+   },
+   {
+    "name": "White Dragon Hide",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "White Dragonscale Cloak"
   ],
@@ -26738,7 +31051,15 @@
     "qty": 1
    },
    {
+    "name": "Blue Crystal Staff",
+    "qty": 1
+   },
+   {
     "name": "Cazic's Skin",
+    "qty": 1
+   },
+   {
+    "name": "Gnarled Staff",
     "qty": 1
    },
    {
@@ -26793,7 +31114,36 @@
   "questGiver": "Ulkar Jollkarek",
   "minLevel": 50,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Bangle of the Invoker",
+    "qty": 1
+   },
+   {
+    "name": "Boots of the Invoker",
+    "qty": 1
+   },
+   {
+    "name": "Circlet of the Invoker",
+    "qty": 1
+   },
+   {
+    "name": "Gloves of the Invoker",
+    "qty": 1
+   },
+   {
+    "name": "Pants of the Invoker",
+    "qty": 1
+   },
+   {
+    "name": "Robe of the Invoker",
+    "qty": 1
+   },
+   {
+    "name": "Sleeves of the Invoker",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Kael Armor Quests",
@@ -26883,11 +31233,39 @@
     "qty": 1
    },
    {
+    "name": "Icicle Boots",
+    "qty": 1
+   },
+   {
+    "name": "Icicle Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Icicle Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Icicle Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Icicle Pantaloons",
+    "qty": 1
+   },
+   {
+    "name": "Icicle Sleeves",
+    "qty": 1
+   },
+   {
     "name": "Nephrite",
     "qty": 1
    },
    {
     "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Robe of Icicles",
     "qty": 1
    },
    {
@@ -26982,7 +31360,36 @@
   "questGiver": "Mauren Frostbeard",
   "minLevel": 45,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Sage's Boots",
+    "qty": 1
+   },
+   {
+    "name": "Sage's Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Sage's Crown",
+    "qty": 1
+   },
+   {
+    "name": "Sage's Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Sage's Pantaloons",
+    "qty": 1
+   },
+   {
+    "name": "Sage's Robe",
+    "qty": 1
+   },
+   {
+    "name": "Sage's Sleeves",
+    "qty": 1
+   }
+  ],
   "rewards": [],
   "categories": [
    "Thurgadin",
@@ -27116,6 +31523,18 @@
   "classes": "Necromancer",
   "items": [
    {
+    "name": "Book of Darkness",
+    "qty": 1
+   },
+   {
+    "name": "Book of Frost",
+    "qty": 1
+   },
+   {
+    "name": "Note",
+    "qty": 1
+   },
+   {
     "name": "Shadowed Book",
     "qty": 1
    }
@@ -27246,6 +31665,26 @@
   "classes": "All (Melee)",
   "items": [
    {
+    "name": "Asp Poison Sac",
+    "qty": 1
+   },
+   {
+    "name": "Bamboo Shoot",
+    "qty": 1
+   },
+   {
+    "name": "Kejekan Palm Fruit",
+    "qty": 1
+   },
+   {
+    "name": "Panda Claws",
+    "qty": 2
+   },
+   {
+    "name": "Tiger Skin",
+    "qty": 2
+   },
+   {
     "name": "Vial of Healing Liquid",
     "qty": 1
    }
@@ -27271,6 +31710,18 @@
   "classes": "ALL (designed for Paladin)",
   "items": [
    {
+    "name": "A Spider Venom Sac",
+    "qty": 1
+   },
+   {
+    "name": "Bog Juice",
+    "qty": 1
+   },
+   {
+    "name": "Bottle",
+    "qty": 1
+   },
+   {
     "name": "Bottle of Milk",
     "qty": 1
    },
@@ -27287,6 +31738,14 @@
     "qty": 4
    },
    {
+    "name": "Edible Goo",
+    "qty": 1
+   },
+   {
+    "name": "Fire Beetle Eye",
+    "qty": 1
+   },
+   {
     "name": "Glowing Sword Hilt",
     "qty": 1
    },
@@ -27299,7 +31758,19 @@
     "qty": 1
    },
    {
+    "name": "Rat Ears",
+    "qty": 1
+   },
+   {
     "name": "Sealed Note",
+    "qty": 1
+   },
+   {
+    "name": "Silver Bar",
+    "qty": 1
+   },
+   {
+    "name": "Snake Scales",
     "qty": 1
    },
    {
@@ -27320,6 +31791,10 @@
    },
    {
     "name": "Token of Truth",
+    "qty": 1
+   },
+   {
+    "name": "Water Flask",
     "qty": 1
    }
   ],
