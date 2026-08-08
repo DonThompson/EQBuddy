@@ -309,9 +309,9 @@ public partial class MainWindow : Window
     internal StatsSnapshot CurrentSnapshot() => _stats.Snapshot();
 
     /// <summary>A turn-in for at least one quest this character hasn't dismissed — the
-    /// signal behind the green tint and the 🗺 badge. Narrowed twice from "in the Quest
-    /// Items category" (David, 2026-08-07): only parsed turn-ins, and hiding every quest
-    /// that wants an item un-greens it.</summary>
+    /// signal behind the 🗺 badge (the green tint retired 2026-08-07: "keep the loot
+    /// lines normal and just have that symbol next to quest loot" — David). Hiding
+    /// every quest that wants an item removes its badge.</summary>
     internal bool IsActiveQuestItem(string name)
     {
         var wanting = QuestCatalog.QuestsWanting(name);
@@ -319,9 +319,6 @@ public partial class MainWindow : Window
         var hidden = QuestLedger?.HiddenFor(QuestCharacterKey);
         return hidden is not { Count: > 0 } || wanting.Any(q => !hidden.Contains(q.Name));
     }
-
-    internal Brush? QuestItemBrush(string name) =>
-        IsActiveQuestItem(name) ? (Brush)FindResource("GoodBrush") : null;
 
     /// <summary>Prefix an item tooltip with the quest marker so the green explains itself.</summary>
     internal string? QuestAwareTooltip(string name, string? baseTip)
@@ -614,8 +611,7 @@ public partial class MainWindow : Window
         TargetBlock.Visibility = Visibility.Visible;
         TargetHeader.Text = header;
         FillList(TargetDropsList, rows, onNameClick: ShowItemInfo,
-            tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), nameBrush: QuestItemBrush,
-            questBadges: true);
+            tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
     }
 
     /// <summary>Full tooltip text for an item, FETCHING from the wiki when the cache is
@@ -1134,8 +1130,7 @@ public partial class MainWindow : Window
                 ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
                 : s.Loot;
             FillList(LootList, loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo,
-                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), nameBrush: QuestItemBrush,
-                questBadges: true);
+                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
             RenderTargetDrops(s);

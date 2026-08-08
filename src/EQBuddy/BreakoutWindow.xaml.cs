@@ -491,8 +491,7 @@ public partial class BreakoutWindow : Window
             };
         }
 
-        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null,
-            nameBrush: Main?.QuestItemBrush(name), nameBadge: badge);
+        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null, nameBadge: badge);
         var tipText = new TextBlock
         {
             Text = cachedTip ?? "Looking up on eqlwiki…",

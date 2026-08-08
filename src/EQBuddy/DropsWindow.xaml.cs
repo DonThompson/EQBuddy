@@ -108,7 +108,7 @@ public partial class DropsWindow : Window
             Text = l.Item, FontSize = 12,
             Cursor = System.Windows.Input.Cursors.Hand,
         };
-        name.SetResourceReference(TextBlock.ForegroundProperty, isQuest ? "GoodBrush" : "TextBrush");
+        name.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         var cached = _main.CachedItemStats(l.Item);
         var tipText = new TextBlock
         {
