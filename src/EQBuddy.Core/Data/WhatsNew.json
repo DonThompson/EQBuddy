@@ -7,6 +7,7 @@
    "Quest coverage jumped: pages that list requirements as bullet points (The Falchion style) now parse — 531 quests with turn-in items (was 458), 2,109 items known (was 1,188). And the badge covers the wiki's whole Quest Items category, so pieces like Blue Orc Head and Sealed Note mark properly. Watch for the 🗺 BEFORE your loot window auto-sells something a quest wants.",
    "Creature pages that exist but list no drops now say so — \"the wiki page lists no drops yet\" beats \"nothing known\", and points at Drops by Creature… as the way to teach the wiki. Pages that fill common_loot instead of known_loot parse too.",
    "Watch rules now hear YOUR OWN buffs fade: the wear-off catalog grew from 61 hand-fed lines to 386 straight from the wiki — 903 spells covered. When a buff fades off YOU the log prints flavor text (\"The spirit of the puma departs.\"), never the spell's name; now a By-name Spell Fade rule on Spirit of the Puma just works, soloing included (skulldugger's ask, #64).",
+   "Linux: the update banner now sends you straight to EQBuddy-linux-x64.tar.gz instead of a release page whose biggest button is a Windows installer (promised when #56 closed). Falls back to the release page if CI hasn't attached the tarball yet.",
    "Berserker rune tracking (ahaselden, PR #54) and Don Thompson's Avalonia parity work continue in the background — Linux players, your build is catching up fast."
   ]
  },
