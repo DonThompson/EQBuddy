@@ -329,8 +329,9 @@ and rerunnable scripts live in `scripts/harvests/`. Zone connections come from t
 [eqltools.com Zone Atlas](https://eqltools.com/atlas).
 
 Two alert behaviors (per-target cooldown scoping and the first-sound-wins gate) were
-inspired by designs in [EQ Legends Companion](https://github.com/jmoyers/everquest-companion)
-by Josh Moyers — reimplemented independently, since its license doesn't permit code
-reuse, but the ideas were his first and they made EQBuddy's alerts better. More broadly,
-the whole read-the-log-and-nothing-else approach stands on what GamParse and nParse
-proved across two decades of classic EverQuest.
+inspired by designs in [EQ Legends Companion](https://jmoyers.github.io/everquest-companion)
+by Josh Moyers ([source](https://github.com/jmoyers/everquest-companion)) — reimplemented
+independently, since its license doesn't permit code reuse, but the ideas were his first
+and they made EQBuddy's alerts better. More broadly, the whole read-the-log-and-nothing-else
+approach stands on what [GamParse](https://gambosoft.eqresource.com) and
+[nParse](https://github.com/nomns/nparse) proved across two decades of classic EverQuest.

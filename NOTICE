@@ -47,7 +47,8 @@ Quest and item knowledge derives from eqlwiki.com, the community wiki.
 Design inspirations (no code copied)
 --------------------------------------------------------------------------------
 EQ Legends Companion
-https://github.com/jmoyers/everquest-companion
+https://jmoyers.github.io/everquest-companion (product)
+https://github.com/jmoyers/everquest-companion (source)
 by Josh Moyers
 
 Two alert-polish behaviors in EQBuddy follow designs we first saw in EQ Legends
@@ -66,7 +67,8 @@ Good designs deserve naming their source. Thanks, Josh.
 Lineage
 --------------------------------------------------------------------------------
 EQBuddy reads the log file the game already writes and nothing else — the
-approach GamParse and nParse proved safe and useful across two decades of
-classic EverQuest. Neither project's code is used here; the debt is the idea
-that a log file is enough.
+approach GamParse (https://gambosoft.eqresource.com) and nParse
+(https://github.com/nomns/nparse) proved safe and useful across two decades
+of classic EverQuest. Neither project's code is used here; the debt is the
+idea that a log file is enough.
 --------------------------------------------------------------------------------
