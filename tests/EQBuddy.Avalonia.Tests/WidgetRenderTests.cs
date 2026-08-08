@@ -169,6 +169,12 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("⏳ Asaka L`Rei", text);
         Assert.Contains(text, value => value.StartsWith("3:"));
 
+        var active = Assert.Single(new SpawnsViewModel(catalog, overrides, timers).Chips(DateTime.Now));
+        chips.DismissChip(active);
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.DoesNotContain(chips.GetVisualDescendants().OfType<TextBlock>(),
+            block => block.Text == "⏳ Asaka L`Rei");
+
         chips.Position = new global::Avalonia.PixelPoint(321, 222);
         chips.Close();
         Assert.Equal(321, main.Settings.SpawnChipsLeft);
@@ -204,6 +210,36 @@ public class WidgetRenderTests : IDisposable
         chips.Close();
         Assert.Equal(432, settings.MezChipsLeft);
         Assert.Equal(234, settings.MezChipsTop);
+    }
+
+    [AvaloniaFact]
+    public void ItemInfoPopupRendersWikiSectionsAndSourceState()
+    {
+        var service = new EqlWikiItemService(Path.Combine(_profile, "item-cache"),
+            _ => Task.FromResult<string?>(null));
+        var window = new ItemInfoWindow(service);
+        window.Render(new ItemLookupResult(new ItemInfo
+        {
+            Name = "Cloak of Flames",
+            StatsLines = ["MAGIC ITEM", "Slot: BACK", "AC: 10"],
+            MerchantValue = "5g",
+            DropsFrom = [("Nagafen's Lair", ["Lord Nagafen"])],
+            Quests = ["A Fiery Favor"],
+            WikiUrl = "https://eqlwiki.com/Cloak_of_Flames",
+        }, ItemLookupState.Cached, new DateTime(2026, 8, 5)));
+        window.Show();
+
+        Assert.NotNull(window.CaptureRenderedFrame());
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(block => block.Text ?? "").ToList();
+        Assert.Contains("Cloak of Flames", text);
+        Assert.Contains("CACHED 8/5", text);
+        Assert.Contains("MAGIC ITEM", text);
+        Assert.Contains("Lord Nagafen — Nagafen's Lair", text);
+        Assert.Contains("A Fiery Favor", text);
+        Assert.Contains("Open wiki page ↗", text);
+
+        window.Close();
     }
 
     /// <summary>Applying a snapshot is where a card that mis-formats or dereferences null

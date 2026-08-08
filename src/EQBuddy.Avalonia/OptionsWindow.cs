@@ -20,6 +20,8 @@ public sealed class OptionsWindow : Window
     private readonly Slider _scaleSlider = Slider(0.8, 1.6, 0.05);
     private readonly Slider _bgOpacitySlider = Slider(0.15, 1.0, 0.05);
     private readonly Slider _opacitySlider = Slider(0.5, 1.0, 0.02);
+    private readonly Slider _alertVolumeSlider = Slider(0.1, 1.0, 0.05);
+    private readonly TextBlock _alertVolumeLabel = LabelValue();
     private readonly CheckBox _truncateCheck = new() { Margin = new Thickness(0, 12, 0, 0) };
     private readonly CheckBox _tutorialCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
     private readonly CheckBox _trackSpawnsCheck = new() { Margin = new Thickness(0, 10, 0, 0) };
@@ -76,9 +78,17 @@ public sealed class OptionsWindow : Window
         _scaleSlider.Value = main.UiScale;
         _opacitySlider.Value = main.WidgetOpacity;
         _bgOpacitySlider.Value = main.BackgroundOpacityValue;
+        _alertVolumeSlider.Value = Math.Clamp(main.Settings.AlertVolume, 0.1, 1.0);
         Subscribe(_scaleSlider, () => _main.SetUiScale(_scaleSlider.Value));
         Subscribe(_bgOpacitySlider, () => _main.SetBackgroundOpacity(_bgOpacitySlider.Value));
         Subscribe(_opacitySlider, () => _main.SetWindowOpacity(_opacitySlider.Value));
+        Subscribe(_alertVolumeSlider, () =>
+        {
+            _main.Settings.AlertVolume = _alertVolumeSlider.Value;
+            _alertVolumeLabel.Text = $"{_alertVolumeSlider.Value:P0}";
+            _main.PersistSettings();
+        });
+        _alertVolumeLabel.Text = $"{_alertVolumeSlider.Value:P0}";
 
         _truncateCheck.Content = new TextBlock
         {
@@ -250,6 +260,7 @@ public sealed class OptionsWindow : Window
         test.Click += (_, _) => _main.PlayAlertSound();
         soundRow.Children.Add(test);
         panel.Children.Add(Row("Alert sound", soundRow, new Thickness(0, 8, 0, 0)));
+        AddSlider(panel, "Alert volume", _alertVolumeLabel, _alertVolumeSlider);
         panel.Children.Add(_soundFileNote);
         panel.Children.Add(AppTheme.DimText(
             "While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus.",

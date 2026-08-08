@@ -34,6 +34,7 @@ public class OptionsRenderTests : IDisposable
                 "TruncateLogs": false, "ShowTutorial": false, "TrackSpawns": false,
                 "LastSeenVersion": {{System.Text.Json.JsonSerializer.Serialize(UpdateChecker.CurrentVersion.ToString())}},
                 "Theme": "ParchmentBrass",
+                "AlertVolume": 0.35,
                 "_comment": "DefaultRulesVersion is set so loading doesn't inject the built-in CC broke rule and change the rule count out from under these tests",
                 "DefaultRulesVersion": 1,
                 "TrackedRules": [
@@ -75,6 +76,26 @@ public class OptionsRenderTests : IDisposable
 
         Assert.NotNull(frame);
         Assert.True(frame!.Size.Width > 100, $"Options rendered only {frame.Size.Width}px wide");
+        options.Close();
+        main.Close();
+    }
+
+    [AvaloniaFact]
+    public void AlertVolumeSliderLoadsAndPersistsTheSharedSetting()
+    {
+        var (main, options) = Open();
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "Alert volume");
+        var slider = options.GetVisualDescendants().OfType<Slider>()
+            .Single(control => Math.Abs(control.Minimum - 0.1) < 0.001
+                && Math.Abs(control.Maximum - 1.0) < 0.001
+                && Math.Abs(control.Value - 0.35) < 0.001);
+
+        slider.Value = 0.7;
+
+        Assert.Equal(0.7, main.Settings.AlertVolume, 3);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text?.Contains("70") == true && text.Text.Contains('%'));
         options.Close();
         main.Close();
     }

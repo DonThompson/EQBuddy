@@ -28,6 +28,9 @@ public sealed class MainWindow : Window
     private SpawnChipsWindow? _spawnChipsWindow;
     private MezChipsWindow? _mezChipsWindow;
     private readonly MezTracker _mezTracker = new();
+    private readonly EqlWikiItemService _wikiItems =
+        new(System.IO.Path.Combine(AppPaths.Dir, "wiki-cache", "items"));
+    private ItemInfoWindow? _itemInfoWindow;
     private readonly SessionRepository _repo = new(SessionRepository.DefaultDbPath);
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
@@ -1071,7 +1074,8 @@ public sealed class MainWindow : Window
         }
         if (_sections["loot"].IsExpanded)
         {
-            FillList(_lootList, s.Loot.Select(l => (l.Item, $"x{l.Count}")));
+            FillList(_lootList, s.Loot.Select(l => (l.Item, $"x{l.Count}")),
+                onNameClick: ShowItemInfo);
             _craftedLabel.IsVisible = s.Crafted.Count > 0;
             FillList(_craftedList, s.Crafted.Select(c => (c.Name, $"x{c.Count}")));
         }
@@ -1667,7 +1671,8 @@ public sealed class MainWindow : Window
                 file = FindDesktopSound("bell.oga");
             if (file.Length > 0 && File.Exists(file))
             {
-                _ = Task.Run(() => PlaySoundFile(file));
+                var volume = Math.Clamp(_settings.AlertVolume, 0.0, 1.0);
+                _ = Task.Run(() => PlaySoundFile(file, volume));
                 return;
             }
             App.LogError($"Alert sound file was not found: {choiceOrPath}");
@@ -1717,13 +1722,17 @@ public sealed class MainWindow : Window
     /// <summary>Try Linux audio backends in order and verify their exit status. Merely
     /// starting pw-play is not success: it can launch and immediately fail to connect or
     /// decode an .oga file, which used to swallow the alert without trying paplay.</summary>
-    private static void PlaySoundFile(string file)
+    private static void PlaySoundFile(string file, double volume)
     {
+        // Each Linux backend expresses volume differently. Canberra uses decibels,
+        // PipeWire uses a 0..1 scalar, and PulseAudio uses 0..65536. ALSA's aplay has
+        // no per-stream volume, so it remains the last-resort fallback.
+        var decibels = volume <= 0 ? -100 : 20 * Math.Log10(volume);
         var players = new (string Command, string[] Args)[]
         {
-            ("canberra-gtk-play", ["--file", file]),
-            ("pw-play", [file]),
-            ("paplay", [file]),
+            ("canberra-gtk-play", ["--volume", $"{decibels:0.##}", "--file", file]),
+            ("pw-play", ["--volume", $"{volume:0.###}", file]),
+            ("paplay", ["--volume", $"{(int)Math.Round(volume * 65536)}", file]),
             ("aplay", [file]),
         };
         foreach (var (command, args) in players)
@@ -1951,21 +1960,35 @@ public sealed class MainWindow : Window
         RefreshUi();
     }
 
-    private static void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows, Func<string, IBrush>? valueBrush = null)
+    private static void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
+        Func<string, IBrush>? valueBrush = null, Action<string>? onNameClick = null)
     {
         list.ItemsSource = rows.Select(row =>
         {
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
             grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-            grid.Children.Add(new TextBlock
+            var left = new TextBlock
             {
                 Text = row.Name,
                 FontSize = 12,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 Foreground = AppTheme.TextBrush,
                 Margin = new Thickness(0, 1, 8, 1),
-            });
+            };
+            if (onNameClick is not null)
+            {
+                var itemName = row.Name;
+                left.Cursor = new Cursor(StandardCursorType.Hand);
+                ToolTip.SetTip(left, "Click for item info (eqlwiki)");
+                left.PointerPressed += (_, e) =>
+                {
+                    if (!e.GetCurrentPoint(left).Properties.IsLeftButtonPressed) return;
+                    onNameClick(itemName);
+                    e.Handled = true;
+                };
+            }
+            grid.Children.Add(left);
             var right = new TextBlock
             {
                 Text = row.Value,
@@ -1976,6 +1999,18 @@ public sealed class MainWindow : Window
             grid.Children.Add(right);
             return grid;
         }).ToList();
+    }
+
+    internal void ShowItemInfo(string itemName)
+    {
+        if (_itemInfoWindow is not { IsVisible: true })
+        {
+            _itemInfoWindow = new ItemInfoWindow(_wikiItems);
+            _itemInfoWindow.Closed += (_, _) => _itemInfoWindow = null;
+            _itemInfoWindow.Show(this);
+        }
+        _itemInfoWindow.Activate();
+        _itemInfoWindow.Lookup(itemName);
     }
 
     private void OnDrag(object? sender, PointerPressedEventArgs e)
