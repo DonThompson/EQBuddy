@@ -62,6 +62,16 @@ public sealed class MezTracker
     /// Aenari: learned timers ran 2-3s past the real wake — the dangerous direction).</summary>
     public const double ServerTickSeconds = 6;
 
+    /// <summary>Ranks lengthen mezzes, but not without limit: the one measured pair we
+    /// have (Taendar, discussion #68 — Mesmerization rank V holds the 24s base, the
+    /// upgrade 36s) says ×1.5 at those ranks, so double the catalog base leaves honest
+    /// headroom while rejecting the poison this guard exists for. Store files written
+    /// before the issue-#32 re-mez fix carry chain-mez artifacts (a 24s mez chained
+    /// twice measured as 72s against its FIRST landing), and since learning only ever
+    /// grows, a poisoned value could never heal — Taendar's 1:10 chip on a 24s mez.
+    /// A genuine rank past ×2 would pin at the cap and get this constant revisited.</summary>
+    public const double RankStretchCeiling = 2.0;
+
     // No AA correction on purpose: the full eqlwiki AA sweep (2026-08-06, AaCatalog)
     // found NO EQ Legends AA that extends detrimental mez/charm durations — unlike live
     // EQ's Mesmerization Mastery. Adamant Will only moves resist chance, which never
@@ -121,7 +131,9 @@ public sealed class MezTracker
                     var ticked = Math.Floor(seconds / ServerTickSeconds) * ServerTickSeconds;
                     var floor = _catalog.TryGetValue(SpellCatalog.BaseName(spell), out var info)
                         ? info.DurationSeconds ?? 0 : 0;
-                    if (ticked is > 0 and < 600 && ticked >= floor) _learned.TryAdd(spell, ticked);
+                    if (ticked is > 0 and < 600 && ticked >= floor
+                        && (floor <= 0 || ticked <= floor * RankStretchCeiling))
+                        _learned.TryAdd(spell, ticked);
                 }
         }
         catch { /* corrupt store: rewritten on next learn */ }
@@ -276,6 +288,7 @@ public sealed class MezTracker
         var brokeRecently = _awake.TryGetValue(name, out var aw)
             && (wo.Time - aw.Last).Duration() <= TimeSpan.FromSeconds(3);
         if (observed is > 3 and < 600 && observed >= baseFloor && !brokeRecently
+            && (baseFloor <= 0 || observed <= baseFloor * RankStretchCeiling)
             && (!_learned.TryGetValue(entry.Spell, out var known) || observed > known))
         {
             _learned[entry.Spell] = Math.Round(observed, 1);

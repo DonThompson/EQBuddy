@@ -266,6 +266,64 @@ public class MezTrackerTests
         finally { File.Delete(path); }
     }
 
+    /// <summary>Discussion #68 (Taendar): Mesmerization rank V showed a 1:10 chip on a
+    /// 24s mez. Chain-mez artifacts (a fade measured against the FIRST of several
+    /// landings) wrote ~72s into old store files, and since learning only grows, they
+    /// never healed. Ranks lengthen mezzes at most modestly (V holds base 24s, the
+    /// upgrade 36s), so anything past ×2 base is poison, on load AND on a live learn.</summary>
+    [Fact]
+    public void ChainMezPoisonIsQuarantinedOnLoad()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"eqbuddy-mez-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """{"Mesmerization V":72,"Mesmerization VI":36}""");
+            var t = new MezTracker();
+            t.AttachStore(path);
+            // 72 is triple Mesmerization's 24s base → chain-mez artifact, quarantined;
+            // 36 is the genuine upgraded duration (×1.5) → kept.
+            Assert.False(t.LearnedDurations.ContainsKey("Mesmerization V"));
+            Assert.Equal(36, t.LearnedDurations["Mesmerization VI"]);
+
+            // The next rank-V mez counts down from the honest catalog base again.
+            t.Apply(Ev(0, "You begin casting Mesmerization V."));
+            t.Apply(Ev(1, "a farmer has been mesmerized."));
+            var m = Assert.Single(t.Snapshot(T0.AddSeconds(2)));
+            Assert.Equal(23, m.RemainingSeconds(T0.AddSeconds(2))!.Value, 0);
+        }
+        finally { File.Delete(path); }
+    }
+
+    /// <summary>The live half of the same guard: a re-mez whose cast line the log never
+    /// saw (some clicky items land without one) leaves the FIRST landing as the fade's
+    /// anchor, measuring two chained 24s mezzes as one 72s observation.</summary>
+    [Fact]
+    public void AbsurdLiveObservationIsNotLearned()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization V."),
+            Ev(2, "a farmer has been mesmerized."),
+            // Unexplained re-landings at 26s and 50s would be ignored (no visible
+            // cast), so the 74s fade measures 72s against the original anchor.
+            Ev(74, "Your Mesmerization V spell has worn off of a farmer."));
+
+        Assert.False(t.LearnedDurations.ContainsKey("Mesmerization V"));
+    }
+
+    /// <summary>The genuine upgrade duration must still learn: 36s on a 24s base is
+    /// within the rank ceiling, and the entry is retained past its visible expiry
+    /// precisely so this fade can find it.</summary>
+    [Fact]
+    public void UpgradedRankDurationStillLearns()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization VI."),
+            Ev(2, "a farmer has been mesmerized."),
+            Ev(38, "Your Mesmerization VI spell has worn off of a farmer."));
+
+        Assert.Equal(36, t.LearnedDurations["Mesmerization VI"], 0);
+    }
+
     [Fact]
     public void ZoningClearsEverything()
     {
