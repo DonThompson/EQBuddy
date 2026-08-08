@@ -327,9 +327,10 @@ public partial class MainWindow : Window
     internal string? QuestAwareTooltip(string name, string? baseTip)
     {
         if (!IsActiveQuestItem(name)) return baseTip;
-        const string marker = "🗺 Part of a quest — click the 🗺 to see which.";
+        const string marker = "🗺 Part of a quest — click the 🗺 to see its quests in the Quest Tracker.";
         return baseTip is { Length: > 0 } ? marker + "\n" + baseTip : marker;
     }
+
 
     public double UiScale => _settings.UiScale;
 
@@ -1976,21 +1977,21 @@ public partial class MainWindow : Window
             }
             if (questBadges && IsActiveQuestItem(name))
             {
-                // 🗺 next to quest loot: one click shows which quests want the item, each
-                // with its 📌 as the invitation to track (David, 2026-08-07).
+                // 🗺 next to quest loot → the Quest Tracker, filtered to this item's
+                // quests; each card's name opens the wiki walkthrough from there
+                // (David's final shape, 2026-08-07: item click = item page, 🗺 = tracker).
                 var badgeName = name;
                 var badge = new TextBlock
                 {
                     Text = "🗺", FontSize = 11, Margin = new Thickness(0, 1, 6, 1),
                     Cursor = System.Windows.Input.Cursors.Hand,
-                    ToolTip = "Show quests that want this item",
+                    ToolTip = "Show this item's quests in the Quest Tracker",
                 };
                 badge.SetResourceReference(TextBlock.ForegroundProperty, "GoodBrush");
                 badge.MouseLeftButtonDown += (_, ev) => ev.Handled = true;
                 badge.MouseLeftButtonUp += (_, ev) =>
                 {
                     ev.Handled = true;
-                    // Base name, or a "+2"-suffixed loot line filters to zero quests.
                     ShowQuestsWindow(QuestCatalog.BaseItemName(badgeName));
                 };
                 Grid.SetColumn(badge, 1);

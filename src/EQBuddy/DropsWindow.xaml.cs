@@ -75,17 +75,7 @@ public partial class DropsWindow : Window
             MobsPanel.Children.Add(header);
 
             foreach (var l in mob.Loot)
-            {
-                var row = new TextBlock
-                {
-                    Text = $"{l.Item} ×{l.Count}" +
-                           (l.DropRatePct is { } pct ? $"  ·  {pct:0.#}% of {mob.Kills}" : ""),
-                    FontSize = 12, Margin = new Thickness(14, 1, 0, 1),
-                };
-                row.SetResourceReference(TextBlock.ForegroundProperty,
-                    _main.QuestCatalog.IsTurnInItem(l.Item) ? "GoodBrush" : "TextBrush");
-                MobsPanel.Children.Add(row);
-            }
+                MobsPanel.Children.Add(ItemRow(l, mob.Kills));
         }
         if (mobs.Count == 0)
         {
@@ -99,6 +89,75 @@ public partial class DropsWindow : Window
             empty.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
             MobsPanel.Children.Add(empty);
         }
+    }
+
+    /// <summary>One drop row, wired like the Loot card (David, 2026-08-07: "in the loot
+    /// window that we track drops in"): click the name → the item's wiki page, hover →
+    /// its stats fetched live, and quest items carry the 🗺 that opens the Quest
+    /// Tracker filtered to the quests that want them.</summary>
+    private StackPanel ItemRow(MobLoot l, int kills)
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, Margin = new Thickness(14, 1, 0, 1),
+        };
+        var isQuest = _main.IsActiveQuestItem(l.Item);
+
+        var name = new TextBlock
+        {
+            Text = l.Item, FontSize = 12,
+            Cursor = System.Windows.Input.Cursors.Hand,
+        };
+        name.SetResourceReference(TextBlock.ForegroundProperty, isQuest ? "GoodBrush" : "TextBrush");
+        var cached = _main.CachedItemStats(l.Item);
+        var tipText = new TextBlock
+        {
+            Text = cached ?? "Looking up on eqlwiki…",
+            TextWrapping = TextWrapping.Wrap, MaxWidth = 340,
+            FontFamily = new FontFamily("Consolas"),
+        };
+        var tip = new System.Windows.Controls.ToolTip { Content = tipText };
+        name.ToolTip = tip;
+        var fetched = false;
+        tip.Opened += async (_, _) =>
+        {
+            if (fetched) return;
+            fetched = true;
+            var text = await _main.FetchItemTooltip(l.Item);
+            tipText.Text = text ?? (cached ?? "Not on the wiki.");
+        };
+        name.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            MainWindow.OpenWikiPage(l.Item);
+        };
+        row.Children.Add(name);
+
+        if (isQuest)
+        {
+            var badge = new TextBlock
+            {
+                Text = " 🗺", FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+                ToolTip = "Show this item's quests in the Quest Tracker",
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            badge.SetResourceReference(TextBlock.ForegroundProperty, "GoodBrush");
+            badge.MouseLeftButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                _main.ShowQuestsWindow(QuestCatalog.BaseItemName(l.Item));
+            };
+            row.Children.Add(badge);
+        }
+
+        var counts = new TextBlock
+        {
+            Text = $"  ×{l.Count}" + (l.DropRatePct is { } pct ? $"  ·  {pct:0.#}% of {kills}" : ""),
+            FontSize = 12,
+        };
+        counts.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        row.Children.Add(counts);
+        return row;
     }
 
     private void OnFilterChanged(object sender, TextChangedEventArgs e)
