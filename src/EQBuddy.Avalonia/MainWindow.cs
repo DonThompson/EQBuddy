@@ -254,6 +254,9 @@ public sealed class MainWindow : Window
             else if (_whatsNewNotes.Count > 0)
                 new WhatsNewWindow(_whatsNewNotes).Show(this);
         };
+        // A portrait secondary can be much taller than the primary. Recalculate after
+        // every move so crossing a monitor boundary updates the available card height.
+        PositionChanged += (_, _) => UpdateWindowHeightLimit();
     }
 
     /// <summary>Records the running version before displaying release notes, so an
