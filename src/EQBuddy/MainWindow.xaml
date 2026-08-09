@@ -22,6 +22,8 @@
                 <MenuItem Header="Quick tutorial…" Click="OnTutorial"/>
                 <MenuItem Header="Drop camp marker" Click="OnCampMarker"/>
                 <MenuItem Header="Session history…" Click="OnHistory"/>
+                <MenuItem x:Name="ReviewLogItem" Header="Review an archived log…" Click="OnReviewLog"
+                          ToolTip="Replay a saved log read-only — Drops by Creature and ✦ Copy for wiki work against that session"/>
                 <MenuItem Header="Spawn timers…" Click="OnSpawnsWindow"/>
                 <MenuItem Header="Quest tracker…" Click="OnQuestsWindow"/>
                 <MenuItem Header="Drops by creature…" Click="OnDropsWindow"/>
@@ -81,7 +83,8 @@
                 <TextBlock x:Name="CharLabel" Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center"
                            FontSize="12" Foreground="{DynamicResource DimBrush}"
                            TextTrimming="CharacterEllipsis" Text="looking for a character…"
-                           ToolTip="Follows whoever is actively playing (log file growth)"/>
+                           ToolTip="Follows whoever is actively playing (log file growth)"
+                           MouseLeftButtonDown="OnCharLabelClick"/>
                 <!-- Feedback sits IN the title bar, not buried in the menu, and wears the
                      one green pill on the bar so the eye lands on it (David: the betas
                      live on reports, so the door should draw people). Text-glyph envelope,

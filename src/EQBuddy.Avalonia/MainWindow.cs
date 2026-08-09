@@ -154,6 +154,11 @@ public sealed class MainWindow : Window
     {
         Header = "Track spawns (named respawn timers)",
     };
+    private readonly MenuItem _clickThroughItem = new()
+    {
+        Header = "Click-through (game clicks pass through)",
+    };
+    private ClickThroughChip? _unlockChip;
     private AlertWindow? _alertWindow;
     private IReadOnlyList<WhatsNewEntry> _whatsNewNotes = [];
     private StatSort _dmgOutSort = StatSort.Total;
@@ -758,7 +763,10 @@ public sealed class MainWindow : Window
     private ContextMenu BuildContextMenu()
     {
         var menu = new ContextMenu();
-        var version = new MenuItem { Header = $"EQBuddy v{UpdateChecker.CurrentVersion}", IsEnabled = false };
+        // Clickable since 1.48 (#76): downloads, guides, and a shareable link.
+        var version = new MenuItem { Header = $"EQBuddy v{UpdateChecker.CurrentVersion}" };
+        version.Click += (_, _) => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+            "https://github.com/DranakCorps-bot/EQBuddy") { UseShellExecute = true });
         var check = new MenuItem { Header = "Check for updates" };
         check.Click += (_, _) => { _lastUpdateCheck = DateTime.Now; CheckForUpdates(manual: true); };
         var options = new MenuItem { Header = "Options... (size, opacity, watch rules)" };
@@ -767,6 +775,7 @@ public sealed class MainWindow : Window
         tutorial.Click += OnTutorial;
         var marker = new MenuItem { Header = "Drop camp marker" };
         marker.Click += (_, _) => DropCampMarker();
+        _clickThroughItem.Click += (_, _) => SetClickThrough(!_clickThrough);
         var history = new MenuItem { Header = "Session history..." };
         history.Click += OnHistory;
         var spawns = new MenuItem { Header = "Spawn timers..." };
@@ -790,6 +799,7 @@ public sealed class MainWindow : Window
         menu.Items.Add(options);
         menu.Items.Add(tutorial);
         menu.Items.Add(marker);
+        menu.Items.Add(_clickThroughItem);
         menu.Items.Add(history);
         menu.Items.Add(spawns);
         menu.Items.Add(_trackSpawnsItem);
@@ -1640,8 +1650,31 @@ public sealed class MainWindow : Window
     }
 
     // Global hotkeys removed 2026-08-06 (Reddit: system-wide registration ate common
-    // browser shortcuts like Ctrl+Shift+T). Click-through's Linux re-entry story is
-    // Don's call — tracked on issue #7; X11ClickThrough.Set stays for when it returns.
+    // browser shortcuts like Ctrl+Shift+T). Click-through's trigger is now the context
+    // menu + the amber 🔒 unlock chip, mirroring WPF (#7): a menu can't be reached
+    // through a transparent window, so the chip is the one solid thing left to click.
+
+    /// <summary>Menu toggle for click-through. Engages only if the X11 input-shape
+    /// call actually succeeds — on Wayland or a missing XFixes the state must not
+    /// flip, or the menu would lie about what clicks do (X11ClickThrough logs why).</summary>
+    private void SetClickThrough(bool on)
+    {
+        if (on && !X11ClickThrough.Set(this, enabled: true)) return;
+        if (!on) X11ClickThrough.Set(this, enabled: false);
+        _clickThrough = on;
+        _root.BorderBrush = on ? AppTheme.WarnBrush : AppTheme.BorderBrush;
+        ToolTip.SetTip(_root, on ? "Click-through ON — click the \U0001F512 chip to interact again" : null);
+        _clickThroughItem.Header = (on ? "✓ " : "") + "Click-through (game clicks pass through)";
+        if (on)
+        {
+            _unlockChip ??= new ClickThroughChip(() => SetClickThrough(false));
+            _unlockChip.ShowNear(this);
+        }
+        else
+        {
+            _unlockChip?.Hide();
+        }
+    }
 
     private void OnGear(object? sender, EventArgs e) => _root.ContextMenu?.Open(_root);
 

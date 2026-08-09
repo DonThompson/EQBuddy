@@ -77,7 +77,12 @@ public partial class MainWindow : Window
         _stats.SessionRolledOver += () => Dispatcher.BeginInvoke(_delayedAlerts.CancelAll);
         _archiver = new SessionArchiver(_repo);
         // A 60-minute quiet gap ends a session — persist its final state to history.
-        _stats.SessionEnding += snap => _archiver.FinalizeActive(snap, "IdleTimeout");
+        // Not while reviewing an archived log (#74): those sessions were archived when
+        // they were live; replay must not mint duplicates.
+        _stats.SessionEnding += snap =>
+        {
+            if (_reviewPath is null) _archiver.FinalizeActive(snap, "IdleTimeout");
+        };
 
         // Height caps follow the monitor the widget is ON (a portrait secondary screen
         // is taller than the primary — discussion #31); primary work area is only the
@@ -177,6 +182,12 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
+
+        // Screenshot/debug hook, same family as EQBUDDY_QUESTS: open straight into
+        // archive review of the given file (#74), skipping the file dialog.
+        if (Environment.GetEnvironmentVariable("EQBUDDY_REVIEW") is { Length: > 0 } reviewPath)
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() => EnterReview(reviewPath),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_FEEDBACK") == "1")
             Loaded += (_, _) => OnFeedback(this, new RoutedEventArgs());
@@ -916,9 +927,78 @@ public partial class MainWindow : Window
         FollowActiveCharacter();
     }
 
+    // ---- archived-log review (#74, Snagglefern: "see what I can contribute") ----
+
+    /// <summary>Path of the archive being replayed; null = live. While set, character
+    /// follow stands down and nothing writes to session history — the review is a
+    /// window onto the past, not a new session.</summary>
+    private string? _reviewPath;
+
+    private void OnReviewLog(object sender, RoutedEventArgs e)
+    {
+        if (_reviewPath is not null) { ExitReview(); return; }
+        var archive = _settings.LogFolder is { } lf ? Path.Combine(lf, "archive") : null;
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Review an archived log",
+            Filter = "EQ logs (eqlog_*.txt)|eqlog_*.txt|All files (*.*)|*.*",
+            InitialDirectory = archive is not null && Directory.Exists(archive)
+                ? archive : _settings.LogFolder ?? "",
+        };
+        if (dlg.ShowDialog(this) == true) EnterReview(dlg.FileName);
+    }
+
+    private void EnterReview(string path)
+    {
+        // The live session goes to history first, same as a character switch —
+        // then the archiver stands down until we're back.
+        _archiver.FinalizeActive(_stats.Snapshot(), "ReviewingArchive");
+        _reviewPath = path;
+        _watcher.Select(path);
+        ReviewLogItem.Header = "✓ Reviewing an archive — return to live log";
+        CharLabel.Text = $"REVIEWING {Path.GetFileName(path)} — click here to go live";
+        CharLabel.Foreground = (Brush)FindResource("WarnBrush");
+        CharLabel.Cursor = Cursors.Hand;
+        CharLabel.ToolTip = "Replaying a saved log. Drops by Creature and ✦ Copy for wiki " +
+            "show that session (the last one in the file). Click to return to the live log.";
+    }
+
+    private void ExitReview()
+    {
+        _reviewPath = null;
+        ReviewLogItem.Header = "Review an archived log…";
+        CharLabel.Foreground = (Brush)FindResource("DimBrush");
+        CharLabel.Cursor = null;
+        CharLabel.ToolTip = "Follows whoever is actively playing (log file growth)";
+        // No finalize here: the reviewed session is already history. Follow just
+        // re-selects whoever is live; the switch path sees review's CurrentPath but
+        // _reviewPath is null again, so guard by handing follow a clean slate.
+        _lastCharScan = DateTime.MinValue;
+        if (_settings.LogFolder is { } lf && LogWatcher.MostRecentlyActive(lf) is { } active)
+        {
+            _watcher.Select(active.FilePath);
+            _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
+            CharLabel.Text = active.Display;
+        }
+        else
+        {
+            CharLabel.Text = "waiting for a character to log in…";
+        }
+    }
+
+    // Mouse DOWN, and handled: the title bar's OnDrag starts a DragMove on the same
+    // press, which captures the mouse and eats any up-event this label would get.
+    private void OnCharLabelClick(object sender, MouseButtonEventArgs e)
+    {
+        if (_reviewPath is null) return;
+        ExitReview();
+        e.Handled = true;
+    }
+
     /// <summary>Switch to whoever is actively playing: the most recently written log.</summary>
     private void FollowActiveCharacter()
     {
+        if (_reviewPath is not null) return;   // reviewing an archive — stay put (#74)
         ChooseLogFolderItem.ToolTip = _settings.LogFolder ?? "(no folder found)";
         if (_settings.LogFolder is null)
         {
@@ -1049,7 +1129,8 @@ public partial class MainWindow : Window
         ProcessTrackedAlerts(s);
 
         // Every 5 min: checkpoint the active session so a crash loses little (RECOVERY-001).
-        if (DateTime.Now - _lastCheckpoint > TimeSpan.FromMinutes(5))
+        // Review replays are read-only — their sessions are already history (#74).
+        if (_reviewPath is null && DateTime.Now - _lastCheckpoint > TimeSpan.FromMinutes(5))
         {
             _lastCheckpoint = DateTime.Now;
             _archiver.Checkpoint(s);
@@ -2549,7 +2630,8 @@ public partial class MainWindow : Window
         _settings.WindowTop = Top;
         _settings.Save();
         foreach (var w in _breakouts.Values) w.Close();   // each persists its spot on Closed
-        _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
+        if (_reviewPath is null)   // a review session is already history (#74)
+            _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();
         _repo.Dispose();
         base.OnClosed(e);
