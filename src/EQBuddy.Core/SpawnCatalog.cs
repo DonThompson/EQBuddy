@@ -166,11 +166,18 @@ public sealed class SpawnCatalog
     public static bool NameMatchesFuzzy(string catalogName, string killedName)
     {
         if (NameMatches(catalogName, killedName)) return true;
-        var a = Fold(catalogName);
-        var b = Fold(killedName);
+        var a = Fold(catalogName).ToLowerInvariant();
+        var b = Fold(killedName).ToLowerInvariant();
         if (a.Length < 6 || b.Length < 6) return false;
+        // Same-length names that differ at the word's END are siblings, not typos:
+        // "orc trainee" bridged onto the Orc Trainer clock, one substitution apart
+        // (David, live in Crushbone 2026-08-09). EQ's rank ladders inflect the tail
+        // (trainee/trainer); wiki typos live at the front or middle (Keljemor spelled
+        // "Leljemor"). Length-changing edits — dropped letters, truncated log
+        // captures — stay forgiven anywhere.
+        if (a.Length == b.Length && (a[^1] != b[^1] || a[^2] != b[^2])) return false;
         var budget = Math.Max(a.Length, b.Length) >= 12 ? 2 : 1;
-        return WithinEditDistance(a.ToLowerInvariant(), b.ToLowerInvariant(), budget);
+        return WithinEditDistance(a, b, budget);
     }
 
     private static string Fold(string s)

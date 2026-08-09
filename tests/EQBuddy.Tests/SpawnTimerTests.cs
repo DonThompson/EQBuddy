@@ -105,6 +105,10 @@ public class SpawnTimerTests
     [InlineData("Red V", "Red X", false)]               // short names: exact only
     [InlineData("Emperor Crush", "Ambassador D`Vinn", false)]
     [InlineData("Gynok Moltor", "Gynok Molto", true)]   // truncated log capture
+    // Rank-ladder siblings inflect the word's END — one substitution apart, but a
+    // different creature. Trainee kills were restarting the Trainer clock (David,
+    // live in Crushbone 2026-08-09).
+    [InlineData("Orc Trainer", "orc trainee", false)]
     public void FuzzyMatchingToleratesTyposWithoutInventingThem(string a, string b, bool expected) =>
         Assert.Equal(expected, SpawnCatalog.NameMatchesFuzzy(a, b));
 
