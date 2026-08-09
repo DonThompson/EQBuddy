@@ -108,6 +108,12 @@ public sealed class SpawnTimers
                 var elapsed = (time - t.KilledAt).TotalSeconds;
                 if (elapsed < Math.Max(MinLearnSeconds, d * SightingFinalFraction)) continue;
                 if (!SpawnCatalog.NameMatches(t.Name, seen)) continue;
+                // Multi-spawn names (Royal Guard pops in a number of places — David,
+                // 2026-08-09) get NO sighting treatment at all: the acting creature
+                // may be any of its siblings, so only kills drive their clocks.
+                if (zone.Named.FirstOrDefault(e =>
+                        e.Name.Equals(t.Name, StringComparison.OrdinalIgnoreCase))
+                    is { MultiSpawn: true }) return;
 
                 Upsert(t with { DurationSeconds = Math.Floor(elapsed) });
                 LearnFromSighting(zone, t.Name, elapsed);

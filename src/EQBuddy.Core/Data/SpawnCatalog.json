@@ -1256,18 +1256,20 @@
         {
           "name": "Orc Trainer",
           "respawnSeconds": 480,
+          "multiSpawn": true,
           "variance": "tier?",
           "placeholder": "",
           "source": "observed",
-          "note": "Trainer Hill; drops Shiny Brass Shield. 480s from Dranak's log 2026-08-09 on ADAPTIVE tier, caught at spawn while looping the trio (kill 06:39:04 -> re-engage 06:47:08 = 484s incl. travel). Untrusted so live learning keeps refining; see Orc Taskmaster note for the tier question."
+          "note": "Trainer Hill (several trainers — one dropped down onto Dranak mid-camp); drops Shiny Brass Shield. 480s from Dranak's log 2026-08-09 on ADAPTIVE tier, caught at spawn while looping the trio (kill 06:39:04 -> re-engage 06:47:08 = 484s incl. travel). Untrusted so live learning keeps refining; see Orc Taskmaster note for the tier question."
         },
         {
           "name": "Royal Guard",
           "respawnSeconds": 480,
+          "multiSpawn": true,
           "variance": "tier?",
           "placeholder": "",
           "source": "observed",
-          "note": "behind throne; page lists Orc Royal Guards as a mob type. 480s from Dranak's log 2026-08-09 on ADAPTIVE tier, caught at spawn while looping the trio (kill 06:34:03 -> re-engage 06:42:12 = 489s incl. travel). Untrusted so live learning keeps refining; see Orc Taskmaster note for the tier question."
+          "note": "spawns in a number of places (David, 2026-08-09); page lists Orc Royal Guards as a mob type. 480s from Dranak's log 2026-08-09 on ADAPTIVE tier, caught at spawn while looping the trio (kill 06:34:03 -> re-engage 06:42:12 = 489s incl. travel). Untrusted so live learning keeps refining; see Orc Taskmaster note for the tier question."
         },
         {
           "name": "Bloodgurgler",
@@ -1307,6 +1309,7 @@
         {
           "name": "Orc Taskmaster",
           "respawnSeconds": 480,
+          "multiSpawn": true,
           "variance": "tier?",
           "placeholder": "",
           "source": "observed",

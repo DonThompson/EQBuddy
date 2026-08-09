@@ -446,6 +446,40 @@ public class SpawnTimerTests
         Assert.Equal(620, Assert.Single(t.Snapshot(T0.AddSeconds(701))).DurationSeconds);
     }
 
+    /// <summary>The refinement, minutes later: "it should just be for the actual
+    /// named/boss mobs. Not mobs that spawn in multiple locations — Royal Guard, for
+    /// example, spawns in a number of places." Multi-spawn entries get NO sighting
+    /// treatment: any same-named activity may be a sibling, so their clocks are
+    /// kill-driven only, even inside the final window.</summary>
+    [Fact]
+    public void MultiSpawnNamesIgnoreSightingsEntirely()
+    {
+        var catalog = new SpawnCatalog
+        {
+            Zones =
+            [
+                new SpawnZone
+                {
+                    Zone = "Crushbone",
+                    Named = [new SpawnEntry { Name = "Royal Guard", RespawnSeconds = 480, MultiSpawn = true }],
+                },
+            ],
+        };
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(catalog, overrides) { Server = "qeynos" };
+        t.Apply(new ZoneEvent(T0, "Clan Crushbone"));
+        t.Apply(new KillEvent(T0, "Royal Guard", "You"));
+
+        // Another guard piercing you at 460s — deep in the final window — is one of
+        // its siblings elsewhere, not this camp's respawn. Nothing moves.
+        t.Apply(new DamageDealtEvent(T0.AddSeconds(460), "Royal Guard", 8,
+            DamageKind.Melee, "Pierce", false));
+        var timer = Assert.Single(t.Snapshot(T0.AddSeconds(461)));
+        Assert.False(timer.IsDue(T0.AddSeconds(461)));
+        Assert.Equal(480, timer.DurationSeconds);
+        Assert.Null(overrides.Find("Crushbone", "Royal Guard"));
+    }
+
     /// <summary>Issue #36 regression net: article-bearing catalog names ("the froglok
     /// shin lord", 285 entries) must match normalized kill lines, end to end against
     /// the REAL embedded catalog — zone resolution included. When this passes but a
