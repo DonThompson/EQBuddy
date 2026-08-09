@@ -60,7 +60,81 @@ public sealed class SpawnTimers
             case KillEvent k:
                 OnKill(k);
                 break;
+            // Lines that prove a creature EXISTS right now — the signal re-kill
+            // learning can never see (David camping Baron Telyx, 2026-08-08: a
+            // kill-to-kill gap includes the time it takes to notice and kill the
+            // spawn, so a timer 25s too long never meets a gap shorter than itself;
+            // the mob swinging at you before its chip says DUE is the proof).
+            case DamageDealtEvent d:
+                OnSighting(d.Target, d.Time);
+                break;
+            case DamageTakenEvent { Self: false, OverTime: false } dt:
+                OnSighting(dt.Attacker, dt.Time);
+                break;
+            case ThirdMeleeEvent tm:
+                OnSighting(tm.Attacker, tm.Time);
+                OnSighting(tm.Target, tm.Time);
+                break;
+            case ConsiderEvent c:
+                OnSighting(c.Name, c.Time);
+                break;
         }
+    }
+
+    /// <summary>Only the last stretch of a countdown counts for sightings: several
+    /// mobs can share a catalog name (Crushbone taskmasters), and a same-named
+    /// stranger acting mid-window must not finish a camp's clock. A sighting inside
+    /// the final fifth means the countdown had nearly run anyway — that's this
+    /// spawn cycle completing, not a twin.</summary>
+    public const double SightingFinalFraction = 0.8;
+
+    /// <summary>A creature with a RUNNING timer was seen acting before its due time:
+    /// the respawn provably already happened, so the countdown completes now (the
+    /// chip flips DUE and the alert fires through the normal path), and the observed
+    /// cycle length becomes a learned override where the precedence rules allow —
+    /// manual edits and measured catalog clocks stay untouched, same as re-kill
+    /// learning. Exact name matches only: fuzzy is for typo'd kill lines, and a
+    /// near-miss name is exactly the false evidence this must never accept.</summary>
+    private void OnSighting(string seen, DateTime time)
+    {
+        lock (_lock)
+        {
+            if (_currentZone is not { } zone) return;
+            foreach (var t in _timers.Values)
+            {
+                if (!string.Equals(t.Zone, zone.Zone, StringComparison.OrdinalIgnoreCase)
+                    || !string.Equals(t.Server, Server, StringComparison.OrdinalIgnoreCase)) continue;
+                if (t.DurationSeconds is not { } d || t.IsDue(time)) continue;
+                var elapsed = (time - t.KilledAt).TotalSeconds;
+                if (elapsed < Math.Max(MinLearnSeconds, d * SightingFinalFraction)) continue;
+                if (!SpawnCatalog.NameMatches(t.Name, seen)) continue;
+
+                Upsert(t with { DurationSeconds = Math.Floor(elapsed) });
+                LearnFromSighting(zone, t.Name, elapsed);
+                return;
+            }
+        }
+    }
+
+    /// <summary>Sighting evidence follows the same precedence as re-kill learning:
+    /// a manual edit is never touched (the player's word outranks the app), and a
+    /// trusted measured clock doesn't budge either — but everything else tightens
+    /// to the observed cycle, which is strictly better evidence than a re-kill gap.</summary>
+    private void LearnFromSighting(SpawnZone zone, string name, double elapsed)
+    {
+        var entry = zone.Named.FirstOrDefault(e =>
+            e.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (entry is not null && IsTrusted(zone, entry)) return;
+        var o = _overrides.Find(zone.Zone, name);
+        if (o?.RespawnSeconds is not null && !o.Learned) return;   // manual edit wins
+        var current = o?.RespawnSeconds
+            ?? (entry is not null ? SpawnCatalog.EffectiveSeconds(zone, entry) : null);
+        if (current is { } cur && elapsed >= cur) return;          // never loosens
+
+        var ov = _overrides.GetOrAdd(zone.Zone, name);
+        ov.RespawnSeconds = Math.Floor(elapsed);
+        ov.Learned = true;
+        _overrides.Save();
     }
 
     private void OnKill(KillEvent k)

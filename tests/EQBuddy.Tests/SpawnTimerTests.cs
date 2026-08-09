@@ -191,6 +191,84 @@ public class SpawnTimerTests
         Assert.Equal(T0.AddMinutes(30), Assert.Single(t.Snapshot(T0.AddMinutes(31))).KilledAt);
     }
 
+    // ---- sighting-based completion and learning (David camping Baron Telyx,
+    // 2026-08-08: a timer 25s too long can never tighten from re-kill gaps, because
+    // kill-to-kill includes the time it takes to notice and kill the spawn — but the
+    // mob ACTING in the log before its chip says DUE is proof the respawn happened) ----
+
+    [Fact]
+    public void APreDueSightingCompletesTheCountdownAndLearns()
+    {
+        var overrides = new SpawnOverrides();
+        var t = Tracker(overrides);
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));
+
+        // 1500s into a 1620s countdown, the lord is already swinging at someone.
+        t.Apply(new DamageDealtEvent(T0.AddSeconds(1500), "froglok ghoul lord", 30,
+            DamageKind.Melee, "Slash", false));
+
+        var timer = Assert.Single(t.Snapshot(T0.AddSeconds(1501)));
+        Assert.True(timer.IsDue(T0.AddSeconds(1501)));
+        Assert.Equal(1500, timer.DurationSeconds);
+        // The observed cycle becomes the learned respawn for next time.
+        var o = overrides.Find("Lower Guk", "a froglok ghoul lord");
+        Assert.NotNull(o);
+        Assert.True(o!.Learned);
+        Assert.Equal(1500, o.RespawnSeconds);
+    }
+
+    [Fact]
+    public void AConsiderLineCountsAsASighting()
+    {
+        var t = Tracker();
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));
+        t.Apply(new ConsiderEvent(T0.AddSeconds(1400), "Froglok ghoul lord", 30));
+
+        Assert.True(Assert.Single(t.Snapshot(T0.AddSeconds(1401))).IsDue(T0.AddSeconds(1401)));
+    }
+
+    /// <summary>Several mobs can share a catalog name (Crushbone taskmasters): a
+    /// same-named stranger acting mid-window is a twin, not this camp's respawn.
+    /// Only the final fifth of a countdown accepts sightings.</summary>
+    [Fact]
+    public void AMidWindowSightingIsATwinAndChangesNothing()
+    {
+        var overrides = new SpawnOverrides();
+        var t = Tracker(overrides);
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));
+        t.Apply(new DamageDealtEvent(T0.AddSeconds(600), "froglok ghoul lord", 30,
+            DamageKind.Melee, "Slash", false));
+
+        var timer = Assert.Single(t.Snapshot(T0.AddSeconds(601)));
+        Assert.False(timer.IsDue(T0.AddSeconds(601)));
+        Assert.Equal(1620, timer.DurationSeconds);
+        Assert.Null(overrides.Find("Lower Guk", "a froglok ghoul lord"));
+    }
+
+    /// <summary>David's Baron case: a manual 295s edit over a ~270s reality. The
+    /// sighting still completes THIS countdown (the mob is provably up — the chip
+    /// must say so), but the player's typed value is never overwritten.</summary>
+    [Fact]
+    public void ASightingCompletesTheChipButNeverTouchesAManualEdit()
+    {
+        var overrides = new SpawnOverrides();
+        overrides.GetOrAdd("Lower Guk", "a froglok ghoul lord").RespawnSeconds = 2000;
+        var t = Tracker(overrides);
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));
+        t.Apply(new DamageDealtEvent(T0.AddSeconds(1900), "froglok ghoul lord", 30,
+            DamageKind.Melee, "Slash", false));
+
+        var timer = Assert.Single(t.Snapshot(T0.AddSeconds(1901)));
+        Assert.True(timer.IsDue(T0.AddSeconds(1901)));
+        var o = overrides.Find("Lower Guk", "a froglok ghoul lord")!;
+        Assert.Equal(2000, o.RespawnSeconds);
+        Assert.False(o.Learned);
+    }
+
     [Fact]
     public void TimersArePerServer()
     {
