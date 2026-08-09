@@ -238,10 +238,11 @@ public sealed class MainWindow : Window
             // Page one of the launch tour is the log-truncation consent question.
             // Leave existing logs untouched until the user has answered it.
             var prune = _settings.TruncateLogs && !_settings.ShowTutorial;
+            var archive = _settings.ArchiveLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(lf);
-                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap, archive: archive);
             });
         }
 
@@ -465,7 +466,13 @@ public sealed class MainWindow : Window
         Grid.SetColumn(_gearBtn, 2);
         grid.Children.Add(_gearBtn);
         var reset = AppTheme.IconButton(AppIcon.Refresh, "Reset session stats");
-        reset.Click += (_, _) => _stats.Reset();
+        reset.Click += (_, _) =>
+        {
+            // With archiving on, reset also splits the log (#52) — same as WPF.
+            if (_settings.ArchiveLogs && _watcher.CurrentPath is { } path)
+                Task.Run(() => EqConfig.SplitLog(path));
+            _stats.Reset();
+        };
         Grid.SetColumn(reset, 3);
         grid.Children.Add(reset);
         var mini = AppTheme.IconButton(AppIcon.Minimize, "Minimize to dashboard");
@@ -945,10 +952,11 @@ public sealed class MainWindow : Window
         {
             _lastJanitorRun = DateTime.Now;
             var prune = _settings.TruncateLogs && !_settings.ShowTutorial;
+            var archive = _settings.ArchiveLogs;
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(folder);
-                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap);
+                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap, archive: archive);
             });
         }
 

@@ -2380,7 +2380,14 @@ public partial class MainWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
     }
 
-    private void OnReset(object sender, RoutedEventArgs e) => _stats.Reset();
+    private void OnReset(object sender, RoutedEventArgs e)
+    {
+        // With archiving on, reset also splits the log: what's parsed so far moves to
+        // Logs\archive and a fresh file begins — the second half of #52's ask.
+        if (_settings.ArchiveLogs && _watcher.CurrentPath is { } path)
+            Task.Run(() => EqConfig.SplitLog(path));
+        _stats.Reset();
+    }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
 
