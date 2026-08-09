@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
+using EQBuddy.Core;
 using EQBuddy.UI.Shared;
 
 namespace EQBuddy;
@@ -524,6 +525,7 @@ public partial class OptionsWindow : Window
         Auto("RuleColor");
         Auto("RuleSound");
         Auto("RuleDelay");
+        Auto("RuleShare");
         Auto("RuleDelete");
         return grid;
     }
@@ -736,6 +738,29 @@ public partial class OptionsWindow : Window
             System.Windows.Controls.Grid.SetColumn(delay, 7);
             row.Children.Add(delay);
 
+            // Share: the rule as a guild-chat string (WatchRuleShare). The ✓ flash is
+            // the only feedback a clipboard write can honestly give.
+            var share = new System.Windows.Controls.Button
+            {
+                Content = "⤴", Style = (Style)FindResource("IconButton"), FontSize = 11,
+                ToolTip = "Copy this rule as a share string — paste it in guild chat or Discord,\n" +
+                          "and any EQBuddy imports it from the box below the rule list",
+            };
+            share.Click += (_, _) =>
+            {
+                try { Clipboard.SetText(WatchRuleShare.Encode([rule])); }
+                catch (Exception ex) { CoreLog.Error(ex); return; }
+                share.Content = "✓";
+                var revert = new System.Windows.Threading.DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1.5),
+                };
+                revert.Tick += (_, _) => { share.Content = "⤴"; revert.Stop(); };
+                revert.Start();
+            };
+            System.Windows.Controls.Grid.SetColumn(share, 8);
+            row.Children.Add(share);
+
             var del = new System.Windows.Controls.Button
             {
                 Content = "✕", Style = (Style)FindResource("IconButton"), FontSize = 11,
@@ -745,11 +770,43 @@ public partial class OptionsWindow : Window
                 _vm.RemoveRule(rule);
                 BuildRulesEditor();
             };
-            System.Windows.Controls.Grid.SetColumn(del, 8);
+            System.Windows.Controls.Grid.SetColumn(del, 9);
             row.Children.Add(del);
 
             RulesPanel.Children.Add(row);
         }
+    }
+
+    // ---- share-string import: paste → preview → confirm (nothing lands unseen) ----
+
+    private List<TrackedRule>? _pendingImport;
+
+    private void OnImportShare(object sender, RoutedEventArgs e)
+    {
+        _pendingImport = WatchRuleShare.TryDecode(ImportBox.Text, out var error);
+        ImportPreview.Visibility = Visibility.Visible;
+        if (_pendingImport is null)
+        {
+            ImportPreview.Text = error;
+            ImportConfirmBtn.Visibility = Visibility.Collapsed;
+            return;
+        }
+        ImportPreview.Text = "This will add:\n" +
+            string.Join("\n", _pendingImport.Select(r => "  • " + WatchRuleShare.Describe(r)));
+        ImportConfirmBtn.Content = _pendingImport.Count == 1
+            ? "✔ Add this rule" : $"✔ Add these {_pendingImport.Count} rules";
+        ImportConfirmBtn.Visibility = Visibility.Visible;
+    }
+
+    private void OnImportConfirm(object sender, RoutedEventArgs e)
+    {
+        if (_pendingImport is null) return;
+        _vm.ImportRules(_pendingImport);
+        _pendingImport = null;
+        ImportBox.Text = "";
+        ImportPreview.Visibility = Visibility.Collapsed;
+        ImportConfirmBtn.Visibility = Visibility.Collapsed;
+        BuildRulesEditor();
     }
 
     private System.Windows.Controls.Primitives.ToggleButton RuleToggle(

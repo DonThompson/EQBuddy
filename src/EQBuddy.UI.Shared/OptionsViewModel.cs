@@ -320,6 +320,14 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         PersistAnd(nameof(Rules));
     }
 
+    /// <summary>Append rules decoded from a share string — WatchRuleShare already
+    /// rebuilt them with fresh ids and sanitized fields; this just lands them.</summary>
+    public void ImportRules(IEnumerable<TrackedRule> rules)
+    {
+        _settings.TrackedRules.AddRange(rules);
+        PersistAnd(nameof(Rules));
+    }
+
     // ---- overlay cards ----
     public IReadOnlyList<OptionsCardRow> Cards =>
         [.. _settings.SectionOrder.Select(key => new OptionsCardRow(

@@ -171,6 +171,22 @@
             <StackPanel x:Name="RulesPanel" Margin="0,4,0,0" Grid.IsSharedSizeScope="True"/>
             <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource ActionButton}"
                     HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
+            <Grid Margin="0,6,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="ImportBox" Style="{StaticResource InputBox}"
+                         ToolTip="Paste a shared watch rule (EQB1.…) from guild chat or Discord — the ⤴ on any rule row makes one"/>
+                <Button x:Name="ImportBtn" Grid.Column="1" Content="Import…" Style="{StaticResource ActionButton}"
+                        Margin="6,0,0,0" Padding="8,3" Click="OnImportShare"
+                        ToolTip="Preview what the pasted share string would add — nothing is added until you confirm"/>
+            </Grid>
+            <TextBlock x:Name="ImportPreview" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                       Margin="0,4,0,0" Visibility="Collapsed"/>
+            <Button x:Name="ImportConfirmBtn" Style="{StaticResource ActionButton}"
+                    HorizontalAlignment="Left" FontSize="12" Margin="0,4,0,0"
+                    Visibility="Collapsed" Click="OnImportConfirm"/>
             <CheckBox x:Name="PinChipsCheck" Margin="0,6,0,0"
                       Checked="OnPinChipsChanged" Unchecked="OnPinChipsChanged">
                 <TextBlock Text="📌 Show watch chips in the mini dashboard" FontSize="12"
