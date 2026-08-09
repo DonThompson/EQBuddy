@@ -406,6 +406,46 @@ public class SpawnTimerTests
         Assert.Equal(300, Assert.Single(t.Snapshot(DateTime.Parse("2026-08-04T19:20:01"))).DurationSeconds);
     }
 
+    /// <summary>David's call (2026-08-09, fighting a trainer his chip said was five
+    /// minutes away): "for actual nameds I don't want to lock the timers if we
+    /// actually observe them being lower." A final-window sighting now out-measures
+    /// even a TRUSTED clock — and the value it learns is marked Sighted, so the
+    /// self-heal (which exists to purge re-kill noise) leaves it standing.</summary>
+    [Fact]
+    public void AFinalWindowSightingOutranksATrustedClockAndSurvivesTheHeal()
+    {
+        var catalog = new SpawnCatalog
+        {
+            Zones =
+            [
+                new SpawnZone
+                {
+                    Zone = "Crushbone", NamedDefaultSeconds = 738, NamedDefaultTrusted = true,
+                    Named = [new SpawnEntry { Name = "Orc Trainer" }],
+                },
+            ],
+        };
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(catalog, overrides) { Server = "qeynos" };
+        t.Apply(new ZoneEvent(T0, "Clan Crushbone"));
+        t.Apply(new KillEvent(T0, "Orc Trainer", "You"));
+
+        // 620s into the trusted 738s clock (inside the final fifth), the trainer
+        // is already swinging: the chip completes and the observation is learned.
+        t.Apply(new DamageDealtEvent(T0.AddSeconds(620), "Orc Trainer", 12,
+            DamageKind.Melee, "Slash", false));
+        Assert.True(Assert.Single(t.Snapshot(T0.AddSeconds(621))).IsDue(T0.AddSeconds(621)));
+        var o = overrides.Find("Crushbone", "Orc Trainer")!;
+        Assert.Equal(620, o.RespawnSeconds);
+        Assert.True(o.Sighted);
+
+        // The next kill would have self-healed a re-kill-learned 620 under a trusted
+        // 738 — the sighted value stays, and the new countdown runs on it.
+        t.Apply(new KillEvent(T0.AddSeconds(700), "Orc Trainer", "You"));
+        Assert.Equal(620, overrides.Find("Crushbone", "Orc Trainer")!.RespawnSeconds);
+        Assert.Equal(620, Assert.Single(t.Snapshot(T0.AddSeconds(701))).DurationSeconds);
+    }
+
     /// <summary>Issue #36 regression net: article-bearing catalog names ("the froglok
     /// shin lord", 285 entries) must match normalized kill lines, end to end against
     /// the REAL embedded catalog — zone resolution included. When this passes but a

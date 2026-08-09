@@ -116,15 +116,17 @@ public sealed class SpawnTimers
         }
     }
 
-    /// <summary>Sighting evidence follows the same precedence as re-kill learning:
-    /// a manual edit is never touched (the player's word outranks the app), and a
-    /// trusted measured clock doesn't budge either — but everything else tightens
-    /// to the observed cycle, which is strictly better evidence than a re-kill gap.</summary>
+    /// <summary>Sighting evidence outranks every lock except the player's own: a
+    /// manual edit is never touched, but a TRUSTED measured clock yields — the mob
+    /// provably acting inside the final stretch is a fresher measurement than the
+    /// one in the catalog (David's call, 2026-08-09: "for actual nameds I don't want
+    /// to lock the timers if we actually observe them being lower"). The Sighted
+    /// flag marks the value so the trusted self-heal, which exists to purge re-kill
+    /// noise, knows to leave it alone.</summary>
     private void LearnFromSighting(SpawnZone zone, string name, double elapsed)
     {
         var entry = zone.Named.FirstOrDefault(e =>
             e.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (entry is not null && IsTrusted(zone, entry)) return;
         var o = _overrides.Find(zone.Zone, name);
         if (o?.RespawnSeconds is not null && !o.Learned) return;   // manual edit wins
         var current = o?.RespawnSeconds
@@ -134,6 +136,7 @@ public sealed class SpawnTimers
         var ov = _overrides.GetOrAdd(zone.Zone, name);
         ov.RespawnSeconds = Math.Floor(elapsed);
         ov.Learned = true;
+        ov.Sighted = true;
         _overrides.Save();
     }
 
@@ -159,7 +162,10 @@ public sealed class SpawnTimers
                     // Self-heal: a LEARNED override sitting under a measured clock came
                     // from multi-spawn re-kill noise (two taskmasters at different camps
                     // look like one fast respawn) — drop it, the measurement wins.
-                    if (trusted && o is { Learned: true, RespawnSeconds: { } bad }
+                    // Sighting-learned values are exempt: those were the mob itself
+                    // acting before the measured clock ran out, and an observation
+                    // outranks a lock (David, 2026-08-09).
+                    if (trusted && o is { Learned: true, Sighted: false, RespawnSeconds: { } bad }
                         && bad < SpawnCatalog.EffectiveSeconds(zone, entry))
                     {
                         o.RespawnSeconds = null;
