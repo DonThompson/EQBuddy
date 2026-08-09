@@ -28,6 +28,8 @@
                           IsCheckable="True" Click="OnTrackSpawns"/>
                 <MenuItem x:Name="ClickThroughItem" Header="Click-through (game clicks pass through)"
                           IsCheckable="True" Click="OnClickThrough"/>
+                <MenuItem x:Name="GridOverlayItem" Header="Grid overlay (align your game UI)"
+                          IsCheckable="True" Click="OnGridOverlay"/>
                 <MenuItem Header="Send feedback…" Click="OnFeedback"/>
                 <Separator/>
                 <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>

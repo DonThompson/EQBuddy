@@ -41,6 +41,10 @@ public partial class OptionsWindow : Window
         ArchiveCheck.IsChecked = _vm.ArchiveLogs;
         PinChipsCheck.IsChecked = _vm.PinWatchChips;
         TutorialCheck.IsChecked = _vm.ShowTutorial;
+        GridOverlayCheck.IsChecked = _main.Settings.ShowGridOverlay;
+        GridSpacingSlider.Value = Math.Clamp(_main.Settings.GridSpacing,
+            GridSpacingSlider.Minimum, GridSpacingSlider.Maximum);
+        GridSpacingLabel.Text = $"{GridSpacingSlider.Value:0} px";
         TargetDropsCheck.IsChecked = _vm.ShowTargetDrops;
         HideUnfocusedCheck.IsChecked = _vm.HideWhenGameUnfocused;
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
@@ -138,6 +142,20 @@ public partial class OptionsWindow : Window
     private void OnTargetDropsToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.ShowTargetDrops = TargetDropsCheck.IsChecked == true;
+    }
+
+    private void OnGridOverlayToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _main.SetGridOverlay(GridOverlayCheck.IsChecked == true);
+    }
+
+    private void OnGridSpacingChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_ready) return;
+        _main.Settings.GridSpacing = GridSpacingSlider.Value;
+        GridSpacingLabel.Text = $"{GridSpacingSlider.Value:0} px";
+        _vm.Persist();
+        _main.RefreshGridSpacing();   // live while the grid is up
     }
 
     private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)

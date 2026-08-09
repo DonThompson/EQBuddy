@@ -129,6 +129,10 @@ public partial class MainWindow : Window
         if (_settings.ShowTutorial)
             Loaded += (_, _) => new TutorialWindow(this).Show();
 
+        // A grid left on comes back — turning it off is the same menu click (#34).
+        if (_settings.ShowGridOverlay)
+            Loaded += (_, _) => SetGridOverlay(true);
+
         // Log hygiene at startup: force Log=1 and wipe finished-session logs
         // (both no-ops while the game is running). Truncation waits while the tour
         // is enabled — its first page is the consent question; the 10-minute
@@ -2148,6 +2152,38 @@ public partial class MainWindow : Window
     }
 
     private ClickThroughChip? _unlockChip;
+
+    // ---- the alignment grid (discussion #34) ----
+
+    private GridOverlayWindow? _gridOverlay;
+
+    private void OnGridOverlay(object sender, RoutedEventArgs e) =>
+        SetGridOverlay(!_settings.ShowGridOverlay);
+
+    /// <summary>Menu toggle and Options checkbox both land here, so they stay in
+    /// lockstep (the SetTrackSpawns pattern). The overlay window exists only while
+    /// the grid is on — nothing invisible lingers.</summary>
+    internal void SetGridOverlay(bool on)
+    {
+        _settings.ShowGridOverlay = on;
+        _settings.Save();
+        GridOverlayItem.IsChecked = on;
+        if (on)
+        {
+            if (_gridOverlay is not { IsLoaded: true })
+                _gridOverlay = new GridOverlayWindow(_settings);
+            _gridOverlay.Show();
+            _gridOverlay.ApplySpacing();
+        }
+        else
+        {
+            _gridOverlay?.Close();
+            _gridOverlay = null;
+        }
+    }
+
+    /// <summary>Live spacing updates from the Options slider.</summary>
+    internal void RefreshGridSpacing() => _gridOverlay?.ApplySpacing();
 
     private void OnClickThrough(object sender, RoutedEventArgs e) =>
         SetClickThrough(!_clickThrough);

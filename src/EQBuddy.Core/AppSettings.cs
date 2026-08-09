@@ -98,6 +98,13 @@ public sealed class AppSettings
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
 
+    /// <summary>The click-through alignment grid (discussion #34). Persisted so a grid
+    /// left on comes back after a restart — turning it off is the same one menu click
+    /// that turned it on.</summary>
+    public bool ShowGridOverlay { get; set; }
+    /// <summary>Minor grid line spacing in pixels; strong lines land every fourth.</summary>
+    public double GridSpacing { get; set; } = 32;
+
     /// <summary>The three colors behind the "Custom" theme (#RRGGBB); the rest of its
     /// palette is derived in EQBuddy.UI.Shared.CustomTheme. Null until first edited —
     /// the seed colors apply.</summary>
