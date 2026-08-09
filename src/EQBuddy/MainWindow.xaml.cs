@@ -83,7 +83,7 @@ public partial class MainWindow : Window
         // is taller than the primary — discussion #31); primary work area is only the
         // pre-handle starting value.
         MaxHeight = SystemParameters.WorkArea.Height - 20;
-        SectionScroll.MaxHeight = SystemParameters.WorkArea.Height - 160;
+        ApplySectionMaxHeight(SystemParameters.WorkArea.Height - 160);
         SourceInitialized += (_, _) => UpdateHeightCaps();
         LocationChanged += (_, _) => UpdateHeightCaps();
 
@@ -682,8 +682,55 @@ public partial class MainWindow : Window
     {
         if (MonitorMetrics.WorkAreaFor(this) is not { } work) return;
         MaxHeight = Math.Max(200, work.Height - 20);
-        SectionScroll.MaxHeight = Math.Max(120, work.Height - 160);
+        ApplySectionMaxHeight(Math.Max(120, work.Height - 160));
     }
+
+    /// <summary>The section list's height: automatic (fit the monitor) unless the
+    /// bottom-edge grip chose one (Reddit ask, 2026-08-09 — taller or shorter without
+    /// rescaling text). The choice lives in pre-scale units so it survives scale
+    /// changes; the monitor's cap always wins.</summary>
+    private double _sectionAutoCap = double.MaxValue;
+
+    private void ApplySectionMaxHeight(double? autoCap = null)
+    {
+        if (autoCap is { } cap) _sectionAutoCap = cap;
+        SectionScroll.MaxHeight = double.IsNaN(_settings.ContentHeight)
+            ? _sectionAutoCap
+            : Math.Clamp(_settings.ContentHeight, 120, _sectionAutoCap);
+    }
+
+    // Same absolute-cursor discipline as the scale grip: the window resizes under the
+    // cursor mid-drag, so accumulating DragDelta would feed back and jitter.
+    private double _heightDragCursorY, _heightDragStart;
+
+    private void OnHeightGripStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+    {
+        _heightDragCursorY = CursorY();
+        _heightDragStart = SectionScroll.ActualHeight;
+    }
+
+    private void OnHeightGripDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
+    {
+        // Cursor moves in screen units; the list lives under the scale transform.
+        var scale = Math.Max(0.25, _settings.UiScale);
+        _settings.ContentHeight = Math.Max(120,
+            _heightDragStart + (CursorY() - _heightDragCursorY) / scale);
+        ApplySectionMaxHeight();
+    }
+
+    private void OnHeightGripCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e) =>
+        _settings.Save();
+
+    private void OnHeightGripReset(object sender, MouseButtonEventArgs e)
+    {
+        _settings.ContentHeight = double.NaN;
+        ApplySectionMaxHeight();
+        _settings.Save();
+    }
+
+    private void OnOpenWebsite(object sender, RoutedEventArgs e) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+            "https://github.com/DranakCorps-bot/EQBuddy") { UseShellExecute = true });
 
     /// <summary>Mez chips: who's asleep, wake-up countdown ("?" until the spell's
     /// duration is known), warning tint inside the last tick. Same-named entries are
@@ -1958,6 +2005,7 @@ public partial class MainWindow : Window
         MiniRoot.Visibility = mini ? Visibility.Visible : Visibility.Collapsed;
         NormalRoot.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         ResizeGrip.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
+        HeightGrip.Visibility = mini ? Visibility.Collapsed : Visibility.Visible;
         _settings.Save();
         var snap = _stats.Snapshot();
         if (mini) UpdateMiniChips(snap);

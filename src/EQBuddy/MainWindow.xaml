@@ -15,7 +15,8 @@
             MouseLeftButtonDown="OnDrag">
         <Border.ContextMenu>
             <ContextMenu>
-                <MenuItem x:Name="VersionMenuItem" Header="EQBuddy" IsEnabled="False"/>
+                <MenuItem x:Name="VersionMenuItem" Header="EQBuddy" Click="OnOpenWebsite"
+                          ToolTip="Open the EQBuddy page — downloads, guides, and a link to share"/>
                 <MenuItem Header="Check for updates" Click="OnCheckUpdates"/>
                 <MenuItem Header="Options… (size, opacity, watch rules)" Click="OnOptions"/>
                 <MenuItem Header="Quick tutorial…" Click="OnTutorial"/>
@@ -565,6 +566,20 @@
            HorizontalAlignment="Right" VerticalAlignment="Bottom"
            Cursor="SizeNWSE" ToolTip="Drag to resize (scales text and everything else with it)"
            DragStarted="OnResizeGripStarted" DragDelta="OnResizeGripDelta">
+        <Thumb.Template>
+            <ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent"/></ControlTemplate>
+        </Thumb.Template>
+    </Thumb>
+
+    <!-- Bottom-edge height grip (Reddit ask, 2026-08-09): drag to show more or fewer
+         cards before the list scrolls — TEXT size stays put, that's the corner grip's
+         job. The corner keeps its own 20px so the two grips never fight. -->
+    <Thumb x:Name="HeightGrip" Height="6" Margin="12,0,20,0"
+           HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+           Cursor="SizeNS"
+           ToolTip="Drag to make the widget taller or shorter (text size stays put). Double-click: fit to screen."
+           DragStarted="OnHeightGripStarted" DragDelta="OnHeightGripDelta"
+           DragCompleted="OnHeightGripCompleted" MouseDoubleClick="OnHeightGripReset">
         <Thumb.Template>
             <ControlTemplate TargetType="Thumb"><Rectangle Fill="Transparent"/></ControlTemplate>
         </Thumb.Template>
