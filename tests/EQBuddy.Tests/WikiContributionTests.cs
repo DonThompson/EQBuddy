@@ -178,6 +178,44 @@ public class WikiContributionTests
         Assert.Contains("title=Orc_Legionnaire_(Crushbone)&action=edit", text);
     }
 
+    /// <summary>The observed stat block (#65 round two): zone at kill time, money as
+    /// the wiki's low–high range, factions with hit counts — and the reconciliation
+    /// framing plus the 10+ kill gate baked into the wording.</summary>
+    [Fact]
+    public void StatBlockCarriesZoneMoneyRangeAndFactions()
+    {
+        var mob = Mob("Packmaster Dledsh", 12, new MobLoot("Packmaster's Whip", 3, 25.0)) with
+        {
+            Zone = "The Warrens",
+            CoinMin = 22,
+            CoinMax = 100,
+            Factions = [new MobFactionHit("Kobolds of Fireclaw", -5, 12)],
+        };
+        var text = WikiContribution.BuildExport(
+            [new(mob, Missing)], "Dranak", "Legends", "The Greater Faydark",
+            new DateTime(2026, 8, 9, 14, 0, 0));
+        Assert.Contains("compare, don't overwrite", text);
+        // The KILL zone wins over wherever the player is standing at export time.
+        Assert.Contains("zone (at kill time): The Warrens", text);
+        Assert.Contains("money per kill: 2s 2c – 1g", text);
+        Assert.Contains("faction: Kobolds of Fireclaw -5 (12 of 12 kills)", text);
+    }
+
+    [Fact]
+    public void StatBlockReportsConfirmedFactionAbsenceAndThinSamples()
+    {
+        var mob = Mob("Gnoll Reaver", 3, new MobLoot("Gnoll Fang", 1, 33.3)) with
+        {
+            Zone = "Blackburrow",
+        };
+        var text = WikiContribution.BuildExport(
+            [new(mob, Missing)], "Dranak", "Legends", "Blackburrow",
+            new DateTime(2026, 8, 9, 14, 0, 0));
+        Assert.Contains("thin sample", text);
+        Assert.Contains("no hits observed across 3 kills", text);
+        Assert.DoesNotContain("money per kill", text);   // no coin seen ≠ drops nothing
+    }
+
     [Fact]
     public void NothingNewSaysSoInsteadOfEmittingEmptySections()
     {

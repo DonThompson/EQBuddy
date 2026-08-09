@@ -161,7 +161,7 @@ public sealed class SpawnTimers
                     var o = _overrides.Find(zone.Zone, entry.Name);
                     var placeholder = o?.Placeholder ?? entry.Placeholder;
                     if (!Matches(entry.Name, k.Target, fuzzy)
-                        && !Matches(placeholder, k.Target, fuzzy)
+                        && !MatchesAnyPlaceholder(placeholder, k.Target, fuzzy)
                         && !entry.Aliases.Any(a => Matches(a, k.Target, fuzzy))) continue;
 
                     var trusted = IsTrusted(zone, entry);
@@ -205,6 +205,13 @@ public sealed class SpawnTimers
         static bool Matches(string catalogName, string killed, bool fuzzy) =>
             fuzzy ? SpawnCatalog.NameMatchesFuzzy(catalogName, killed)
                   : SpawnCatalog.NameMatches(catalogName, killed);
+
+        // Some spawn cycles run several placeholders (Queen Dracnia's webmaster /
+        // lurker / purifier rotation) — the field holds them '/'-separated, and any
+        // one of them dying restarts the named's clock.
+        static bool MatchesAnyPlaceholder(string placeholders, string killed, bool fuzzy) =>
+            placeholders.Length > 0 && placeholders.Split('/')
+                .Any(p => p.Trim() is { Length: > 0 } ph && Matches(ph, killed, fuzzy));
     }
 
     /// <summary>A MEASURED timer (entry or zone clock) outranks re-kill learning:

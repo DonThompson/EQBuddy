@@ -119,11 +119,24 @@ public sealed record MobLoot(string Item, int Count, double? DropRatePct)
     public DateTime? LastAt { get; init; }
 }
 
+/// <summary>One faction's response to killing this creature: the per-kill delta and
+/// how many hits were recorded (vs. the kill count, absence is visible too).</summary>
+public sealed record MobFactionHit(string Faction, int Delta, int Hits);
+
 /// <summary>Per-creature farming aggregate (MOB-*). Drop rates are observed personal
-/// rates — the kill denominator is always surfaced next to the percentage.</summary>
+/// rates — the kill denominator is always surfaced next to the percentage.
+/// Zone/CoinMin/CoinMax/Factions are the stat-block trio (#65): zone at kill time,
+/// per-kill coin-drop bounds, and faction hits with confirmed-absence visibility.</summary>
 public sealed record MobSummary(
     string Name, int Kills, int Encounters, double AvgFightSeconds,
-    double XpPercent, long Copper, List<MobLoot> Loot);
+    double XpPercent, long Copper, List<MobLoot> Loot)
+{
+    public string Zone { get; init; } = "";
+    /// <summary>Smallest/largest single coin drop; -1 min = no coin seen.</summary>
+    public long CoinMin { get; init; } = -1;
+    public long CoinMax { get; init; }
+    public List<MobFactionHit> Factions { get; init; } = [];
+}
 
 /// <summary>Combat time and damage while a stance was active (STANCE-*).</summary>
 public sealed record StanceInfo(string Name, double CombatSeconds, long Damage, double Dps);
