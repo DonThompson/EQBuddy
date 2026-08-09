@@ -640,13 +640,25 @@ public sealed class SessionStats
                     break;
                 case HealEvent { Outgoing: true } h:
                     _healingDone += h.Amount; _healCount++;
-                    Ability(_healsBySpell, h.Spell).Add(h.Time, h.Amount);
+                    // The divine invocation heals the party's lowest-health member for
+                    // the mana of whatever you cast — a proc, not a cast, so its heal
+                    // line carries no "by <spell>" clause and used to land in the
+                    // "Unknown" bucket (David, 2026-08-09). While that invocation is
+                    // being recited, an unattributed outgoing heal IS the invocation.
+                    // ("Divine", not "Divine Invocation": the log says "You begin
+                    // reciting the divine invocation." and the parser keeps the word.)
+                    var healSpell = h.Spell == "Unknown" && _currentInvocation == "Divine"
+                        ? "Divine Invocation" : h.Spell;
+                    Ability(_healsBySpell, healSpell).Add(h.Time, h.Amount);
                     // Credited to the fight you were in, if any — see _healingFight.
                     if (_healingFight is { } hf && _activeFights.TryGetValue(hf, out var hFight))
                     {
                         hFight.Healed += h.Amount;
-                        Ability(hFight.HealsBySpell, h.Spell).Add(h.Time, h.Amount);
+                        Ability(hFight.HealsBySpell, healSpell).Add(h.Time, h.Amount);
                     }
+                    // Learning keys off what the LOG named (h.Spell, not the relabel):
+                    // "Divine Invocation" isn't a castable spell and must not enter
+                    // the learned spell catalog.
                     if (h.Spell != "Unknown")
                         _spells.Learn(h.Spell, h.OverTime ? SpellCategory.HealOverTime : SpellCategory.Heal);
                     // Self-heals appear as "You healed <own name>" — count as received too.

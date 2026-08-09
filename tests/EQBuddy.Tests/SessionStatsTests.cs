@@ -209,6 +209,35 @@ public class SessionStatsTests
         Assert.Equal(0, s.HealingReceived);
     }
 
+    /// <summary>The divine invocation heals the party's lowest-health member for the
+    /// mana of whatever you cast — a proc whose heal line names no spell, which used
+    /// to bucket as "Unknown" in the HPS tracker (David, 2026-08-09). While the divine
+    /// invocation is being recited, the unattributed heal belongs to it.</summary>
+    [Fact]
+    public void UnattributedHealDuringDivineInvocationIsTheInvocations()
+    {
+        var s = Replay("Caybin",
+            At(0, 0, "You begin reciting the divine invocation."),
+            At(0, 5, "You healed Douglas for 120 hit points.")).Snapshot();
+        var spell = Assert.Single(s.HealsBySpell);
+        Assert.Equal(("Divine Invocation", 120L), (spell.Name, spell.Total));
+    }
+
+    /// <summary>The same bare heal line without the invocation stays honestly Unknown —
+    /// a clicky or another proc must not borrow the invocation's name.</summary>
+    [Theory]
+    [InlineData(null)]
+    [InlineData("You begin reciting the empowering invocation.")]
+    public void UnattributedHealWithoutDivineInvocationStaysUnknown(string? invocationLine)
+    {
+        var lines = invocationLine is null
+            ? new[] { At(0, 5, "You healed Douglas for 120 hit points.") }
+            : [At(0, 0, invocationLine), At(0, 5, "You healed Douglas for 120 hit points.")];
+        var s = Replay("Caybin", lines).Snapshot();
+        var spell = Assert.Single(s.HealsBySpell);
+        Assert.Equal("Unknown", spell.Name);
+    }
+
     [Fact]
     public void CombatWindowNotStartedByBystanders()
     {
