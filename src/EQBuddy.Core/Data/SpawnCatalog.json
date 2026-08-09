@@ -1255,19 +1255,19 @@
         },
         {
           "name": "Orc Trainer",
-          "respawnSeconds": null,
-          "variance": "",
+          "respawnSeconds": 480,
+          "variance": "tier?",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "Trainer Hill; drops Shiny Brass Shield"
+          "source": "observed",
+          "note": "Trainer Hill; drops Shiny Brass Shield. 480s from Dranak's log 2026-08-09 on ADAPTIVE tier, caught at spawn while looping the trio (kill 06:39:04 -> re-engage 06:47:08 = 484s incl. travel). Untrusted so live learning keeps refining; see Orc Taskmaster note for the tier question."
         },
         {
           "name": "Royal Guard",
-          "respawnSeconds": null,
-          "variance": "",
+          "respawnSeconds": 480,
+          "variance": "tier?",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "behind throne; page lists Orc Royal Guards as a mob type"
+          "source": "observed",
+          "note": "behind throne; page lists Orc Royal Guards as a mob type. 480s from Dranak's log 2026-08-09 on ADAPTIVE tier, caught at spawn while looping the trio (kill 06:34:03 -> re-engage 06:42:12 = 489s incl. travel). Untrusted so live learning keeps refining; see Orc Taskmaster note for the tier question."
         },
         {
           "name": "Bloodgurgler",
@@ -1306,11 +1306,11 @@
         },
         {
           "name": "Orc Taskmaster",
-          "respawnSeconds": null,
-          "variance": "",
+          "respawnSeconds": 480,
+          "variance": "tier?",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "Slaver Pit; drops 5/30 whip and brass earring (slaver quests)"
+          "source": "observed",
+          "note": "Slaver Pit; drops 5/30 whip and brass earring (slaver quests). 480s from Dranak's log 2026-08-09 on ADAPTIVE tier (kill 06:38:31 -> re-engage 06:46:34 = 483s incl. travel; six kill-to-kill cycles all >=502s agree). Untrusted on purpose: the 738 zone default is three exact REFINED-tier measurements of the Bloodgurgler family — respawns may differ per tier or per camp, so let live learning keep refining."
         },
         {
           "name": "Orc Warden",
