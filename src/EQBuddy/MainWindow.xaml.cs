@@ -1423,16 +1423,30 @@ public partial class MainWindow : Window
 
             foreach (var rewardGroup in classGroup.GroupBy(i => i.Reward).OrderBy(g => g.Key))
             {
-                panel.Children.Add(new TextBlock
+                // The reward line is itself a checkbox: "I turned this in" (#73).
+                // Manual only — the log shows nothing reliable at the NPC hand-over.
+                var completed = IsSkyRewardCompleted(classGroup.Key, rewardGroup.Key);
+                var rewardItems = rewardGroup.ToList();
+                var rewardCheck = new CheckBox
                 {
-                    Text = rewardGroup.Key,
-                    FontSize = 11,
-                    FontWeight = FontWeights.SemiBold,
-                    Foreground = (Brush)FindResource("AccentBrush"),
+                    IsChecked = completed,
                     Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 1),
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                    ToolTip = $"{rewardGroup.Key} - {rewardGroup.First().Npc}",
-                });
+                    ToolTip = $"{rewardGroup.Key} - {rewardGroup.First().Npc}\n" +
+                              "Check when you've turned everything in — quest complete.",
+                    Content = new TextBlock
+                    {
+                        Text = completed ? $"✔ {rewardGroup.Key}" : rewardGroup.Key,
+                        FontSize = 11,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = (Brush)FindResource("AccentBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                    },
+                };
+                rewardCheck.Checked += (_, _) =>
+                    OnSkyRewardToggled(classGroup.Key, rewardGroup.Key, rewardItems, true);
+                rewardCheck.Unchecked += (_, _) =>
+                    OnSkyRewardToggled(classGroup.Key, rewardGroup.Key, rewardItems, false);
+                panel.Children.Add(rewardCheck);
 
                 foreach (var item in rewardGroup.OrderBy(i => i.QuestItem))
                 {
@@ -1458,6 +1472,9 @@ public partial class MainWindow : Window
                         Content = text,
                         Margin = new Thickness(0, 1, 0, 1),
                         ToolTip = $"{item.Reward}: {item.QuestItem} ({item.Source})",
+                        // A completed quest's items are history, not a to-do list.
+                        IsEnabled = !completed,
+                        Opacity = completed ? 0.55 : 1.0,
                     };
                     check.Checked += (_, _) => OnSkyQuestToggled(item, true);
                     check.Unchecked += (_, _) => OnSkyQuestToggled(item, false);
@@ -1479,6 +1496,32 @@ public partial class MainWindow : Window
 
         if (SkyQuestTabs.SelectedIndex < 0 && SkyQuestTabs.Items.Count > 0)
             SkyQuestTabs.SelectedIndex = 0;
+    }
+
+    private static string SkyRewardKey(string className, string reward) => className + "|" + reward;
+
+    private bool IsSkyRewardCompleted(string className, string reward) =>
+        _settings.SkyQuestCompleted.Contains(SkyRewardKey(className, reward));
+
+    /// <summary>Reward turned in (#73): completing checks the reward's items too —
+    /// they were acquired and then handed over. Unchecking reopens the quest but
+    /// leaves the item boxes as they were; the player knows what they still hold.</summary>
+    private void OnSkyRewardToggled(string className, string reward,
+        List<SkyQuestChecklistItem> items, bool done)
+    {
+        var key = SkyRewardKey(className, reward);
+        if (done)
+        {
+            if (!_settings.SkyQuestCompleted.Contains(key)) _settings.SkyQuestCompleted.Add(key);
+            foreach (var i in items) i.Acquired = true;
+        }
+        else
+        {
+            _settings.SkyQuestCompleted.Remove(key);
+        }
+        _settings.Save();
+        UpdateSkyQuestHeaderOnly();
+        _skyQuestDirty = true;   // rebuild next tick: ✔ label, dimmed items, counts
     }
 
     /// <summary>Manual toggle: the box itself is already right, so only the counts

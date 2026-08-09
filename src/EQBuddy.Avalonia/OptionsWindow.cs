@@ -485,7 +485,8 @@ public sealed class OptionsWindow : Window
             Grid.SetColumn(colorDot, 5);
             row.Children.Add(colorDot);
 
-            row.Children.Add(RuleToggle("S", "Speak this alert with the Windows voice", 6,
+            row.Children.Add(RuleToggle("S",
+                "Speak this alert with the Windows voice (Windows only for now — silent on Linux)", 6,
                 rule.AlertSpeech, v => rule.AlertSpeech = v));
 
             // Per-rule sound, replacing the old on/off toggle. Telling rules apart by ear is

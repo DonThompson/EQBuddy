@@ -8,7 +8,8 @@ public static class WatchAlertText
     {
         var item = result.LastItem ?? "match";
         var label = rule.Kind == WatchKind.SpellFade ? SpellFadeLabel(item) : item;
-        return delta > 1 ? $"{label} x{delta}" : label;
+        // × matches every other count in the app; SpokenAlerts rewrites it for the voice.
+        return delta > 1 ? $"{label} ×{delta}" : label;
     }
 
     private static string SpellFadeLabel(string item)

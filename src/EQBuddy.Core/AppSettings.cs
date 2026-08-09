@@ -101,6 +101,12 @@ public sealed class AppSettings
     /// auto-check only ticks boxes for this class; empty = no tab picked yet, first
     /// unacquired match wins.</summary>
     public string SkyQuestClass { get; set; } = "";
+    /// <summary>Sky quest rewards marked turned-in, as "ClassName|Reward" keys
+    /// (discussion #73, chrstahl). Manual only: the log shows nothing reliable when
+    /// items change hands at an NPC, so the player is the source of truth — including
+    /// for quests finished before this feature existed. Marking one complete also
+    /// checks its items (they were acquired and then handed over).</summary>
+    public List<string> SkyQuestCompleted { get; set; } = [];
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";

@@ -1,9 +1,10 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 using EQBuddy.Core;
 
 namespace EQBuddy.UI.Shared;
 
-public static class SpokenAlerts
+public static partial class SpokenAlerts
 {
     private const int SpeakAsync = 1;
     private static readonly object Sync = new();
@@ -14,9 +15,18 @@ public static class SpokenAlerts
 
     public static bool Speak(string text) => Speak(text, DateTime.Now);
 
+    /// <summary>Banner text carries the app's × counts ("Rusty Sword ×3"); the voice
+    /// gets plain English ("Rusty Sword 3 times") instead of a multiplication sign.</summary>
+    [GeneratedRegex(@"\s*×\s*(\d+)")]
+    private static partial Regex CountSuffixRx();
+
+    public static string Speakable(string text) =>
+        CountSuffixRx().Replace(text, " $1 times");
+
     internal static bool Speak(string text, DateTime now)
     {
         if (!OperatingSystem.IsWindows() || string.IsNullOrWhiteSpace(text)) return false;
+        text = Speakable(text);
 
         try
         {
