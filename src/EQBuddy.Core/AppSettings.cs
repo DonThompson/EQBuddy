@@ -96,6 +96,11 @@ public sealed class AppSettings
     // unknown properties are ignored and dropped on the next save.
     /// <summary>Persistent Plane of Sky quest turn-in checklist shown in the overlay.</summary>
     public List<SkyQuestChecklistItem> SkyQuestChecklist { get; set; } = [];
+    /// <summary>The class tab last selected in the Sky Quest card. Quest item names
+    /// repeat across classes (five classes each need a Wind Rune Azia), so loot
+    /// auto-check only ticks boxes for this class; empty = no tab picked yet, first
+    /// unacquired match wins.</summary>
+    public string SkyQuestClass { get; set; } = "";
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
@@ -249,7 +254,7 @@ public sealed class AppSettings
         // across restarts rather than re-rolled every launch until some unrelated edit
         // happens to save settings.
         var changed = settings.ApplyDefaultRules();
-        changed |= settings.ApplyDefaultSectionLayout();
+        changed |= settings.ApplyDefaultSkyQuestSection();
         changed |= settings.ApplyDefaultSkyQuestChecklist();
         if (changed | settings.TrackedRules.Any(r => r.IdWasGenerated))
             settings.Save();
@@ -289,53 +294,20 @@ public sealed class AppSettings
         return true;
     }
 
-    private static readonly string[] DefaultSectionOrder =
-    [
-        "combat", "healing", "kills", "loot", "motes", "sky", "tracked",
-        "money", "progress", "faction", "misc",
-    ];
-
-    public bool ApplyDefaultSectionLayout()
+    /// <summary>
+    /// One-time migration for settings saved before the Sky Quest card existed: slot
+    /// "sky" in at its catalog position (after motes) instead of letting the UI append
+    /// it last. Deliberately insert-only — ordering, dedup, and unknown-key cleanup
+    /// stay the UI layer's job (ApplySectionLayout / the cards editor), so Core never
+    /// carries its own copy of the section catalog that could drift out of sync.
+    /// A fresh install's empty order is left empty: the UI appends the catalog itself.
+    /// </summary>
+    public bool ApplyDefaultSkyQuestSection()
     {
-        var changed = false;
-        var order = SectionOrder
-            .Where(k => DefaultSectionOrder.Contains(k, StringComparer.Ordinal))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-
-        changed |= order.Count != SectionOrder.Count || !order.SequenceEqual(SectionOrder);
-
-        foreach (var key in DefaultSectionOrder)
-        {
-            if (order.Contains(key, StringComparer.Ordinal))
-                continue;
-
-            var defaultIndex = Array.IndexOf(DefaultSectionOrder, key);
-            var insertAt = order.Count;
-
-            for (var i = defaultIndex - 1; i >= 0; i--)
-            {
-                var previous = order.IndexOf(DefaultSectionOrder[i]);
-                if (previous >= 0)
-                {
-                    insertAt = previous + 1;
-                    break;
-                }
-            }
-
-            order.Insert(insertAt, key);
-            changed = true;
-        }
-
-        var hidden = HiddenSections
-            .Where(k => DefaultSectionOrder.Contains(k, StringComparer.Ordinal))
-            .Distinct(StringComparer.Ordinal)
-            .ToList();
-        changed |= hidden.Count != HiddenSections.Count || !hidden.SequenceEqual(HiddenSections);
-
-        SectionOrder = order;
-        HiddenSections = hidden;
-        return changed;
+        if (SectionOrder.Count == 0 || SectionOrder.Contains("sky")) return false;
+        var motes = SectionOrder.IndexOf("motes");
+        SectionOrder.Insert(motes < 0 ? SectionOrder.Count : motes + 1, "sky");
+        return true;
     }
 
     public bool ApplyDefaultSkyQuestChecklist()

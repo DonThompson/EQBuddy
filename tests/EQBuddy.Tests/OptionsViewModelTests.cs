@@ -94,19 +94,29 @@ public sealed class OptionsViewModelTests
     }
 
     [Fact]
-    public void SectionLayoutAddsSkyToExistingOrder()
+    public void SkyQuestSectionSlotsInAfterMotes()
     {
+        // Insert-only on purpose: unknown-key cleanup stays the UI layer's job
+        // (CardsNormalizeMoveAndToggle above), so Core never carries a section
+        // catalog copy. Hidden sections and stray keys pass through untouched.
         var settings = new AppSettings
         {
-            SectionOrder = ["combat", "tracked", "bogus"],
-            HiddenSections = ["loot", "bogus"],
+            SectionOrder = ["combat", "motes", "tracked", "bogus"],
+            HiddenSections = ["loot"],
         };
 
-        Assert.True(settings.ApplyDefaultSectionLayout());
-        Assert.Contains("sky", settings.SectionOrder);
-        Assert.True(settings.SectionOrder.IndexOf("sky") < settings.SectionOrder.IndexOf("tracked"));
-        Assert.DoesNotContain("bogus", settings.SectionOrder);
+        Assert.True(settings.ApplyDefaultSkyQuestSection());
+        Assert.Equal(["combat", "motes", "sky", "tracked", "bogus"], settings.SectionOrder);
         Assert.Equal(["loot"], settings.HiddenSections);
+        Assert.False(settings.ApplyDefaultSkyQuestSection());   // idempotent
+
+        // No motes to anchor on: append; the UI's own ordering takes it from there.
+        var noMotes = new AppSettings { SectionOrder = ["combat", "kills"] };
+        Assert.True(noMotes.ApplyDefaultSkyQuestSection());
+        Assert.Equal(["combat", "kills", "sky"], noMotes.SectionOrder);
+
+        // A fresh install's empty order stays empty — the UI appends the catalog.
+        Assert.False(new AppSettings().ApplyDefaultSkyQuestSection());
     }
 
     [Fact]

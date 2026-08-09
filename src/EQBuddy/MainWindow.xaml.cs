@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
     private readonly Dictionary<string, int> _skyQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
+    // does elsewhere — the checklist re-renders only when a box actually changed.
+    private bool _skyQuestDirty = true;
 
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "motes", "money", "xp", "deaths"];
 
@@ -234,6 +237,8 @@ public partial class MainWindow : Window
             _settings.SpawnFollowRepaired = true;
             _settings.Save();
         }
+
+        SkyQuestTabs.SelectionChanged += OnSkyQuestTabChanged;
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
@@ -1177,8 +1182,11 @@ public partial class MainWindow : Window
                 onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
         }
 
-        if (SkyQuestSection.IsExpanded)
+        if (SkyQuestSection.IsExpanded && _skyQuestDirty)
+        {
             RenderSkyQuestChecklist();
+            _skyQuestDirty = false;
+        }
 
         if (MoneySection.IsExpanded)
         {
@@ -1354,12 +1362,19 @@ public partial class MainWindow : Window
     {
         var changed = AutoCheckSkyQuestLoot(s);
         UpdateSkyQuestHeaderOnly();
-        if (changed) _settings.Save();
+        if (changed)
+        {
+            _skyQuestDirty = true;
+            _settings.Save();
+        }
     }
 
     private bool AutoCheckSkyQuestLoot(StatsSnapshot s)
     {
         var changed = false;
+        // Quest item names repeat across classes (five classes need a Wind Rune
+        // Azia); only tick boxes for the class whose tab the player works in.
+        var cls = _settings.SkyQuestClass;
         var lootByName = s.Loot
             .GroupBy(l => l.Item, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Sum(l => l.Count), StringComparer.OrdinalIgnoreCase);
@@ -1380,7 +1395,9 @@ public partial class MainWindow : Window
             var newlyLooted = count - seen;
             _skyQuestLootSeen[name] = count;
             foreach (var item in _settings.SkyQuestChecklist
-                         .Where(i => !i.Acquired && string.Equals(i.QuestItem, name, StringComparison.OrdinalIgnoreCase))
+                         .Where(i => !i.Acquired
+                             && (cls.Length == 0 || string.Equals(i.ClassName, cls, StringComparison.Ordinal))
+                             && string.Equals(i.QuestItem, name, StringComparison.OrdinalIgnoreCase))
                          .Take(newlyLooted))
             {
                 item.Acquired = true;
@@ -1393,7 +1410,9 @@ public partial class MainWindow : Window
 
     private void RenderSkyQuestChecklist()
     {
-        var selectedClass = (SkyQuestTabs.SelectedItem as TabItem)?.Tag as string;
+        // Live selection wins; the persisted class restores the tab across restarts.
+        var selectedClass = (SkyQuestTabs.SelectedItem as TabItem)?.Tag as string
+            ?? (_settings.SkyQuestClass.Length > 0 ? _settings.SkyQuestClass : null);
         SkyQuestTabs.Items.Clear();
 
         foreach (var classGroup in _settings.SkyQuestChecklist.GroupBy(i => i.ClassName).OrderBy(g => g.Key))
@@ -1440,18 +1459,8 @@ public partial class MainWindow : Window
                         Margin = new Thickness(0, 1, 0, 1),
                         ToolTip = $"{item.Reward}: {item.QuestItem} ({item.Source})",
                     };
-                    check.Checked += (_, _) =>
-                    {
-                        item.Acquired = true;
-                        _settings.Save();
-                        UpdateSkyQuestHeaderOnly();
-                    };
-                    check.Unchecked += (_, _) =>
-                    {
-                        item.Acquired = false;
-                        _settings.Save();
-                        UpdateSkyQuestHeaderOnly();
-                    };
+                    check.Checked += (_, _) => OnSkyQuestToggled(item, true);
+                    check.Unchecked += (_, _) => OnSkyQuestToggled(item, false);
                     panel.Children.Add(check);
                 }
             }
@@ -1470,6 +1479,42 @@ public partial class MainWindow : Window
 
         if (SkyQuestTabs.SelectedIndex < 0 && SkyQuestTabs.Items.Count > 0)
             SkyQuestTabs.SelectedIndex = 0;
+    }
+
+    /// <summary>Manual toggle: the box itself is already right, so only the counts
+    /// need refreshing — no rebuild, the control under the cursor stays put.</summary>
+    private void OnSkyQuestToggled(SkyQuestChecklistItem item, bool acquired)
+    {
+        item.Acquired = acquired;
+        _settings.Save();
+        UpdateSkyQuestHeaderOnly();
+        UpdateSkyQuestTabHeader(item.ClassName);
+    }
+
+    /// <summary>Persist the class tab the player works in — it scopes loot auto-check
+    /// and picks the tab shown after a restart.</summary>
+    private void OnSkyQuestTabChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // Items.Clear() during a rebuild fires this with no selection — ignore.
+        if ((SkyQuestTabs.SelectedItem as TabItem)?.Tag is string cls &&
+            !string.Equals(_settings.SkyQuestClass, cls, StringComparison.Ordinal))
+        {
+            _settings.SkyQuestClass = cls;
+            _settings.Save();
+        }
+    }
+
+    private void UpdateSkyQuestTabHeader(string className)
+    {
+        foreach (var tab in SkyQuestTabs.Items.OfType<TabItem>())
+            if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
+            {
+                var done = _settings.SkyQuestChecklist.Count(i =>
+                    string.Equals(i.ClassName, className, StringComparison.Ordinal) && i.Acquired);
+                var total = _settings.SkyQuestChecklist.Count(i =>
+                    string.Equals(i.ClassName, className, StringComparison.Ordinal));
+                tab.Header = $"{ClassAbbrev(className)} {done}/{total}";
+            }
     }
 
     private void UpdateSkyQuestHeaderOnly()
