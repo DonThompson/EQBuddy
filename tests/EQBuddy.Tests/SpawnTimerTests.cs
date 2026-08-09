@@ -482,6 +482,53 @@ public class SpawnTimerTests
         Assert.False(timer.IsDue(T0.AddSeconds(461)));
         Assert.Equal(480, timer.DurationSeconds);
         Assert.Null(overrides.Find("Crushbone", "Royal Guard"));
+
+        // Re-kill gaps teach nothing either: killing a SIBLING 120s after this camp's
+        // kill must not become the learned respawn (the 111s Trainer poison, David's
+        // log 2026-08-09 — a trainee-restarted clock "measured" a two-minute cycle).
+        t.Apply(new KillEvent(T0.AddSeconds(120), "Royal Guard", "You"));
+        Assert.Null(overrides.Find("Crushbone", "Royal Guard"));
+        Assert.Equal(480, Assert.Single(t.Snapshot(T0.AddSeconds(121))).DurationSeconds);
+    }
+
+    /// <summary>Poison already in the file from before multiSpawn existed (David's
+    /// Trainer at 111s) heals on the next kill — including the startup replay, so an
+    /// update alone fixes the chip without anyone editing overrides by hand.</summary>
+    [Fact]
+    public void StaleLearnedValuesOnMultiSpawnEntriesHealOnKill()
+    {
+        var catalog = new SpawnCatalog
+        {
+            Zones =
+            [
+                new SpawnZone
+                {
+                    Zone = "Crushbone",
+                    Named = [new SpawnEntry { Name = "Orc Trainer", RespawnSeconds = 480, MultiSpawn = true }],
+                },
+            ],
+        };
+        var overrides = new SpawnOverrides();
+        var poisoned = overrides.GetOrAdd("Crushbone", "Orc Trainer");
+        poisoned.RespawnSeconds = 111;
+        poisoned.Learned = true;
+
+        var t = new SpawnTimers(catalog, overrides) { Server = "qeynos" };
+        t.Apply(new ZoneEvent(T0, "Clan Crushbone"));
+        t.Apply(new KillEvent(T0, "orc trainer", "You"));
+
+        Assert.Equal(480, Assert.Single(t.Snapshot(T0.AddSeconds(1))).DurationSeconds);
+        var healed = overrides.Find("Crushbone", "Orc Trainer")!;
+        Assert.Null(healed.RespawnSeconds);
+        Assert.False(healed.Learned);
+
+        // A manual value on a multiSpawn entry is still sovereign.
+        var manual = overrides.GetOrAdd("Crushbone", "Orc Trainer");
+        manual.RespawnSeconds = 300;
+        manual.Learned = false;
+        t.Apply(new KillEvent(T0.AddSeconds(600), "orc trainer", "You"));
+        Assert.Equal(300, Assert.Single(t.Snapshot(T0.AddSeconds(601))).DurationSeconds);
+        Assert.Equal(300, overrides.Find("Crushbone", "Orc Trainer")!.RespawnSeconds);
     }
 
     /// <summary>Issue #36 regression net: article-bearing catalog names ("the froglok

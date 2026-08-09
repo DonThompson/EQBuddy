@@ -170,9 +170,13 @@ public sealed class SpawnTimers
                     // look like one fast respawn) — drop it, the measurement wins.
                     // Sighting-learned values are exempt: those were the mob itself
                     // acting before the measured clock ran out, and an observation
-                    // outranks a lock (David, 2026-08-09).
-                    if (trusted && o is { Learned: true, Sighted: false, RespawnSeconds: { } bad }
-                        && bad < SpawnCatalog.EffectiveSeconds(zone, entry))
+                    // outranks a lock (David, 2026-08-09). On a multiSpawn entry ANY
+                    // learned value is noise by definition (siblings poison every
+                    // automatic signal — a trainee-restarted clock "measured" the
+                    // Trainer at 111s), so those heal unconditionally.
+                    if (o is { Learned: true, Sighted: false, RespawnSeconds: { } bad }
+                        && (entry.MultiSpawn
+                            || (trusted && bad < SpawnCatalog.EffectiveSeconds(zone, entry))))
                     {
                         o.RespawnSeconds = null;
                         o.Learned = false;
@@ -180,7 +184,9 @@ public sealed class SpawnTimers
                         o = _overrides.Find(zone.Zone, entry.Name);
                     }
                     var duration = o?.RespawnSeconds ?? SpawnCatalog.EffectiveSeconds(zone, entry);
-                    if (!trusted)
+                    // Re-kill gaps teach nothing about multi-spawn names either: the
+                    // "re"-kill may be a sibling across the zone, not this camp again.
+                    if (!trusted && !entry.MultiSpawn)
                         duration = LearnFromRekill(zone.Zone, entry.Name, k.Time, duration);
                     Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration));
                     return;
