@@ -36,7 +36,11 @@ public sealed class MapWindow : Window
     private readonly StackPanel _namedPanel = new() { Margin = new Thickness(8, 4, 8, 4) };
     private readonly List<System.Windows.Shapes.Path> _trailPaths = [];
     private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _campPins = [];
-    private int _trailStamp = -1;
+    private (int Count, long Bucket) _trailStamp = (-1, 0);
+
+    /// <summary>How often the trail re-renders just because time passed — coarse
+    /// enough to stay free, fine enough that the fade reads as continuous.</summary>
+    private static readonly TimeSpan FadeTick = TimeSpan.FromSeconds(10);
 
     public MapWindow(MainWindow main)
     {
@@ -165,14 +169,17 @@ public sealed class MapWindow : Window
     }
 
     /// <summary>The breadcrumb trail: your /locs in this zone, drawn as a path that
-    /// fades toward the past — tap a /loc hotbutton while traveling and the map
-    /// shows the route you took. Geometry lives in map space; rebuilt only when a
-    /// new /loc arrives.</summary>
+    /// fades on the wall clock (TrailFade) — tap a /loc hotbutton while traveling
+    /// and the map shows the route you took; sit at a camp and the route dissolves
+    /// behind you instead of pointing at it forever. Geometry lives in map space;
+    /// rebuilt when a new /loc arrives or the fade clock ticks over — age moves
+    /// even when the player doesn't (David's field test, 2026-08-10).</summary>
     private void UpdateTrail()
     {
         var trail = _main.CurrentSnapshot().LocationTrail;
         var showing = _map is not null && !_userPicked;
-        var stamp = showing ? trail.Count : 0;
+        var now = DateTime.Now;
+        var stamp = showing ? (trail.Count, now.Ticks / FadeTick.Ticks) : (0, 0L);
         if (stamp == _trailStamp) return;
         _trailStamp = stamp;
         foreach (var p in _trailPaths) _mapLayer.Children.Remove(p);
@@ -181,11 +188,11 @@ public sealed class MapWindow : Window
 
         for (var i = 1; i < trail.Count; i++)
         {
+            var alpha = EQBuddy.UI.Shared.TrailFade.Alpha(now - trail[i].Time);
+            if (alpha == 0) continue;   // aged out — stays in the list, not on the map
             var (x1, y1) = ZoneMap.FromLoc(trail[i - 1].LocY, trail[i - 1].LocX);
             var (x2, y2) = ZoneMap.FromLoc(trail[i].LocY, trail[i].LocX);
-            var age = (double)(trail.Count - i) / trail.Count;   // 0 = newest
-            var brush = new SolidColorBrush(Color.FromArgb(
-                (byte)(200 - 150 * age), 255, 200, 60));
+            var brush = new SolidColorBrush(Color.FromArgb(alpha, 255, 200, 60));
             brush.Freeze();
             var seg = new System.Windows.Shapes.Path
             {
@@ -218,8 +225,14 @@ public sealed class MapWindow : Window
         _namedPanel.Children.Add(header);
 
         var now = DateTime.Now;
+        // Timers live under the CATALOG zone ("Befallen"); the log names the
+        // instance ("Befallen 4 (Refined)"). Resolve before comparing — hopping
+        // to another instance of the same zone must not empty the panel (David's
+        // field test, 2026-08-10; countdowns already span instances by design).
+        var timerZone = _main.SpawnTimers.CurrentZone?.Zone
+            ?? SpawnCatalog.StripTierVariant(zone);
         var timers = _main.SpawnTimers.Snapshot(now)
-            .Where(t => string.Equals(t.Zone, zone, StringComparison.OrdinalIgnoreCase))
+            .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
             .ToList();
         if (timers.Count == 0)
         {

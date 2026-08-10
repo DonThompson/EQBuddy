@@ -116,6 +116,27 @@ public class SpawnTimerTests
         Assert.Equal(expected, cat.FindZone(logZone)?.Zone);
     }
 
+    /// <summary>The map's named panel filters timers by CurrentZone.Zone — this is
+    /// the invariant it leans on: a kill inside any instance of a zone stores its
+    /// timer under exactly that catalog zone, so hopping to another instance of the
+    /// same zone keeps every pin (David's field test, 2026-08-10: "Befallen 4
+    /// (Refined)" showed an empty panel over timers stored under "Befallen").</summary>
+    [Fact]
+    public void TimersInAnyInstanceLiveUnderTheCatalogZoneTheFollowedZoneResolvesTo()
+    {
+        var t = Tracker();
+        t.Apply(new ZoneEvent(T0, "The Ruins of Old Guk 2 (Adaptive)"));
+        t.Apply(new KillEvent(T0.AddMinutes(1), "a froglok ghoul lord", "You"));
+
+        var timer = Assert.Single(t.Snapshot(T0.AddMinutes(1)));
+        Assert.Equal("Lower Guk", timer.Zone);
+        Assert.Equal(timer.Zone, t.CurrentZone?.Zone);
+
+        // A different instance of the same zone resolves to the same catalog zone.
+        t.Apply(new ZoneEvent(T0.AddMinutes(5), "The Ruins of Old Guk 4 (Refined)"));
+        Assert.Equal(timer.Zone, t.CurrentZone?.Zone);
+    }
+
     [Theory]
     [InlineData("Befallen 1 (Awakened)", "Befallen")]
     [InlineData("Clan Crushbone 2 (Adaptive)", "Clan Crushbone")]
