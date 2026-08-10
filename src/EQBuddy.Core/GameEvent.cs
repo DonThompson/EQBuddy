@@ -80,7 +80,10 @@ public record SkillSubstitutionEvent(DateTime Time, string Ability, string Repla
 /// <param name="Capped">"Your faction standing with X could not possibly get any
 /// better/worse." — the standing is pinned at the cap, so the kill changed nothing. Delta
 /// is 0, but the event still shows WHY a farmed faction isn't moving.</param>
-public record FactionEvent(DateTime Time, string Faction, int Delta, bool Capped = false) : GameEvent(Time);
+/// <param name="CappedDown">The "any worse" form: pinned at the BOTTOM, not the top —
+/// elderbit (#86): calling the floor "maxed" reads backwards on the card.</param>
+public record FactionEvent(DateTime Time, string Faction, int Delta, bool Capped = false,
+    bool CappedDown = false) : GameEvent(Time);
 public record ZoneEvent(DateTime Time, string Zone) : GameEvent(Time);
 public record CraftEvent(DateTime Time, string Item) : GameEvent(Time);
 public record FizzleEvent(DateTime Time, string Spell = "") : GameEvent(Time);

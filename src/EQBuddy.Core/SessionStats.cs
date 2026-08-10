@@ -165,7 +165,7 @@ public sealed class SessionStats
     private readonly List<(DateTime Time, int Level)> _levels = new();
 
     private readonly Dictionary<string, (int Ups, int Value)> _skills = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, (int Hits, int Net, bool Capped)> _faction = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, (int Hits, int Net, bool Capped, bool CappedDown)> _faction = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(DateTime Time, string Zone)> _zones = new();
     private int _fizzles, _resists;
 
@@ -863,11 +863,13 @@ public sealed class SessionStats
                         var prevHit = factions.TryGetValue(f.Faction, out var ph) ? ph : (0, 0);
                         factions[f.Faction] = (prevHit.Item1 + 1, f.Delta);
                     }
-                    var fv = _faction.TryGetValue(f.Faction, out var fcur) ? fcur : (0, 0, false);
+                    var fv = _faction.TryGetValue(f.Faction, out var fcur) ? fcur : (0, 0, false, false);
                     // Capped is sticky for the session: standing pinned at the cap is why
                     // the number stopped moving, and that's worth saying even if earlier
-                    // kills still adjusted it.
-                    _faction[f.Faction] = (fv.Item1 + 1, fv.Item2 + f.Delta, fv.Item3 || f.Capped);
+                    // kills still adjusted it. Direction follows the latest capped line —
+                    // "maxed" and "bottomed" are different news (#86).
+                    _faction[f.Faction] = (fv.Item1 + 1, fv.Item2 + f.Delta, fv.Item3 || f.Capped,
+                        f.Capped ? f.CappedDown : fv.Item4);
                     break;
                 case ZoneEvent z:
                     if (_zones.Count == 0 || !string.Equals(_zones[^1].Zone, z.Zone, StringComparison.OrdinalIgnoreCase))
@@ -1619,7 +1621,8 @@ public sealed class SessionStats
                     .Select(kv => new SkillDetail(kv.Key, kv.Value.Ups, kv.Value.Value)).ToList(),
                 SkillUpTotal = _skills.Values.Sum(v => v.Ups),
                 Faction = _faction.OrderByDescending(kv => Math.Abs(kv.Value.Net))
-                    .Select(kv => new FactionDetail(kv.Key, kv.Value.Hits, kv.Value.Net, kv.Value.Capped)).ToList(),
+                    .Select(kv => new FactionDetail(kv.Key, kv.Value.Hits, kv.Value.Net,
+                        kv.Value.Capped, kv.Value.CappedDown)).ToList(),
                 Zones = _zones.Select(z => new TimedDetail(z.Time, z.Zone)).ToList(),
                 CurrentZone = _zones.Count > 0 ? _zones[^1].Zone : "",
                 Fizzles = _fizzles,
@@ -1706,7 +1709,10 @@ public record SoldDetail(string Item, int Count, long Copper);
 /// <param name="Capped">Standing hit the cap this session ("could not possibly get any
 /// better/worse"). Default false so history snapshots from before this existed deserialize
 /// unchanged.</param>
-public record FactionDetail(string Faction, int Hits, int Net, bool Capped = false);
+/// <param name="CappedDown">The cap was the FLOOR ("any worse") — shown as "bottomed"
+/// rather than "maxed" (#86). Defaults false, so old snapshots keep reading "maxed".</param>
+public record FactionDetail(string Faction, int Hits, int Net, bool Capped = false,
+    bool CappedDown = false);
 
 public sealed class StatsSnapshot
 {

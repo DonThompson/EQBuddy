@@ -228,7 +228,7 @@ public static partial class LogParser
     // Your faction standing with Emerald Warriors could not possibly get any better.
     // The at-the-cap form — thousands of these in family logs, where farmed factions
     // "stopped moving" with no explanation on the Faction card.
-    [GeneratedRegex(@"^Your faction standing with (?<faction>.+?) could not possibly get any (?:better|worse)\.$")]
+    [GeneratedRegex(@"^Your faction standing with (?<faction>.+?) could not possibly get any (?<dir>better|worse)\.$")]
     private static partial Regex FactionCappedRx();
 
     [GeneratedRegex(@"^You have entered (?<zone>.+)\.$")]
@@ -590,7 +590,8 @@ public static partial class LogParser
                 int.Parse(r.Groups["level"].Value));
 
         if ((r = FactionCappedRx().Match(msg)).Success)
-            return new FactionEvent(ts, r.Groups["faction"].Value, 0, Capped: true);
+            return new FactionEvent(ts, r.Groups["faction"].Value, 0, Capped: true,
+                CappedDown: r.Groups["dir"].Value == "worse");
 
         if ((r = MergeRx().Match(msg)).Success)
             return new CraftEvent(ts, r.Groups["item"].Value);

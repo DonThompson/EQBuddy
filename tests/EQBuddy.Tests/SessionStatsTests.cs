@@ -100,9 +100,13 @@ public class SessionStatsTests
         var orcs = Assert.Single(s.Faction, f => f.Faction == "Crushbone Orcs");
         Assert.Equal((1, 0, true), (orcs.Hits, orcs.Net, orcs.Capped));
 
+        // Direction matters (#86, elderbit): the FLOOR is "bottomed", not "maxed" —
+        // calling Crushbone Orcs' minimum "maxed" read exactly backwards.
         Assert.Equal("+2 · maxed", EQBuddy.UI.Shared.FactionFormat.Net(storm));
-        Assert.Equal("maxed", EQBuddy.UI.Shared.FactionFormat.Net(orcs));
+        Assert.Equal("bottomed", EQBuddy.UI.Shared.FactionFormat.Net(orcs));
         Assert.Equal("-1", EQBuddy.UI.Shared.FactionFormat.Net(new FactionDetail("Any", 1, -1)));
+        Assert.Equal("-30 · bottomed", EQBuddy.UI.Shared.FactionFormat.Net(
+            new FactionDetail("Any", 5, -30, Capped: true, CappedDown: true)));
     }
 
     /// <summary>HoT ticks land in healing received like any other incoming heal.</summary>
