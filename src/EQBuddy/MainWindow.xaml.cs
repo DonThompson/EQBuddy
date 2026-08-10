@@ -348,11 +348,17 @@ public partial class MainWindow : Window
     /// <summary>The 🗺 badge signal: a known quest's turn-in OR a member of the wiki's
     /// Quest Items category (back to the broad set once the loud green retired — a
     /// quiet glyph can afford the coverage; David's Crushbone pass, 2026-08-07). When
-    /// known quests want the item and ALL are dismissed, the badge goes too.</summary>
+    /// known quests want the item and ALL are dismissed, the badge goes too.
+    /// Third source, from #75: the item page's own "QUEST ITEM" stats flag — some
+    /// pages carry the flag but miss the category (Phosphorous Powder), and the
+    /// cached page knows better than the harvest. Cache-only on purpose: the badge
+    /// appears once you've looked the item up, and costs nothing before that.</summary>
     internal bool IsActiveQuestItem(string name)
     {
         var wanting = QuestCatalog.QuestsWanting(name);
-        if (wanting.Count == 0) return QuestCatalog.IsQuestItem(name);
+        if (wanting.Count == 0)
+            return QuestCatalog.IsQuestItem(name)
+                || _wikiItems.CachedInfo(name) is { QuestFlagged: true };
         var hidden = QuestLedger?.HiddenFor(QuestCharacterKey);
         return hidden is not { Count: > 0 } || wanting.Any(q => !hidden.Contains(q.Name));
     }

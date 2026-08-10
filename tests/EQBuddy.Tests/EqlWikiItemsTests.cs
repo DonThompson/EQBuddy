@@ -59,6 +59,29 @@ public class EqlWikiItemsTests
         Assert.NotEmpty(item.StatsLines);
     }
 
+    /// <summary>#75 (Phosphorous Powder): the page's stats block says QUEST ITEM but
+    /// the editor forgot the Quest Items category — the flag must count on its own,
+    /// from either source, and never fire on an ordinary item.</summary>
+    [Fact]
+    public void QuestFlagReadsStatsBlockAndCategory()
+    {
+        const string flaggedNoCategory = "{{Itempage\n|itemname=Phosphorous Powder\n" +
+            "|statsblock=QUEST ITEM<br>WT: 0.1  Size: TINY<br>Class: ALL<br>Race: ALL\n}}\n" +
+            "[[Category:Inventory Items]]";
+        Assert.True(EqlWikiItemService.Parse(flaggedNoCategory, "Phosphorous Powder").QuestFlagged);
+
+        const string categoryOnly = "{{Itempage\n|itemname=Sealed Note\n" +
+            "|statsblock=WT: 0.1  Size: SMALL\n}}\n[[Category:Quest Items]]";
+        Assert.True(EqlWikiItemService.Parse(categoryOnly, "Sealed Note").QuestFlagged);
+
+        // An ordinary item trips neither source. (The rusty fixture can't play this
+        // part — the real Rusty Broad Sword sits in Category:Quest Items.)
+        const string ordinary = "{{Itempage\n|itemname=Cracked Staff\n" +
+            "|statsblock=Slot: PRIMARY<br>Skill: 2H Blunt  Atk Delay: 36\n}}\n" +
+            "[[Category:Vendor Sold]]";
+        Assert.False(EqlWikiItemService.Parse(ordinary, "Cracked Staff").QuestFlagged);
+    }
+
     [Theory]
     [InlineData("Rusty Broad Sword +4", "Rusty Broad Sword")]
     [InlineData("Fine Steel Long Sword +12", "Fine Steel Long Sword")]

@@ -164,25 +164,33 @@ public partial class DropsWindow : Window
             row.Children.Add(badge);
         }
 
-        // The ✦ David asked for (#65): color says "this observation is news to the
-        // wiki" — the whole point of the window once the wiki already knows the rest.
+        // The ✦ David asked for (#65), promoted to RED with a how-to-sync tooltip
+        // (David, 2026-08-10): red says "the wiki doesn't know this yet — you're
+        // holding new knowledge", and the hover tells you exactly how to hand it in.
         if (wikiStatus is WikiDropStatus.NewToPage or WikiDropStatus.PageHasNoLoot
             or WikiDropStatus.PageMissing)
         {
+            var why = wikiStatus switch
+            {
+                WikiDropStatus.PageMissing => "This creature has no eqlwiki page at all.",
+                WikiDropStatus.PageHasNoLoot => "The creature's wiki page lists no loot yet.",
+                _ => "This drop isn't in the creature's wiki loot list yet.",
+            };
             var star = new TextBlock
             {
-                Text = " ✦", FontSize = 11,
+                Text = " ✦", FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
                 VerticalAlignment = VerticalAlignment.Center,
-                ToolTip = wikiStatus switch
-                {
-                    WikiDropStatus.PageMissing =>
-                        "This creature has no eqlwiki page — Copy for wiki prepares one",
-                    WikiDropStatus.PageHasNoLoot =>
-                        "The creature's wiki page lists no loot — Copy for wiki prepares the list",
-                    _ => "Not in this creature's wiki loot list yet — Copy for wiki prepares the edit",
-                },
+                ToolTip = why + " You're holding knowledge eqlwiki.com doesn't have.\n" +
+                    "\n" +
+                    "To sync it to the wiki (takes about a minute):\n" +
+                    "  1. Click this ✦ (or the ✦ Copy for wiki button up top) — a paste-ready\n" +
+                    "     edit lands on your clipboard, built from your observed drops and rates.\n" +
+                    "  2. Click the creature's name to open its wiki page, then Edit (create the\n" +
+                    "     page if it doesn't exist — the export includes the full page skeleton).\n" +
+                    "  3. Paste, save, done. The whole community's tracker gets smarter.",
             };
-            star.SetResourceReference(TextBlock.ForegroundProperty, "WarnBrush");
+            star.SetResourceReference(TextBlock.ForegroundProperty, "BadBrush");
+            star.MouseLeftButtonUp += (_, e) => { e.Handled = true; OnCopyWiki(star, new RoutedEventArgs()); };
             row.Children.Add(star);
         }
 

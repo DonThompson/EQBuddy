@@ -18,6 +18,14 @@ public sealed class ItemInfo
     public List<string> Recipes { get; set; } = [];
     public List<string> Categories { get; set; } = [];
     public string WikiUrl { get; set; } = "";
+
+    /// <summary>The page's own word for it: the in-game stats block prints "QUEST ITEM"
+    /// even when an editor forgot the Quest Items category tag (Phosphorous Powder,
+    /// wizen's #75 — flagged in the infobox, absent from the category). The stats
+    /// block is what the game shows, so it outranks the category's bookkeeping.</summary>
+    public bool QuestFlagged =>
+        StatsLines.Any(l => l.Contains("QUEST ITEM", StringComparison.OrdinalIgnoreCase))
+        || Categories.Any(c => c.Equals("Quest Items", StringComparison.OrdinalIgnoreCase));
 }
 
 public enum ItemLookupState { Live, Cached, StaleCache, Offline, NotFound }
