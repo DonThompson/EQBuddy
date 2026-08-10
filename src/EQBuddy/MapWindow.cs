@@ -197,9 +197,15 @@ public sealed class MapWindow : Window
         return (minX, minY, maxX, maxY);
     }
 
+    private readonly List<System.Windows.Shapes.Path> _linePaths = [];
+    private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _pois = [];
+
     private void RenderMap()
     {
         _mapLayer.Children.Clear();
+        _linePaths.Clear();
+        foreach (var (el, _, _, _, _) in _pois) _canvas.Children.Remove(el);
+        _pois.Clear();
         if (_map is null || _map.IsEmpty) return;
 
         // One Path per color: a Brewall file holds thousands of segments, and one
@@ -218,30 +224,40 @@ public sealed class MapWindow : Window
             geo.Freeze();
             var brush = new SolidColorBrush(Readable(group.Key.R, group.Key.G, group.Key.B));
             brush.Freeze();
-            _mapLayer.Children.Add(new System.Windows.Shapes.Path
-            {
-                Data = geo, Stroke = brush, StrokeThickness = 1,
-            });
+            var path = new System.Windows.Shapes.Path { Data = geo, Stroke = brush, StrokeThickness = 1 };
+            _linePaths.Add(path);
+            _mapLayer.Children.Add(path);
         }
 
+        // Points and labels live in SCREEN space, repositioned on every view change —
+        // inside the scale transform they zoomed with the geometry (David caught the
+        // first cut: half-scale fit made labels unreadably small and lines hairline).
         foreach (var p in _map.Points)
         {
-            var label = new TextBlock
-            {
-                Text = p.Label, FontSize = 10,
-                Foreground = new SolidColorBrush(Readable(p.R, p.G, p.B)),
-            };
-            Canvas.SetLeft(label, p.X + 3);
-            Canvas.SetTop(label, p.Y + 3);
-            _mapLayer.Children.Add(label);
-            var dot = new System.Windows.Shapes.Ellipse
-            {
-                Width = 4, Height = 4, Fill = label.Foreground,
-            };
-            Canvas.SetLeft(dot, p.X - 2);
-            Canvas.SetTop(dot, p.Y - 2);
-            _mapLayer.Children.Add(dot);
+            var color = new SolidColorBrush(Readable(p.R, p.G, p.B));
+            var dot = new System.Windows.Shapes.Ellipse { Width = 5, Height = 5, Fill = color };
+            var label = new TextBlock { Text = p.Label, FontSize = 11, Foreground = color };
+            _pois.Add((dot, p.X, p.Y, -2.5, -2.5));
+            _pois.Add((label, p.X, p.Y, 4, 3));
+            _canvas.Children.Add(dot);
+            _canvas.Children.Add(label);
         }
+    }
+
+    /// <summary>Everything screen-sized, after any view change: line strokes divide
+    /// out the current scale (constant 1.2 px however far you zoom), POIs and the
+    /// player marker re-place at their transformed positions.</summary>
+    private void AfterViewChanged()
+    {
+        var scale = Math.Max(0.0001, Math.Abs(_view.Matrix.M11));
+        foreach (var path in _linePaths) path.StrokeThickness = 1.2 / scale;
+        foreach (var (el, x, y, dx, dy) in _pois)
+        {
+            var s = _view.Matrix.Transform(new Point(x, y));
+            Canvas.SetLeft(el, s.X + dx);
+            Canvas.SetTop(el, s.Y + dy);
+        }
+        UpdateMarker();
     }
 
     /// <summary>Map packs assume the game's parchment map window; a pure-black line
@@ -284,7 +300,7 @@ public sealed class MapWindow : Window
         m.Scale(scale, scale);
         m.Translate(_canvas.ActualWidth / 2, _canvas.ActualHeight / 2);
         _view.Matrix = m;
-        UpdateMarker();
+        AfterViewChanged();
     }
 
     private void OnWheel(object sender, MouseWheelEventArgs e)
@@ -294,7 +310,7 @@ public sealed class MapWindow : Window
         var m = _view.Matrix;
         m.ScaleAt(factor, factor, at.X, at.Y);
         _view.Matrix = m;
-        UpdateMarker();
+        AfterViewChanged();
         e.Handled = true;
     }
 
@@ -306,7 +322,7 @@ public sealed class MapWindow : Window
         m.Translate(pos.X - _dragStart.X, pos.Y - _dragStart.Y);
         _view.Matrix = m;
         _dragStart = pos;
-        UpdateMarker();
+        AfterViewChanged();
     }
 
     private void ChooseFolder()
