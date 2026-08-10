@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.53.1",
+  "date": "2026-08-10",
+  "highlights": [
+   "Getting maps is one click now: the map window grew a \"Get maps…\" button that opens Brewall's EverQuest Maps (eqmaps.info) — a quarter century of cartography, and the reason the Zone map has something beautiful to draw. Download the pack, unzip it into the game's \"maps\" folder next to Logs, done. We link rather than bundle on purpose: the maps are Brewall's to distribute, and the credit is Brewall's to keep.",
+   "\"Follow me\" explains itself now (a fair question, hours into release day): picking a map from the dropdown pauses following so you can plan ahead — your marker, trail, and camp pins hide, since your /loc means nothing on someone else's map — and Follow me snaps back to the zone you're actually standing in."
+  ]
+ },
+ {
   "version": "1.53.0",
   "date": "2026-08-10",
   "highlights": [
