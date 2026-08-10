@@ -1,5 +1,16 @@
 [
  {
+  "version": "1.51.0",
+  "date": "2026-08-10",
+  "highlights": [
+   "Linux: FIXED a crash-on-every-launch loop (issue #82, caught on Bazzite): closing EQBuddy while minimized to the dashboard saved a state the next launch couldn't survive — the breakout tiles tried to appear before the main window existed, and the failure killed the app before it drew anything. Breakouts now wait their turn, and no breakout problem can take the widget down again. (If you're currently stuck: update, or set \"Minimized\": false in ~/.config/EQBuddy/settings.json.)",
+   ".* Watch rules speak regex now (KentCarmine's ask, #83): a new toggle beside the Match box treats it as a .NET regular expression — \"CH (-->|on) Tank\" catches both spellings of the raid call in one rule. Case-insensitive like everything else; an invalid pattern matches nothing and explains itself in the Match box's tooltip; runaway patterns are cut off at 100 ms so the log pipeline never stalls. Regex mode travels in rule share strings.",
+   "⭕ Cursor ring (Bigmatt500's ask, #81 — \"I often lose my tiny cursor\"): right-click → Cursor ring drapes an accent-colored halo around your pointer, click-through and focus-proof like the grid overlay. Dark under-stroke so it reads on snow and shadow alike; survives restarts until you toggle it off.",
+   "Sold items grew up (Snagglefern's follow-up, #74): the Money card's auto-sold list is now clickable for item info and carries the same quest badges and wiki tooltips as the Loot card — \"if an item is unknown on the wiki I definitely sold it\" was a fair cop. Sold drops were already feeding Drops by Creature and the ✦ pack; now the Money card admits they're items, not just coins.",
+   "This week's wiki catch-up landed via the first scheduled knowledge refresh (PR #84): 2 new quests, the Kobold Molars pages' community edits folded in, and the quest catalog stays current without anyone remembering to run anything."
+  ]
+ },
+ {
   "version": "1.50.1",
   "date": "2026-08-10",
   "highlights": [
