@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.50.1",
+  "date": "2026-08-10",
+  "highlights": [
+   "FIXED: stacked corpse loot counted as zero (#80, Snagglefern's bone-chip census — 100 chips, 25 counted). \"--You have looted 2 Bone Chips--\" never matched the loot parser, which only knew \"a/an\"; every multi-pickup vanished entirely rather than counting as one. Stacks now count in the Loot card, Drops by Creature, drop rates, and the ✦ wiki pack. If your favorite farm suddenly looks twice as generous — it always was."
+  ]
+ },
+ {
   "version": "1.50.0",
   "date": "2026-08-10",
   "highlights": [
