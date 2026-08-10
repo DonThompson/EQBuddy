@@ -71,6 +71,9 @@ public sealed class MapWindow : Window
         zoneLabel.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         var follow = Theming.Button("Follow me");
         follow.Margin = new Thickness(6, 0, 0, 0);
+        follow.ToolTip = "Snap back to the zone you're actually in, and keep following as you zone.\n" +
+            "Picking a map from the dropdown pauses following to let you plan ahead —\n" +
+            "your marker, trail, and camp pins hide until you're back on your own map.";
         follow.Click += (_, _) => { _userPicked = false; MaybeRefresh(force: true); };
         var chooseFolder = Theming.Button("Maps folder…");
         chooseFolder.Margin = new Thickness(6, 0, 0, 0);
