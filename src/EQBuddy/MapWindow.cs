@@ -17,6 +17,11 @@ namespace EQBuddy;
 /// </summary>
 public sealed class MapWindow : Window
 {
+    /// <summary>Brewall's EverQuest Maps — the canonical home (brewall.com is the
+    /// old domain). Linked, never bundled: the pack states no redistribution terms,
+    /// so we send players to the source and the credit stays with the cartographer.</summary>
+    internal const string MapPackUrl = "https://www.eqmaps.info/eq-map-files/";
+
     private readonly MainWindow _main;
     private readonly Canvas _canvas = new() { ClipToBounds = true };
     private readonly Canvas _mapLayer = new();
@@ -70,11 +75,23 @@ public sealed class MapWindow : Window
         var chooseFolder = Theming.Button("Maps folder…");
         chooseFolder.Margin = new Thickness(6, 0, 0, 0);
         chooseFolder.Click += (_, _) => ChooseFolder();
+        // Map packs aren't ours to bundle (Brewall's states no redistribution
+        // terms, so none are granted) — but the download is one click away and
+        // the credit stays where it belongs. Same posture we ask of others.
+        var getMaps = Theming.Button("Get maps…");
+        getMaps.Margin = new Thickness(6, 0, 0, 0);
+        getMaps.ToolTip = "Opens Brewall's EverQuest Maps (eqmaps.info) in your browser.\n" +
+            "Download the map pack zip and extract the .txt files into the game's \"maps\"\n" +
+            "folder (next to Logs) — EQBuddy picks them up from there. Maps by Brewall.";
+        getMaps.Click += (_, _) => System.Diagnostics.Process.Start(
+            new System.Diagnostics.ProcessStartInfo(MapPackUrl) { UseShellExecute = true });
         DockPanel.SetDock(zoneLabel, Dock.Left);
         DockPanel.SetDock(chooseFolder, Dock.Right);
+        DockPanel.SetDock(getMaps, Dock.Right);
         DockPanel.SetDock(follow, Dock.Right);
         bar.Children.Add(zoneLabel);
         bar.Children.Add(chooseFolder);
+        bar.Children.Add(getMaps);
         bar.Children.Add(follow);
         bar.Children.Add(_zonePick);
         _zonePick.SelectionChanged += (_, _) =>
@@ -143,7 +160,8 @@ public sealed class MapWindow : Window
         if (MapFolder is not { } folder)
         {
             _status.Text = "No maps folder found. EQBuddy looks for the game's own \"maps\" folder " +
-                "beside Logs — install a map pack (e.g. Brewall's) there, or point me at one with Maps folder…";
+                "beside Logs — click \"Get maps…\" for Brewall's pack (unzip it there), or point " +
+                "me at an existing folder with Maps folder…";
             return;
         }
         if (!_userPicked && zone.Length > 0 && zone != _followedZone)

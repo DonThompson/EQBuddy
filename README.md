@@ -228,9 +228,11 @@ Encounters, mob farming, and stances:
   **Import log…** parses any old eqlog file into your session history.
 
 Maps & travel:
-- **Zone map** (right-click → *Zone map…*): drop a classic map pack (Brewall's or
-  kin) into the game's `maps` folder and EQBuddy draws your zone — following you as
-  you zone, wheel to zoom, drag to pan. Type `/loc` in game and your position appears
+- **Zone map** (right-click → *Zone map…*): drop a classic map pack into the game's
+  `maps` folder and EQBuddy draws your zone — following you as you zone, wheel to
+  zoom, drag to pan. The map window's **Get maps…** button takes you straight to
+  [Brewall's EverQuest Maps](https://www.eqmaps.info/eq-map-files/) (unzip the pack
+  into `maps`, next to `Logs`); any classic-format pack works. Type `/loc` in game and your position appears
   as a marker, honestly labeled with how old it is: EQBuddy reads only the log, so
   the marker moves when you ask it to, not by magic. Make a `/loc` hotbutton and tap
   it as you travel — each one adds to a **comet-tail breadcrumb trail** of your last
@@ -464,7 +466,11 @@ is adapted from [Spyxy's DPS Meter](https://github.com/khadesh/SpyxysDPSMeter) b
 (MIT) — thanks for making it open source. Spell, AA, spawn, item, and mob knowledge is
 harvested from the [EQ Legends community wiki](https://eqlwiki.com) — the harvest data
 and rerunnable scripts live in `scripts/harvests/`. Zone connections come from the
-[eqltools.com Zone Atlas](https://eqltools.com/atlas).
+[eqltools.com Zone Atlas](https://eqltools.com/atlas). The zone maps themselves are
+drawn from packs you install from the source — the in-app **Get maps…** button links
+[Brewall's EverQuest Maps](https://www.eqmaps.info/), a quarter century of cartography
+we point at rather than bundle: they're Brewall's to distribute, and the credit is
+Brewall's to keep.
 
 Two alert behaviors (per-target cooldown scoping and the first-sound-wins gate) were
 inspired by designs in [EQ Legends Companion](https://jmoyers.github.io/everquest-companion)
