@@ -55,7 +55,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" TextChanged="OnFilterChanged"
-                         ToolTip="Filter quests by name, zone, giver, or item"/>
+                         ToolTip="Search the whole catalog — quest names, turn-in items, rewards, quest givers, zones. Pin 📌 a result to track it."/>
                 <ComboBox x:Name="EraCombo" Grid.Column="1" Width="104" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnEraChanged"
                           ToolTip="Hide quests from later eras than the world has (unmarked quests always show)"/>

@@ -125,6 +125,9 @@ public sealed class AppSettings
     /// <summary>The cursor-finder ring (issue #81 — "I often lose my tiny cursor").
     /// Same persistence contract as the grid: left on, it comes back at launch.</summary>
     public bool ShowCursorRing { get; set; }
+    /// <summary>Folder of classic-format zone map files (Brewall packs and kin).
+    /// Null = auto-detect the game's own maps folder beside Logs.</summary>
+    public string? MapFolder { get; set; }
     /// <summary>Ring diameter in DIPs.</summary>
     public double CursorRingSize { get; set; } = 46;
 

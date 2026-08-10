@@ -225,11 +225,39 @@ public partial class QuestsWindow : Window
             QuestsPanel.Children.Add(note);
         }
 
+        // A typed search reads the WHOLE catalog, whatever tab is active (David,
+        // 2026-08-10: "type an item name and see quests using that; type a quest
+        // name to find and track progress"). The tabs scope browsing; a search
+        // scopes finding — otherwise an item search on the mine tab found nothing
+        // until you already owned pieces, which is backwards.
+        if (filter.Length > 0)
+        {
+            var found = _main.QuestCatalog.Quests
+                .Where(q => MatchesFilter(q, filter) && ClassOk(q))
+                .Select(Progressed)
+                .OrderByDescending(m => m.Tracked)
+                .ThenByDescending(m => m.Fraction)
+                .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var scope = new TextBlock
+            {
+                Text = $"🔎 {found.Count} match{(found.Count == 1 ? "" : "es")} in the whole catalog — names, turn-in items, rewards, NPCs, zones",
+                FontSize = 11, Margin = new Thickness(2, 0, 0, 5), TextWrapping = TextWrapping.Wrap,
+            };
+            scope.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            QuestsPanel.Children.Add(scope);
+            foreach (var m in found) AddCard(m);
+            if (found.Count == 0)
+                EmptyNote("Nothing matches. Searches cover quest names, turn-in items, " +
+                          "rewards, quest givers, and zones — try fewer words.");
+            return;
+        }
+
         switch (_mode)
         {
             case "all":
                 foreach (var quest in _main.QuestCatalog.Quests
-                             .Where(q => MatchesFilter(q, filter) && ClassOk(q))
+                             .Where(q => ClassOk(q))
                              .OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase))
                     AddCard(Progressed(quest));
                 break;
@@ -293,7 +321,9 @@ public partial class QuestsWindow : Window
         || q.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
         || q.StartZone.Contains(filter, StringComparison.OrdinalIgnoreCase)
         || q.QuestGiver.Contains(filter, StringComparison.OrdinalIgnoreCase)
-        || q.Items.Any(i => i.Name.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        || q.Items.Any(i => i.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        // Rewards too: "what quest gives X" is the other half of item search.
+        || q.Rewards.Any(r => r.Contains(filter, StringComparison.OrdinalIgnoreCase));
 
     // ---- card building ----
 

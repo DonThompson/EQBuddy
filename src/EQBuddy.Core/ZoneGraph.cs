@@ -15,6 +15,11 @@ public sealed class ZoneGraph
 
     public int ZoneCount => _adjacent.Count;
 
+    /// <summary>Every zone the graph knows, alphabetized — the travel window's
+    /// destination list.</summary>
+    public IReadOnlyList<string> Zones =>
+        _adjacent.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase).ToList();
+
     public ZoneGraph() { }
 
     public ZoneGraph(Dictionary<string, List<string>> adjacency)

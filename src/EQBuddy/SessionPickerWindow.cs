@@ -48,9 +48,10 @@ internal sealed class SessionPickerWindow : Window
         _list.SelectedIndex = 0;
         _list.MouseDoubleClick += (_, _) => Accept();
 
-        var ok = new Button { Content = "Review", Padding = new Thickness(14, 3, 14, 3), IsDefault = true };
+        var ok = Theming.Button("Review", isDefault: true);
         ok.Click += (_, _) => Accept();
-        var cancel = new Button { Content = "Cancel", Padding = new Thickness(14, 3, 14, 3), IsCancel = true, Margin = new Thickness(8, 0, 0, 0) };
+        var cancel = Theming.Button("Cancel", isCancel: true);
+        cancel.Margin = new Thickness(8, 0, 0, 0);
         var buttons = new StackPanel
         {
             Orientation = Orientation.Horizontal,

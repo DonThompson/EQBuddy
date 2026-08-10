@@ -67,6 +67,10 @@ public record SpellWornOffEvent(DateTime Time, string Spell, string Target, bool
 /// through <see cref="FadeMessageCatalog"/>: the log names no spell, so the event
 /// carries every candidate that shares the message plus a display label.</summary>
 public record BuffFadeEvent(DateTime Time, string Label, string[] Spells, string Category = "") : GameEvent(Time);
+/// <summary>A /loc line. EQ prints "Y, X, Z" — the famous axis order — and the
+/// values here keep the log's naming so nothing downstream has to remember which
+/// was first. Map plotting goes through <see cref="ZoneMap.FromLoc"/>.</summary>
+public record LocationEvent(DateTime Time, double LocY, double LocX, double LocZ) : GameEvent(Time);
 public record LevelEvent(DateTime Time, int Level) : GameEvent(Time);
 public record SkillUpEvent(DateTime Time, string Skill, int Value) : GameEvent(Time);
 /// <summary>"You will now use Round Kick instead of Kick while attacking." — an ability that

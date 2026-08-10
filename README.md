@@ -36,6 +36,8 @@ page instead.
 | **Mini mode** — a one-line pill of your starred stats plus live watch-rule chips; alerts still pop | **Breakout windows** — floating bar charts for your damage, healing, and pet, per fight or per session |
 | ![Options](docs/screenshots/options-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | **Options** — themes, sizes, and the watch-rule editor: per-rule sounds, colors, spoken alerts, delays, and a `.*` regex toggle | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
+| ![Zone map](docs/screenshots/map-window.png) | ![Travel route](docs/screenshots/travel-window.png) |
+| **Zone map** — classic map packs drawn with your last `/loc` as the marker; follows you zone to zone, wheel zooms, drag pans | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
 | **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
 
@@ -225,10 +227,23 @@ Encounters, mob farming, and stances:
 - History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
   **Import log…** parses any old eqlog file into your session history.
 
+Maps & travel:
+- **Zone map** (right-click → *Zone map…*): drop a classic map pack (Brewall's or
+  kin) into the game's `maps` folder and EQBuddy draws your zone — following you as
+  you zone, wheel to zoom, drag to pan. Type `/loc` in game and your position appears
+  as a marker, honestly labeled with how old it is: EQBuddy reads only the log, so
+  the marker moves when you ask it to, not by magic.
+- **Travel route** (right-click → *Travel route…*): pick any zone and get hop-by-hop
+  directions from where you're standing — walking connections from client-mined atlas
+  data plus the wiki's boat and port adjacencies.
+
 Quests (tracker, Sky checklist, ledger):
 - **Quest Tracker** (right-click → *Quest tracker…*): 900+ quests from the community
   wiki, filterable by class, era, and zone — sorted by how many zones away each quest
-  giver is from where you're standing. A **quest ledger** counts what you loot (minus
+  giver is from where you're standing. **Type anything in the search box** and the
+  whole catalog answers — quest names, turn-in items ("what needs Bone Chips?"),
+  rewards ("what gives a Ghoulbane?"), quest givers, zones — with progress and a 📌
+  to track any result. A **quest ledger** counts what you loot (minus
   what the log sees leave — sales, merges, destroys), so a quest flips to **✓ ready**
   the moment you hold everything it needs; hand-ins aren't in the log, so click ✓ when
   you turn in. Click a quest name for the full wiki walkthrough.

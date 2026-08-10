@@ -93,6 +93,13 @@ public sealed class SessionStats
     private string? _regenSpell;
     private string? _lastRegenCast;
     private (string Name, DateTime Time)? _lastConsider;
+    private LocationEvent? _lastLoc;
+
+    /// <summary>One rule's journal-scan result, minus the time-derived rates —
+    /// the memoizable half of a TrackedRuleResult (perf audit #4).</summary>
+    private sealed record TrackedScan(string Name, string Id, int Total,
+        List<NameCount> Items, DateTime? First, DateTime? Last, string? LastItem);
+    private (long Version, string Fingerprint, List<TrackedScan> Scans)? _trackedMemo;
 
     /// <summary>Player-supplied hp-per-tick for the regen estimate (Options), 0 = unset.
     /// The log can't know instrument resonance or ranks; the player's health bar can —
@@ -861,6 +868,10 @@ public sealed class SessionStats
                 case ZoneEvent z:
                     if (_zones.Count == 0 || !string.Equals(_zones[^1].Zone, z.Zone, StringComparison.OrdinalIgnoreCase))
                         _zones.Add((z.Time, z.Zone));
+                    _lastLoc = null;   // a /loc from the previous zone is a lie here
+                    break;
+                case LocationEvent loc:
+                    _lastLoc = loc;    // the map window's player marker
                     break;
                 case FizzleEvent: _fizzles++; break;
                 case ResistEvent: _resists++; break;
@@ -1300,6 +1311,7 @@ public sealed class SessionStats
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
         _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null; _lastConsider = null;
+        _lastLoc = null; _trackedMemo = null;
         _runeGainCount = 0; _runeGainPoints = 0;
         _runeBlockStreak = 0; _runeBlockStreakMax = 0; _runeBlockCount = 0;
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
@@ -1417,6 +1429,22 @@ public sealed class SessionStats
                     .Where(r => r.Enabled && r.Kind == WatchKind.Text && r.EffectivePattern.Length > 0)
                     .ToArray();
 
+                // Perf audit #4: this replay is O(rules × journal) and ran EVERY
+                // second — the one per-tick cost that scales with session length and
+                // rule count. The scan result can only change when an event lands or
+                // the rules themselves change, so it's memoized on exactly that pair;
+                // only the time-derived rates below are recomputed per snapshot.
+                var rulesFp = string.Join("", rules.Select(r =>
+                    $"{r.Id}|{r.Enabled}|{(int)r.Kind}|{(int)r.SpellFilter}|{r.EffectivePattern}|{r.UseRegex}"));
+                if (_trackedMemo is { } memo && memo.Version == _version && memo.Fingerprint == rulesFp)
+                {
+                    foreach (var sc in memo.Scans)
+                        tracked.Add(new TrackedRuleResult(sc.Name, sc.Total, sc.Items,
+                            sc.Total / hours, sc.Total / activeHours, sc.First, sc.Last, sc.LastItem, sc.Id));
+                    goto trackedDone;
+                }
+                var scans = new List<TrackedScan>();
+
                 foreach (var rule in rules)
                 {
                     if (!rule.Enabled) continue;
@@ -1469,21 +1497,24 @@ public sealed class SessionStats
                         last = evt.Time;
                         lastItem = item;
                     }
-                    tracked.Add(new TrackedRuleResult(
+                    scans.Add(new TrackedScan(
                         rule.Name.Length > 0 ? rule.Name : rule.Pattern,
-                        total,
+                        rule.Id, total,
                         items.OrderByDescending(kv => kv.Value)
                             .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
-                        total / hours,
-                        total / activeHours,
-                        first, last, lastItem,
-                        rule.Id));
+                        first, last, lastItem));
                 }
+                _trackedMemo = (_version, rulesFp, scans);
+                foreach (var sc in scans)
+                    tracked.Add(new TrackedRuleResult(sc.Name, sc.Total, sc.Items,
+                        sc.Total / hours, sc.Total / activeHours, sc.First, sc.Last, sc.LastItem, sc.Id));
+                trackedDone: ;
             }
 
             return new StatsSnapshot
             {
                 Version = _version,
+                LastLocation = _lastLoc,
                 SessionStart = _sessionStart,
                 LastEventTime = _lastEventTime,
                 Elapsed = elapsed,
@@ -1666,6 +1697,9 @@ public sealed class StatsSnapshot
     /// (only time-derived rates move), so renderers can skip rebuilding. Sessions
     /// archived before this existed deserialize as 0, which only ever re-renders.</summary>
     public long Version { get; init; }
+    /// <summary>The last /loc seen in THIS zone, or null (zoning clears it — a
+    /// position from the previous zone would lie on the map).</summary>
+    public LocationEvent? LastLocation { get; init; }
     public DateTime? SessionStart { get; init; }
     public DateTime? LastEventTime { get; init; }
     public TimeSpan Elapsed { get; init; }

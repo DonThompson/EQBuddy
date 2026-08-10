@@ -234,6 +234,10 @@ public static partial class LogParser
     [GeneratedRegex(@"^You have entered (?<zone>.+)\.$")]
     private static partial Regex ZoneRx();
 
+    // Your Location is -1085.05, -675.53, 3.75   (Y first — EQ's axis order)
+    [GeneratedRegex(@"^Your Location is (?<y>-?[\d.]+), (?<x>-?[\d.]+), (?<z>-?[\d.]+)$")]
+    private static partial Regex LocationRx();
+
     // You have successfully merged two items together to create a new item: Crushbone Belt +5
     [GeneratedRegex(@"^You have successfully merged two items together to create a new item: (?<item>.+?)\.?$")]
     private static partial Regex MergeRx();
@@ -360,7 +364,9 @@ public static partial class LogParser
     {
         var m = LineRx().Match(line);
         if (!m.Success) return null;
-        var rawTs = Regex.Replace(m.Groups["ts"].Value, @" {2,}", " ");
+        // Single-digit days pad with a double space; only pay the regex when present.
+        var rawTs = m.Groups["ts"].Value;
+        if (rawTs.Contains("  ")) rawTs = Regex.Replace(rawTs, @" {2,}", " ");
         if (!DateTime.TryParseExact(rawTs, TsFormat, CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out var ts))
             return null;
@@ -406,6 +412,26 @@ public static partial class LogParser
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),
                 int.Parse(r.Groups["dmg"].Value), Melee: false,
                 Ability: r.Groups["spell"].Value, OverTime: true);
+
+        // Perf audit #5: in a full group, other people's swings and misses are the
+        // most frequent lines in the log — and they used to fail thirty-odd
+        // first-person patterns on the way to the bottom of this cascade (16–18 µs
+        // per line, the dominant cost of big replays). Hoisted here: above every
+        // ^.+?-prefixed pattern they were paying for, and guarded away from the
+        // first-person shapes — lines starting "You…" are yours, and lines carrying
+        // uppercase "YOU" are aimed at you (incoming hits, misses, rune blocks all
+        // still live further down, unshadowed).
+        if (!msg.StartsWith("You", StringComparison.Ordinal) &&
+            !msg.Contains("YOU", StringComparison.Ordinal))
+        {
+            if ((r = ThirdMeleeRx().Match(msg)).Success)
+                return new ThirdMeleeEvent(ts, r.Groups["attacker"].Value.Trim(),
+                    Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
+                    ThirdVerbToSkill(r.Groups["verb"].Value), IsCritNote(r));
+
+            if ((r = ThirdMissRx().Match(msg)).Success)
+                return new ThirdMissEvent(ts, r.Groups["attacker"].Value.Trim());
+        }
 
         if ((r = SelfHurtRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, "Yourself",
@@ -599,6 +625,9 @@ public static partial class LogParser
         if ((r = MoanRx().Match(msg)).Success)
             return new PetBlinkEvent(ts, r.Groups["name"].Value, Weak: true);
 
+        // Fallback for the lines the hoisted fast path's guard skips on purpose —
+        // "Your pet hits …" starts with "You" but is a third-party shape. Ordinary
+        // third-party lines returned up top and never reach here (audit #5).
         if ((r = ThirdMeleeRx().Match(msg)).Success)
             return new ThirdMeleeEvent(ts, r.Groups["attacker"].Value.Trim(),
                 Normalize(r.Groups["target"].Value), int.Parse(r.Groups["dmg"].Value),
@@ -616,6 +645,12 @@ public static partial class LogParser
 
         if ((r = ThirdMissRx().Match(msg)).Success)
             return new ThirdMissEvent(ts, r.Groups["attacker"].Value.Trim());
+
+        if ((r = LocationRx().Match(msg)).Success)
+            return new LocationEvent(ts,
+                double.Parse(r.Groups["y"].Value, System.Globalization.CultureInfo.InvariantCulture),
+                double.Parse(r.Groups["x"].Value, System.Globalization.CultureInfo.InvariantCulture),
+                double.Parse(r.Groups["z"].Value, System.Globalization.CultureInfo.InvariantCulture));
 
         if ((r = ZoneRx().Match(msg)).Success)
         {

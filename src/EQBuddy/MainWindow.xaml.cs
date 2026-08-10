@@ -189,6 +189,14 @@ public partial class MainWindow : Window
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_MAP") == "1")
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() => OnZoneMap(this, new RoutedEventArgs()),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
+        if (Environment.GetEnvironmentVariable("EQBUDDY_TRAVEL") == "1")
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() => OnTravelRoute(this, new RoutedEventArgs()),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
         // Screenshot/debug hook, same family as EQBUDDY_QUESTS: open straight into
         // archive review of the given file (#74), skipping the file dialog.
         if (Environment.GetEnvironmentVariable("EQBUDDY_REVIEW") is { Length: > 0 } reviewPath)
@@ -1064,6 +1072,7 @@ public partial class MainWindow : Window
         // off the shared tick so a hidden window can't silence a camp.
         if (_questsWindow is { IsLoaded: true, IsVisible: true } qw) qw.MaybeRefresh();
         if (_dropsWindow is { IsLoaded: true, IsVisible: true } dw) dw.MaybeRefresh();
+        if (_mapWindow is { IsLoaded: true, IsVisible: true } mapw) mapw.MaybeRefresh();
 
         if (_settings.TrackSpawns)
         {
@@ -2645,6 +2654,25 @@ public partial class MainWindow : Window
 
     /// <summary>Live spacing updates from the Options slider.</summary>
     internal void RefreshGridSpacing() => _gridOverlay?.ApplySpacing();
+
+    // ---- travel routing + zone maps (competitive gaps #1/#2, 2026-08-10) ----
+
+    private TravelWindow? _travelWindow;
+    private MapWindow? _mapWindow;
+
+    private void OnTravelRoute(object sender, RoutedEventArgs e)
+    {
+        if (_travelWindow is { IsLoaded: true } t) { t.RenderRoute(); t.Activate(); return; }
+        _travelWindow = new TravelWindow(this) { Owner = this };
+        _travelWindow.Show();
+    }
+
+    private void OnZoneMap(object sender, RoutedEventArgs e)
+    {
+        if (_mapWindow is { IsLoaded: true } m) { m.Activate(); return; }
+        _mapWindow = new MapWindow(this);
+        _mapWindow.Show();
+    }
 
     // ---- the cursor-finder ring (issue #81) ----
 
