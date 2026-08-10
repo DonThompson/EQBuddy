@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.52.0",
+  "date": "2026-08-10",
+  "highlights": [
+   "A week of features earned a day of tuning: EQBuddy now does close to NOTHING while nothing happens. Expanded cards used to rebuild themselves every second even when idle — they now repaint only when the log actually produced an event (a 10-second heartbeat keeps per-hour rates honest during AFKs). Item tooltips stopped re-reading their wiki cache from disk every second. Quest-ledger saves batch instead of writing the whole file at every loot. And with \"hide while the game is unfocused\" on, a hidden widget now truly rests. Net effect: less CPU, less garbage-collection, fewer chances for a Defender scan to hitch your loot moment — same widget, lighter footprint.",
+   "The README grew up with the app: fresh screenshots of the Sky checklist, Drops by Creature with its ✦ wiki flags, the Quest Tracker mid-\"ready\", the session picker, and the cursor ring — plus documentation for everything the last week added. If you've been describing EQBuddy to a guildmate from memory, the page finally does it justice."
+  ]
+ },
+ {
   "version": "1.51.0",
   "date": "2026-08-10",
   "highlights": [
