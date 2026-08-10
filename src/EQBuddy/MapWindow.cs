@@ -38,9 +38,10 @@ public sealed class MapWindow : Window
     private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _campPins = [];
     private (int Count, long Bucket) _trailStamp = (-1, 0);
 
-    /// <summary>How often the trail re-renders just because time passed — coarse
-    /// enough to stay free, fine enough that the fade reads as continuous.</summary>
-    private static readonly TimeSpan FadeTick = TimeSpan.FromSeconds(10);
+    /// <summary>How often the trail re-renders just because time passed. Every
+    /// shared tick: with a one-minute horizon the fade must read as continuous,
+    /// and a rebuild is ~80 frozen brushes — nothing.</summary>
+    private static readonly TimeSpan FadeTick = TimeSpan.FromSeconds(1);
 
     public MapWindow(MainWindow main)
     {
@@ -168,12 +169,13 @@ public sealed class MapWindow : Window
         UpdateNamedPanel();
     }
 
-    /// <summary>The breadcrumb trail: your /locs in this zone, drawn as a path that
-    /// fades on the wall clock (TrailFade) — tap a /loc hotbutton while traveling
-    /// and the map shows the route you took; sit at a camp and the route dissolves
-    /// behind you instead of pointing at it forever. Geometry lives in map space;
-    /// rebuilt when a new /loc arrives or the fade clock ticks over — age moves
-    /// even when the player doesn't (David's field test, 2026-08-10).</summary>
+    /// <summary>The breadcrumb trail: the last minute of your /locs in this zone,
+    /// drawn as a comet tail that fades continuously on the wall clock (TrailFade) —
+    /// tap a /loc hotbutton while traveling and the map shows where you just came
+    /// from; stop moving and the tail burns down to nothing behind you. Geometry
+    /// lives in map space; rebuilt when a new /loc arrives or the fade clock ticks
+    /// over — age moves even when the player doesn't (David's field tests,
+    /// 2026-08-10).</summary>
     private void UpdateTrail()
     {
         var trail = _main.CurrentSnapshot().LocationTrail;

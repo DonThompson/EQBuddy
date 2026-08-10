@@ -4,15 +4,15 @@ using Xunit;
 namespace EQBuddy.Tests;
 
 /// <summary>The breadcrumb fade clock (MapWindow trail): wall-clock age drives
-/// alpha, so a camped player's route in dissolves without any new /loc arriving
-/// (David's field test, 2026-08-10).</summary>
+/// alpha, so a camped player's route dissolves without any new /loc arriving.
+/// The trail is the last minute of movement, fading continuously from the moment
+/// a crumb lands (David's field tests, 2026-08-10).</summary>
 public class TrailFadeTests
 {
     [Fact]
-    public void FreshCrumbsKeepFullStrength()
+    public void BrandNewCrumbsDrawAtFullStrength()
     {
         Assert.Equal(TrailFade.FullAlpha, TrailFade.Alpha(TimeSpan.Zero));
-        Assert.Equal(TrailFade.FullAlpha, TrailFade.Alpha(TrailFade.FreshFor));
     }
 
     [Fact]
@@ -30,23 +30,24 @@ public class TrailFadeTests
     }
 
     [Fact]
-    public void FadeIsMonotonicBetweenFreshAndHorizon()
+    public void FadeIsContinuousNoPlateau()
     {
-        var prev = (int)TrailFade.FullAlpha;
-        for (var age = TrailFade.FreshFor; age <= TrailFade.Horizon; age += TimeSpan.FromSeconds(30))
+        // "Fade continuously": strictly dimmer every few seconds of age, from the
+        // very first — no full-strength plateau at the head of the tail.
+        var prev = (int)TrailFade.FullAlpha + 1;
+        for (var age = TimeSpan.Zero; age < TrailFade.Horizon; age += TimeSpan.FromSeconds(5))
         {
             int alpha = TrailFade.Alpha(age);
-            Assert.True(alpha <= prev, $"alpha rose from {prev} to {alpha} at {age}");
+            Assert.True(alpha < prev, $"alpha {alpha} at {age} did not dim (was {prev})");
+            Assert.True(alpha > 0, $"alpha hit zero at {age}, inside the horizon");
             prev = alpha;
         }
-        Assert.Equal(0, prev);
     }
 
     [Fact]
     public void MidFadeIsVisiblyDimmerButStillThere()
     {
-        var mid = TrailFade.FreshFor + (TrailFade.Horizon - TrailFade.FreshFor) / 2;
-        int alpha = TrailFade.Alpha(mid);
-        Assert.InRange(alpha, 1, TrailFade.FullAlpha - 1);
+        int alpha = TrailFade.Alpha(TrailFade.Horizon / 2);
+        Assert.InRange(alpha, TrailFade.FullAlpha / 2 - 5, TrailFade.FullAlpha / 2 + 5);
     }
 }
