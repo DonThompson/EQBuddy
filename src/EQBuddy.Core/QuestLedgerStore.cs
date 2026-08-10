@@ -321,12 +321,35 @@ public sealed class QuestLedgerStore
         return entry;
     }
 
+    private int _savePending;
+
+    /// <summary>Mark dirty and schedule ONE write ~2 s out (perf audit #3: every
+    /// quest loot used to serialize the whole ledger synchronously inside the ingest
+    /// lock — N full-file writes during a big replay, and a Defender-scan hitch at
+    /// the exact "you looted the thing" moment live). The ledger is replay-safe by
+    /// design, so a crash inside the window loses nothing the next launch doesn't
+    /// rebuild. Callers already hold <c>_lock</c>; this only flips a flag.</summary>
     private void Save()
+    {
+        if (Interlocked.Exchange(ref _savePending, 1) == 1) return;
+        Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            Interlocked.Exchange(ref _savePending, 0);
+            Flush();
+        });
+    }
+
+    /// <summary>Write now — hosts call this at exit so the last debounce window
+    /// isn't left to the next replay. Serializes under the lock, writes outside it.</summary>
+    public void Flush()
     {
         try
         {
-            File.WriteAllText(_path,
-                JsonSerializer.Serialize(_byCharacter, new JsonSerializerOptions { WriteIndented = true }));
+            string json;
+            lock (_lock)
+                json = JsonSerializer.Serialize(_byCharacter, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(_path, json);
         }
         catch (Exception ex) { CoreLog.Error(ex); }
     }

@@ -60,12 +60,31 @@ public sealed class AaLedgerStore
                 : new(StringComparer.OrdinalIgnoreCase);
     }
 
+    private int _savePending;
+
+    /// <summary>Debounced like QuestLedgerStore.Save (perf audit #3): flag now, one
+    /// write ~2 s later, replay rebuilds anything a crash loses. Callers hold _lock.</summary>
     private void Save()
+    {
+        if (Interlocked.Exchange(ref _savePending, 1) == 1) return;
+        Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            Interlocked.Exchange(ref _savePending, 0);
+            Flush();
+        });
+    }
+
+    /// <summary>Write now — hosts call this at exit. Serializes under the lock,
+    /// writes outside it.</summary>
+    public void Flush()
     {
         try
         {
-            File.WriteAllText(_path,
-                JsonSerializer.Serialize(_byCharacter, new JsonSerializerOptions { WriteIndented = true }));
+            string json;
+            lock (_lock)
+                json = JsonSerializer.Serialize(_byCharacter, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(_path, json);
         }
         catch (Exception ex) { CoreLog.Error(ex); }
     }

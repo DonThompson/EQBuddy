@@ -35,6 +35,10 @@ public partial class MainWindow : Window
     // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
     // does elsewhere — the checklist re-renders only when a box actually changed.
     private bool _skyQuestDirty = true;
+    // Perf audit #1: the version last painted into the expanded sections, and the
+    // last time a full paint happened (10 s heartbeat keeps time-derived rates live).
+    private long _lastRenderedVersion = -1;
+    private DateTime _lastFullRender = DateTime.MinValue;
 
     private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "motes", "money", "xp", "deaths"];
 
@@ -973,6 +977,8 @@ public partial class MainWindow : Window
         // then the archiver stands down until we're back.
         _archiver.FinalizeActive(_stats.Snapshot(), "ReviewingArchive");
         _reviewPath = path;
+        _targetResults.Clear();
+        _skyQuestLootSeen.Clear();
         if (pick is not null) _watcher.Select(path, pick.StartOffset, pick.EndOffset);
         else _watcher.Select(path);
         ReviewLogItem.Header = "✓ Reviewing an archive — return to live log";
@@ -1041,6 +1047,11 @@ public partial class MainWindow : Window
             _watcher.Select(active.FilePath);
             _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
             CharLabel.Text = active.Display;
+            // Perf audit #9: these were session-lifetime by intent but PROCESS-lifetime
+            // in fact — with review mode switching logs freely now, clear them with the
+            // rest of the character state.
+            _targetResults.Clear();
+            _skyQuestLootSeen.Clear();
         }
     }
 
@@ -1161,6 +1172,12 @@ public partial class MainWindow : Window
             UpdateMiniChips(s);
         UpdateBreakouts(s);
 
+        // Hidden while the game is unfocused: everything the player can't see stops
+        // here — alerts, chips, timers, and checkpoints above already ran (perf
+        // audit #1b: the full element rebuild used to run every second into a
+        // window that wasn't even shown).
+        if (_hiddenForFocus) return;
+
         ZoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "—";
         CurrentZoneName = s.CurrentZone;
         var active = TimeSpan.FromSeconds(s.ActiveSeconds);
@@ -1185,6 +1202,21 @@ public partial class MainWindow : Window
         FactionHeader.Text = s.Faction.Count > 0 ? $"{s.Faction.Count} factions" : "—";
         MiscHeader.Text = $"{s.Deaths.Count} death{(s.Deaths.Count == 1 ? "" : "s")}";
         ApplySessionSubsections();
+
+        // Perf audit #1: identical content was re-rendered every tick — hundreds of
+        // fresh WPF elements per second during idle, the app's main steady-state
+        // cost. Expanded sections now rebuild only when an event actually arrived;
+        // a 10 s heartbeat keeps time-derived rates (xp/hr, coin/hr, recent-window
+        // dps) honest during long AFKs. Everything above stays per-tick (the clock,
+        // headers, chips, alerts); RenderTracked below does too — it draws live cue
+        // countdowns. The braces add a scope, not an indent — the region is 200
+        // lines and re-indenting it would bury this change in noise.
+        var fullRender = s.Version != _lastRenderedVersion ||
+                         DateTime.Now - _lastFullRender > TimeSpan.FromSeconds(10);
+        if (fullRender)
+        {
+        _lastRenderedVersion = s.Version;
+        _lastFullRender = DateTime.Now;
 
         if (CombatSection.IsExpanded)
         {
@@ -1384,8 +1416,6 @@ public partial class MainWindow : Window
                 (f.Faction, EQBuddy.UI.Shared.FactionFormat.Net(f))),
                 valueBrush: f => f.StartsWith('-') ? (Brush)FindResource("BadBrush") : (Brush)FindResource("GoodBrush"));
 
-        RenderTracked(s);
-
         if (MiscSection.IsExpanded)
         {
             FillList(DeathList, s.Deaths.Select(d => (d.Text, d.Time.ToString("h:mm tt"))));
@@ -1393,6 +1423,9 @@ public partial class MainWindow : Window
             MarkersLabel.Visibility = s.Markers.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(MarkerList, s.Markers.Select(m => (m.Text, m.Time.ToString("h:mm tt"))));
         }
+        }   // end fullRender gate
+
+        RenderTracked(s);   // per-tick: live ⏳ cue countdowns and "last: … ago" ages
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
         {
@@ -2492,6 +2525,13 @@ public partial class MainWindow : Window
         Visibility = hide ? Visibility.Hidden : Visibility.Visible;
     }
 
+    // Perf audit #6: this runs every tick, and both process calls are system-wide
+    // walks. The foreground answer is memoized per HWND (same window in front →
+    // same verdict), and "is the game running" is refreshed at most every 5 s —
+    // a game launch can't matter faster than that.
+    private (IntPtr Fg, bool IsGame) _lastFgProbe = (IntPtr.Zero, false);
+    private (DateTime At, bool Running) _lastGameProbe = (DateTime.MinValue, false);
+
     private bool ShouldHideForFocus()
     {
         if (!_settings.HideWhenGameUnfocused) return false;
@@ -2499,17 +2539,23 @@ public partial class MainWindow : Window
         if (fg == IntPtr.Zero) return false;
         Native.GetWindowThreadProcessId(fg, out var fgPid);
         if (fgPid == (uint)Environment.ProcessId) return false;
-        try
+        if (fg != _lastFgProbe.Fg)
         {
-            using var p = System.Diagnostics.Process.GetProcessById((int)fgPid);
-            if (p.ProcessName.Equals("eqgame", StringComparison.OrdinalIgnoreCase)) return false;
+            bool isGame;
+            try
+            {
+                using var p = System.Diagnostics.Process.GetProcessById((int)fgPid);
+                isGame = p.ProcessName.Equals("eqgame", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { return false; }   // foreground process already gone — don't flicker
+            _lastFgProbe = (fg, isGame);
         }
-        catch { return false; }   // foreground process already gone — don't flicker
+        if (_lastFgProbe.IsGame) return false;
 
         // Foreground is some third app: hide only if the game is actually running.
-        var game = System.Diagnostics.Process.GetProcessesByName("eqgame");
-        try { return game.Length > 0; }
-        finally { foreach (var g in game) g.Dispose(); }
+        if (DateTime.Now - _lastGameProbe.At > TimeSpan.FromSeconds(5))
+            _lastGameProbe = (DateTime.Now, EqConfig.IsGameRunning());
+        return _lastGameProbe.Running;
     }
 
     // ---- click-through (INPUT-*) ----
@@ -2685,6 +2731,8 @@ public partial class MainWindow : Window
         _settings.WindowTop = Top;
         _settings.Save();
         foreach (var w in _breakouts.Values) w.Close();   // each persists its spot on Closed
+        _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)
+        _stats.AaStore?.Flush();
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();

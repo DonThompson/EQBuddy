@@ -317,6 +317,7 @@ public class EncounterTests
             };
             stats.Apply(LogParser.Parse(
                 At(0, 0, "You have improved Combat Fury 3 at a cost of 3 ability points."))!);
+            stats.AaStore!.Flush();   // saves are debounced (audit #3); reload needs the write
 
             // Fresh stats over an emptied log (character switch semantics + nothing to
             // replay), same store file re-read from disk: the ledger still knows.

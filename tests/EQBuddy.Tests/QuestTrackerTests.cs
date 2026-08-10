@@ -64,7 +64,11 @@ public class QuestTrackerTests : IDisposable
     [Fact]
     public void LedgerPersistsAcrossReload()
     {
-        Store().SetManual("dranak_legends", "Lightstone", 3);
+        // Saves are debounced (perf audit #3) — a reload test must Flush first,
+        // the same way the apps do at exit. Same in every reload test below.
+        var store = Store();
+        store.SetManual("dranak_legends", "Lightstone", 3);
+        store.Flush();
         var reloaded = new QuestLedgerStore(_path);
         Assert.Equal(3, reloaded.For("dranak_legends")["Lightstone"].Manual);
         // And it's per character: another character sees nothing.
@@ -146,6 +150,7 @@ public class QuestTrackerTests : IDisposable
         store.SetTracked("dranak_legends", "Bone Ritual", true);
         store.SetTracked("dranak_legends", "Bone Ritual", false);
         store.RecordLoot("dranak_legends", "Bone Chips", 1, T0);   // items and pins coexist
+        store.Flush();
         var reloaded = new QuestLedgerStore(_path);
         Assert.Equal(["Crushbone Belts"], reloaded.TrackedFor("dranak_legends").ToArray());
         Assert.Equal(1, reloaded.For("dranak_legends")["Bone Chips"].Looted);
@@ -199,6 +204,7 @@ public class QuestTrackerTests : IDisposable
         Assert.Equal(2, store.CompletedFor("dranak_legends")["Crushbone Belts"]);
 
         // Persisted, per character.
+        store.Flush();
         var reloaded = new QuestLedgerStore(_path);
         Assert.Equal(2, reloaded.CompletedFor("dranak_legends")["Crushbone Belts"]);
         Assert.Empty(reloaded.CompletedFor("vex_legends"));
@@ -258,6 +264,7 @@ public class QuestTrackerTests : IDisposable
         store.RecordLoot("dranak_freeport", "Crushbone Belt", 5, T0);
         store.SetManual("dranak_freeport", "Crushbone Belt", 2);
         store.SetTracked("dranak_freeport", "Orc Vest", true);
+        store.Flush();
         // Simulate an old-rules ledger: remove the rules marker and reload.
         File.Delete(_path + ".rules");
         var reloaded = new QuestLedgerStore(_path);
@@ -311,6 +318,7 @@ public class QuestTrackerTests : IDisposable
     {
         var store = Store();
         store.SetClasses("dranak_legends", ["Paladin", "Necromancer", "paladin"]);   // dedup
+        store.Flush();
         var reloaded = new QuestLedgerStore(_path);
         Assert.Equal(["Paladin", "Necromancer"], reloaded.ClassesFor("dranak_legends"));
         Assert.Empty(reloaded.ClassesFor("vex_legends"));

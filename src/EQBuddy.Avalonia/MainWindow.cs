@@ -2239,6 +2239,8 @@ public sealed class MainWindow : Window
         if (_clickThrough)
             X11ClickThrough.Set(this, enabled: false);
         _alertWindow?.Close();
+        _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)
+        _stats.AaStore?.Flush();
         _archiver.FinalizeActiveSync(CurrentSnapshot(), "ApplicationExit");
         _watcher.Dispose();
         _repo.Dispose();

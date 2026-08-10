@@ -352,12 +352,18 @@ public sealed class SessionStats
     /// </summary>
     public event Action<RawLineEvent>? TextMatched;
 
+    /// <summary>Bumped on every applied event and on reset — the UI's cheap "did
+    /// anything change since my last render" signal (perf audit #1: rebuilding a few
+    /// hundred WPF rows per second during idle was the app's main steady-state cost).</summary>
+    private long _version;
+
     public void Apply(GameEvent e)
     {
         var rolled = false;
         StatsSnapshot? finalSnapshot = null;
         lock (_lock)
         {
+            _version++;
             if (_lastEventTime is { } last && e.Time - last >= SessionGap)
             {
                 finalSnapshot = BuildSnapshotLocked(null, null);
@@ -1283,6 +1289,7 @@ public sealed class SessionStats
 
     private void ResetLocked()
     {
+        _version++;
         _sessionStart = null; _lastEventTime = null;
         _yourKills.Clear(); _partyKillsByTarget.Clear(); _partyKillsByKiller.Clear(); _deaths.Clear();
         _damageDealt = _meleeDamage = _spellDamage = 0;
@@ -1476,6 +1483,7 @@ public sealed class SessionStats
 
             return new StatsSnapshot
             {
+                Version = _version,
                 SessionStart = _sessionStart,
                 LastEventTime = _lastEventTime,
                 Elapsed = elapsed,
@@ -1654,6 +1662,10 @@ public record FactionDetail(string Faction, int Hits, int Net, bool Capped = fal
 
 public sealed class StatsSnapshot
 {
+    /// <summary>Event counter at snapshot time — equal versions mean equal content
+    /// (only time-derived rates move), so renderers can skip rebuilding. Sessions
+    /// archived before this existed deserialize as 0, which only ever re-renders.</summary>
+    public long Version { get; init; }
     public DateTime? SessionStart { get; init; }
     public DateTime? LastEventTime { get; init; }
     public TimeSpan Elapsed { get; init; }

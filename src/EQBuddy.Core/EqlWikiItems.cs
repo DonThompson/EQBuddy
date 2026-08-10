@@ -90,12 +90,24 @@ public sealed partial class EqlWikiItemService
         if (noBacktick != title) yield return noBacktick;
     }
 
+    // "Costs nothing" was a lie until 2026-08-10: every CachedInfo call was a
+    // File.Exists + ReadAllText + JSON parse + wikitext parse — and the loot list
+    // calls it PER ROW PER SECOND while expanded (perf audit finding #2: ~6ms/100
+    // rows of blocking UI-thread disk I/O, worse under Defender). One memo makes
+    // the second call a hash probe; WriteCache invalidates so fresh fetches show.
+    private readonly Dictionary<string, ItemInfo?> _infoMemo = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _memoLock = new();
+
     /// <summary>Cache-only peek: synchronous, accepts any age, never fetches — for
     /// surfaces that must cost nothing (row values, first-paint tooltips).</summary>
     public ItemInfo? CachedInfo(string inGameName)
     {
+        lock (_memoLock)
+            if (_infoMemo.TryGetValue(inGameName, out var memo)) return memo;
         var cached = ReadCache(NormalizeTitle(inGameName));
-        return cached is null ? null : Parse(cached.Wikitext, cached.Title);
+        var info = cached is null ? null : Parse(cached.Wikitext, cached.Title);
+        lock (_memoLock) _infoMemo[inGameName] = info;
+        return info;
     }
 
     /// <summary>Cache-only stats peek for hover tooltips: synchronous, accepts any age,
@@ -148,6 +160,7 @@ public sealed partial class EqlWikiItemService
             Directory.CreateDirectory(_cacheDir);
             File.WriteAllText(CachePath(title),
                 JsonSerializer.Serialize(new CacheEntry(resolvedTitle, wikitext, DateTime.UtcNow)));
+            lock (_memoLock) _infoMemo.Clear();   // fresh page fetched — memo re-reads
         }
         catch { /* cache is a convenience; lookups still work without it */ }
     }

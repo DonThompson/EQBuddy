@@ -1,8 +1,15 @@
 # EQBuddy — EverQuest Legends Session Tracker
 
-An always-on-top Windows widget that reads your EverQuest Legends `/log` file live and
-shows what's happened this play session: kills, DPS, loot, money, XP, skill-ups,
-faction changes, deaths, and zones visited. Click any section to drill into details.
+An always-on-top widget that reads your EverQuest Legends `/log` file live and turns
+it into everything worth knowing about your session: kills and DPS, loot with personal
+drop rates, money, XP, spawn timers that learn from your kills, mez countdowns, a
+quest tracker that flags what you're ready to turn in, and alerts you write yourself
+(substring or regex, with per-rule sounds, colors, and a spoken voice). Click any
+card to drill into details; every session lands in a local searchable history.
+
+**Log-only, by principle.** EQBuddy never reads game memory, never uploads anything,
+and never measures other players — it knows only what your own log says. Windows
+first (WPF), with a Linux build ([Avalonia](#for-developers)) that tracks closely.
 
 **Download:** grab `EQBuddySetup.exe` from the
 [latest release](https://github.com/DranakCorps-bot/EQBuddy/releases/latest).
@@ -17,18 +24,20 @@ page instead.
 
 | | |
 |---|---|
-| ![Compact view](docs/screenshots/widget-compact.png) | ![Mini dashboard with alert](docs/screenshots/widget-mini-alert.png) |
-| The default card — one glanceable line per category | Mini mode — starred stats plus pinned watch-rule chips; alert banners pop even here |
-| ![Expanded details](docs/screenshots/widget-expanded.png) | ![Tracked rules & farming](docs/screenshots/widget-tracked.png) |
-| Full drill-down: damage per skill/spell/pet, recent fights with per-fight DPS, damage and DPS by stance | Watch rules (loot, kills, skill-ups…) with per-hour rates, per-creature farming stats, merchant sales |
-| ![Session history](docs/screenshots/history-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
-| Every session lands in a local, searchable history — notes, tags, compare, export | Background see-through — watch the game right through the widget |
-| ![Spawn timers](docs/screenshots/spawns-window.png) | ![Options](docs/screenshots/options-window.png) |
-| Spawn timers — kill a named (or its placeholder) and the respawn countdown starts from the log; every duration editable | Options — themes, watch rules with worked examples, spawn tracking, per-rule sounds and colors |
-| ![Breakout windows](docs/screenshots/breakout-windows.png) | ![Target drops](docs/screenshots/target-drops.png) |
-| **Breakout windows** *(new, beta)* — floating bar charts for your damage, your healing, and your pet's damage, each switchable between the current fight and the session | **Target drops** *(new, beta)* — while you fight, the Loot card shows what the creature can drop, with your own counts and drop % this session |
-| ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) | ![Mini dashboard with the pet chip](docs/screenshots/mini-pet-chip.png) |
-| **Send feedback** *(new)* opens a pre-written GitHub Discussion for your review — and alert banners can now wear a per-rule color | The minimized pill with the new 🐾 pet-dps chip — starring 🐾 also opens the pet breakout |
+| ![Compact view](docs/screenshots/widget-compact.png) | ![Expanded details](docs/screenshots/widget-expanded.png) |
+| **The widget at a glance** — one line per card: Combat, Kills, Loot, Motes, Sky Quest, Watch, Money, Progress, Faction. Click any card to expand it. | **Full drill-down** — damage per skill/spell/pet with crit rates, recent fights with per-fight DPS, per-creature farming with your observed drop rates |
+| ![Drops by Creature](docs/screenshots/drops-window.png) | ![Quest Tracker](docs/screenshots/quest-tracker.png) |
+| **Drops by Creature** — your personal drop rates per mob, with ✦ marking drops the [community wiki](https://eqlwiki.com) doesn't know yet and **✦ Copy for wiki** building a paste-ready contribution | **Quest Tracker** — 900+ wiki quests; loot something a quest wants and it flips to **✓ ready**, sorted by how close the quest is to where you're standing |
+| ![Sky Quest checklist](docs/screenshots/sky-quest.png) | ![Spawn timers](docs/screenshots/spawns-window.png) |
+| **Plane of Sky checklist** — all 222 turn-in items, a tab per class; loot auto-checks *your* class's boxes, and a reward's own checkbox marks the quest turned in | **Spawn timers** — kill a named (or its placeholder) and a countdown chip appears; timers tighten themselves from your own kills, every duration editable |
+| ![Session history](docs/screenshots/history-window.png) | ![Review an archived session](docs/screenshots/session-picker.png) |
+| **Session history** — every session in a local, searchable database: notes, tags, side-by-side compare, export | **Archive review** — replay any saved log read-only; a multi-session file asks which evening you meant. Drops and wiki export work on the past |
+| ![Mini dashboard](docs/screenshots/widget-mini-chips.png) | ![Breakout windows](docs/screenshots/breakout-windows.png) |
+| **Mini mode** — a one-line pill of your starred stats plus live watch-rule chips; alerts still pop | **Breakout windows** — floating bar charts for your damage, healing, and pet, per fight or per session |
+| ![Options](docs/screenshots/options-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
+| **Options** — themes, sizes, and the watch-rule editor: per-rule sounds, colors, spoken alerts, delays, and a `.*` regex toggle | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
+| ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
+| **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
 
 ## For players (install guide)
 
@@ -69,7 +78,7 @@ Mini dashboard:
 - Click **–** in the title bar to minimize: only your starred stats remain, in a tiny
   always-on-top pill (e.g. `💀 12  ⚔ 34 dps`). Great while actually fighting.
 - Double-click the pill (or click ⤢) to expand back to the full view.
-- **Breakout windows** *(new in 1.32, beta)*: while minimized, the ⚔ dps, ✚ hps, and
+- **Breakout windows**: while minimized, the ⚔ dps, ✚ hps, and
   🐾 pet stars each open a small floating bar chart — your damage, your healing, and
   your pet's damage by ability — switchable between the **current fight** and the
   **whole session**. Drag them anywhere (positions are remembered); ✕ hides one until
@@ -88,10 +97,19 @@ Updates (automatic):
   EQBuddy will install from there silently and restart itself instead of sending you to
   GitHub. The published `EQBuddySetup.exe.sha256` is verified before anything runs.
 
-Log cleanup (automatic, optional):
+Log cleanup, splitting, and archive review:
 - Because logging is always on, EQBuddy empties any character log that has been quiet
   for 60+ minutes (a finished play session), so files never grow across sessions.
   Cleanup runs at EQBuddy startup and every 10 minutes — but never while the game is open.
+- **Keep every session as its own file**: turn on *"Keep a timestamped copy before
+  emptying"* in ⚙ Options and each finished session is saved to `Logs\archive\`
+  as `eqlog_<name>_<server>_<STAMP>.txt` before the live log is emptied. The **↻
+  Reset button splits on demand**: everything so far moves to the archive and a
+  fresh log starts immediately, mid-play — ideal for "one file per raid".
+- **Review any archived log**: right-click → *Review an archived log…* replays a
+  saved file read-only. The title bar turns amber while you're in the past; one
+  click returns to live. Drops by Creature and ✦ Copy for wiki work against the
+  reviewed session, and a file holding several sessions asks which one you meant.
 - If you keep your logs — because you also run **GINA or GamParse**, or upload to
   another parser — turn off **"Auto-empty finished-session logs"** in ⚙ Options; EQBuddy
   then never touches your log files (they'll grow forever, so clean them up yourself
@@ -134,6 +152,18 @@ screenshots and a use-case cookbook for every rule kind:
   rules with the same match text and different sounds: a quiet "heard it" now, a loud "do it
   now" later. Short cues are dropped if you die (a reminder to cast is noise once you're
   dead); timers over a minute survive it, because dying doesn't change when a mob pops.
+- **Regex when you want it.** The `.*` toggle beside any Match box treats it as a
+  full .NET regular expression — `CH (-->|on) Tank` catches both spellings of a raid
+  call in one rule. Case-insensitive like the plain mode; an invalid pattern matches
+  nothing and explains itself in the box's tooltip; a runaway pattern is cut off at
+  100 ms so log tailing never stalls.
+- **Spoken alerts.** The **S** toggle reads the alert aloud with the Windows voice —
+  "Spirit of the Puma faded off you" — with duplicate lines suppressed so a chain of
+  fades doesn't chant at you. A rule can ding, speak, both, or neither.
+- **Share rules as text.** The ⤴ on any rule copies it as a compact `EQB1` string
+  sized for guild chat; the import box turns one back into a rule — with a preview of
+  exactly what it does before you accept, rebuilt field by field so a share string
+  can never do anything the editor couldn't.
 - Stats show **recent-window rates** ("Last 15m") alongside session averages — pick 5,
   15, or 30 minutes in Options — plus per-active-hour rates that ignore downtime.
 
@@ -165,6 +195,15 @@ Spawn timers (on by default):
   visual). A timer that expired while EQBuddy was closed shows as due without
   re-alerting at startup.
 
+Mez timers (crowd control you can trust):
+- Land a mez and a **💤 chip** counts down until the target wakes — numbered separately
+  for same-named mobs ("orc pawn (2)"), warning tint in the final seconds, draggable as
+  a stack. The log never states mez durations, so EQBuddy **learns them from your own
+  fades**: the gap between landing and a clean wear-off becomes that spell's clock, and
+  rank upgrades re-teach it on the next honest observation.
+- The built-in **"CC broke" rule** alerts the moment a mez, charm, root, or stun on
+  *your* target ends early — with the mob's name, so you know who's loose.
+
 Encounters, mob farming, and stances:
 - Combat shows your **recent fights** (creature, duration, per-fight DPS) and, when your
   class uses stances, a **By stance** breakdown of damage, combat time, and DPS with the
@@ -186,7 +225,19 @@ Encounters, mob farming, and stances:
 - History window: **Ctrl-click two sessions to compare** their rates side-by-side, and
   **Import log…** parses any old eqlog file into your session history.
 
-Target drops & item info *(target drops new in 1.32, beta)*:
+Quests (tracker, Sky checklist, ledger):
+- **Quest Tracker** (right-click → *Quest tracker…*): 900+ quests from the community
+  wiki, filterable by class, era, and zone — sorted by how many zones away each quest
+  giver is from where you're standing. A **quest ledger** counts what you loot (minus
+  what the log sees leave — sales, merges, destroys), so a quest flips to **✓ ready**
+  the moment you hold everything it needs; hand-ins aren't in the log, so click ✓ when
+  you turn in. Click a quest name for the full wiki walkthrough.
+- **Plane of Sky checklist**: an overlay card tracking all 222 Sky turn-in items with
+  a tab per class (contributed by dandrews2930). Loot auto-checks boxes for the class
+  tab you use, and each reward line is its own "I turned this in" checkbox — completed
+  quests dim their items and stay done across restarts.
+
+Target drops, item info & giving back to the wiki:
 - **While you fight, the Loot card shows what the creature can drop** — wiki knowledge
   from [eqlwiki](https://eqlwiki.com) merged with your own session: items you've seen
   drop lead the list with `2 this session · 67%` (your kill count is right in the
@@ -195,13 +246,22 @@ Target drops & item info *(target drops new in 1.32, beta)*:
   vendor value, who drops it, who sells it, what quests want it. Everything is cached
   for a week and labelled LIVE / CACHED / STALE so you always know how fresh it is.
   Toggle the block off in ⚙ Options if you prefer a lean Loot card.
+- **Drops by Creature** (📓 on the Loot card) is the review table behind it all: every
+  creature you've killed with your observed drop rates, exportable as text or CSV. An
+  amber **✦** marks drops the wiki doesn't know yet, and **✦ Copy for wiki** builds a
+  paste-ready contribution in the wiki's own house style — per-creature edit links, an
+  observed stat block (zone at kill time, money range, faction hits, `/consider` level
+  range), and rarity labels only when your kill count can honestly carry them. Nothing
+  publishes automatically: you review and save on the wiki. The same loop runs the
+  other way — EQBuddy's quest and spell knowledge refreshes itself from wiki changes
+  weekly, so community edits reach the app without anyone re-typing them.
 
-Feedback *(new in 1.32)*:
+Feedback:
 - Right-click → **Send feedback…** — pick *Feature request* or *Bug report*, type your
   note, and EQBuddy opens a pre-written GitHub Discussion in your browser for you to
   review and post under your own account. **Nothing is ever sent by the app itself**;
-  the only context appended is the app version and Windows build. The new 1.32
-  features are in beta exactly so this loop can shape them.
+  the only context appended is the app version and Windows build. This loop is how
+  most of the features on this page got built — often the same day they were asked for.
 
 Session history (automatic):
 - Every meaningful session is saved to a local SQLite database
@@ -212,9 +272,19 @@ Session history (automatic):
   (zone, loot, creature names, notes, tags), view the full per-session breakdown, add
   notes/tags, copy a shareable summary, export JSON, or delete.
 
-Click-through & window control:
+Click-through, overlays & window control:
 - Right-click → **Click-through**: game clicks pass straight through the widget (border
   turns amber). A small **🔒 chip** appears beside it — click the chip to interact again.
+  Works on Linux too (X11).
+- **Grid overlay**: a faint click-through grid over your whole desk for lining up game
+  UI elements — stronger lines every fourth square, spacing slider in Options.
+- **Cursor ring**: a click-through halo riding your pointer for everyone who's ever
+  lost the tiny cursor mid-fight. Both toggles live in the right-click menu and
+  survive restarts.
+- **Two ways to resize**: the corner grip scales *everything* (text included, 80–160%),
+  and dragging the **bottom edge** makes the widget taller or shorter without touching
+  text size — double-click the edge to go back to fit-the-screen. **Ctrl + mouse
+  wheel** zooms any other EQBuddy window, remembered per window.
 - *Global hotkeys were removed in 1.34*: they registered system-wide and swallowed
   common shortcuts like `Ctrl+Shift+T` (reopen browser tab) from every app on the
   machine — a player caught it, and the right fix was removal. Everything they did is
@@ -302,15 +372,25 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
 - `src/EQBuddy.Core/EqConfig.cs` — log hygiene: forces `Log=1` in eqclient.ini and truncates
   stale (60+ min quiet) logs; both are skipped while `eqgame.exe` is running.
 - Publish: `dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -o dist/publish`
-- Release: `scripts\release.ps1` — reads the version from the csproj, publishes, signs both
-  exes (self-signed cert; create once with `scripts\new-cert.ps1`), compiles the installer
-  with the matching version stamp, and stages the artifacts locally. Pass `-Tag vX.Y.Z` to
-  also publish a GitHub release. Bump `<Version>` in both csproj files first — the in-app
-  updater compares it against the version stamped into the setup exe.
+- Release: `scripts\release.ps1` — reads the version from `Directory.Build.props` (the
+  single source for every project), publishes, signs both exes (self-signed cert; create
+  once with `scripts\new-cert.ps1`), compiles the installer with the matching version
+  stamp, and copies the artifacts to the update channel. Pass `-Tag vX.Y.Z` to push,
+  tag, and publish a GitHub release (CI attaches the Linux tarball). Bump `<Version>`
+  in `Directory.Build.props` and add a `WhatsNew.json` entry first — the script refuses
+  to release without one.
+- Knowledge refresh: wiki-derived catalogs (quests, fade messages, zone graph) refresh
+  weekly via `.github/workflows/knowledge-refresh.yml`, which runs
+  `scripts/harvests/refresh.py` (incremental, RecentChanges-driven) and opens a review
+  PR with the delta. Curated catalogs (spawn timers, AAs, CC lists) are never
+  auto-written — the PR only flags them.
 - Settings live in `%AppData%\EQBuddy\settings.json`; errors in `%AppData%\EQBuddy\error.log`.
 - Debug: set `EQBUDDY_EXPAND=1` to launch with all sections expanded plus a state dump
   in `%AppData%\EQBuddy\debug.txt`. Set `EQBUDDY_APPDATA=<dir>` to run against an
-  isolated profile (settings, history, logs) without touching your real data.
+  isolated profile (settings, history, logs) without touching your real data. More
+  hooks in the same family: `EQBUDDY_DROPS=1`, `EQBUDDY_QUESTS=1`, `EQBUDDY_OPTIONS=1`
+  open those windows at launch; `EQBUDDY_REVIEW=<file>` (plus optional
+  `EQBUDDY_REVIEW_SESSION=<n>`) opens straight into archive review.
 
 Log folder auto-detected at
 `C:\Users\Public\Daybreak Game Company\Installed Games\EverQuest Legends\Logs`
