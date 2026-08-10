@@ -1480,6 +1480,11 @@ public sealed class MainWindow : Window
 
     private void UpdateBreakouts(StatsSnapshot snapshot)
     {
+        // Avalonia refuses Show(owner) while the owner itself isn't visible — and the
+        // ctor's SetMode lands here before the main window ever opens. A profile saved
+        // minimized then CRASHED ON EVERY LAUNCH, unrecoverably (issue #82, Bazzite/KDE:
+        // "can't reopen"). The 1-second tick calls back the moment we're actually up.
+        if (!IsVisible) return;
         foreach (var (kind, star) in BreakoutStars)
         {
             var wanted = _settings.Minimized && _settings.MiniStats.Contains(star)
@@ -1493,8 +1498,16 @@ public sealed class MainWindow : Window
                     window.Dismissed += dismissed => _dismissedBreakouts.Add(dismissed);
                     _breakouts[kind] = window;
                 }
-                if (!window.IsVisible) window.Show(this);
-                window.Update(snapshot);
+                try
+                {
+                    if (!window.IsVisible) window.Show(this);
+                    window.Update(snapshot);
+                }
+                catch (Exception ex)
+                {
+                    // A breakout must never take the whole widget down with it (#82).
+                    App.LogError(ex);
+                }
             }
             else if (window is { IsVisible: true }) window.HideAndSave();
         }

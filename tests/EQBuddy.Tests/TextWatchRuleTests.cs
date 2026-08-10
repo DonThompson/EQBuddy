@@ -33,6 +33,42 @@ public class TextWatchRuleTests
     private static TrackedRule TextRule(string pattern, string name = "CH chain") =>
         new() { Name = name, Pattern = pattern, Kind = WatchKind.Text };
 
+    /// <summary>Regex mode (#83, KentCarmine): the same rule, upgraded — here catching
+    /// two spellings of a raid call one substring never could. Both the live ingest
+    /// prefilter and the snapshot's journal re-match honor the flag.</summary>
+    [Fact]
+    public void RegexTextRuleMatchesAlternations()
+    {
+        var rule = TextRule(@"CH (-->|on) Tank", name: "CH call");
+        rule.UseRegex = true;
+        var rules = new[] { rule };
+        var s = Replay(rules,
+            At(0, 0, "Cleric1 tells the raid, 'CH --> Tankname'"),
+            At(0, 3, "Cleric2 tells the raid, 'CH on Tankname'"),
+            At(0, 6, "Someone tells the raid, 'CH ready'")).Snapshot(null, rules);
+
+        Assert.Equal(2, Assert.Single(s.Tracked).TotalQuantity);
+        Assert.Null(rule.RegexError);
+    }
+
+    [Fact]
+    public void InvalidRegexMatchesNothingAndSaysWhy()
+    {
+        var rule = TextRule(@"CH [unclosed", name: "broken");
+        rule.UseRegex = true;
+        var rules = new[] { rule };
+        var s = Replay(rules,
+            At(0, 0, "Cleric1 tells the raid, 'CH [unclosed'")).Snapshot(null, rules);
+
+        // A half-typed pattern must neither crash the pipeline nor match by accident;
+        // the editor shows the compiler's complaint instead.
+        Assert.Equal(0, Assert.Single(s.Tracked).TotalQuantity);
+        Assert.NotNull(rule.RegexError);
+
+        rule.UseRegex = false;   // plain substring mode is never "invalid"
+        Assert.Null(rule.RegexError);
+    }
+
     [Fact]
     public void MatchesAnUnparseableRaidLine()
     {

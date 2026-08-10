@@ -297,7 +297,9 @@ public sealed class SessionStats
     /// <summary>Text patterns from the enabled <see cref="WatchKind.Text"/> rules. Kept
     /// current by <see cref="Snapshot"/>, so an edit in Options takes effect on the next
     /// refresh a second later without the host having to push anything.</summary>
-    private string[] _textPatterns = [];
+    // The rules themselves rather than pattern strings: Matches() is what knows
+    // whether a pattern is a substring or a regex (#83), and it caches its Regex.
+    private TrackedRule[] _textPatterns = [];
 
     /// <summary>
     /// Seed the text-rule prefilter before tailing starts. <see cref="Snapshot"/> keeps it
@@ -309,8 +311,6 @@ public sealed class SessionStats
     {
         var patterns = rules is null ? [] : rules
             .Where(r => r.Enabled && r.Kind == WatchKind.Text && r.EffectivePattern.Length > 0)
-            .Select(r => r.EffectivePattern)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         lock (_lock) _textPatterns = patterns;
     }
@@ -325,14 +325,14 @@ public sealed class SessionStats
     /// </summary>
     public void ObserveRawLine(string line)
     {
-        string[] patterns;
+        TrackedRule[] patterns;
         lock (_lock) patterns = _textPatterns;
         if (patterns.Length == 0) return;
         if (!LogParser.TrySplitLine(line, out var ts, out var msg)) return;
 
         foreach (var pattern in patterns)
         {
-            if (!msg.Contains(pattern, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!pattern.Matches(msg)) continue;
             var evt = new RawLineEvent(ts, msg);
             Apply(evt);
             // Raised outside the lock, on the ingest thread, so the host can alert now
@@ -1408,8 +1408,6 @@ public sealed class SessionStats
                 // RefreshTextPatterns (which takes it).
                 _textPatterns = rules
                     .Where(r => r.Enabled && r.Kind == WatchKind.Text && r.EffectivePattern.Length > 0)
-                    .Select(r => r.EffectivePattern)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
                 foreach (var rule in rules)

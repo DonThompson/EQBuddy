@@ -33,6 +33,8 @@
                           IsCheckable="True" Click="OnClickThrough"/>
                 <MenuItem x:Name="GridOverlayItem" Header="Grid overlay (align your game UI)"
                           IsCheckable="True" Click="OnGridOverlay"/>
+                <MenuItem x:Name="CursorRingItem" Header="Cursor ring (never lose your pointer)"
+                          IsCheckable="True" Click="OnCursorRing"/>
                 <MenuItem Header="Send feedback…" Click="OnFeedback"/>
                 <Separator/>
                 <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>

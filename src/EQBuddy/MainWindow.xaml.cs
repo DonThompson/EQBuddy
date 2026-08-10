@@ -141,6 +141,8 @@ public partial class MainWindow : Window
         // A grid left on comes back — turning it off is the same menu click (#34).
         if (_settings.ShowGridOverlay)
             Loaded += (_, _) => SetGridOverlay(true);
+        if (_settings.ShowCursorRing)
+            Loaded += (_, _) => SetCursorRing(true);
 
         // Log hygiene at startup: force Log=1 and wipe finished-session logs
         // (both no-ops while the game is running). Truncation waits while the tour
@@ -1343,8 +1345,14 @@ public partial class MainWindow : Window
                 $"{StatsSnapshot.FormatCoin(s.CopperPerHour)} per hour · {StatsSnapshot.FormatCoin(s.CopperPerActiveHour)} per active hour" +
                 (s.Recent is { } rm ? $"\nLast {(int)rm.Window.TotalMinutes}m: {StatsSnapshot.FormatCoin(rm.Copper)}" : "");
             SoldLabel.Visibility = s.SoldItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            // Sold items are drops too (#74, Snagglefern: "if an item is unknown on
+            // the wiki I definitely sold it") — same click, tooltip, and quest badges
+            // as the Loot card, with the count moved to the value column so the name
+            // stays a clean lookup key.
             FillList(SoldList, s.SoldItems.Select(i =>
-                ($"{i.Item}{(i.Count > 1 ? $" ×{i.Count}" : "")}", StatsSnapshot.FormatCoin(i.Copper))));
+                (i.Item, (i.Count > 1 ? $"×{i.Count} · " : "") + StatsSnapshot.FormatCoin(i.Copper))),
+                onNameClick: ShowItemInfo,
+                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
         }
 
         if (ProgressSection.IsExpanded)
@@ -2591,6 +2599,34 @@ public partial class MainWindow : Window
 
     /// <summary>Live spacing updates from the Options slider.</summary>
     internal void RefreshGridSpacing() => _gridOverlay?.ApplySpacing();
+
+    // ---- the cursor-finder ring (issue #81) ----
+
+    private CursorRingWindow? _cursorRing;
+
+    private void OnCursorRing(object sender, RoutedEventArgs e) =>
+        SetCursorRing(!_settings.ShowCursorRing);
+
+    /// <summary>Same lockstep shape as SetGridOverlay: the window exists only while
+    /// the ring is on, and the menu check always tells the truth.</summary>
+    internal void SetCursorRing(bool on)
+    {
+        _settings.ShowCursorRing = on;
+        _settings.Save();
+        CursorRingItem.IsChecked = on;
+        if (on)
+        {
+            if (_cursorRing is not { IsLoaded: true })
+                _cursorRing = new CursorRingWindow(_settings);
+            _cursorRing.ApplySize();
+            _cursorRing.Show();
+        }
+        else if (_cursorRing is { } ring)
+        {
+            _cursorRing = null;
+            ring.Close();
+        }
+    }
 
     private void OnClickThrough(object sender, RoutedEventArgs e) =>
         SetClickThrough(!_clickThrough);

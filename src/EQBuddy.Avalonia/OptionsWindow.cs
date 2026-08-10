@@ -388,13 +388,31 @@ public sealed class OptionsWindow : Window
                 "Spell class: watch one named spell (By name + match text), or a whole class with no match text needed");
             matchArea.Children.Add(spellFilter);
 
-            var pattern = DarkBox(rule.Pattern,
-                "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone");
+            const string patternTip =
+                "Optional case-insensitive match text; uses the display name when empty, and may be empty for Death or Milestone";
+            var pattern = DarkBox(rule.Pattern, patternTip);
             pattern.PlaceholderText = "Match text (optional)";
             pattern.Margin = new Thickness(0, 0, 4, 0);
-            pattern.LostFocus += (_, _) => { rule.Pattern = (pattern.Text ?? "").Trim(); _main.PersistSettings(); };
             Grid.SetColumn(pattern, 1);
             matchArea.Children.Add(pattern);
+
+            // Regex mode (#83) — same semantics as WPF: invalid patterns match
+            // nothing, and the Match box's tooltip carries the compiler's complaint.
+            void ShowRegexState() => ToolTip.SetTip(pattern,
+                rule.RegexError is { } err ? $"Regex error: {err}" : patternTip);
+            matchArea.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+            var regexToggle = RuleToggle(".*",
+                "Treat Match as a regular expression (.NET syntax, case-insensitive). " +
+                "An invalid pattern matches nothing — the Match box's tooltip shows the error.",
+                2, rule.UseRegex, v => { rule.UseRegex = v; ShowRegexState(); });
+            matchArea.Children.Add(regexToggle);
+            pattern.LostFocus += (_, _) =>
+            {
+                rule.Pattern = (pattern.Text ?? "").Trim();
+                ShowRegexState();
+                _main.PersistSettings();
+            };
+            ShowRegexState();
 
             var spellName = new AutoCompleteBox
             {
@@ -435,6 +453,7 @@ public sealed class OptionsWindow : Window
                 var byName = rule.SpellFilter == SpellFilter.ByName;
                 spellFilter.IsVisible = isFade;
                 pattern.IsVisible = !isFade;
+                regexToggle.IsVisible = !isFade;   // pairs with the free-text box only
                 spellName.IsVisible = isFade && byName;
                 Grid.SetColumnSpan(spellFilter, isFade && !byName ? 2 : 1);
                 if (isFade && byName) spellName.Text = rule.Pattern;

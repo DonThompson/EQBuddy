@@ -122,6 +122,12 @@ public sealed class AppSettings
     /// <summary>Minor grid line spacing in pixels; strong lines land every fourth.</summary>
     public double GridSpacing { get; set; } = 32;
 
+    /// <summary>The cursor-finder ring (issue #81 — "I often lose my tiny cursor").
+    /// Same persistence contract as the grid: left on, it comes back at launch.</summary>
+    public bool ShowCursorRing { get; set; }
+    /// <summary>Ring diameter in DIPs.</summary>
+    public double CursorRingSize { get; set; } = 46;
+
     /// <summary>The three colors behind the "Custom" theme (#RRGGBB); the rest of its
     /// palette is derived in EQBuddy.UI.Shared.CustomTheme. Null until first edited —
     /// the seed colors apply.</summary>

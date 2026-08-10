@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace EQBuddy.Core;
 
@@ -89,7 +90,22 @@ public sealed class TrackedRule
     public bool IdWasGenerated { get; private set; } = true;
 
     public string Name { get; set; } = "";
-    public string Pattern { get; set; } = "";
+    public string Pattern
+    {
+        get => _pattern;
+        set { _pattern = value; _regex = null; }
+    }
+    private string _pattern = "";
+    /// <summary>Treat <see cref="Pattern"/> as a .NET regex instead of a plain substring
+    /// (KentCarmine's ask, #83). Case-insensitive either way; an invalid or catastrophic
+    /// pattern matches nothing rather than crashing or stalling the log pipeline.</summary>
+    public bool UseRegex
+    {
+        get => _useRegex;
+        set { _useRegex = value; _regex = null; }
+    }
+    private bool _useRegex;
+    private Regex? _regex;
     public WatchKind Kind { get; set; } = WatchKind.Loot;
     /// <summary>For SpellFade rules: one named spell, or a class of spells. Ignored by
     /// every other kind.</summary>
@@ -192,10 +208,42 @@ public sealed class TrackedRule
         : Name;
 
     /// <summary>Match-all kinds match everything when the pattern is empty.</summary>
-    public bool Matches(string text) =>
-        EffectivePattern.Length > 0
-            ? text.Contains(EffectivePattern, StringComparison.OrdinalIgnoreCase)
-            : IsMatchAllKind;
+    public bool Matches(string text)
+    {
+        var pattern = EffectivePattern;
+        if (pattern.Length == 0) return IsMatchAllKind;
+        if (!UseRegex) return text.Contains(pattern, StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            _regex ??= new Regex(pattern,
+                RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+                TimeSpan.FromMilliseconds(100));
+            return _regex.IsMatch(text);
+        }
+        catch (ArgumentException)
+        {
+            // A half-typed pattern mustn't crash the log pipeline: an invalid regex
+            // matches nothing (the editor shows the same via RegexError).
+            return false;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return false;   // catastrophic backtracking on a hostile line — skip it
+        }
+    }
+
+    /// <summary>Human-readable problem with the current regex pattern, or null when it
+    /// compiles (or regex mode is off). The editors surface this beside the match box.</summary>
+    [JsonIgnore]
+    public string? RegexError
+    {
+        get
+        {
+            if (!UseRegex || EffectivePattern.Length == 0) return null;
+            try { _ = new Regex(EffectivePattern, RegexOptions.IgnoreCase); return null; }
+            catch (ArgumentException ex) { return ex.Message; }
+        }
+    }
 }
 
 /// <param name="Id">The <see cref="TrackedRule.Id"/> this row was computed for, so UIs can

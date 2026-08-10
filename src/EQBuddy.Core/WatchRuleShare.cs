@@ -40,6 +40,7 @@ public static partial class WatchRuleShare
         [JsonPropertyName("b")] public bool Banner { get; set; }
         [JsonPropertyName("s")] public bool Sound { get; set; }
         [JsonPropertyName("sp")] public bool Speech { get; set; }
+        [JsonPropertyName("rx")] public bool Regex { get; set; }
         [JsonPropertyName("c")] public string? Color { get; set; }
         [JsonPropertyName("sn")] public string? SoundName { get; set; }
         [JsonPropertyName("d")] public double Delay { get; set; }
@@ -61,6 +62,7 @@ public static partial class WatchRuleShare
             Banner = r.AlertBanner,
             Sound = r.AlertSound,
             Speech = r.AlertSpeech,
+            Regex = r.UseRegex,
             Color = r.AlertColor.Length > 0 ? r.AlertColor : null,
             // Custom sounds are file paths on the sharer's machine — meaningless (and
             // mildly leaky) elsewhere. Only built-in names travel.
@@ -131,6 +133,7 @@ public static partial class WatchRuleShare
                 AlertBanner = w.Banner,
                 AlertSound = w.Sound,
                 AlertSpeech = w.Speech,
+                UseRegex = w.Regex,
                 AlertColor = Clean(w.Color, 30),
                 AlertSoundName = IsBuiltInSoundName(w.SoundName ?? "") ? w.SoundName! : "",
                 AlertDelaySeconds = w.Delay,   // property setter clamps
@@ -145,7 +148,7 @@ public static partial class WatchRuleShare
     {
         var what = r.Kind is WatchKind.SpellFade && r.SpellFilter != SpellFilter.ByName
             ? $"Spell fade · {r.SpellFilter}"
-            : $"{r.Kind} · \"{r.EffectivePattern}\"";
+            : $"{r.Kind} · {(r.UseRegex ? "regex " : "")}\"{r.EffectivePattern}\"";
         var cues = new List<string>();
         if (r.AlertBanner) cues.Add("banner");
         if (r.AlertSound) cues.Add(r.AlertSoundName.Length > 0 ? $"sound: {r.AlertSoundName}" : "sound");

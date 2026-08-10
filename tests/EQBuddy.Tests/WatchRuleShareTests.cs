@@ -14,6 +14,7 @@ public class WatchRuleShareTests
         Name = "CH chain 2nd",
         Pattern = "Cassius begins casting Complete Heal",
         Kind = WatchKind.Text,
+        UseRegex = true,
         AlertBanner = true,
         AlertSound = true,
         AlertSpeech = true,
@@ -37,6 +38,7 @@ public class WatchRuleShareTests
         Assert.True(r.AlertBanner);
         Assert.True(r.AlertSound);
         Assert.True(r.AlertSpeech);
+        Assert.True(r.UseRegex);
         Assert.Equal("Alarm", r.AlertSoundName);
         Assert.Equal("Purple", r.AlertColor);
         Assert.Equal(2.5, r.AlertDelaySeconds);

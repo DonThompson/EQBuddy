@@ -609,11 +609,24 @@ public partial class OptionsWindow : Window
             spellFilter.SelectedIndex = (int)rule.SpellFilter;
             matchArea.Children.Add(spellFilter);
 
-            var pattern = DarkBox(rule.Pattern, "match text (uses the name if left empty; optional for Death/Milestone)");
+            const string patternTip = "match text (uses the name if left empty; optional for Death/Milestone)";
+            var pattern = DarkBox(rule.Pattern, patternTip);
             pattern.Margin = new Thickness(4, 0, 0, 0);
-            pattern.LostFocus += (_, _) => { rule.Pattern = pattern.Text.Trim(); _vm.Persist(); };
             System.Windows.Controls.Grid.SetColumn(pattern, 1);
             matchArea.Children.Add(pattern);
+
+            // Regex mode (#83, KentCarmine): the same Match box, upgraded. Invalid
+            // patterns match nothing and say why on the box's own tooltip.
+            void ShowRegexState() => pattern.ToolTip =
+                rule.RegexError is { } err ? $"Regex error: {err}" : patternTip;
+            matchArea.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
+            var regexToggle = RuleToggle(".*",
+                "Treat Match as a regular expression (.NET syntax, case-insensitive). " +
+                "An invalid pattern matches nothing — the Match box's tooltip shows the error.",
+                2, rule.UseRegex, v => { rule.UseRegex = v; ShowRegexState(); });
+            matchArea.Children.Add(regexToggle);
+            pattern.LostFocus += (_, _) => { rule.Pattern = pattern.Text.Trim(); ShowRegexState(); _vm.Persist(); };
+            ShowRegexState();
 
             var buffChoices = EQBuddy.Core.FadeMessageCatalog.Default.BuffSpellChoices.ToArray();
             var spellName = DarkBox(rule.Pattern,
@@ -713,6 +726,9 @@ public partial class OptionsWindow : Window
                 var byName = rule.SpellFilter == EQBuddy.Core.SpellFilter.ByName;
                 spellFilter.Visibility = isFade ? Visibility.Visible : Visibility.Collapsed;
                 pattern.Visibility = !isFade ? Visibility.Visible : Visibility.Collapsed;
+                // Regex pairs with the free-text Match box; the fade picker flow has
+                // its own exact-name semantics.
+                regexToggle.Visibility = !isFade ? Visibility.Visible : Visibility.Collapsed;
                 spellName.Visibility = isFade && byName ? Visibility.Visible : Visibility.Collapsed;
                 // With no match box beside it the combo takes the whole cell, so its text
                 // and drop arrow stay inside the row instead of running under the toggles.
