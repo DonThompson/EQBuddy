@@ -86,6 +86,27 @@ public class ZoneMapTests : IDisposable
     }
 
     [Fact]
+    public void TrailThinsByDistanceForMovementKeySpam()
+    {
+        // The W-bound /loc social fires per keypress — near-identical positions
+        // refresh the marker but must not spend trail slots.
+        var stats = new SessionStats { CharacterName = "Dranak" };
+        string At(int s, string msg) => $"[Sat Jul 18 15:00:{s:D2} 2026] {msg}";
+        stats.Apply(LogParser.Parse(At(0, "You have entered Crushbone."))!);
+        stats.Apply(LogParser.Parse(At(1, "Your Location is -100.0, 50.0, 3.0"))!);
+        stats.Apply(LogParser.Parse(At(2, "Your Location is -105.0, 52.0, 3.0"))!);   // ~5 units away
+
+        var mid = stats.Snapshot();
+        Assert.Single(mid.LocationTrail);                 // too close: no slot spent…
+        Assert.Equal(-105.0, mid.LastLocation!.LocY);     // …but the marker still moved
+
+        stats.Apply(LogParser.Parse(At(3, "Your Location is -160.0, 50.0, 3.0"))!);   // 60 units: kept
+        var s = stats.Snapshot();
+        Assert.Equal(2, s.LocationTrail.Count);
+        Assert.Equal([-100.0, -160.0], s.LocationTrail.Select(l => l.LocY));
+    }
+
+    [Fact]
     public void WikiLocationFieldsParseIntoCoordinates()
     {
         var svc = new EqlWikiMobService(Path.Combine(_dir, "mobcache"),

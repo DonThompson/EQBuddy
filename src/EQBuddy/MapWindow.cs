@@ -430,9 +430,12 @@ public sealed class MapWindow : Window
         "    Line 2:  /doability 1   (Forage, Sense Heading, Kick — whatever you already spam)\n" +
         "\n" +
         "Put it on the hotbar key that skill already lives on, and every press drops a\n" +
-        "breadcrumb while doing exactly what the key did before. Some players bind the\n" +
-        "hotkey next to their movement keys so it falls under the same fingers.\n" +
-        "It's a plain in-game social — the game runs it, EQBuddy just reads the log.";
+        "breadcrumb while doing exactly what the key did before.\n" +
+        "\n" +
+        "Even better, if the game's keybinds allow the overlap: bind that hotbar slot\n" +
+        "to a MOVEMENT key (W). Then simply walking forward drops breadcrumbs, and the\n" +
+        "trail draws itself. Either way it's a plain in-game social — the game runs it,\n" +
+        "EQBuddy just reads the log (and doesn't mind however many /locs you produce).";
 
     private void UpdateMarker()
     {

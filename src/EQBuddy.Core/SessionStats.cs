@@ -96,6 +96,9 @@ public sealed class SessionStats
     private LocationEvent? _lastLoc;
     private readonly List<LocationEvent> _locTrail = [];
 
+    private static double Distance(LocationEvent a, LocationEvent b) =>
+        Math.Sqrt((a.LocX - b.LocX) * (a.LocX - b.LocX) + (a.LocY - b.LocY) * (a.LocY - b.LocY));
+
     /// <summary>One rule's journal-scan result, minus the time-derived rates —
     /// the memoizable half of a TrackedRuleResult (perf audit #4).</summary>
     private sealed record TrackedScan(string Name, string Id, int Total,
@@ -874,11 +877,17 @@ public sealed class SessionStats
                     break;
                 case LocationEvent loc:
                     _lastLoc = loc;    // the map window's player marker
-                    // The breadcrumb trail: every /loc in this zone, oldest first,
-                    // bounded — tap a /loc hotbutton while traveling and the map
-                    // draws your route (David, 2026-08-10).
-                    _locTrail.Add(loc);
-                    if (_locTrail.Count > 80) _locTrail.RemoveAt(0);
+                    // The breadcrumb trail: /locs in this zone, oldest first, bounded —
+                    // and thinned by distance, because the overlapping-keybind trick
+                    // (the /loc social bound to W) fires one per movement keypress:
+                    // without thinning, 80 points would cover one corridor. Points
+                    // closer than ~25 units to the last crumb refresh the marker but
+                    // don't spend a slot, so the trail spans real ground.
+                    if (_locTrail.Count == 0 || Distance(_locTrail[^1], loc) >= 25)
+                    {
+                        _locTrail.Add(loc);
+                        if (_locTrail.Count > 80) _locTrail.RemoveAt(0);
+                    }
                     break;
                 case FizzleEvent: _fizzles++; break;
                 case ResistEvent: _resists++; break;

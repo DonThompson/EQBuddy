@@ -374,6 +374,17 @@ public static partial class LogParser
 
         Match r;
 
+        // Fast path for /loc: if players take the overlapping-keybind route (the
+        // social bound to a movement key, David 2026-08-10), this becomes one of
+        // the most frequent lines in the log — and its literal prefix is unambiguous,
+        // so it never needs to pay for the cascade below.
+        if (msg.StartsWith("Your Location is ", StringComparison.Ordinal)
+            && (r = LocationRx().Match(msg)).Success)
+            return new LocationEvent(ts,
+                double.Parse(r.Groups["y"].Value, System.Globalization.CultureInfo.InvariantCulture),
+                double.Parse(r.Groups["x"].Value, System.Globalization.CultureInfo.InvariantCulture),
+                double.Parse(r.Groups["z"].Value, System.Globalization.CultureInfo.InvariantCulture));
+
         if ((r = YouDiedRx().Match(msg)).Success)
             return new DeathEvent(ts, r.Groups["killer"].Value);
 
