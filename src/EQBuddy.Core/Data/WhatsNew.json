@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.53.2",
+  "date": "2026-08-10",
+  "highlights": [
+   "The wiki gap wears RED now: in Drops by Creature, a drop the wiki doesn't know about gets a red ✦ — and its hover is a three-step recipe for handing that knowledge in (click the ✦ and the paste-ready edit is already on your clipboard). You're often the first person to see a drop; a minute of pasting makes every EQBuddy user's tracker smarter.",
+   "Quest items the wiki half-remembers count anyway (wizen's Phosphorous Powder, #75): some item pages say QUEST ITEM right in the stats block but miss the category tag the tracker reads. The page's own flag counts now — look an item up once and its 🗺 badge appears, category or no category. Race unlocks shouldn't hinge on a wiki editor's bookkeeping."
+  ]
+ },
+ {
   "version": "1.53.1",
   "date": "2026-08-10",
   "highlights": [
