@@ -1,5 +1,17 @@
 [
  {
+  "version": "1.53.0",
+  "date": "2026-08-10",
+  "highlights": [
+   "🗺️ ZONE MAPS ARE HERE — and they change what EQBuddy is. Right-click → Zone map: drop a classic map pack (Brewall's) into the game's maps folder and EQBuddy draws your zone, follows you through it, and puts YOUR position on it the moment you type /loc. Tap a /loc hotbutton as you move and a comet-tail breadcrumb trail shows your last minute of movement, fading as it lands. And the side panel is the one nobody else has: every running spawn timer in your zone, counting down, PINNED to its camp on the map — EQBuddy learns the camp from your own /loc at kill time (the wiki's location as fallback), so the map answers \"where do I stand and when does it pop\" at a glance. ShowEQ's greatest hits, rebuilt from nothing but your log and public wiki pages: no memory reading, no injection, nothing a server could even see.",
+   "The trick that makes the map feel live: make an in-game social — /loc on line 1, /doability 1 on line 2 — and bind it to a movement key you TAP a lot. The turn keys (A and D) are the sweet spot: every course adjustment drops a breadcrumb and the trail draws itself. Held keys don't repeat, so W only fires when you start moving — bind the taps, not the holds. Hover the map's status line any time for the full recipe.",
+   "🧭 Travel route (right-click → Travel route…): pick any zone and get hop-by-hop directions from where you're standing, from client-mined atlas data plus the wiki's boat and port connections — the same distance graph that already sorts your quests by \"close to me\".",
+   "🔎 Quest search went catalog-wide: search all 900+ wiki quests by name, reward, needed item, or NPC — not just the ones your zone offers. Found a weird drop? Type it in and see who wants it.",
+   "🍎 EQBuddy runs on macOS now — thank quasarj (PR #90) for building the Mac side of the Avalonia app. Faction lines read right at both ends of the scale too: a faction at rock bottom now says so instead of claiming \"maxed\" (elderbit's sharp catch, #86). Plus the storage engine moved to SQLitePCLRaw 3, and the whole widget got another idle-cost pass on top of 1.52's.",
+   "This release was shaped in the field: thanks to Bigmatt500, Kerdude, KentCarmine, and dandrews2930 for the asks, testing, and patches that steered the week — and to everyone dropping reports in Discussions. Keep them coming; most of what's on this page started there."
+  ]
+ },
+ {
   "version": "1.52.0",
   "date": "2026-08-10",
   "highlights": [

@@ -37,7 +37,7 @@ page instead.
 | ![Options](docs/screenshots/options-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | **Options** — themes, sizes, and the watch-rule editor: per-rule sounds, colors, spoken alerts, delays, and a `.*` regex toggle | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
 | ![Zone map](docs/screenshots/map-window.png) | ![Travel route](docs/screenshots/travel-window.png) |
-| **Zone map** — classic map packs with your `/loc` marker, a fading breadcrumb trail of your route, and camp pins for every running spawn timer with its countdown in the side panel | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
+| **Zone map** — classic map packs with your `/loc` marker and a comet-tail breadcrumb trail of your last minute of movement; every running spawn timer shows in the side panel **and** as a camp pin on the map with its countdown ticking beside it | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
 | **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
 
@@ -233,15 +233,18 @@ Maps & travel:
   you zone, wheel to zoom, drag to pan. Type `/loc` in game and your position appears
   as a marker, honestly labeled with how old it is: EQBuddy reads only the log, so
   the marker moves when you ask it to, not by magic. Make a `/loc` hotbutton and tap
-  it as you travel — each one adds to a **fading breadcrumb trail**, so the map draws
-  the route you actually took.
+  it as you travel — each one adds to a **comet-tail breadcrumb trail** of your last
+  minute of movement, each crumb fading continuously from the moment it lands, so the
+  map shows where you just came from without ever cluttering into a route history.
 - **The forager's trick** makes `/loc` near-automatic without addons: create an
   in-game social with `/loc` on line 1 and `/doability 1` (Forage, Sense Heading,
   Kick — whatever you already spam) on line 2, and put it on that skill's hotbar
   key. Every press drops a breadcrumb while doing exactly what the key did before —
-  the same move foragers used for twenty years. And if the game's keybinds allow
-  the overlap, bind that hotbar slot to a **movement key** (`W`): walking forward
-  then drops breadcrumbs by itself and the trail draws your route hands-free.
+  the same move foragers used for twenty years. Better still, bind that hotbar
+  slot to a **movement key you tap a lot** — the turn/strafe keys (`A` and `D`)
+  are the sweet spot, because every course adjustment drops a crumb and the trail
+  draws your route hands-free. (`W` works too, but held keys don't repeat — it
+  only fires when you start moving, so a long straightaway leaves no crumbs.)
   Either way it's a plain game social — the game runs it, EQBuddy just reads the
   log, and doesn't mind however many `/loc`s you produce.
 - **Named camps, pinned**: every running spawn timer in your zone appears in the map's
@@ -439,10 +442,22 @@ turns up, the install whose character log was written most recently wins — a p
 you have stopped using keeps its (empty) `Logs` folder forever, and existence alone
 would let it outrank the one you actually play.
 
-## License
+## License — use freely, credit visibly
 
-MIT — see [LICENSE](LICENSE). Contributions welcome; parser fixes go fastest when the
-issue or PR includes the raw log lines involved.
+MIT — see [LICENSE](LICENSE). Use the code, port it, build on it, ship your own
+tool from it — freely, commercially, no permission needed. The license's one
+condition (and it is a condition, not a request): the copyright notice comes
+along with any substantial portion of the code you take. In practice, do it the
+visible way: a **"based on [EQBuddy](https://github.com/DranakCorps-bot/EQBuddy)"**
+line in your README or about screen, naming what you took.
+
+Ideas — spawn timers that learn from your kills, the /loc breadcrumb trail, the
+camp-pin map, the log-only principle — can't be licensed, and we wouldn't want
+to: reimplement anything. But if EQBuddy's designs shaped your tool, say so by
+name, the same way the credits below name everyone whose work shaped EQBuddy.
+
+Contributions welcome; parser fixes go fastest when the issue or PR includes the
+raw log lines involved.
 
 Third-party credits are in [NOTICE](NOTICE). The original crowd-control spell seed list
 is adapted from [Spyxy's DPS Meter](https://github.com/khadesh/SpyxysDPSMeter) by khadesh

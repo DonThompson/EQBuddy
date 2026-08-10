@@ -447,10 +447,12 @@ public sealed class MapWindow : Window
         "Put it on the hotbar key that skill already lives on, and every press drops a\n" +
         "breadcrumb while doing exactly what the key did before.\n" +
         "\n" +
-        "Even better, if the game's keybinds allow the overlap: bind that hotbar slot\n" +
-        "to a MOVEMENT key (W). Then simply walking forward drops breadcrumbs, and the\n" +
-        "trail draws itself. Either way it's a plain in-game social — the game runs it,\n" +
-        "EQBuddy just reads the log (and doesn't mind however many /locs you produce).";
+        "Even better: bind that hotbar slot to a movement key you TAP a lot — the turn\n" +
+        "keys (A and D) are the sweet spot, because every course adjustment drops a\n" +
+        "crumb and the trail draws itself. (W works too, but held keys don't repeat —\n" +
+        "it only fires when you start moving.) Either way it's a plain in-game social —\n" +
+        "the game runs it, EQBuddy just reads the log (and doesn't mind however many\n" +
+        "/locs you produce).";
 
     private void UpdateMarker()
     {
