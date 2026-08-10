@@ -950,17 +950,36 @@ public partial class MainWindow : Window
 
     private void EnterReview(string path)
     {
+        // A pre-splitter log holds days of sessions; ask which one (#74 round two —
+        // Snagglefern's 10 MB archive replayed as a 10-minute evening). Splitter
+        // archives are one session each, so they skip the dialog entirely.
+        List<LogSessionInfo> sessions;
+        try { sessions = LogSessions.Scan(path); }
+        catch (Exception ex) { App.LogError(ex); sessions = []; }
+        LogSessionInfo? pick = null;
+        if (sessions.Count > 1)
+        {
+            // Debug/screenshot hook: 1-based chronological index skips the dialog.
+            pick = int.TryParse(Environment.GetEnvironmentVariable("EQBUDDY_REVIEW_SESSION"),
+                    out var idx) && idx >= 1 && idx <= sessions.Count
+                ? sessions[idx - 1]
+                : SessionPickerWindow.Choose(this, Path.GetFileName(path), sessions);
+            if (pick is null) return;   // cancelled
+        }
+
         // The live session goes to history first, same as a character switch —
         // then the archiver stands down until we're back.
         _archiver.FinalizeActive(_stats.Snapshot(), "ReviewingArchive");
         _reviewPath = path;
-        _watcher.Select(path);
+        if (pick is not null) _watcher.Select(path, pick.StartOffset, pick.EndOffset);
+        else _watcher.Select(path);
         ReviewLogItem.Header = "✓ Reviewing an archive — return to live log";
-        CharLabel.Text = $"REVIEWING {Path.GetFileName(path)} — click here to go live";
+        var when = pick is not null ? $" ({pick.Start:MMM d HH:mm})" : "";
+        CharLabel.Text = $"REVIEWING {Path.GetFileName(path)}{when} — click here to go live";
         CharLabel.Foreground = (Brush)FindResource("WarnBrush");
         CharLabel.Cursor = Cursors.Hand;
         CharLabel.ToolTip = "Replaying a saved log. Drops by Creature and ✦ Copy for wiki " +
-            "show that session (the last one in the file). Click to return to the live log.";
+            "show the reviewed session. Click to return to the live log.";
     }
 
     private void ExitReview()
