@@ -235,6 +235,13 @@ Maps & travel:
   the marker moves when you ask it to, not by magic. Make a `/loc` hotbutton and tap
   it as you travel — each one adds to a **fading breadcrumb trail**, so the map draws
   the route you actually took.
+- **The forager's trick** makes `/loc` near-automatic without addons: create an
+  in-game social with `/loc` on line 1 and `/doability 1` (Forage, Sense Heading,
+  Kick — whatever you already spam) on line 2, and put it on that skill's hotbar
+  key. Every press drops a breadcrumb while doing exactly what the key did before —
+  the same move foragers used for twenty years, and it's a plain game social: the
+  game runs it, EQBuddy just reads the log. Binding the hotkey beside your movement
+  keys puts it under fingers that are already there.
 - **Named camps, pinned**: every running spawn timer in your zone appears in the map's
   side panel with its countdown — and a 📍 pin on the map itself once EQBuddy knows the
   camp: your own `/loc` near the kill teaches it (type `/loc` during the fight and the

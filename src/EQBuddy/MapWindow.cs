@@ -420,6 +420,20 @@ public sealed class MapWindow : Window
     private static Color Readable(byte r, byte g, byte b) =>
         r * 2 + g * 5 + b < 300 ? Color.FromRgb(170, 170, 170) : Color.FromRgb(r, g, b);
 
+    /// <summary>The old forager's trick, offered wherever the marker is explained:
+    /// the game itself makes /loc nearly automatic if you fold it into a social.</summary>
+    private const string LocMacroTip =
+        "Make /loc automatic-ish — the old forager's trick, no addons involved:\n" +
+        "\n" +
+        "In game, open Socials and make a macro:\n" +
+        "    Line 1:  /loc\n" +
+        "    Line 2:  /doability 1   (Forage, Sense Heading, Kick — whatever you already spam)\n" +
+        "\n" +
+        "Put it on the hotbar key that skill already lives on, and every press drops a\n" +
+        "breadcrumb while doing exactly what the key did before. Some players bind the\n" +
+        "hotkey next to their movement keys so it falls under the same fingers.\n" +
+        "It's a plain in-game social — the game runs it, EQBuddy just reads the log.";
+
     private void UpdateMarker()
     {
         var loc = _main.CurrentSnapshot().LastLocation;
@@ -428,7 +442,9 @@ public sealed class MapWindow : Window
         {
             _marker.Visibility = Visibility.Collapsed;
             if (_shownFile.Length > 0)
-                _status.Text = $"{Path.GetFileNameWithoutExtension(_shownFile)} — type /loc in game to place your marker.";
+                _status.Text = $"{Path.GetFileNameWithoutExtension(_shownFile)} — type /loc in game to place " +
+                    "your marker (hover here: a macro trick makes it near-automatic).";
+            _status.ToolTip = LocMacroTip;
             return;
         }
         var (mx, my) = ZoneMap.FromLoc(loc.LocY, loc.LocX);
@@ -440,6 +456,7 @@ public sealed class MapWindow : Window
         _status.Text = $"{Path.GetFileNameWithoutExtension(_shownFile)} — position from /loc " +
             (age.TotalMinutes < 1 ? "just now" : $"{(int)age.TotalMinutes}m ago") +
             " (type /loc to update; EQBuddy reads only the log)";
+        _status.ToolTip = LocMacroTip;
     }
 
     private void FitToView()
