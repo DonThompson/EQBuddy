@@ -38,6 +38,45 @@ public class SpawnTimerTests
     private static SpawnTimers Tracker(SpawnOverrides? overrides = null, string? path = null) =>
         new(TestCatalog(), overrides ?? new SpawnOverrides(), path) { Server = "freeport" };
 
+    // ---- camp locations (the map's named pins, 2026-08-10) ----
+
+    [Fact]
+    public void KillNearAFreshLocPinsTheCamp()
+    {
+        var t = Tracker();
+        t.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+        t.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+        t.Apply(new KillEvent(T0.AddMinutes(2), "a froglok ghoul lord", "You"));
+
+        var timer = Assert.Single(t.Snapshot(T0.AddMinutes(2)));
+        Assert.Equal((-500.0, 120.0), (timer.CampLocY, timer.CampLocX));
+
+        // A re-kill with NO fresh /loc keeps the learned camp; a stale /loc (an
+        // hour old) never pins the wrong hillside.
+        t.Apply(new KillEvent(T0.AddMinutes(30), "a froglok ghoul lord", "You"));
+        timer = Assert.Single(t.Snapshot(T0.AddMinutes(30)));
+        Assert.Equal(-500.0, timer.CampLocY);
+    }
+
+    [Fact]
+    public void StaleOrForeignLocsNeverPin()
+    {
+        var t = Tracker();
+        t.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+        t.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+        // Kill happens 20 minutes after the /loc: outside the window, no pin.
+        t.Apply(new KillEvent(T0.AddMinutes(21), "a froglok ghoul lord", "You"));
+        Assert.Null(Assert.Single(t.Snapshot(T0.AddMinutes(21))).CampLocY);
+
+        // A /loc from the PREVIOUS zone dies at the border.
+        var t2 = Tracker();
+        t2.Apply(new ZoneEvent(T0, "Innothule Swamp"));
+        t2.Apply(new LocationEvent(T0.AddMinutes(1), -1, -1, 0));
+        t2.Apply(new ZoneEvent(T0.AddMinutes(2), "The Ruins of Old Guk"));
+        t2.Apply(new KillEvent(T0.AddMinutes(3), "a froglok ghoul lord", "You"));
+        Assert.Null(Assert.Single(t2.Snapshot(T0.AddMinutes(3))).CampLocY);
+    }
+
     // ---- the shipped catalog ----
 
     [Fact]

@@ -94,6 +94,7 @@ public sealed class SessionStats
     private string? _lastRegenCast;
     private (string Name, DateTime Time)? _lastConsider;
     private LocationEvent? _lastLoc;
+    private readonly List<LocationEvent> _locTrail = [];
 
     /// <summary>One rule's journal-scan result, minus the time-derived rates —
     /// the memoizable half of a TrackedRuleResult (perf audit #4).</summary>
@@ -869,9 +870,15 @@ public sealed class SessionStats
                     if (_zones.Count == 0 || !string.Equals(_zones[^1].Zone, z.Zone, StringComparison.OrdinalIgnoreCase))
                         _zones.Add((z.Time, z.Zone));
                     _lastLoc = null;   // a /loc from the previous zone is a lie here
+                    _locTrail.Clear();
                     break;
                 case LocationEvent loc:
                     _lastLoc = loc;    // the map window's player marker
+                    // The breadcrumb trail: every /loc in this zone, oldest first,
+                    // bounded — tap a /loc hotbutton while traveling and the map
+                    // draws your route (David, 2026-08-10).
+                    _locTrail.Add(loc);
+                    if (_locTrail.Count > 80) _locTrail.RemoveAt(0);
                     break;
                 case FizzleEvent: _fizzles++; break;
                 case ResistEvent: _resists++; break;
@@ -1311,7 +1318,7 @@ public sealed class SessionStats
         _healingDone = 0; _healCount = 0; _healingReceived = 0;
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
         _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null; _lastConsider = null;
-        _lastLoc = null; _trackedMemo = null;
+        _lastLoc = null; _locTrail.Clear(); _trackedMemo = null;
         _runeGainCount = 0; _runeGainPoints = 0;
         _runeBlockStreak = 0; _runeBlockStreakMax = 0; _runeBlockCount = 0;
         _loot.Clear(); _lootCount = 0; _crafted.Clear();
@@ -1515,6 +1522,7 @@ public sealed class SessionStats
             {
                 Version = _version,
                 LastLocation = _lastLoc,
+                LocationTrail = _locTrail.ToList(),
                 SessionStart = _sessionStart,
                 LastEventTime = _lastEventTime,
                 Elapsed = elapsed,
@@ -1700,6 +1708,9 @@ public sealed class StatsSnapshot
     /// <summary>The last /loc seen in THIS zone, or null (zoning clears it — a
     /// position from the previous zone would lie on the map).</summary>
     public LocationEvent? LastLocation { get; init; }
+    /// <summary>Every /loc in this zone, oldest first, bounded — the map's
+    /// breadcrumb trail. Empty for sessions archived before it existed.</summary>
+    public List<LocationEvent> LocationTrail { get; init; } = [];
     public DateTime? SessionStart { get; init; }
     public DateTime? LastEventTime { get; init; }
     public TimeSpan Elapsed { get; init; }

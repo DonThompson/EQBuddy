@@ -37,7 +37,7 @@ page instead.
 | ![Options](docs/screenshots/options-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | **Options** — themes, sizes, and the watch-rule editor: per-rule sounds, colors, spoken alerts, delays, and a `.*` regex toggle | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
 | ![Zone map](docs/screenshots/map-window.png) | ![Travel route](docs/screenshots/travel-window.png) |
-| **Zone map** — classic map packs drawn with your last `/loc` as the marker; follows you zone to zone, wheel zooms, drag pans | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
+| **Zone map** — classic map packs with your `/loc` marker, a fading breadcrumb trail of your route, and camp pins for every running spawn timer with its countdown in the side panel | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
 | **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
 
@@ -232,7 +232,15 @@ Maps & travel:
   kin) into the game's `maps` folder and EQBuddy draws your zone — following you as
   you zone, wheel to zoom, drag to pan. Type `/loc` in game and your position appears
   as a marker, honestly labeled with how old it is: EQBuddy reads only the log, so
-  the marker moves when you ask it to, not by magic.
+  the marker moves when you ask it to, not by magic. Make a `/loc` hotbutton and tap
+  it as you travel — each one adds to a **fading breadcrumb trail**, so the map draws
+  the route you actually took.
+- **Named camps, pinned**: every running spawn timer in your zone appears in the map's
+  side panel with its countdown — and a 📍 pin on the map itself once EQBuddy knows the
+  camp: your own `/loc` near the kill teaches it (type `/loc` during the fight and the
+  next kill pins it), with the wiki's location field as fallback. Spawn timers, camp
+  positions, and your own route on one screen — ShowEQ's greatest hits, rebuilt from
+  nothing but your log and public wiki pages.
 - **Travel route** (right-click → *Travel route…*): pick any zone and get hop-by-hop
   directions from where you're standing — walking connections from client-mined atlas
   data plus the wiki's boat and port adjacencies.

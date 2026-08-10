@@ -17,6 +17,11 @@ public sealed class MobInfo
     /// "Uncommon"…) or "" when the page doesn't annotate the entry.</summary>
     public List<(string Item, string Rarity)> Drops { get; set; } = [];
     public string WikiUrl { get; set; } = "";
+    /// <summary>The page's location field, as written ("-500, -200 by the tower").</summary>
+    public string Location { get; set; } = "";
+    /// <summary>First coordinate pair from the location field, in /loc's (Y, X)
+    /// order — editors paste /loc output. Null when the field is prose-only.</summary>
+    public (double Y, double X)? LocYX { get; set; }
 }
 
 public sealed record MobLookupResult(MobInfo? Mob, ItemLookupState State, DateTime? FetchedAt);
@@ -216,6 +221,10 @@ public sealed partial class EqlWikiMobService
     [GeneratedRegex(@"\{\{:([^}|]+)\}\}\s*(?:<span[^>]*>\(([^)]+)\)</span>)?")]
     private static partial Regex DropRx();
 
+    // First "-123.4, 567" style pair in a location field.
+    [GeneratedRegex(@"(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)")]
+    private static partial Regex LocPairRx();
+
     public static MobInfo Parse(string wikitext, string title)
     {
         var info = new MobInfo
@@ -231,6 +240,16 @@ public sealed partial class EqlWikiMobService
             info.Zone = EqlWikiText.StripLinks(zone);
         if (fields.TryGetValue("level", out var level))
             info.Level = level.Trim();
+        if (fields.TryGetValue("location", out var location))
+        {
+            info.Location = EqlWikiText.StripLinks(location).Trim();
+            // Editors paste /loc output, so the first coordinate pair is (Y, X) in
+            // the log's own order — good enough to pin a camp on the map (~).
+            var m = LocPairRx().Match(info.Location);
+            if (m.Success)
+                info.LocYX = (double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture),
+                              double.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture));
+        }
         // Some pages fill common_loot instead of (or as well as) known_loot — read both,
         // deduped by item (the orc thaumaturgist hunt, David 2026-08-07, found the split).
         var dropSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

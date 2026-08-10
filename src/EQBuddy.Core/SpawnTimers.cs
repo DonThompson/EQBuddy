@@ -10,6 +10,14 @@ public sealed record SpawnTimerState(
 {
     public DateTime? DueAt => DurationSeconds is { } d ? KilledAt.AddSeconds(d) : null;
     public bool IsDue(DateTime now) => DueAt is { } due && now >= due;
+
+    /// <summary>The camp, learned from YOUR /loc at kill time (map pins — the
+    /// "ShowEQ Lite" panel, 2026-08-10): you were standing at the fight, so your
+    /// position IS the camp, near enough to find it again. Null until a kill lands
+    /// with a fresh /loc in the log; timers persisted before this existed
+    /// deserialize null. Values are the /loc's own (Y, X) order.</summary>
+    public double? CampLocY { get; init; }
+    public double? CampLocX { get; init; }
 }
 
 /// <summary>
@@ -37,6 +45,24 @@ public sealed class SpawnTimers
         new(StringComparer.OrdinalIgnoreCase);
 
     private SpawnZone? _currentZone;
+    private LocationEvent? _lastLoc;
+
+    /// <summary>A /loc within this window of a kill counts as the camp's position —
+    /// long enough for "tap the hotbutton, pull, kill", short enough that a stale
+    /// reading from across the zone doesn't pin the wrong hillside.</summary>
+    private static readonly TimeSpan CampLocWindow = TimeSpan.FromMinutes(3);
+
+    /// <summary>The camp position for a new timer: a fresh /loc wins; otherwise the
+    /// previous timer's learned camp carries forward (re-kills without a /loc must
+    /// not erase what an earlier kill taught).</summary>
+    private (double? Y, double? X) CampFor(string zone, string name, DateTime killTime)
+    {
+        if (_lastLoc is { } loc && killTime - loc.Time <= CampLocWindow && killTime >= loc.Time)
+            return (loc.LocY, loc.LocX);
+        return _timers.TryGetValue(Key(Server, zone, name), out var prior)
+            ? (prior.CampLocY, prior.CampLocX)
+            : (null, null);
+    }
 
     public string Server { get; set; } = "";
     public SpawnZone? CurrentZone { get { lock (_lock) return _currentZone; } }
@@ -55,7 +81,11 @@ public sealed class SpawnTimers
         switch (evt)
         {
             case ZoneEvent z:
-                lock (_lock) _currentZone = _catalog.FindZone(z.Zone);
+                lock (_lock) { _currentZone = _catalog.FindZone(z.Zone); _lastLoc = null; }
+                break;
+            case LocationEvent loc:
+                // Kill-time /loc = the camp's location (map pins). Zoning clears it.
+                lock (_lock) _lastLoc = loc;
                 break;
             case KillEvent k:
                 OnKill(k);
@@ -188,7 +218,9 @@ public sealed class SpawnTimers
                     // "re"-kill may be a sibling across the zone, not this camp again.
                     if (!trusted && !entry.MultiSpawn)
                         duration = LearnFromRekill(zone.Zone, entry.Name, k.Time, duration);
-                    Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration));
+                    var (cy, cx) = CampFor(zone.Zone, entry.Name, k.Time);
+                    Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration)
+                        { CampLocY = cy, CampLocX = cx });
                     return;
                 }
 
@@ -196,7 +228,9 @@ public sealed class SpawnTimers
                 {
                     if (!Matches(name, k.Target, fuzzy)
                         && !Matches(o.Placeholder ?? "", k.Target, fuzzy)) continue;
-                    Upsert(new SpawnTimerState(Server, zone.Zone, name, k.Time, o.RespawnSeconds));
+                    var (ccy, ccx) = CampFor(zone.Zone, name, k.Time);
+                    Upsert(new SpawnTimerState(Server, zone.Zone, name, k.Time, o.RespawnSeconds)
+                        { CampLocY = ccy, CampLocX = ccx });
                     return;
                 }
             }

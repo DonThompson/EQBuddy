@@ -69,6 +69,35 @@ public class ZoneMapTests : IDisposable
     }
 
     [Fact]
+    public void BreadcrumbTrailAccumulatesAndClearsOnZoning()
+    {
+        var stats = new SessionStats { CharacterName = "Dranak" };
+        string At(int m, string msg) => $"[Sat Jul 18 15:{m:D2}:00 2026] {msg}";
+        stats.Apply(LogParser.Parse(At(0, "You have entered Crushbone."))!);
+        for (var i = 1; i <= 3; i++)
+            stats.Apply(LogParser.Parse(At(i, $"Your Location is -{i}00.0, 50.0, 3.0"))!);
+        var trail = stats.Snapshot().LocationTrail;
+        Assert.Equal(3, trail.Count);
+        Assert.Equal(-100.0, trail[0].LocY);   // oldest first
+        Assert.Equal(-300.0, trail[2].LocY);
+
+        stats.Apply(LogParser.Parse(At(5, "You have entered Greater Faydark."))!);
+        Assert.Empty(stats.Snapshot().LocationTrail);
+    }
+
+    [Fact]
+    public void WikiLocationFieldsParseIntoCoordinates()
+    {
+        var svc = new EqlWikiMobService(Path.Combine(_dir, "mobcache"),
+            _ => Task.FromResult<string?>(
+                "{{Namedmobpage\n| name = Lord Gimblox\n| zone = [[Solusek's Eye]]\n" +
+                "| location = -565, 30 (tower, third floor)\n| known_loot = {{:Runed Cloak}}\n}}"));
+        var result = svc.LookupAsync("Lord Gimblox").GetAwaiter().GetResult();
+        Assert.Equal("-565, 30 (tower, third floor)", result.Mob!.Location);
+        Assert.Equal((-565.0, 30.0), result.Mob.LocYX!.Value);
+    }
+
+    [Fact]
     public void SessionTracksLastLocPerZone()
     {
         var stats = new SessionStats { CharacterName = "Dranak" };

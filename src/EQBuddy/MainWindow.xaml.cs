@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private bool _installingUpdate;
 
     private readonly SpawnTimers _spawnTimers;
+    internal SpawnTimers SpawnTimers => _spawnTimers;
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
     private readonly Dictionary<string, int> _skyQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);

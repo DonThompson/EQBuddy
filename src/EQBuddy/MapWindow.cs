@@ -33,6 +33,10 @@ public sealed class MapWindow : Window
     private bool _userPicked;
     private Point _dragStart;
     private bool _dragging;
+    private readonly StackPanel _namedPanel = new() { Margin = new Thickness(8, 4, 8, 4) };
+    private readonly List<System.Windows.Shapes.Path> _trailPaths = [];
+    private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _campPins = [];
+    private int _trailStamp = -1;
 
     public MapWindow(MainWindow main)
     {
@@ -77,11 +81,25 @@ public sealed class MapWindow : Window
             }
         };
 
+        // The named side panel — "ShowEQ Lite," minus everything bannable (David,
+        // 2026-08-10): current-zone named with their respawn countdowns, camps
+        // pinned from YOUR /loc at kill time or the wiki's location field. All of
+        // it from the log and public pages; nothing reads or touches the game.
+        var side = new ScrollViewer
+        {
+            Content = _namedPanel,
+            Width = 190,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        };
+        side.SetResourceReference(BackgroundProperty, "PanelBrush");
+
         var root = new DockPanel();
         DockPanel.SetDock(bar, Dock.Top);
         DockPanel.SetDock(_status, Dock.Bottom);
+        DockPanel.SetDock(side, Dock.Right);
         root.Children.Add(bar);
         root.Children.Add(_status);
+        root.Children.Add(side);
         root.Children.Add(_canvas);
         Content = root;
 
@@ -142,6 +160,140 @@ public sealed class MapWindow : Window
             ShowFile(_shownFile);
         }
         UpdateMarker();
+        UpdateTrail();
+        UpdateNamedPanel();
+    }
+
+    /// <summary>The breadcrumb trail: your /locs in this zone, drawn as a path that
+    /// fades toward the past — tap a /loc hotbutton while traveling and the map
+    /// shows the route you took. Geometry lives in map space; rebuilt only when a
+    /// new /loc arrives.</summary>
+    private void UpdateTrail()
+    {
+        var trail = _main.CurrentSnapshot().LocationTrail;
+        var showing = _map is not null && !_userPicked;
+        var stamp = showing ? trail.Count : 0;
+        if (stamp == _trailStamp) return;
+        _trailStamp = stamp;
+        foreach (var p in _trailPaths) _mapLayer.Children.Remove(p);
+        _trailPaths.Clear();
+        if (!showing || trail.Count < 2) { AfterViewChanged(); return; }
+
+        for (var i = 1; i < trail.Count; i++)
+        {
+            var (x1, y1) = ZoneMap.FromLoc(trail[i - 1].LocY, trail[i - 1].LocX);
+            var (x2, y2) = ZoneMap.FromLoc(trail[i].LocY, trail[i].LocX);
+            var age = (double)(trail.Count - i) / trail.Count;   // 0 = newest
+            var brush = new SolidColorBrush(Color.FromArgb(
+                (byte)(200 - 150 * age), 255, 200, 60));
+            brush.Freeze();
+            var seg = new System.Windows.Shapes.Path
+            {
+                Stroke = brush,
+                Data = new LineGeometry(new Point(x1, y1), new Point(x2, y2)),
+            };
+            _trailPaths.Add(seg);
+            _mapLayer.Children.Add(seg);
+        }
+        AfterViewChanged();
+    }
+
+    /// <summary>Side panel + camp pins: every running spawn timer in the shown zone,
+    /// its countdown, and a pin when a camp location is known — learned from your
+    /// kill-time /loc first, the wiki's location field as fallback.</summary>
+    private void UpdateNamedPanel()
+    {
+        _namedPanel.Children.Clear();
+        foreach (var (el, _, _, _, _) in _campPins) _canvas.Children.Remove(el);
+        _campPins.Clear();
+
+        var zone = _main.CurrentZoneName;
+        var header = new TextBlock
+        {
+            Text = zone.Length > 0 ? $"⏳ Named — {zone}" : "⏳ Named",
+            FontSize = 11, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 2, 0, 4),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        header.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+        _namedPanel.Children.Add(header);
+
+        var now = DateTime.Now;
+        var timers = _main.SpawnTimers.Snapshot(now)
+            .Where(t => string.Equals(t.Zone, zone, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (timers.Count == 0)
+        {
+            var none = new TextBlock
+            {
+                Text = "No running timers here — kill a named (or its placeholder) and its countdown appears, pinned to wherever your last /loc put you.",
+                FontSize = 10, TextWrapping = TextWrapping.Wrap,
+            };
+            none.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            _namedPanel.Children.Add(none);
+            return;
+        }
+
+        var pinsAllowed = _map is not null && !_userPicked;
+        foreach (var t in timers)
+        {
+            // Camp: learned kill-time /loc wins; wiki location field is the fallback
+            // (fetched through the same cached, polite lookup the Loot card uses).
+            (double Y, double X)? camp = t is { CampLocY: { } cy, CampLocX: { } cx } ? (cy, cx) : null;
+            var fromWiki = false;
+            if (camp is null)
+            {
+                _main.EnsureMobLookup(t.Name);
+                if (_main.WikiMobResult(t.Name)?.Mob?.LocYX is { } wl) { camp = wl; fromWiki = true; }
+            }
+
+            var due = t.DueAt;
+            var countdown = due is null ? "?"
+                : t.IsDue(now) ? "DUE"
+                : EQBuddy.UI.Shared.Countdown.Format(due.Value - now);
+            var row = new TextBlock
+            {
+                Text = $"{(camp is null ? "" : "📍 ")}{t.Name} · {countdown}",
+                FontSize = 11, Margin = new Thickness(0, 1, 0, 1),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = camp is null
+                    ? $"{t.Name} — no camp location yet: type /loc during the fight and the next kill pins it"
+                    : $"{t.Name} — camp {(fromWiki ? "from the wiki (~)" : "from your /loc at kill time")}",
+            };
+            row.SetResourceReference(TextBlock.ForegroundProperty,
+                t.IsDue(now) ? "WarnBrush" : "TextBrush");
+            _namedPanel.Children.Add(row);
+
+            if (camp is { } c && pinsAllowed)
+            {
+                var (mx, my) = ZoneMap.FromLoc(c.Y, c.X);
+                var pin = new System.Windows.Shapes.Polygon
+                {
+                    Points = [new Point(0, 0), new Point(5, -10), new Point(-5, -10)],
+                    StrokeThickness = 1,
+                };
+                pin.SetResourceReference(System.Windows.Shapes.Shape.FillProperty,
+                    t.IsDue(now) ? "WarnBrush" : "BadBrush");
+                pin.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty, "BgBrush");
+                var label = new TextBlock { Text = $"{t.Name} {countdown}", FontSize = 10 };
+                label.SetResourceReference(TextBlock.ForegroundProperty,
+                    t.IsDue(now) ? "WarnBrush" : "BadBrush");
+                _campPins.Add((pin, mx, my, 0, 0));
+                _campPins.Add((label, mx, my, 7, -14));
+                _canvas.Children.Add(pin);
+                _canvas.Children.Add(label);
+            }
+        }
+        PlaceCampPins();
+    }
+
+    private void PlaceCampPins()
+    {
+        foreach (var (el, x, y, dx, dy) in _campPins)
+        {
+            var s = _view.Matrix.Transform(new Point(x, y));
+            Canvas.SetLeft(el, s.X + dx);
+            Canvas.SetTop(el, s.Y + dy);
+        }
     }
 
     private void ShowFile(string file)
@@ -251,12 +403,14 @@ public sealed class MapWindow : Window
     {
         var scale = Math.Max(0.0001, Math.Abs(_view.Matrix.M11));
         foreach (var path in _linePaths) path.StrokeThickness = 1.2 / scale;
+        foreach (var path in _trailPaths) path.StrokeThickness = 2.2 / scale;
         foreach (var (el, x, y, dx, dy) in _pois)
         {
             var s = _view.Matrix.Transform(new Point(x, y));
             Canvas.SetLeft(el, s.X + dx);
             Canvas.SetTop(el, s.Y + dy);
         }
+        PlaceCampPins();
         UpdateMarker();
     }
 
