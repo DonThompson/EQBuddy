@@ -105,6 +105,18 @@ public sealed class InventoryWindow : Window
             _panel.Children.Add(g);
         }
 
+        // What the log saw AFTER the dump was written: these counts already feed the
+        // quest tracker's held tab, but the bag structure below is the dump's — the
+        // log knows what you gained, not which bag you put it in.
+        var gained = snap.SinceDump.Where(kv => kv.Value > 0)
+            .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
+        if (gained.Count > 0)
+        {
+            Header($"Looted since this dump ({gained.Count})");
+            foreach (var (item, n) in gained)
+                Row("", n > 1 ? $"{item} ×{n}" : item);
+        }
+
         var containers = snap.Entries.Where(e => e.InContainer)
             .GroupBy(e => e.ContainerSlot, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);

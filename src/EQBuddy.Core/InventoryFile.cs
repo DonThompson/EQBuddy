@@ -17,9 +17,28 @@ public static class InventoryFile
     public sealed record Snapshot(string Path, DateTime WrittenAt, Dictionary<string, int> Counts)
     {
         public List<Entry> Entries { get; init; } = [];
+        /// <summary>Net log-observed change since the dump was written (loot in,
+        /// sells/destroys out) — already merged into <see cref="Counts"/>; kept
+        /// separately so views can show "since this dump" honestly.</summary>
+        public Dictionary<string, int> SinceDump { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 
         public int CountOf(string itemName) =>
             Counts.TryGetValue(QuestCatalog.BaseItemName(itemName), out var n) ? n : 0;
+
+        /// <summary>The dump plus the log since it: loot adds, sells/destroys subtract,
+        /// nothing goes below zero (selling something the dump never saw proves the
+        /// dump stale, not a negative bag).</summary>
+        public Snapshot WithChanges(Dictionary<string, int> gained)
+        {
+            var merged = new Dictionary<string, int>(Counts, StringComparer.OrdinalIgnoreCase);
+            foreach (var (item, n) in gained)
+            {
+                var next = merged.GetValueOrDefault(item) + n;
+                if (next > 0) merged[item] = next;
+                else merged.Remove(item);
+            }
+            return new Snapshot(Path, WrittenAt, merged) { Entries = Entries, SinceDump = gained };
+        }
     }
 
     /// <summary>One occupied row, structure preserved: "General 1-Slot2" is inside the

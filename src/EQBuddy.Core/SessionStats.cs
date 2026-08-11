@@ -1439,6 +1439,37 @@ public sealed class SessionStats
     private static void Bump(Dictionary<string, int> d, string key) =>
         d[key] = d.TryGetValue(key, out var v) ? v + 1 : 1;
 
+    /// <summary>Net items gained since <paramref name="since"/> — loot in, auto-sells /
+    /// destroys / vendor sales out — the live overlay the inventory views lay over a
+    /// /outputfile dump (David, 2026-08-11: the dump is a baseline, the log keeps it
+    /// current). Keys are base item names. Loot events are journal-retained whole
+    /// session, so a dump older than the session is adjusted by everything the
+    /// session saw; what happened before the session started is the dump's to know.</summary>
+    public Dictionary<string, int> ItemsGainedSince(DateTime since)
+    {
+        var gained = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        void Add(string item, int n)
+        {
+            var b = QuestCatalog.BaseItemName(item);
+            gained[b] = gained.GetValueOrDefault(b) + n;
+        }
+        lock (_lock)
+            foreach (var e in _journal)
+            {
+                if (e.Time <= since) continue;
+                switch (e)
+                {
+                    case LootEvent l: Add(l.Item, Math.Max(1, l.Count)); break;
+                    case AutoSellEvent a: Add(a.Item, -Math.Max(1, a.Count)); break;
+                    case ItemDestroyedEvent x: Add(x.Item, -Math.Max(1, x.Count)); break;
+                    // Vendor sales name one item per line; counts aren't logged, so
+                    // one per line is the honest floor.
+                    case MoneyEvent { Vendor: true, Item: { Length: > 0 } sold }: Add(sold, -1); break;
+                }
+            }
+        return gained;
+    }
+
     public StatsSnapshot Snapshot() => Snapshot(recentWindow: null, rules: null);
 
     /// <summary>

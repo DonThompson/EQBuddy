@@ -2829,13 +2829,15 @@ public partial class MainWindow : Window
     private InventoryFile.Snapshot? _inventory;
     private InventoryWindow? _inventoryWindow;
 
-    /// <summary>The newest inventory dump for the followed character; memoized —
-    /// pass refresh to re-scan the game folder (the ⟳ button, the held tab).</summary>
+    /// <summary>The newest inventory dump for the followed character, adjusted by what
+    /// the log has seen since it was written (loot in, sells out — David, 2026-08-11);
+    /// the dump itself is memoized, the log overlay is always current. Pass refresh to
+    /// re-scan the game folder (the ⟳ button, the held tab).</summary>
     internal InventoryFile.Snapshot? LatestInventory(bool refresh = false)
     {
         if (refresh || _inventory is null)
             _inventory = InventoryFile.FindLatest(_settings.LogFolder, Identity.Character);
-        return _inventory;
+        return _inventory?.WithChanges(_stats.ItemsGainedSince(_inventory.WrittenAt));
     }
 
     private void OnInventoryWindow(object sender, RoutedEventArgs e)
