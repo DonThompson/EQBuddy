@@ -1658,8 +1658,25 @@ public partial class MainWindow : Window
         return changed;
     }
 
+    /// <summary>Sky state lens (David, 2026-08-11): same vocabulary as the quest
+    /// tracker's filter — "ready" is the Sky-specific prize: every piece collected,
+    /// the turn-in still to make. Session-scoped like the tracker's.</summary>
+    private string _skyState = "any state";
+
+    private void OnSkyStateChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SkyStateCombo.SelectedItem is not string s) return;
+        _skyState = s;
+        _skyQuestDirty = true;
+    }
+
     private void RenderSkyQuestChecklist()
     {
+        if (SkyStateCombo.Items.Count == 0)
+        {
+            foreach (var s in new[] { "any state", "open", "ready", "done" }) SkyStateCombo.Items.Add(s);
+            SkyStateCombo.SelectedIndex = 0;
+        }
         // Live selection wins; the persisted class restores the tab across restarts.
         var selectedClass = (SkyQuestTabs.SelectedItem as TabItem)?.Tag as string
             ?? (_settings.SkyQuestClass.Length > 0 ? _settings.SkyQuestClass : null);
@@ -1681,6 +1698,14 @@ public partial class MainWindow : Window
                 // The reward line is itself a checkbox: "I turned this in" (#73).
                 // Manual only — the log shows nothing reliable at the NPC hand-over.
                 var completed = IsSkyRewardCompleted(classGroup.Key, rewardGroup.Key);
+                var stateOk = _skyState switch
+                {
+                    "open" => !completed && rewardGroup.Any(i => !i.Acquired),
+                    "ready" => !completed && rewardGroup.All(i => i.Acquired),
+                    "done" => completed,
+                    _ => true,
+                };
+                if (!stateOk) continue;
                 var rewardItems = rewardGroup.ToList();
                 var rewardCheck = new CheckBox
                 {
@@ -1737,6 +1762,17 @@ public partial class MainWindow : Window
                     panel.Children.Add(check);
                 }
             }
+
+            if (panel.Children.Count == 0)
+                panel.Children.Add(new TextBlock
+                {
+                    Text = _skyState == "ready"
+                        ? "Nothing fully collected yet — \"open\" shows what's still missing."
+                        : $"No {_skyState} quests for this class.",
+                    FontSize = 11, TextWrapping = TextWrapping.Wrap,
+                    Foreground = (Brush)FindResource("DimBrush"),
+                    Margin = new Thickness(0, 4, 0, 4),
+                });
 
             var tab = new TabItem
             {

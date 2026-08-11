@@ -416,6 +416,12 @@
                         <TextBlock x:Name="SkyQuestHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0/0"/>
                     </Grid>
                 </Expander.Header>
+                <StackPanel>
+                <!-- Same state lens as the quest tracker (David, 2026-08-11): ready
+                     means every piece collected and the turn-in still to make. -->
+                <ComboBox x:Name="SkyStateCombo" Width="86" FontSize="11" HorizontalAlignment="Left"
+                          Margin="0,2,0,2" SelectionChanged="OnSkyStateChanged"
+                          ToolTip="any · open (still missing items) · ready (every item collected — go turn it in) · done (turned in)"/>
                 <TabControl x:Name="SkyQuestTabs" Margin="0,2,0,0"
                             Background="{DynamicResource PanelBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
@@ -473,6 +479,7 @@
                         </ControlTemplate>
                     </TabControl.Template>
                 </TabControl>
+                </StackPanel>
             </Expander>
 
             <Expander x:Name="TrackedSection" Style="{StaticResource Section}" Visibility="Collapsed">

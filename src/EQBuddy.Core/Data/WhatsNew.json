@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.55.2",
+  "date": "2026-08-11",
+  "highlights": [
+   "The Sky checklist gets the same state lens as the quest tracker: any · open · ready · done, above the class tabs. \"Ready\" is the Sky-specific prize — every piece collected, the turn-in still to make: filter to it before your next Sky run and carry up exactly what the island wants. Pairs with the inventory import, which can mark pieces you banked long ago."
+  ]
+ },
+ {
   "version": "1.55.1",
   "date": "2026-08-11",
   "highlights": [
