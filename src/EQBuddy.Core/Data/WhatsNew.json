@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.57.6",
+  "date": "2026-08-11",
+  "highlights": [
+   "Your loot outranks the class lens: the \"mine\" and \"held\" tabs no longer HIDE quests just because they belong to another class — loot a Blue Orc Head as a monk and The Falchion (Paladin) now appears under a new \"For other classes — you hold pieces anyway\" section instead of vanishing (the class filter still leads with your own classes; era still gates what the world actually offers). Both tabs update live as you loot, same as the Sky checklist. Farming for a friend is a use, not a mistake — now the tracker agrees everywhere."
+  ]
+ }, {
   "version": "1.57.5",
   "date": "2026-08-11",
   "highlights": [

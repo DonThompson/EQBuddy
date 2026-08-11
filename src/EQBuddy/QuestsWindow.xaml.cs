@@ -236,9 +236,13 @@ public partial class QuestsWindow : Window
         }
 
         var era = _settings.QuestEraFilter;
-        bool ClassOk(QuestEntry q) =>
-            QuestClassFilter.MatchesAny(q.Classes, classes)
-            && QuestEraLadder.Allowed(q.Era, era);
+        // Era and class gate separately since 2026-08-11 (David's Crushbone session):
+        // era = world availability, always honored; class = the browse lens — and
+        // item-driven views (mine, held) show out-of-class quests in their own
+        // section rather than hiding what your bags are literally holding pieces of.
+        bool EraOk(QuestEntry q) => QuestEraLadder.Allowed(q.Era, era);
+        bool ClassOnlyOk(QuestEntry q) => QuestClassFilter.MatchesAny(q.Classes, classes);
+        bool ClassOk(QuestEntry q) => ClassOnlyOk(q) && EraOk(q);
         bool StateOk(QuestMatch m) => _state switch
         {
             "open" => completed.GetValueOrDefault(m.Quest.Name) == 0,
@@ -389,8 +393,11 @@ public partial class QuestsWindow : Window
                 QuestsPanel.Children.Add(invLabel);
                 QuestsPanel.Children.Add(CopyCmd());
 
+                // NO class gate on the pool: your bags don't care what class a quest
+                // is for (The Falchion's Blue Orc Head in a monk's bag is a farm,
+                // not a mistake). In-class leads; the rest gets its own section.
                 var overlapping = _main.QuestCatalog.Quests
-                    .Where(q => q.Items.Count > 0 && !q.Collection && ClassOk(q) && !hidden.Contains(q.Name))
+                    .Where(q => q.Items.Count > 0 && !q.Collection && EraOk(q) && !hidden.Contains(q.Name))
                     .Select(q => new QuestMatch(q,
                         q.Items.Count(i => snap.CountOf(i.Name) > 0), q.Items.Count,
                         q.Items.Select(i => new QuestItemProgress(i.Name, i.Qty, snap.CountOf(i.Name))).ToList(),
@@ -402,9 +409,13 @@ public partial class QuestsWindow : Window
                     var tb = new TextBlock { Text = text, Style = (Style)FindResource("SectionLabel") };
                     QuestsPanel.Children.Add(tb);
                 }
-                var ready = overlapping.Where(m => m.Complete)
+                var mine2 = overlapping.Where(m => ClassOnlyOk(m.Quest)).ToList();
+                var others = overlapping.Where(m => !ClassOnlyOk(m.Quest))
+                    .OrderByDescending(m => m.Complete).ThenByDescending(m => m.Fraction)
+                    .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                var ready = mine2.Where(m => m.Complete)
                     .OrderBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase).ToList();
-                var partial = overlapping.Where(m => !m.Complete)
+                var partial = mine2.Where(m => !m.Complete)
                     .OrderByDescending(m => m.Fraction)
                     .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase).ToList();
                 if (ready.Count > 0)
@@ -416,6 +427,11 @@ public partial class QuestsWindow : Window
                 {
                     Section($"Your bags contribute ({partial.Count})");
                     foreach (var m in partial) AddCard(m);
+                }
+                if (others.Count > 0)
+                {
+                    Section($"For other classes — you hold pieces anyway ({others.Count})");
+                    foreach (var m in others) AddCard(m);
                 }
                 if (overlapping.Count == 0)
                     EmptyNote("Nothing in your bags matches a catalogued quest's turn-ins yet.");
@@ -451,11 +467,26 @@ public partial class QuestsWindow : Window
                     StringComparer.OrdinalIgnoreCase);
                 doneForGood.UnionWith(hidden);
                 var matches = QuestMatcher.Match(_main.QuestCatalog, owned, tracked, doneForGood);
-                var shown = matches
-                    .Where(m => MatchesFilter(m.Quest, filter) && ClassOk(m.Quest) && StateOk(m))
+                // Same rule as held (David's Crushbone session): items you LOOTED
+                // outrank the class lens — out-of-class overlaps show in their own
+                // section instead of vanishing.
+                var eligible = matches
+                    .Where(m => MatchesFilter(m.Quest, filter) && EraOk(m.Quest) && StateOk(m))
                     .ToList();
+                var shown = eligible.Where(m => ClassOnlyOk(m.Quest)).ToList();
+                var othersMine = eligible.Where(m => !ClassOnlyOk(m.Quest)).ToList();
                 foreach (var m in shown) AddCard(m);
-                if (shown.Count == 0)
+                if (othersMine.Count > 0)
+                {
+                    var lbl = new TextBlock
+                    {
+                        Text = $"For other classes — from your items ({othersMine.Count})",
+                        Style = (Style)FindResource("SectionLabel"),
+                    };
+                    QuestsPanel.Children.Add(lbl);
+                    foreach (var m in othersMine) AddCard(m);
+                }
+                if (shown.Count == 0 && othersMine.Count == 0)
                     EmptyNote(matches.Count == 0
                         ? "Nothing yet — loot a quest item (they show green in the Loot list)\n" +
                           "or add what you already carry with \"+ I have this\" above.\n" +
