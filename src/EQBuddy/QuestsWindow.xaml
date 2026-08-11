@@ -4,7 +4,7 @@
         Title="EQBuddy Quest Tracker" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
-        Width="440" WindowStartupLocation="Manual">
+        Width="530" WindowStartupLocation="Manual">
     <!-- Same chrome family as Spawns: the body scrolls, the title row stays reachable.
          Cards are built in code (BuildCards) — one per quest that overlaps the ledger. -->
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
@@ -55,8 +55,9 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" TextChanged="OnFilterChanged"
-                         ToolTip="Search the whole catalog — quest names, turn-in items, rewards, quest givers, zones. Pin 📌 a result to track it."/>
+                <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" MinWidth="110"
+                         TextChanged="OnFilterChanged"
+                         ToolTip="Search the whole catalog — quest names, turn-in items, rewards, quest givers, zones. Search ignores the class/era/state filters. Pin 📌 a result to track it."/>
                 <ComboBox x:Name="EraCombo" Grid.Column="1" Width="104" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnEraChanged"
                           ToolTip="Hide quests from later eras than the world has (unmarked quests always show)"/>

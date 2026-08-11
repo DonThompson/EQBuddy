@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.57.4",
+  "date": "2026-08-11",
+  "highlights": [
+   "FIXED: clicking a quest item's 🗺 badge could say \"nothing matches\" when the quest belonged to a class outside your class filter — Blue Orc Head leads to The Falchion (Paladin), and a BRD/MNK/WAR filter silently erased it (David's live catch in Crushbone). Search now ALWAYS answers with the whole catalog — class, era, and state filters shape the browse tabs, never the search — and each result card states whose quest it is. A new permanent test walks every turn-in item in the catalog through the real search to prove the badge's promise can't break again. The Quest Tracker also widened so the search box can't be squeezed invisible by the filter row."
+  ]
+ }, {
   "version": "1.57.3",
   "date": "2026-08-11",
   "highlights": [

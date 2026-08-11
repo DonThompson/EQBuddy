@@ -66,6 +66,27 @@ public class CatalogSanityTests
                 $"'{q.Name}': {q.Items.Count} items unflagged — new aggregate page?");
     }
 
+    /// <summary>David's live catch (2026-08-11): Blue Orc Head's quest badge led to
+    /// "nothing matches" because the search honored his class filter and The Falchion
+    /// is a Paladin quest. The badge's promise — click an item, see its quests — must
+    /// hold for EVERY turn-in item in the catalog, through the same search the
+    /// tracker uses, with no filter able to break it.</summary>
+    [Fact]
+    public void EveryTurnInItemFindsItsQuestThroughSearch()
+    {
+        // The exact three from the field report first, by name.
+        Assert.Contains(QuestSearch.Find(Cat, "Blue Orc Head"), q => q.Name == "The Falchion");
+        Assert.Contains(QuestSearch.Find(Cat, "Tergon's Spellbook"), q => q.Name == "Tergon's Spellbook Quest");
+        Assert.Contains(QuestSearch.Find(Cat, "Sealed Note"), q => q.Name == "Scouts Cape Quest");
+
+        // Then the whole catalog: every item on any quest's turn-in list must surface
+        // at least that quest when searched verbatim.
+        foreach (var q in Cat.Quests)
+            foreach (var i in q.Items)
+                Assert.True(QuestSearch.Matches(q, i.Name),
+                    $"'{i.Name}' fails to find its own quest '{q.Name}'");
+    }
+
     [Fact]
     public void ErasStayOnTheLadder()
     {

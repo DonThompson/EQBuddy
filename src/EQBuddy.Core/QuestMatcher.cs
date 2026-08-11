@@ -17,6 +17,26 @@ public sealed record QuestMatch(QuestEntry Quest, int ItemsHave, int ItemsTotal,
         : Items.Min(i => i.Have / Math.Max(1, i.Need));
 }
 
+/// <summary>Whole-catalog text search — names, turn-in items, rewards, givers, zones.
+/// Deliberately UNFILTERED by class/era/state (David, live field report 2026-08-11:
+/// clicking Blue Orc Head's quest badge found "nothing" because The Falchion is a
+/// Paladin quest and his class filter said BRD·MNK·WAR — a search that silently
+/// honors browse filters breaks the badge's promise). Pure and testable: the
+/// every-badged-item-finds-its-quest gate lives on this.</summary>
+public static class QuestSearch
+{
+    public static bool Matches(QuestEntry q, string filter) =>
+        filter.Length == 0
+        || q.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+        || q.StartZone.Contains(filter, StringComparison.OrdinalIgnoreCase)
+        || q.QuestGiver.Contains(filter, StringComparison.OrdinalIgnoreCase)
+        || q.Items.Any(i => i.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+        || q.Rewards.Any(r => r.Contains(filter, StringComparison.OrdinalIgnoreCase));
+
+    public static List<QuestEntry> Find(QuestCatalog catalog, string filter) =>
+        catalog.Quests.Where(q => Matches(q, filter)).ToList();
+}
+
 /// <summary>
 /// Pure overlap engine: which known quests want items this character owns (looted or
 /// manually declared), and how far along each is. No class gating — the wiki's class

@@ -274,17 +274,20 @@ public partial class QuestsWindow : Window
         // until you already owned pieces, which is backwards.
         if (filter.Length > 0)
         {
-            var found = _main.QuestCatalog.Quests
-                .Where(q => MatchesFilter(q, filter) && ClassOk(q))
+            // A search answers with the WHOLE catalog — no class/era/state gating
+            // (David's live catch, 2026-08-11: the Blue Orc Head badge found
+            // "nothing" because The Falchion is Paladin and his class filter
+            // wasn't). Each card states its own class and era; the reader decides.
+            var found = QuestSearch.Find(_main.QuestCatalog, filter)
                 .Select(Progressed)
-                .Where(StateOk)
                 .OrderByDescending(m => m.Tracked)
                 .ThenByDescending(m => m.Fraction)
                 .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var scope = new TextBlock
             {
-                Text = $"🔎 {found.Count} match{(found.Count == 1 ? "" : "es")} in the whole catalog — names, turn-in items, rewards, NPCs, zones",
+                Text = $"🔎 {found.Count} match{(found.Count == 1 ? "" : "es")} in the whole catalog — names, turn-in items, rewards, NPCs, zones. " +
+                    "Search ignores your class/era/state filters; each card says whose it is.",
                 FontSize = 11, Margin = new Thickness(2, 0, 0, 5), TextWrapping = TextWrapping.Wrap,
             };
             scope.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
@@ -421,14 +424,8 @@ public partial class QuestsWindow : Window
         }
     }
 
-    private static bool MatchesFilter(QuestEntry q, string filter) =>
-        filter.Length == 0
-        || q.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
-        || q.StartZone.Contains(filter, StringComparison.OrdinalIgnoreCase)
-        || q.QuestGiver.Contains(filter, StringComparison.OrdinalIgnoreCase)
-        || q.Items.Any(i => i.Name.Contains(filter, StringComparison.OrdinalIgnoreCase))
-        // Rewards too: "what quest gives X" is the other half of item search.
-        || q.Rewards.Any(r => r.Contains(filter, StringComparison.OrdinalIgnoreCase));
+    // One search predicate, shared with the tests that guard it (QuestSearch in Core).
+    private static bool MatchesFilter(QuestEntry q, string filter) => QuestSearch.Matches(q, filter);
 
     // ---- card building ----
 
