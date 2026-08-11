@@ -108,9 +108,12 @@ public class WikiContributionTests
             new DateTime(2026, 8, 8, 14, 0, 0));
         Assert.Contains("https://eqlwiki.com/index.php?title=Ambassador_Dvinn&action=edit", text);
         Assert.Contains("<li> {{:Black Heart}} <span class='drare'>(Uncommon)</span></li>", text);
-        Assert.Contains("Black Heart ×5 in 12 kills (41.7%)", text);
-        // The log timestamp is for the contributor's own records (#65)…
-        Assert.Contains("Black Heart last at 13:03:12", text);
+        // #65 round four (Frankthetankk): the edit summary is summary-field-sized,
+        // the itemized detail lives in the log reference, dated — a session can
+        // span midnight, so a bare clock time is ambiguous.
+        Assert.Contains("Suggested edit summary: EQBuddy-observed drops (1 item, 12 kills).", text);
+        Assert.Contains("Log reference (for your own records, not the wiki) — Sat Aug 8 2026:", text);
+        Assert.Contains("Black Heart ×5 in 12 kills (41.7%) — last at 13:03:12", text);
         // …and the item page's dropsfrom list gets its own edit link and paste line.
         Assert.Contains("https://eqlwiki.com/index.php?title=Black_Heart&action=edit", text);
         Assert.Contains("* [[Ambassador Dvinn]]", text);

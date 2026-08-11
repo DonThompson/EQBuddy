@@ -148,12 +148,19 @@ public static class WikiContribution
         var pageTitle = lookup?.Mob?.PageTitle is { Length: > 0 } t ? t : mob.Name;
 
         sb.AppendLine();
-        sb.AppendLine($"=== {mob.Name} — " + status switch
+        // The section headline wears the WIKI'S title when the page resolved — the
+        // log normalizer strips articles ("a decaying skeleton" → "Decaying
+        // skeleton"), and a paste block titled with the stripped name suggests the
+        // wrong page name (#65 round four, Frankthetankk).
+        sb.AppendLine($"=== {pageTitle} — " + status switch
         {
             WikiDropStatus.PageMissing => "no wiki page yet ===",
             WikiDropStatus.PageHasNoLoot => "wiki page lists no loot yet ===",
             _ => $"{news.Count} drop{(news.Count == 1 ? "" : "s")} not in the wiki's list ===",
         });
+        if (status == WikiDropStatus.PageMissing)
+            sb.AppendLine("(EQBuddy's log reader drops leading a/an/the from creature names — if the " +
+                "in-game name carries one, most trash mobs do, create the page WITH it.)");
         sb.AppendLine((status == WikiDropStatus.PageMissing ? "Create page:  " : "Edit page:  ")
                       + EditUrl(pageTitle));
 
@@ -177,16 +184,22 @@ public static class WikiContribution
                 break;
         }
         sb.AppendLine();
-        // Last-seen log times ride along (Frankthetankk, #65): a contributor double-
-        // checking their own claim can jump straight to the moment in their log file.
-        sb.AppendLine("Suggested edit summary: EQBuddy-observed drops — " +
-            string.Join("; ", news.Select(n =>
-                $"{n.Loot.Item} ×{n.Loot.Count} in {mob.Kills} kill{(mob.Kills == 1 ? "" : "s")}"
-                + (n.Loot.DropRatePct is { } pct ? $" ({pct:0.#}%)" : ""))) + ".");
+        // Summary-field-sized summary (#65 round four, Frankthetankk: the itemized
+        // list was "much longer than what a summary field is meant to hold") — the
+        // detail lives in the log reference below instead.
+        sb.AppendLine("Suggested edit summary: EQBuddy-observed drops " +
+            $"({news.Count} item{(news.Count == 1 ? "" : "s")}, {mob.Kills} kill{(mob.Kills == 1 ? "" : "s")}).");
+        sb.AppendLine();
+        // Full itemization + last-seen LOG TIMES WITH DATES (a session can span
+        // midnight): one date header when they all share a day, per-item otherwise.
         var stamped = news.Where(n => n.Loot.LastAt is not null).ToList();
-        if (stamped.Count > 0)
-            sb.AppendLine("Log reference (for your own records, not the wiki): " +
-                string.Join("; ", stamped.Select(n => $"{n.Loot.Item} last at {n.Loot.LastAt:HH:mm:ss}")) + ".");
+        var oneDay = stamped.Count > 0 && stamped.All(n => n.Loot.LastAt!.Value.Date == stamped[0].Loot.LastAt!.Value.Date);
+        sb.AppendLine("Log reference (for your own records, not the wiki)" +
+            (oneDay ? $" — {stamped[0].Loot.LastAt:ddd MMM d yyyy}:" : ":"));
+        foreach (var (l, _) in news)
+            sb.AppendLine($"  {l.Item} ×{l.Count} in {mob.Kills} kill{(mob.Kills == 1 ? "" : "s")}"
+                + (l.DropRatePct is { } pct ? $" ({pct:0.#}%)" : "")
+                + (l.LastAt is { } at ? oneDay ? $" — last at {at:HH:mm:ss}" : $" — last {at:ddd MMM d HH:mm:ss}" : ""));
 
         // The other half of the loop (#65 test report): each item's own page carries a
         // dropsfrom list that may not name this creature. No lookup is made here — the
@@ -200,7 +213,9 @@ public static class WikiContribution
         {
             var item = QuestCatalog.BaseItemName(l.Item);
             sb.AppendLine($"  {EditUrl(item)}");
-            sb.AppendLine($"    * [[{mob.Name}]]");
+            // The resolved wiki title again — a [[Decaying skeleton]] link on an item
+            // page would point at a page that doesn't exist.
+            sb.AppendLine($"    * [[{pageTitle}]]");
         }
 
         WriteStatBlock(sb, mob, killZone);

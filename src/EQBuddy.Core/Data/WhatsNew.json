@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.57.1",
+  "date": "2026-08-11",
+  "highlights": [
+   "The wiki contribution pack takes its round-four polish (Frankthetankk's continued QA, #65): the suggested edit summary is now summary-field-sized (\"EQBuddy-observed drops (3 items, 12 kills)\") with the full itemized breakdown moved to the log reference — which now carries DATES (sessions span midnight) under a single day header, separated by a blank line so the block scans. Section headlines and item-page links now use the RESOLVED wiki title, so \"a decaying skeleton\" is no longer suggested as \"Decaying skeleton\" — and new-page instructions say to keep the a/an/the the log reader strips."
+  ]
+ },
+ {
   "version": "1.57.0",
   "date": "2026-08-11",
   "highlights": [
