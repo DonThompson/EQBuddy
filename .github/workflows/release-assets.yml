@@ -1,0 +1,55 @@
+# Attaches self-contained Avalonia builds to every GitHub release: linux-x64
+# (issue #4) and, since quasarj's macOS support landed in #90 and brucealeg asked
+# for a downloadable build in discussion #93, osx-arm64 + osx-x64. The Avalonia
+# UI may trail the Windows app by a few releases — see the release notes and
+# issue tracker for its current parity level.
+#
+# The macOS builds are unsigned (no Apple developer account): first launch needs
+# right-click → Open, or `xattr -d com.apple.quarantine EQBuddy.Avalonia` — the
+# README's macOS section says the same.
+name: Release assets
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+          - rid: osx-x64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish Avalonia ${{ matrix.rid }} (self-contained)
+        run: >
+          dotnet publish src/EQBuddy.Avalonia/EQBuddy.Avalonia.csproj -c Release
+          -r ${{ matrix.rid }} --self-contained -p:PublishSingleFile=true
+          -o publish-out
+
+      - name: Package
+        run: |
+          cp README.md docs/FeatureGuide.md publish-out/
+          tar -czf EQBuddy-${{ matrix.rid }}.tar.gz -C publish-out .
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" EQBuddy-${{ matrix.rid }}.tar.gz --clobber

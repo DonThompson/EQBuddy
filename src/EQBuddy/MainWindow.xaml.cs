@@ -1070,9 +1070,33 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Every EQBuddy surface is Topmost, but Windows keeps topmost windows
+    /// in the order they claimed the band — an overlay created AFTER ours (Lossless
+    /// Scaling's upscale surface was the field case, discussion #91) sits above the
+    /// widget and WPF never re-asserts on its own. A periodic no-activate re-place
+    /// lifts every visible EQBuddy window back to the top of the band; the overlay
+    /// doesn't re-assert, so the widget stays visible. A handful of SetWindowPos
+    /// calls every few seconds — free.</summary>
+    private const int TopmostReassertSeconds = 5;
+    private int _topmostTick;
+
+    private void ReassertTopmost()
+    {
+        if (++_topmostTick < TopmostReassertSeconds) return;
+        _topmostTick = 0;
+        foreach (Window w in Application.Current.Windows)
+        {
+            if (!w.Topmost || !w.IsVisible) continue;
+            if (PresentationSource.FromVisual(w) is not System.Windows.Interop.HwndSource src) continue;
+            Native.SetWindowPos(src.Handle, Native.HWND_TOPMOST, 0, 0, 0, 0,
+                Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
+        }
+    }
+
     private void RefreshUi()
     {
         UpdateFocusHide();
+        ReassertTopmost();
         _stats.RegenPerTickOverride = _settings.RegenPerTickOverride;
 
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
@@ -2603,6 +2627,15 @@ public partial class MainWindow : Window
         public static extern IntPtr GetForegroundWindow();
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        public static readonly IntPtr HWND_TOPMOST = new(-1);
+        public const uint SWP_NOSIZE = 0x0001;
+        public const uint SWP_NOMOVE = 0x0002;
+        public const uint SWP_NOACTIVATE = 0x0010;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
+            int x, int y, int cx, int cy, uint flags);
     }
 
     /// <summary>
