@@ -24,6 +24,11 @@ public static class ThemePalettes
         "AccentBrush", "GoodBrush", "BadBrush", "WarnBrush", "PopupBrush", "ComboBoxBrush",
         "ToggleHighlightBrush", "ScrollThumbBrush", "ScrollThumbHoverBrush",
         "GoodWashBrush", "WarnWashBrush",
+        // 2026-08-11 modernization: incoming damage wears a COOL hue in every theme so
+        // it can never be misread as your own output (which wears the accent). The other
+        // new tones of the redesign — hairlines, bar tracks, raised chips — are alpha
+        // derivations of these keys, composed by each UI (WPF: ThemeManager), not rows here.
+        "IncomingBrush",
     ];
 
     /// <summary>Hex values per theme key, each row in <see cref="Keys"/> order. #AARRGGBB —
@@ -34,34 +39,34 @@ public static class ThemePalettes
         // Dark parchment-and-brass fantasy — the original EQBuddy look, and the default.
         ["ParchmentBrass"] =
         [
-            "#F21C1917", "#26FFFFFF", "#33FFD98C", "#66C9A227", "#FFEDE4D3", "#FF9C927F",
+            "#F216130E", "#26FFFFFF", "#33FFD98C", "#66C9A227", "#FFEDE4D3", "#FF9C927F",
             "#FFE3B341", "#FF7FBF5F", "#FFD9634F", "#FFE0A030", "#FF262119", "#FF2A251F",
-            "#33E3B341", "#40FFD98C", "#8CFFD98C", "#337FBF5F", "#33E0A030",
+            "#33E3B341", "#40FFD98C", "#8CFFD98C", "#337FBF5F", "#33E0A030", "#FF6FA8B8",
         ],
         // Cool dark slate/blue-grey.
         ["BlueGrey"] =
         [
             "#F2181C21", "#26FFFFFF", "#335C8AC2", "#665C7A99", "#FFE4E9EF", "#FF8B96A3",
             "#FF5FA8D3", "#FF6FBF7F", "#FFD9634F", "#FFE0A030", "#FF20242B", "#FF242830",
-            "#335C8AC2", "#405C8AC2", "#8C5C8AC2", "#336FBF7F", "#33E0A030",
+            "#335C8AC2", "#405C8AC2", "#8C5C8AC2", "#336FBF7F", "#33E0A030", "#FFB08FD9",
         ],
         ["Turquoise"] =
         [
             "#F2131C1C", "#26FFFFFF", "#3340C7B8", "#6629A99A", "#FFE0F2EF", "#FF87A6A0",
             "#FF3FCFBE", "#FF6FBF7F", "#FFD9634F", "#FFE0A030", "#FF16211F", "#FF1A2725",
-            "#3340C7B8", "#4040C7B8", "#8C40C7B8", "#336FBF7F", "#33E0A030",
+            "#3340C7B8", "#4040C7B8", "#8C40C7B8", "#336FBF7F", "#33E0A030", "#FFA88FD9",
         ],
         ["Redish"] =
         [
             "#F21F1615", "#26FFFFFF", "#33D96A55", "#66B34A3D", "#FFF2E2DE", "#FFA88A83",
             "#FFE0654A", "#FF7FBF5F", "#FFD9345F", "#FFE0A030", "#FF251815", "#FF291C18",
-            "#33D96A55", "#40D96A55", "#8CD96A55", "#337FBF5F", "#33E0A030",
+            "#33D96A55", "#40D96A55", "#8CD96A55", "#337FBF5F", "#33E0A030", "#FF6FA8B8",
         ],
         ["Grey"] =
         [
             "#F21A1A1A", "#26FFFFFF", "#33BFBFBF", "#66808080", "#FFEAEAEA", "#FF9C9C9C",
             "#FFC0C0C0", "#FF7FBF5F", "#FFD9634F", "#FFE0A030", "#FF232323", "#FF272727",
-            "#33BFBFBF", "#40BFBFBF", "#8CBFBFBF", "#337FBF5F", "#33E0A030",
+            "#33BFBFBF", "#40BFBFBF", "#8CBFBFBF", "#337FBF5F", "#33E0A030", "#FF6FA8B8",
         ],
         // Solarized Light — Ethan Schoonover's base3/base2/base01/base00 scale. The only
         // light theme, and so the one that catches any color still hardcoded dark.
@@ -72,13 +77,13 @@ public static class ThemePalettes
         [
             "#F2FDF6E3", "#14002B36", "#33268BD2", "#66586E75", "#FF586E75", "#FF93A1A1",
             "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FFEEE8D5", "#FFEEE8D5",
-            "#33268BD2", "#40586E75", "#8C586E75", "#33859900", "#33CB4B16",
+            "#33268BD2", "#40586E75", "#8C586E75", "#33859900", "#33CB4B16", "#FF6C71C4",
         ],
         ["SolarizedDark"] =
         [
             "#F2002B36", "#26FFFFFF", "#33268BD2", "#66586E75", "#FF839496", "#FF586E75",
             "#FF268BD2", "#FF859900", "#FFDC322F", "#FFCB4B16", "#FF073642", "#FF0A3C48",
-            "#33268BD2", "#40268BD2", "#8C268BD2", "#33859900", "#33CB4B16",
+            "#33268BD2", "#40268BD2", "#8C268BD2", "#33859900", "#33CB4B16", "#FF6C71C4",
         ],
         // Maximum readability over a bright moving game (field feedback 2026-08-03:
         // "light grey on dark grey"). Near-opaque background — the translucency that
@@ -88,7 +93,7 @@ public static class ThemePalettes
         [
             "#FC0A0A0A", "#33FFFFFF", "#4DFFD24D", "#CCFFFFFF", "#FFFFFFFF", "#FFCFCFCF",
             "#FFFFD24D", "#FF66E060", "#FFFF6659", "#FFFFB84D", "#FF101010", "#FF161616",
-            "#4DFFD24D", "#59FFFFFF", "#A6FFFFFF", "#4066E060", "#40FFB84D",
+            "#4DFFD24D", "#59FFFFFF", "#A6FFFFFF", "#4066E060", "#40FFB84D", "#FF7FD4FF",
         ],
         // The user-colored theme. This row is the seed (Grey neutrals + brass accent),
         // shown until colors are picked; with colors set, CustomTheme.PaletteFor

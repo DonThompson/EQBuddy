@@ -5,7 +5,7 @@ using Xunit;
 
 namespace EQBuddy.Tests;
 
-/// <summary>The Custom theme derives 14 of its 17 keys from three user colors; these
+/// <summary>The Custom theme derives most of its palette keys from three user colors; these
 /// tests hold it to the same guarantees ThemePaletteTests gives the built-ins — full
 /// key coverage, parseable values, and a text/background contrast floor the user
 /// cannot break, however hostile their color picks.</summary>
@@ -82,7 +82,7 @@ public class CustomThemeTests
         settings.CustomThemeText = "not-a-color";   // falls back to the seed text alone
         var palette = CustomTheme.PaletteFor(settings).ToDictionary(e => e.Key, e => e.Hex);
         Assert.Equal("#F2002B36", palette["BgBrush"]);
-        Assert.Equal(17, palette.Count);
+        Assert.Equal(ThemePalettes.Keys.Length, palette.Count);
     }
 
     private static double Contrast(string a, string b)

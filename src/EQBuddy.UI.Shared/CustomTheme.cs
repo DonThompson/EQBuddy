@@ -67,6 +67,9 @@ public static class CustomTheme
         yield return ("ScrollThumbHoverBrush", "#8C" + Hex6(accent));
         yield return ("GoodWashBrush", "#337FBF5F");
         yield return ("WarnWashBrush", "#33E0A030");
+        // Fixed like the status trio: incoming damage keeps its cool hue so it reads
+        // the same in every custom palette.
+        yield return ("IncomingBrush", "#FF6FA8B8");
     }
 
     /// <summary>Accepts #RRGGBB (or #AARRGGBB, alpha discarded — some users will paste

@@ -142,6 +142,39 @@
                 <TextBlock x:Name="SessionText" Style="{StaticResource Dim}" HorizontalAlignment="Right" Text="session 0:00"/>
             </Grid>
 
+            <!-- KPI strip (2026-08-11 modernization): the headline numbers before any
+                 card — always visible, one glance. Values are tabular semibold; DPS
+                 wears the accent. Hairline separators, not boxes. -->
+            <Border Margin="0,0,0,7" CornerRadius="10"
+                    BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+                    Background="{DynamicResource PanelBrush}">
+                <UniformGrid Columns="4">
+                    <StackPanel Margin="11,6,4,7">
+                        <TextBlock Text="dps" Style="{StaticResource SectionLabel}" Margin="0"/>
+                        <TextBlock x:Name="KpiDps" Text="0" FontSize="17" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentBrush}"/>
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
+                        <StackPanel Margin="11,6,4,7">
+                            <TextBlock Text="kills" Style="{StaticResource SectionLabel}" Margin="0"/>
+                            <TextBlock x:Name="KpiKills" Text="0" FontSize="17" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
+                        <StackPanel Margin="11,6,4,7">
+                            <TextBlock Text="loot" Style="{StaticResource SectionLabel}" Margin="0"/>
+                            <TextBlock x:Name="KpiLoot" Text="0" FontSize="17" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
+                        <StackPanel Margin="11,6,4,7">
+                            <TextBlock Text="xp/hr" Style="{StaticResource SectionLabel}" Margin="0"/>
+                            <TextBlock x:Name="KpiXp" Text="0" FontSize="17" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+            </Border>
+
             <!-- Sections -->
             <ScrollViewer x:Name="SectionScroll" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
@@ -172,6 +205,18 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
+                    <!-- Session-pace sparkline (2026-08-11): damage per minute over the
+                         last half hour, area-filled, hottest minute marked. The data
+                         always existed (_damageTimeline feeds History) — now it's drawn. -->
+                    <Grid x:Name="CombatSparkHost" Height="34" Margin="0,2,0,4" Visibility="Collapsed"
+                          ToolTip="Damage per minute, last 30 minutes — the dot marks your hottest minute">
+                        <Polygon x:Name="CombatSparkFill"/>
+                        <Polyline x:Name="CombatSpark" StrokeThickness="1.6"
+                                  StrokeLineJoin="Round" Stroke="{DynamicResource AccentBrush}"/>
+                        <Ellipse x:Name="CombatSparkPeak" Width="5" Height="5" Visibility="Collapsed"
+                                 Fill="{DynamicResource AccentBrush}"
+                                 HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    </Grid>
                     <!-- The fight in front of you, before the session aggregate: mid-fight
                          that's the number you're reacting to, and a session average tells you
                          nothing about whether this pull is going badly. -->

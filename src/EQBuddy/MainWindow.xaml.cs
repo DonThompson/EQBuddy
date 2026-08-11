@@ -760,6 +760,49 @@ public partial class MainWindow : Window
         _settings.Save();
     }
 
+    /// <summary>The Combat card's session-pace sparkline (2026-08-11): damage per
+    /// calendar minute across the last 30, zeros filled in — quiet minutes stay flat
+    /// instead of being edited out, because pacing is the honest story. Repainted on
+    /// the shared tick while the card is expanded; ~30 points of Polyline is free.</summary>
+    private void PaintCombatSpark(StatsSnapshot s)
+    {
+        var pts = s.DamageTimeline;
+        if (pts.Count < 2) { CombatSparkHost.Visibility = Visibility.Collapsed; return; }
+        var end = pts[^1].Time;
+        var perMinute = pts.ToDictionary(p => p.Time, p => p.Damage);
+        var series = new List<long>();
+        for (var m = 29; m >= 0; m--)
+            series.Add(perMinute.GetValueOrDefault(end.AddMinutes(-m)));
+        if (series.Count(v => v > 0) < 2) { CombatSparkHost.Visibility = Visibility.Collapsed; return; }
+        CombatSparkHost.Visibility = Visibility.Visible;
+
+        var w = CombatSparkHost.ActualWidth > 20 ? CombatSparkHost.ActualWidth : 300;
+        const double h = 30;
+        var max = Math.Max(1, series.Max());
+        var line = new PointCollection();
+        var peakIdx = 0;
+        for (var i = 0; i < series.Count; i++)
+        {
+            line.Add(new Point(w * i / (series.Count - 1), h - h * series[i] / max));
+            if (series[i] > series[peakIdx]) peakIdx = i;
+        }
+        CombatSpark.Points = line;
+        var fill = new PointCollection(line) { new(w, h + 2), new(0, h + 2) };
+        CombatSparkFill.Points = fill;
+        if (CombatSparkFill.Fill is null)
+        {
+            var accent = ((SolidColorBrush)FindResource("AccentBrush")).Color;
+            CombatSparkFill.Fill = new LinearGradientBrush(
+                Color.FromArgb(0x50, accent.R, accent.G, accent.B),
+                Color.FromArgb(0x00, accent.R, accent.G, accent.B), 90);
+        }
+        CombatSparkPeak.Visibility = Visibility.Visible;
+        CombatSparkPeak.Margin = new Thickness(
+            Math.Max(0, line[peakIdx].X - 2.5), Math.Max(0, line[peakIdx].Y - 2.5), 0, 0);
+        CombatSparkHost.ToolTip =
+            $"Damage per minute, last 30 — hottest minute {max:N0} at {end.AddMinutes(peakIdx - 29):HH:mm}";
+    }
+
     /// <summary>#89 (jeremycranfill): the fight as a Discord-ready code block on the
     /// clipboard — the official Discord bans image sharing, so parses travel as text.</summary>
     private void OnCopyFight(object sender, RoutedEventArgs e)
@@ -1242,6 +1285,12 @@ public partial class MainWindow : Window
         CombatHeader.Text = s.CurrentDps > 0
             ? $"{s.SessionDps:0} dps (now {s.CurrentDps:0})"
             : $"{s.SessionDps:0} dps";
+        // KPI strip (2026-08-11): the headline numbers, always painted — current DPS
+        // while fighting, session DPS between fights.
+        KpiDps.Text = s.CurrentDps > 0 ? $"{s.CurrentDps:0}" : $"{s.SessionDps:0}";
+        KpiKills.Text = $"{s.YourKillCount}";
+        KpiLoot.Text = $"{s.LootTotal}";
+        KpiXp.Text = $"{s.XpPerHour:0.#}%";
         KillsHeader.Text = s.PartyKillCount > 0 ? $"{s.YourKillCount} (+{s.PartyKillCount})" : $"{s.YourKillCount}";
         LootHeader.Text = s.CraftedTotal > 0
             ? $"{s.LootTotal} items (+{s.CraftedTotal} made)"
@@ -1307,6 +1356,7 @@ public partial class MainWindow : Window
                       $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted)"
                     : s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
+            PaintCombatSpark(s);
             FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
             // Shares the damage sort bar above it — it's the same rows, one level down.
             // Collapsed to one line by default (asked for in discussion #28 by a pet

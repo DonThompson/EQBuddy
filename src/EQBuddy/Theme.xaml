@@ -5,9 +5,24 @@
          everything below only references brush keys, via DynamicResource so a theme
          switch repaints already-open windows. -->
 
+    <!-- 2026-08-11 modernization: Segoe UI Variable when the OS ships it (Win11),
+         Segoe UI otherwise — no font payload either way. Tabular numerals globally:
+         every count, countdown, and dps figure lines up without per-site opt-in. -->
     <Style TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+        <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
+    </Style>
+
+    <!-- Micro-label: the small-caps section eyebrow ("DAMAGE BY SOURCE") that organizes
+         dense data without spending a heading's height. Small caps carry the tracking
+         the design wants without WPF needing a letter-spacing property. -->
+    <Style x:Key="SectionLabel" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground" Value="{DynamicResource DimBrush}"/>
+        <Setter Property="FontSize" Value="10.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Typography.Capitals" Value="AllSmallCaps"/>
+        <Setter Property="Margin" Value="0,6,0,2"/>
     </Style>
 
     <Style x:Key="StatValue" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -130,13 +145,17 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Expander">
-                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="6">
+                    <!-- Card chrome (2026-08-11): rounder, hairline-bordered — the border
+                         is the accent at a whisper, so cards read as cards without a
+                         solid line fighting the data. -->
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="10"
+                            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1">
                         <StackPanel>
                             <ToggleButton IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                           Cursor="Hand">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="ToggleButton">
-                                        <Border x:Name="hb" Background="Transparent" CornerRadius="6" Padding="10,7">
+                                        <Border x:Name="hb" Background="Transparent" CornerRadius="10" Padding="11,8">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -159,7 +178,7 @@
                                     </ControlTemplate>
                                 </ToggleButton.Template>
                             </ToggleButton>
-                            <ContentPresenter x:Name="content" Visibility="Collapsed" Margin="10,0,10,8"/>
+                            <ContentPresenter x:Name="content" Visibility="Collapsed" Margin="11,2,11,10"/>
                         </StackPanel>
                     </Border>
                     <ControlTemplate.Triggers>
