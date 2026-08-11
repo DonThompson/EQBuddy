@@ -1,5 +1,15 @@
 [
  {
+  "version": "1.54.0",
+  "date": "2026-08-10",
+  "highlights": [
+   "🐾 Claim your pet without swinging it (quasarj's second contribution this week, PR #92): the pet's answer to /pet leader — \"My leader is Yourname.\" — now claims it, so macro the command into your summon and the pet is credited before its first attack. Safe by design: the response rides a channel everyone hears, so it only counts when it names YOUR character, and it never starts a combat window while you're camped.",
+   "🧊 Mez chips stop believing their own chains (a Reddit field report, same evening it was posted): re-mezzing an already-mezzed target writes no new landing line, so the eventual natural fade measured the WHOLE chain — an AoE mez re-cast on cooldown could \"learn\" a one-minute duration and keep it. Your own re-casts are the tell: a fade with a same-spell cast after the landing no longer teaches. Chips show the true clock again on the first clean mez.",
+   "📌 The widget stops vanishing under Lossless Scaling (flclfool, #91): LS creates its upscale surface after EQBuddy's windows, which put it above them in Windows' always-on-top pile. Every EQBuddy window now quietly re-lifts itself every few seconds — no focus stolen, nothing moves, the widget just stays visible over the upscaled game.",
+   "🍎 macOS builds you can download (brucealeg's ask, #93): releases now attach osx-arm64 (Apple Silicon) and osx-x64 (Intel) tarballs next to the Linux one, standing on quasarj's macOS support from #90. Unsigned, so first launch is right-click → Open. The README's credits also caught up with everyone who built pieces of this app: Don Thompson's Linux build, quasarj's macOS side, dandrews2930's spoken alerts, ahaselden's themes."
+  ]
+ },
+ {
   "version": "1.53.2",
   "date": "2026-08-10",
   "highlights": [
