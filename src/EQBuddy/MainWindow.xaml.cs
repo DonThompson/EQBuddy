@@ -1920,8 +1920,9 @@ public partial class MainWindow : Window
         try
         {
             var achievements = AchievementsImport.Parse(System.IO.File.ReadLines(dlg.FileName));
-            var (matches, unmatched) = AchievementsImport.SkyRewards(achievements, _settings.SkyQuestChecklist);
-            ShowAchievementsPreview(matches, unmatched, achievements.Count);
+            var (matches, unmatched, autoGranted) =
+                AchievementsImport.SkyRewards(achievements, _settings.SkyQuestChecklist);
+            ShowAchievementsPreview(matches, unmatched, autoGranted, achievements.Count);
         }
         catch (Exception ex)
         {
@@ -1930,7 +1931,8 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowAchievementsPreview(List<SkyRewardMatch> matches, List<string> unmatched, int total)
+    private void ShowAchievementsPreview(List<SkyRewardMatch> matches, List<string> unmatched,
+        List<string> autoGranted, int total)
     {
         var win = new Window
         {
@@ -1963,6 +1965,15 @@ public partial class MainWindow : Window
             var already = !fresh.Contains(m);
             Add($"  ✓ {m.ClassName} — {m.Reward}" + (already ? "   (already marked)" : ""),
                 already ? "DimBrush" : "GoodBrush");
+        }
+        if (autoGranted.Count > 0)
+        {
+            Add($"Skipped — auto-granted, not earned ({autoGranted.Count}):", "WarnBrush", bold: true);
+            Add("Your primary class unlock is granted at creation, and the game marks its " +
+                "reward criteria complete without the items ever existing (#101) — so these " +
+                "prove nothing and are never imported. Turn them in for real and the Sky " +
+                "card tracks them the normal way.", "DimBrush");
+            foreach (var g in autoGranted) Add($"  ⊘ {g}", "DimBrush");
         }
         if (unmatched.Count > 0)
         {

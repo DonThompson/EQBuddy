@@ -42,7 +42,7 @@ public class AchievementsImportTests
             new() { Id = "3", ClassName = "Bard", Reward = "Harmonic Spear", QuestItem = "z" },
             new() { Id = "4", ClassName = "Beastlord", Reward = "Windhowl/Spirit Render", QuestItem = "w" },
         };
-        var (matches, _) = AchievementsImport.SkyRewards(AchievementsImport.Parse(Fixture()), checklist);
+        var (matches, _, _) = AchievementsImport.SkyRewards(AchievementsImport.Parse(Fixture()), checklist);
 
         // Bard: Amulet of the Fae is C in the fixture, Mask of Song is I.
         Assert.Contains(matches, m => m is { ClassName: "Bard", Reward: "Amulet of the Fae" });
@@ -52,6 +52,39 @@ public class AchievementsImportTests
         Assert.True(AchievementsImport.NamesMatch("Harmonic Spear", "Spear of Harmony"));
         Assert.True(AchievementsImport.NamesMatch("Windhowl/Spirit Render", "Windhowl and Spirit Render"));
         Assert.False(AchievementsImport.NamesMatch("Wind Rune Azia", "Wind Rune Fana"));
+    }
+
+    /// <summary>#101 (Frankthetankk): the player's PRIMARY class unlock is granted at
+    /// creation, and the dump marks its reward criteria complete without the items
+    /// existing. A completed unlock whose "will autocomplete" criterion is itself
+    /// complete was granted, not earned — its obtains are skipped and reported.
+    /// An INCOMPLETE unlock's individually-earned criteria stay trustworthy.</summary>
+    [Fact]
+    public void AutoGrantedPrimaryClassUnlockNeverImports()
+    {
+        var checklist = new List<SkyQuestChecklistItem>
+        {
+            new() { Id = "1", ClassName = "Paladin", Reward = "Girdle of Faith", QuestItem = "x" },
+            new() { Id = "2", ClassName = "Bard", Reward = "Amulet of the Fae", QuestItem = "y" },
+        };
+        var lines = new[]
+        {
+            "Untapped Potential: Classes",
+            // Auto-granted: achievement complete AND the autocomplete criterion complete.
+            "C\tPrimary Class Unlock - Paladin",
+            "C\t\tObtain Girdle of Faith.",
+            "C\t\tThis achievement will autocomplete if you chose to confirm your Primary Class as a Paladin.",
+            // Earned progress on an incomplete unlock: individually trustworthy.
+            "I\tPrimary Class Unlock - Bard",
+            "C\t\tObtain Amulet of the Fae.",
+            "I\t\tThis achievement will autocomplete if you chose to confirm your Primary Class as a Bard.",
+        };
+        var (matches, _, autoGranted) =
+            AchievementsImport.SkyRewards(AchievementsImport.Parse(lines), checklist);
+
+        Assert.DoesNotContain(matches, m => m.Reward == "Girdle of Faith");
+        Assert.Contains(autoGranted, g => g.Contains("Girdle of Faith"));
+        Assert.Contains(matches, m => m is { ClassName: "Bard", Reward: "Amulet of the Fae" });
     }
 
     [Fact]

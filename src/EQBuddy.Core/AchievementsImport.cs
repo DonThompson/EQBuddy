@@ -51,12 +51,20 @@ public static class AchievementsImport
 
     /// <summary>Completed "Obtain X" criteria from class-unlock achievements, resolved
     /// to Sky checklist rewards for that class. Unmatched completed obtains are
-    /// returned for the preview — shown to the player, never silently dropped.</summary>
-    public static (List<SkyRewardMatch> Matches, List<string> Unmatched) SkyRewards(
-        IEnumerable<AchievementEntry> achievements, IReadOnlyList<SkyQuestChecklistItem> checklist)
+    /// returned for the preview — shown to the player, never silently dropped.
+    /// AUTO-GRANT GUARD (#101, Frankthetankk): the player's PRIMARY class unlock is
+    /// granted at character creation, and the dump marks it — and its criteria —
+    /// complete without any item ever being obtained. A completed unlock whose
+    /// "will autocomplete" criterion is itself flagged complete was granted, not
+    /// earned, so its Obtain flags prove nothing; those rewards are SKIPPED and
+    /// reported, never imported. Incomplete unlocks stay fully trustworthy — their
+    /// per-criterion flags are individually tracked by the game.</summary>
+    public static (List<SkyRewardMatch> Matches, List<string> Unmatched, List<string> AutoGranted)
+        SkyRewards(IEnumerable<AchievementEntry> achievements, IReadOnlyList<SkyQuestChecklistItem> checklist)
     {
         var matches = new List<SkyRewardMatch>();
         var unmatched = new List<string>();
+        var autoGranted = new List<string>();
         foreach (var a in achievements)
         {
             // "Primary Class Unlock - Bard" / "Class Unlock - Berserker"
@@ -68,11 +76,19 @@ public static class AchievementsImport
                 c.ClassName.Equals(className, StringComparison.OrdinalIgnoreCase)).ToList();
             if (rewards.Count == 0) continue;
 
+            var wasAutoGranted = a.Complete && a.Criteria.Any(c =>
+                c.Complete && c.Text.Contains("will autocomplete", StringComparison.OrdinalIgnoreCase));
+
             foreach (var (text, complete) in a.Criteria)
             {
                 if (!complete) continue;
                 if (!text.StartsWith("Obtain ", StringComparison.OrdinalIgnoreCase)) continue;
                 var name = text["Obtain ".Length..].TrimEnd('.').Trim();
+                if (wasAutoGranted)
+                {
+                    autoGranted.Add($"{className}: {name}");
+                    continue;
+                }
                 var hit = rewards.FirstOrDefault(r => NamesMatch(r.Reward, name));
                 if (hit is not null)
                     matches.Add(new SkyRewardMatch(hit.ClassName, hit.Reward, name));
@@ -80,7 +96,7 @@ public static class AchievementsImport
                     unmatched.Add($"{className}: {name}");
             }
         }
-        return (matches, unmatched);
+        return (matches, unmatched, autoGranted);
     }
 
     /// <summary>Marks matched rewards turned-in (SkyQuestCompleted keys + item

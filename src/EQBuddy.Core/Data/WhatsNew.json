@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.57.3",
+  "date": "2026-08-11",
+  "highlights": [
+   "FIXED: the achievements import could mark Sky rewards turned-in that were never obtained (#101, Frankthetankk's catch): your PRIMARY class unlock is auto-granted at character creation, and the game's dump marks its reward criteria complete without the items ever existing. Auto-granted unlocks are now detected and their rewards SKIPPED — listed in the preview under \"auto-granted, not earned\" so you can see exactly what was excluded and why. If you imported before this fix and your primary class got false checkmarks: untick those reward checkboxes on the Sky card and they stay honest."
+  ]
+ }, {
   "version": "1.57.2",
   "date": "2026-08-11",
   "highlights": [
