@@ -69,7 +69,7 @@ public partial class QuestsWindow : Window
     /// <summary>Programmatic mode switch (screenshot hook + the 🗺 badge path).</summary>
     internal void SetMode(string mode)
     {
-        _mode = mode is "zone" or "all" ? mode : "mine";
+        _mode = mode is "zone" or "all" or "held" or "done" ? mode : "mine";
         ApplyModeVisual();
         Refresh(force: true);
     }
@@ -84,7 +84,8 @@ public partial class QuestsWindow : Window
 
     private void ApplyModeVisual()
     {
-        foreach (var (tb, key) in new[] { (ModeMine, "mine"), (ModeZone, "zone"), (ModeAll, "all") })
+        foreach (var (tb, key) in new[]
+            { (ModeMine, "mine"), (ModeZone, "zone"), (ModeHeld, "held"), (ModeDone, "done"), (ModeAll, "all") })
         {
             tb.SetResourceReference(TextBlock.ForegroundProperty, key == _mode ? "AccentBrush" : "DimBrush");
             if (key == _mode) tb.SetResourceReference(TextBlock.BackgroundProperty, "ToggleHighlightBrush");
@@ -292,6 +293,63 @@ public partial class QuestsWindow : Window
                 break;
             }
 
+            case "held":
+            {
+                // What the bags could turn in RIGHT NOW (David, 2026-08-11): the game's
+                // own /outputfile inventory dump vs each quest's full turn-in list.
+                var snap = _main.LatestInventory(refresh: force);
+                if (snap is null)
+                {
+                    EmptyNote("No inventory dump found yet.\n\nIn game, type:  /outputfile inventory\n" +
+                        "The game writes <name>_<server>-Inventory.txt beside its own folders and " +
+                        "this tab reads it — EQBuddy never scans the game itself. Re-type the " +
+                        "command whenever your bags change.");
+                    break;
+                }
+                var invAge = DateTime.Now - snap.WrittenAt;
+                var invLabel = new TextBlock
+                {
+                    Text = $"📦 {System.IO.Path.GetFileName(snap.Path)} — written " +
+                        (invAge.TotalMinutes < 1 ? "just now" : invAge.TotalHours < 1
+                            ? $"{(int)invAge.TotalMinutes}m ago" : $"{(int)invAge.TotalHours}h ago") +
+                        " · re-type /outputfile inventory in game to update",
+                    FontSize = 11, Margin = new Thickness(2, 0, 0, 5), TextWrapping = TextWrapping.Wrap,
+                };
+                invLabel.SetResourceReference(TextBlock.ForegroundProperty, "WarnBrush");
+                QuestsPanel.Children.Add(invLabel);
+                var held = _main.QuestCatalog.Quests
+                    .Where(q => q.Items.Count > 0 && ClassOk(q) && !hidden.Contains(q.Name)
+                                && q.Items.All(i => snap.CountOf(i.Name) >= i.Qty))
+                    .Select(q => new QuestMatch(q, q.Items.Count, q.Items.Count,
+                        q.Items.Select(i => new QuestItemProgress(i.Name, i.Qty, snap.CountOf(i.Name))).ToList(),
+                        tracked.Contains(q.Name)))
+                    .OrderBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                foreach (var m in held) AddCard(m);
+                if (held.Count == 0)
+                    EmptyNote("Your bags don't fully cover any catalogued quest yet — partial " +
+                              "progress still shows as counts under mine, zone, and all.");
+                break;
+            }
+
+            case "done":
+            {
+                // The trophy shelf — and the catch-up surface: every card carries a ✓,
+                // so returning players can mark history without touching items.
+                var done = completed.Where(kv => kv.Value > 0)
+                    .Select(kv => (_main.QuestCatalog.Quests.FirstOrDefault(q =>
+                        q.Name.Equals(kv.Key, StringComparison.OrdinalIgnoreCase)), kv.Value))
+                    .Where(x => x.Item1 is not null && ClassOk(x.Item1!))
+                    .OrderBy(x => x.Item1!.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                foreach (var (q, _) in done) AddCard(Progressed(q!));
+                if (done.Count == 0)
+                    EmptyNote("Nothing marked completed yet. Every quest card has a ✓ — click it " +
+                              "on quests you finished before EQBuddy and the tracker catches up " +
+                              "(ready quests count themselves when you click their hand-in).");
+                break;
+            }
+
             default:
             {
                 // "mine": item overlap + pins, minus dismissed and finished-for-good
@@ -405,6 +463,34 @@ public partial class QuestsWindow : Window
         Grid.SetColumn(pin, 2);
         header.Children.Add(pin);
 
+        // ✓ = "I did this before EQBuddy" (David, 2026-08-11): catch-up marking on
+        // EVERY card, consuming nothing — RecordCompletion's consume path is for
+        // hand-ins happening now. Clicking again unmarks a misclick. Completed
+        // non-repeatables leave "mine" and gather under the done tab.
+        var doneMark = new TextBlock
+        {
+            Text = "✓", FontSize = 12, Margin = new Thickness(8, 0, 0, 0),
+            Cursor = Cursors.Hand, Opacity = completedCount > 0 ? 1.0 : 0.35,
+            ToolTip = completedCount > 0
+                ? $"Completed ×{completedCount} — click to unmark"
+                : "Did this before EQBuddy? Mark it completed (consumes nothing; click again to undo)",
+        };
+        doneMark.SetResourceReference(TextBlock.ForegroundProperty,
+            completedCount > 0 ? "GoodBrush" : "DimBrush");
+        doneMark.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            var key = _main.QuestCharacterKey;
+            if (_main.QuestLedger is { } ledger && key.Length > 0)
+            {
+                ledger.SetCompleted(key, m.Quest.Name, completedCount == 0);
+                Refresh(force: true);
+            }
+        };
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(doneMark, header.ColumnDefinitions.Count - 1);
+        header.Children.Add(doneMark);
+
         // ✕ = "not interested": drops the quest from the overlap view AND un-greens
         // loot only it wants (David, 2026-08-07: "there are definitely some I don't
         // want to track"). Hidden quests reappear dimmed under "all quests", where ✕
@@ -429,7 +515,7 @@ public partial class QuestsWindow : Window
             }
         };
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        Grid.SetColumn(dismiss, 3);
+        Grid.SetColumn(dismiss, 4);
         header.Children.Add(dismiss);
         body.Children.Add(header);
 

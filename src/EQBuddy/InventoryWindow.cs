@@ -1,0 +1,142 @@
+using System.Windows;
+using System.Windows.Controls;
+using EQBuddy.Core;
+
+namespace EQBuddy;
+
+/// <summary>
+/// The character's inventory, from the game's own `/outputfile inventory` dump
+/// (David, 2026-08-11): worn gear by slot first, then each bag with its contents,
+/// then everything else top-level (bank and kin). Log-only principles hold — the
+/// GAME writes the file, EQBuddy just reads it; the header is honest about how old
+/// the dump is and how to refresh it (type the command, click ⟳).
+/// </summary>
+public sealed class InventoryWindow : Window
+{
+    /// <summary>The trick, spelled out wherever inventory appears (same treatment as
+    /// the map's /loc social tip).</summary>
+    internal const string OutputFileTip =
+        "In game, type:   /outputfile inventory\n" +
+        "\n" +
+        "The game writes <name>_<server>-Inventory.txt beside its own folders and\n" +
+        "EQBuddy reads it — nothing is scanned or injected. Re-type the command any\n" +
+        "time your bags change, then click ⟳ here (the quest tracker's \"held\" tab\n" +
+        "uses the same file to spot quests you can already turn in).";
+
+    private readonly MainWindow _main;
+    private readonly StackPanel _panel = new() { Margin = new Thickness(10) };
+    private readonly TextBlock _status = new() { FontSize = 11, TextWrapping = TextWrapping.Wrap };
+
+    public InventoryWindow(MainWindow main)
+    {
+        _main = main;
+        Title = "Inventory";
+        Width = 420;
+        Height = 620;
+        Owner = main;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        SetResourceReference(BackgroundProperty, "BgBrush");
+        _status.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        _status.ToolTip = OutputFileTip;
+
+        var bar = new DockPanel { Margin = new Thickness(10, 8, 10, 0) };
+        var refresh = Theming.Button("⟳ Refresh");
+        refresh.ToolTip = OutputFileTip;
+        refresh.Click += (_, _) => Render();
+        DockPanel.SetDock(refresh, Dock.Right);
+        bar.Children.Add(refresh);
+        bar.Children.Add(_status);
+
+        var root = new DockPanel();
+        DockPanel.SetDock(bar, Dock.Top);
+        root.Children.Add(bar);
+        root.Children.Add(new ScrollViewer
+        {
+            Content = _panel,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        });
+        Content = root;
+        Render();
+    }
+
+    private void Render()
+    {
+        _panel.Children.Clear();
+        var snap = _main.LatestInventory(refresh: true);
+        if (snap is null)
+        {
+            _status.Text = "No inventory dump found yet — in game, type  /outputfile inventory  " +
+                "and click ⟳. (Hover for the full recipe.)";
+            return;
+        }
+        var age = DateTime.Now - snap.WrittenAt;
+        _status.Text = $"{System.IO.Path.GetFileName(snap.Path)} — written " +
+            (age.TotalMinutes < 1 ? "just now" : age.TotalHours < 1
+                ? $"{(int)age.TotalMinutes}m ago" : $"{(int)age.TotalHours}h ago") +
+            " (re-type /outputfile inventory in game, then ⟳)";
+
+        void Header(string text)
+        {
+            var tb = new TextBlock
+            {
+                Text = text, FontSize = 12, FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 8, 0, 2),
+            };
+            tb.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+            _panel.Children.Add(tb);
+        }
+        void Row(string left, string right, bool dim = false)
+        {
+            var g = new Grid { Margin = new Thickness(6, 0, 0, 1) };
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(110) });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var l = new TextBlock { Text = left, FontSize = 11.5 };
+            l.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            var r = new TextBlock
+            {
+                Text = right, FontSize = 11.5,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = right,
+            };
+            r.SetResourceReference(TextBlock.ForegroundProperty, dim ? "DimBrush" : "TextBrush");
+            Grid.SetColumn(r, 1);
+            g.Children.Add(l);
+            g.Children.Add(r);
+            _panel.Children.Add(g);
+        }
+
+        var containers = snap.Entries.Where(e => e.InContainer)
+            .GroupBy(e => e.ContainerSlot, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+        var topLevel = snap.Entries.Where(e => !e.InContainer).ToList();
+
+        // Worn gear: top-level slots that aren't bags-with-contents or bank rows.
+        Header("Worn");
+        foreach (var e in topLevel.Where(e =>
+                     !containers.ContainsKey(e.Location)
+                     && !e.Location.StartsWith("Bank", StringComparison.OrdinalIgnoreCase)
+                     && !e.Location.StartsWith("General", StringComparison.OrdinalIgnoreCase)))
+            Row(e.Location, e.Count > 1 ? $"{e.Name} ×{e.Count}" : e.Name);
+
+        // Bags (and any other container), each with its contents.
+        foreach (var e in topLevel.Where(e => containers.ContainsKey(e.Location)))
+        {
+            var contents = containers[e.Location];
+            Header($"{e.Name}  ({e.Location} — {contents.Count} item{(contents.Count == 1 ? "" : "s")})");
+            foreach (var c in contents)
+                Row("", c.Count > 1 ? $"{c.Name} ×{c.Count}" : c.Name);
+        }
+
+        // Anything else top-level (bank slots, loose General rows without children).
+        var rest = topLevel.Where(e =>
+            !containers.ContainsKey(e.Location)
+            && (e.Location.StartsWith("Bank", StringComparison.OrdinalIgnoreCase)
+                || e.Location.StartsWith("General", StringComparison.OrdinalIgnoreCase))).ToList();
+        if (rest.Count > 0)
+        {
+            Header("Elsewhere");
+            foreach (var e in rest)
+                Row(e.Location, e.Count > 1 ? $"{e.Name} ×{e.Count}" : e.Name, dim: true);
+        }
+    }
+}

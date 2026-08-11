@@ -85,6 +85,12 @@
                         <TextBlock x:Name="ModeZone" Text="zone" Tag="zone" FontSize="10.5"
                                    Padding="7,1" Cursor="Hand" MouseLeftButtonDown="OnModeClick"
                                    ToolTip="Everything you can work on in the zone you're in"/>
+                        <TextBlock x:Name="ModeHeld" Text="held" Tag="held" FontSize="10.5"
+                                   Padding="7,1" Cursor="Hand" MouseLeftButtonDown="OnModeClick"
+                                   ToolTip="Quests you could turn in with what your bags already hold — from the game's /outputfile inventory dump. In game, type /outputfile inventory, and this tab reads the file the game writes."/>
+                        <TextBlock x:Name="ModeDone" Text="done" Tag="done" FontSize="10.5"
+                                   Padding="7,1" Cursor="Hand" MouseLeftButtonDown="OnModeClick"
+                                   ToolTip="Quests you've marked completed — every card has a ✓ done control, so returning players can check off history"/>
                         <TextBlock x:Name="ModeAll" Text="all" Tag="all" FontSize="10.5"
                                    Padding="7,1" Cursor="Hand" MouseLeftButtonDown="OnModeClick"
                                    ToolTip="The whole quest catalog"/>

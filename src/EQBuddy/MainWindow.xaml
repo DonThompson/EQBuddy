@@ -32,6 +32,8 @@
                           ToolTip="Hop-by-hop directions from where you are to any zone"/>
                 <MenuItem Header="Import achievements…" Click="OnImportAchievements"
                           ToolTip="Read the game's /outputfile achievements dump and pre-mark Sky quest rewards you completed before EQBuddy — preview first, adds only, never unticks"/>
+                <MenuItem Header="Inventory…" Click="OnInventoryWindow"
+                          ToolTip="Your worn gear by slot and what's in each bag — from the game's /outputfile inventory dump (type it in game, the file appears, EQBuddy reads it)"/>
                 <MenuItem Header="Drops by creature…" Click="OnDropsWindow"/>
                 <MenuItem x:Name="TrackSpawnsItem" Header="Track spawns (named respawn timers)"
                           IsCheckable="True" Click="OnTrackSpawns"/>

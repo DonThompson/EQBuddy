@@ -288,6 +288,21 @@ public sealed class QuestLedgerStore
         }
     }
 
+    /// <summary>Catch-up marking and its undo (David, 2026-08-11): a returning player
+    /// checks off history from any card — no turn-in items consumed, unlike
+    /// <see cref="RecordCompletion"/> — and unmarking backs a misclick out.</summary>
+    public void SetCompleted(string characterKey, string questName, bool done)
+    {
+        if (characterKey.Length == 0 || questName.Length == 0) return;
+        lock (_lock)
+        {
+            var c = CharacterFor(characterKey);
+            if (done) c.Completed[questName] = Math.Max(1, c.Completed.GetValueOrDefault(questName));
+            else c.Completed.Remove(questName);
+            Save();
+        }
+    }
+
     /// <summary>The character's selected classes for quest filtering (copy).</summary>
     public List<string> ClassesFor(string characterKey)
     {

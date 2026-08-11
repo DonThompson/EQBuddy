@@ -2824,6 +2824,27 @@ public partial class MainWindow : Window
     /// <summary>Live spacing updates from the Options slider.</summary>
     internal void RefreshGridSpacing() => _gridOverlay?.ApplySpacing();
 
+    // ---- inventory (/outputfile inventory, David 2026-08-11) ----
+
+    private InventoryFile.Snapshot? _inventory;
+    private InventoryWindow? _inventoryWindow;
+
+    /// <summary>The newest inventory dump for the followed character; memoized —
+    /// pass refresh to re-scan the game folder (the ⟳ button, the held tab).</summary>
+    internal InventoryFile.Snapshot? LatestInventory(bool refresh = false)
+    {
+        if (refresh || _inventory is null)
+            _inventory = InventoryFile.FindLatest(_settings.LogFolder, Identity.Character);
+        return _inventory;
+    }
+
+    private void OnInventoryWindow(object sender, RoutedEventArgs e)
+    {
+        if (_inventoryWindow is { IsLoaded: true } w) { w.Activate(); return; }
+        _inventoryWindow = new InventoryWindow(this);
+        _inventoryWindow.Show();
+    }
+
     // ---- travel routing + zone maps (competitive gaps #1/#2, 2026-08-10) ----
 
     private TravelWindow? _travelWindow;
