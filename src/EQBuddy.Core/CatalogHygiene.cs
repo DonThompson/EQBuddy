@@ -51,8 +51,25 @@ public static class CatalogHygiene
     {
         catalog.Quests.RemoveAll(q => IndexPages.Contains(q.Name));
         foreach (var q in catalog.Quests)
+        {
             if (q.Name.EndsWith("Quests", StringComparison.OrdinalIgnoreCase)
                 || ExtraCollections.Contains(q.Name))
                 q.Collection = true;
+
+            // Item-name repair (2026-08-11 accuracy audit): the {{:Item}} transclusion
+            // idiom leaks a leading ':' on some pages (Dreadscale's ":Banded Bracer"),
+            // and wiki source occasionally double-spaces — either way the name can
+            // never match a loot line. Normalize, then merge duplicates the page
+            // listed twice (Bard Epic's Symphony pages), keeping the larger Qty so
+            // counts stay honest.
+            foreach (var item in q.Items)
+                item.Name = System.Text.RegularExpressions.Regex
+                    .Replace(item.Name.TrimStart(':').Trim(), @"\s{2,}", " ");
+            q.Items = q.Items
+                .Where(i => i.Name.Length > 0)
+                .GroupBy(i => i.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(i => i.Qty).First())
+                .ToList();
+        }
     }
 }

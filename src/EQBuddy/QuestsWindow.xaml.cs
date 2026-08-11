@@ -572,6 +572,32 @@ public partial class QuestsWindow : Window
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(dismiss, 4);
         header.Children.Add(dismiss);
+
+        // ⚑ = "this data is wrong" (David, 2026-08-11: one wrong quest drops faith in
+        // everything). One click opens a prefilled report — the catalog's accuracy
+        // loop runs on these, same as every parser fix ran on pasted log lines.
+        var flag = new TextBlock
+        {
+            Text = "⚑", FontSize = 11, Margin = new Thickness(8, 0, 0, 0),
+            Cursor = Cursors.Hand, Opacity = 0.35,
+            ToolTip = "Something wrong with this quest's data (items, giver, zone)? " +
+                "Open a prefilled report — fixes usually ship the same day.",
+        };
+        flag.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        flag.MouseLeftButtonUp += (_, e) =>
+        {
+            e.Handled = true;
+            var body =
+                $"Quest: {m.Quest.Name}\nWiki page: {m.Quest.Url}\n" +
+                $"EQBuddy shows: {m.ItemsTotal} turn-in item(s) — {string.Join(", ", m.Quest.Items.Select(i => i.Qty > 1 ? $"{i.Name} x{i.Qty}" : i.Name))}\n" +
+                $"Giver: {m.Quest.QuestGiver} · Zone: {m.Quest.StartZone}\n\nWhat's wrong:\n";
+            OpenUrl("https://github.com/DranakCorps-bot/EQBuddy/discussions/new?category=q-a" +
+                "&title=" + Uri.EscapeDataString($"Quest data: {m.Quest.Name}") +
+                "&body=" + Uri.EscapeDataString(body));
+        };
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(flag, 5);
+        header.Children.Add(flag);
         body.Children.Add(header);
 
         if (m.Quest.Rewards.Count > 0)
