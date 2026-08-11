@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Headless.XUnit;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
@@ -66,6 +67,12 @@ public class OptionsRenderTests : IDisposable
         options.Show();
         return (main, options);
     }
+
+    /// <summary>The window's body scroller. Every TextBox and open ComboBox brings its own
+    /// ScrollViewer, so it is picked out by what it holds: the one margined panel.</summary>
+    private static ScrollViewer ContentScroll(OptionsWindow options) =>
+        options.GetVisualDescendants().OfType<ScrollViewer>()
+            .Single(s => s.Content is StackPanel { Margin.Left: 16 });
 
     [AvaloniaFact]
     public void OptionsRendersAFrame()
@@ -151,8 +158,7 @@ public class OptionsRenderTests : IDisposable
 
         var options = new OptionsWindow(main);
         options.Show();
-        var scroll = options.GetVisualDescendants().OfType<ScrollViewer>()
-            .Single(s => s.Content is StackPanel { Width: 520 });
+        var scroll = ContentScroll(options);
 
         Assert.Equal(global::Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             scroll.VerticalScrollBarVisibility);
@@ -288,6 +294,121 @@ public class OptionsRenderTests : IDisposable
         filterPicker.SelectedIndex = (int)SpellFilter.ByName;
         Assert.True(pattern.IsVisible);
         Assert.Equal("Befriend", pattern.Text);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The window opens at the width the user last dragged it to, shared with WPF
+    /// through OptionsWidth — it used to size itself to a hardcoded 520 panel and stay there.
+    /// </summary>
+    [AvaloniaFact]
+    public void OptionsOpensAtTheSavedWidth()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsWidth = 640;
+
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        Assert.Equal(640, options.Width, 1);
+        // The body fills it, less the 1px frame on each side — the panel inside no longer
+        // has a width of its own to hold the window open at.
+        Assert.Equal(638, ContentScroll(options).Bounds.Width, 1);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>A width beyond the bounds is pulled back in, so a settings file carrying a
+    /// silly number cannot open a two-character-wide rule editor or a window off the screen.
+    /// </summary>
+    [AvaloniaTheory]
+    [InlineData(50, 390)]
+    [InlineData(4000, 900)]
+    public void ASavedWidthOutsideTheBoundsIsClamped(double saved, double expected)
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsWidth = saved;
+
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        Assert.Equal(expected, options.Width, 1);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Dragging the right grip widens the window and saves the result. Custom chrome
+    /// means there is no native resize border, so these grips are the only way to resize —
+    /// on macOS there was previously no way at all.</summary>
+    [AvaloniaFact]
+    public void DraggingTheRightEdgeWidensTheWindowAndSavesIt()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsWidth = 500;
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        var grabX = options.Bounds.Width - 4;
+        options.MouseDown(new global::Avalonia.Point(grabX, 100), MouseButton.Left);
+        options.MouseMove(new global::Avalonia.Point(grabX + 120, 100));
+        options.MouseUp(new global::Avalonia.Point(grabX + 120, 100), MouseButton.Left);
+
+        Assert.Equal(620, options.Width, 1);
+        Assert.Equal(620, main.Settings.OptionsWidth, 1);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The left grip grows the window leftwards: the width goes up and the window
+    /// moves by the same amount, so the right edge stays where the user left it.</summary>
+    [AvaloniaFact]
+    public void DraggingTheLeftEdgeGrowsLeftwardsAndKeepsTheRightEdgeStill()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsWidth = 500;
+        var options = new OptionsWindow(main);
+        options.Show();
+        var startRight = options.Position.X + (int)Math.Round(options.Bounds.Width * options.RenderScaling);
+
+        options.MouseDown(new global::Avalonia.Point(4, 100), MouseButton.Left);
+        options.MouseMove(new global::Avalonia.Point(-80, 100));
+        options.MouseUp(new global::Avalonia.Point(-80, 100), MouseButton.Left);
+
+        Assert.Equal(584, options.Width, 1);   // grabbed at 4, released at -80
+        var right = options.Position.X + (int)Math.Round(options.Bounds.Width * options.RenderScaling);
+        Assert.True(Math.Abs(right - startRight) <= 1,
+            $"right edge moved from {startRight} to {right}");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The grips must not also start a window move — the press is theirs alone,
+    /// or the window walks off with the pointer instead of resizing.</summary>
+    [AvaloniaFact]
+    public void PressingAGripDoesNotDragTheWindow()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsWidth = 500;
+        var options = new OptionsWindow(main);
+        options.Show();
+        var start = options.Position;
+
+        var grabX = options.Bounds.Width - 4;
+        options.MouseDown(new global::Avalonia.Point(grabX, 100), MouseButton.Left);
+        options.MouseMove(new global::Avalonia.Point(grabX + 60, 140));
+        options.MouseUp(new global::Avalonia.Point(grabX + 60, 140), MouseButton.Left);
+
+        Assert.Equal(start, options.Position);
 
         options.Close();
         main.Close();

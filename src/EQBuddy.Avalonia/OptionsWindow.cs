@@ -50,6 +50,16 @@ public sealed class OptionsWindow : Window
     private readonly StackPanel _cardsPanel = new();
     private bool _ready;
 
+    /// <summary>Below this the rule editor's Name and Match boxes collapse to a character
+    /// or two; the same floor and ceiling the WPF window uses.</summary>
+    private const double MinOptionsWidth = 390;
+    private const double MaxOptionsWidth = 900;
+
+    private bool _resizing;
+    private double _resizeStartWidth;
+    private int _resizeStartLeft;      // screen pixels — the space Position lives in
+    private int _resizeStartPointerX;  // ditto
+
     private static readonly string[] SoundNames = Array.ConvertAll(MainWindow.AlertSounds, x => x.Name);
 
     public OptionsWindow(MainWindow main)
@@ -57,24 +67,40 @@ public sealed class OptionsWindow : Window
         _main = main;
         _main.RegisterOptionsWindow(this);
         Title = "EQBuddy Options";
-        SizeToContent = SizeToContent.WidthAndHeight;
+        // Height follows the content, width is the user's — as on Windows. Sizing to
+        // content in both directions is what made this window unresizable: the width was
+        // whatever the panel measured, and turning CanResize on would not have helped,
+        // because custom chrome leaves no native resize border to drag. The side grips
+        // below are the affordance on both platforms.
+        SizeToContent = SizeToContent.Height;
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
         Background = Brushes.Transparent;
         Topmost = true;
         ShowInTaskbar = false;
         CanResize = false;
+        MinWidth = MinOptionsWidth;
+        MaxWidth = MaxOptionsWidth;
+        Width = Math.Clamp(main.Settings.OptionsWidth, MinOptionsWidth, MaxOptionsWidth);
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         _contentScroll.Content = BuildContent();
-        Content = new Border
+        Content = new Grid
         {
-            Background = AppTheme.BgBrush,
-            CornerRadius = new CornerRadius(10),
-            BorderBrush = AppTheme.BorderBrush,
-            BorderThickness = new Thickness(1),
-            Child = _contentScroll,
+            Children =
+            {
+                new Border
+                {
+                    Background = AppTheme.BgBrush,
+                    CornerRadius = new CornerRadius(10),
+                    BorderBrush = AppTheme.BorderBrush,
+                    BorderThickness = new Thickness(1),
+                    Child = _contentScroll,
+                },
+                Grip(leftEdge: true),
+                Grip(leftEdge: false),
+            },
         };
-        Opened += (_, _) => UpdateHeightLimit();
+        Opened += (_, _) => ClampToScreen();
         PointerPressed += OnDrag;
         _scaleSlider.Value = main.UiScale;
         _opacitySlider.Value = main.WidgetOpacity;
@@ -194,7 +220,7 @@ public sealed class OptionsWindow : Window
         _ready = true;
     }
 
-    private void UpdateHeightLimit()
+    private void ClampToScreen()
     {
         var screen = Screens.ScreenFromWindow(this);
         if (screen is null) return;
@@ -206,11 +232,79 @@ public sealed class OptionsWindow : Window
         var availableHeight = Math.Max(240, workingHeight - 40);
         MaxHeight = availableHeight;
         _contentScroll.MaxHeight = availableHeight - 2; // outer border
+
+        // Width needs the same treatment for a different reason: a width saved on a wide
+        // monitor would otherwise open wider than a narrow one, putting one or both grips
+        // off-screen where they cannot be grabbed to bring it back.
+        var workingWidth = screen.WorkingArea.Width / screen.Scaling;
+        MaxWidth = Math.Max(MinOptionsWidth + 1, Math.Min(MaxOptionsWidth, workingWidth - 24));
+        if (Bounds.Width > MaxWidth) Width = MaxWidth;
     }
+
+    /// <summary>An invisible strip down one side of the window. It renders as bare edge —
+    /// the cursor is the whole affordance — matching the WPF grips.</summary>
+    private Border Grip(bool leftEdge)
+    {
+        var grip = new Border
+        {
+            Width = 8,
+            Background = Brushes.Transparent,
+            HorizontalAlignment = leftEdge ? HorizontalAlignment.Left : HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Stretch,
+            Cursor = new Cursor(StandardCursorType.SizeWestEast),
+        };
+        ToolTip.SetTip(grip, "Drag to resize");
+        grip.PointerPressed += (_, e) => BeginResize(grip, e);
+        grip.PointerMoved += (_, e) => ResizeTo(e, leftEdge);
+        grip.PointerReleased += (_, e) => EndResize(e);
+        return grip;
+    }
+
+    private void BeginResize(Control grip, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(grip).Properties.IsLeftButtonPressed) return;
+        _resizing = true;
+        _resizeStartWidth = Bounds.Width;
+        _resizeStartLeft = Position.X;
+        _resizeStartPointerX = PointerScreenX(e);
+        e.Pointer.Capture(grip);
+        // Without this the window-wide handler also sees the press and starts a move drag,
+        // so the window would walk off with the pointer instead of resizing.
+        e.Handled = true;
+    }
+
+    private void ResizeTo(PointerEventArgs e, bool leftEdge)
+    {
+        if (!_resizing) return;
+        var moved = (PointerScreenX(e) - _resizeStartPointerX) / RenderScaling;
+        var width = Math.Clamp(leftEdge ? _resizeStartWidth - moved : _resizeStartWidth + moved,
+            MinWidth, MaxWidth);
+        // Growing leftwards has to move the window as well, or the left edge would stay put
+        // and the window would grow out of its right side, away from the pointer.
+        if (leftEdge)
+            Position = Position.WithX(
+                _resizeStartLeft + (int)Math.Round((_resizeStartWidth - width) * RenderScaling));
+        Width = width;
+    }
+
+    private void EndResize(PointerReleasedEventArgs e)
+    {
+        if (!_resizing) return;
+        _resizing = false;
+        e.Pointer.Capture(null);
+        _main.Settings.OptionsWidth = Bounds.Width;
+        _main.PersistSettings();
+    }
+
+    /// <summary>Pointer X in screen pixels. The window moves and resizes under the pointer
+    /// mid-drag, so a window-relative position is a moving ruler; the screen is a fixed one.</summary>
+    private int PointerScreenX(PointerEventArgs e) => this.PointToScreen(e.GetPosition(this)).X;
 
     private Control BuildContent()
     {
-        var panel = new StackPanel { Margin = new Thickness(16), Width = 520 };
+        // No fixed width: the panel fills whatever the window is dragged to, and the rule
+        // rows' star column absorbs the difference.
+        var panel = new StackPanel { Margin = new Thickness(16) };
         var title = new Grid { Margin = new Thickness(0, 0, 0, 10) };
         title.Children.Add(new TextBlock
         {
@@ -287,7 +381,8 @@ public sealed class OptionsWindow : Window
 
         panel.Children.Add(Heading("Overlay cards", new Thickness(0, 14, 0, 2)));
         panel.Children.Add(_cardsPanel);
-        panel.Children.Add(AppTheme.DimText("Size also scales all text. Changes apply instantly and are saved.",
+        panel.Children.Add(AppTheme.DimText(
+            "Size also scales all text. Changes apply instantly and are saved. Drag either side edge to widen this window.",
             new Thickness(0, 8, 0, 0)));
         return panel;
     }
