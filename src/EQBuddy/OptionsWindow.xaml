@@ -17,7 +17,7 @@
          is taller than the screen, so the body has to scroll. The title row stays outside
          the scroll so ✕ is always reachable. -->
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
-            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid>
         <Grid.RowDefinitions>

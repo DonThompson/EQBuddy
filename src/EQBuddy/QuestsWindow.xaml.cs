@@ -655,13 +655,14 @@ public partial class QuestsWindow : Window
 
         var card = new Border
         {
-            Child = body, CornerRadius = new CornerRadius(6),
-            Padding = new Thickness(8, 5, 8, 6), Margin = new Thickness(0, 0, 0, 6),
+            Child = body, CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(10, 7, 10, 8), Margin = new Thickness(0, 0, 0, 6),
             BorderThickness = new Thickness(1),
             Opacity = isHidden ? 0.55 : 1.0,
         };
         card.SetResourceReference(Border.BackgroundProperty, "PanelBrush");
-        card.SetResourceReference(Border.BorderBrushProperty, m.Complete ? "GoodBrush" : "BorderBrush");
+        // Hairline chrome; a READY card keeps the louder green edge — state has a shape.
+        card.SetResourceReference(Border.BorderBrushProperty, m.Complete ? "GoodBrush" : "HairlineBrush");
         return card;
     }
 

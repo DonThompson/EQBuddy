@@ -79,9 +79,11 @@ public sealed class InventoryWindow : Window
         {
             var tb = new TextBlock
             {
-                Text = text, FontSize = 12, FontWeight = FontWeights.SemiBold,
-                Margin = new Thickness(0, 8, 0, 2),
+                Text = text, Style = (Style)FindResource("SectionLabel"),
+                Margin = new Thickness(0, 9, 0, 2),
             };
+            // Small-caps eyebrow, but in accent: these headers carry real names
+            // (which bag), not just structure.
             tb.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
             _panel.Children.Add(tb);
         }

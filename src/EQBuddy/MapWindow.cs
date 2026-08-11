@@ -283,20 +283,74 @@ public sealed class MapWindow : Window
             }
 
             var due = t.DueAt;
+            var isDue = t.IsDue(now);
             var countdown = due is null ? "?"
-                : t.IsDue(now) ? "DUE"
+                : isDue ? "DUE"
                 : EQBuddy.UI.Shared.Countdown.Format(due.Value - now);
-            var row = new TextBlock
+
+            // Named cards (2026-08-11 modernization): name + camp source + a countdown
+            // pill with an elapsed track — glanceable from across the room, DUE glows.
+            var body = new StackPanel();
+            var nameRow = new TextBlock
             {
-                Text = $"{(camp is null ? "" : "📍 ")}{t.Name} · {countdown}",
-                FontSize = 11, Margin = new Thickness(0, 1, 0, 1),
+                Text = $"{(camp is null ? "" : "📍 ")}{t.Name}",
+                FontSize = 11.5, FontWeight = FontWeights.SemiBold,
                 TextTrimming = TextTrimming.CharacterEllipsis,
+            };
+            nameRow.SetResourceReference(TextBlock.ForegroundProperty, isDue ? "WarnBrush" : "TextBrush");
+            body.Children.Add(nameRow);
+            var meta = new TextBlock
+            {
+                Text = camp is null
+                    ? "no camp yet — /loc during the fight"
+                    : fromWiki ? "camp from the wiki (~)" : "camp from your /loc at kill",
+                FontSize = 9.5, Margin = new Thickness(0, 1, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            };
+            meta.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            body.Children.Add(meta);
+
+            var gaugeRow = new Grid { Margin = new Thickness(0, 5, 0, 0) };
+            gaugeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            gaugeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var pill = new Border { CornerRadius = new CornerRadius(999), Padding = new Thickness(8, 1, 8, 2) };
+            pill.SetResourceReference(Border.BackgroundProperty, isDue ? "BadBrush" : "TrackBrush");
+            var pillText = new TextBlock { Text = countdown, FontSize = 10.5, FontWeight = FontWeights.Bold };
+            if (isDue) pillText.Foreground = Brushes.White;
+            else pillText.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+            pill.Child = pillText;
+            gaugeRow.Children.Add(pill);
+            if (t.DurationSeconds is { } dur && dur > 0 && due is not null)
+            {
+                var frac = isDue ? 1.0 : Math.Clamp(1 - (due.Value - now).TotalSeconds / dur, 0, 1);
+                var track = new Grid { Height = 3, Margin = new Thickness(7, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+                var trackBg = new Border { CornerRadius = new CornerRadius(1.5) };
+                trackBg.SetResourceReference(Border.BackgroundProperty, "TrackBrush");
+                track.Children.Add(trackBg);
+                var fill = new Border
+                {
+                    CornerRadius = new CornerRadius(1.5),
+                    HorizontalAlignment = HorizontalAlignment.Left, Width = 0,
+                };
+                fill.SetResourceReference(Border.BackgroundProperty, isDue ? "BadBrush" : "AccentBrush");
+                track.Children.Add(fill);
+                track.SizeChanged += (_, se) => fill.Width = Math.Max(0, se.NewSize.Width * frac);
+                Grid.SetColumn(track, 1);
+                gaugeRow.Children.Add(track);
+            }
+            body.Children.Add(gaugeRow);
+
+            var row = new Border
+            {
+                Child = body, CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(9, 6, 9, 7), Margin = new Thickness(0, 0, 0, 6),
+                BorderThickness = new Thickness(1),
                 ToolTip = camp is null
                     ? $"{t.Name} — no camp location yet: type /loc during the fight and the next kill pins it"
                     : $"{t.Name} — camp {(fromWiki ? "from the wiki (~)" : "from your /loc at kill time")}",
             };
-            row.SetResourceReference(TextBlock.ForegroundProperty,
-                t.IsDue(now) ? "WarnBrush" : "TextBrush");
+            row.SetResourceReference(Border.BackgroundProperty, "RaisedBrush");
+            row.SetResourceReference(Border.BorderBrushProperty, isDue ? "BadBrush" : "HairlineBrush");
             _namedPanel.Children.Add(row);
 
             if (camp is { } c && pinsAllowed)

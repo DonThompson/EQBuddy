@@ -5,7 +5,7 @@
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
         ResizeMode="CanResize" WindowStartupLocation="Manual">
-    <Border x:Name="Chrome" CornerRadius="8" BorderThickness="1" Padding="9,6,9,8"
+    <Border x:Name="Chrome" CornerRadius="12" BorderThickness="1" Padding="10,7,10,9"
             MouseLeftButtonDown="OnDrag">
         <Grid>
             <Grid.RowDefinitions>

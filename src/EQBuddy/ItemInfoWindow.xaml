@@ -8,7 +8,7 @@
     <!-- On-demand eqlwiki item lookup: click a loot row (or search here). One fetch per
          request, 7-day cache, honest LIVE/CACHED/STALE labels — the log names items
          exactly, so no OCR gymnastics needed. -->
-    <Border Background="{DynamicResource BgBrush}" BorderBrush="{DynamicResource BorderBrush}"
+    <Border Background="{DynamicResource BgBrush}" BorderBrush="{DynamicResource HairlineBrush}"
             BorderThickness="1" CornerRadius="8" Padding="12" MouseLeftButtonDown="OnDrag">
         <StackPanel>
             <Grid Margin="0,0,0,6">

@@ -8,7 +8,7 @@
     <!-- Same custom chrome as Options. Height auto-fits but is clamped to the work area
          at runtime; the body scrolls, the title row stays reachable. -->
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
-            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid>
         <Grid.RowDefinitions>

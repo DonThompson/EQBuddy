@@ -48,8 +48,10 @@ public partial class BreakoutWindow : Window
         _fightScope = ScopeSetting() != "session";
 
         Chrome.SetResourceReference(Border.BackgroundProperty, "BgBrush");
-        Chrome.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
-        ScopeBorder.SetResourceReference(Border.BorderBrushProperty, "BorderBrush");
+        // Hairline chrome (2026-08-11 modernization): the accent at a whisper, same
+        // treatment as the main widget's cards.
+        Chrome.SetResourceReference(Border.BorderBrushProperty, "HairlineBrush");
+        ScopeBorder.SetResourceReference(Border.BorderBrushProperty, "HairlineBrush");
         TitleText.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         SubText.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
         EmptyText.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");

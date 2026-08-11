@@ -6,7 +6,7 @@
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         Width="440" WindowStartupLocation="CenterScreen">
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
-            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid Margin="18,16,18,14">
         <Grid.RowDefinitions>

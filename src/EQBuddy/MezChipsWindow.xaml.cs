@@ -56,14 +56,22 @@ public partial class MezChipsWindow : Window
         else
         {
             for (var i = 0; i < _chips.Count && i < _countdowns.Count; i++)
+            {
                 _countdowns[i].Text = _chips[i].CountdownText;
+                // The draining gauge ticks with the countdown, no rebuild needed.
+                if (i < _gauges.Count && _gauges[i].Fill is { } fillB && _chips[i].Fraction is { } frac)
+                    fillB.Width = Math.Max(0, _gauges[i].Track.ActualWidth * (1 - frac));
+            }
         }
     }
+
+    private readonly List<(Grid Track, Border Fill)> _gauges = [];
 
     private void Rebuild()
     {
         ChipsPanel.Children.Clear();
         _countdowns.Clear();
+        _gauges.Clear();
         foreach (var chip in _chips)
         {
             var row = new Grid { Margin = new Thickness(0, 1, 0, 1) };
@@ -92,11 +100,39 @@ public partial class MezChipsWindow : Window
             row.Children.Add(countdown);
             _countdowns.Add(countdown);
 
+            // The mez gauge DRAINS (2026-08-11): remaining share, shrinking — a buff
+            // bar for the sleep. Same track idiom as the spawn chips' filling gauge.
+            var host = new Grid();
+            host.RowDefinitions.Add(new RowDefinition());
+            host.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            host.Children.Add(row);
+            if (chip.Fraction is { } frac0)
+            {
+                var track = new Grid { Height = 2.5, Margin = new Thickness(0, 3, 0, 0) };
+                var trackBg = new Border { CornerRadius = new CornerRadius(1.25) };
+                trackBg.SetResourceReference(Border.BackgroundProperty, "TrackBrush");
+                track.Children.Add(trackBg);
+                var fill = new Border
+                {
+                    CornerRadius = new CornerRadius(1.25),
+                    HorizontalAlignment = HorizontalAlignment.Left, Width = 0,
+                };
+                fill.SetResourceReference(Border.BackgroundProperty, chip.IsDue ? "WarnBrush" : "AccentBrush");
+                track.Children.Add(fill);
+                track.SizeChanged += (_, se) => fill.Width = Math.Max(0, se.NewSize.Width * (1 - frac0));
+                Grid.SetRow(track, 1);
+                host.Children.Add(track);
+                _gauges.Add((track, fill));
+            }
+            else
+            {
+                _gauges.Add(default);
+            }
             var border = new Border
             {
-                Child = row, ToolTip = chip.Detail,
-                CornerRadius = new CornerRadius(6),
-                Padding = new Thickness(8, 3, 8, 3),
+                Child = host, ToolTip = chip.Detail,
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(8, 3, 8, 4),
                 Margin = new Thickness(0, 0, 0, 3),
                 BorderThickness = new Thickness(1),
             };

@@ -11,7 +11,7 @@
          rescaled content, the same way the Options "Widget size" slider already does. -->
     <Grid>
     <Border x:Name="RootBorderElement" Background="{DynamicResource BgBrush}" CornerRadius="10"
-            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
         <Border.ContextMenu>
             <ContextMenu>
@@ -472,7 +472,7 @@
                                     <ControlTemplate TargetType="TabItem">
                                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
-                                                CornerRadius="4,4,0,0" Padding="{TemplateBinding Padding}">
+                                                CornerRadius="999" Margin="0,0,3,3" Padding="{TemplateBinding Padding}">
                                             <ContentPresenter ContentSource="Header"
                                                               HorizontalAlignment="Center"
                                                               TextElement.Foreground="{TemplateBinding Foreground}"/>

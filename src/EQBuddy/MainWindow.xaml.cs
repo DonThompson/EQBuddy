@@ -491,7 +491,7 @@ public partial class MainWindow : Window
     public void RefreshTheme()
     {
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
-        RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "BorderBrush");
+        RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "HairlineBrush");
         // Most stat rows bake their brush in via FindResource when built rather than a
         // binding, and only get rebuilt on the next data change — force one now so an idle
         // widget still repaints immediately when the theme switches.
@@ -840,7 +840,14 @@ public partial class MainWindow : Window
                 Zone: "", Name: dupe ? $"{m.Target} ({n})" : m.Target, CountdownText: text,
                 IsDue: remaining is <= 6,
                 Detail: $"{m.Spell} by {m.Caster} · landed {m.LandedAt:h:mm:ss tt}",
-                Icon: "💤");
+                Icon: "💤")
+            {
+                // Elapsed share for the gauge; the mez view draws the REMAINING side
+                // (a draining bar, like a buff), so 1 - this.
+                Fraction = m.ExpiresAt is { } exp && (exp - m.LandedAt).TotalSeconds is > 0 and var dur
+                    ? Math.Clamp((now - m.LandedAt).TotalSeconds / dur, 0, 1)
+                    : null,
+            };
         }).ToList();
     }
 
@@ -3006,7 +3013,7 @@ public partial class MainWindow : Window
         Native.SetWindowLong(_hwndSource.Handle, Native.GwlExstyle,
             _clickThrough ? style | Native.WsExTransparent : style & ~Native.WsExTransparent);
         // Visible but unobtrusive state indicator (INPUT-012).
-        RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "BorderBrush");
+        RootBorder().BorderBrush = (Brush)FindResource(_clickThrough ? "WarnBrush" : "HairlineBrush");
         RootBorder().ToolTip = _clickThrough
             ? "Click-through ON — click the 🔒 chip to interact again"
             : null;

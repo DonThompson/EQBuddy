@@ -8,7 +8,7 @@
     <!-- Same chrome family as Spawns: the body scrolls, the title row stays reachable.
          Cards are built in code (BuildCards) — one per quest that overlaps the ledger. -->
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
-            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid>
         <Grid.RowDefinitions>
