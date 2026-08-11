@@ -87,6 +87,44 @@ public class CatalogSanityTests
                     $"'{i.Name}' fails to find its own quest '{q.Name}'");
     }
 
+    /// <summary>The 2026-08-11 durable fix behind the Collection stopgap: chain and
+    /// armor-set pages split into per-step quests at harvest time (reward-anchored
+    /// section splitting, quests-harvest.py). These flagship steps pin the split so
+    /// a future harvest that silently loses it cannot merge.</summary>
+    [Fact]
+    public void ChainStepsAreRealQuests()
+    {
+        // The Coldain Ring chain: nine real steps, each a single-reward quest that
+        // computes progress, plus the chain page still flagged as the overview.
+        var copper = Assert.Single(Cat.Quests, q => q.Name == "Copper Coldain Insignia Ring (#1)");
+        Assert.False(copper.Collection);
+        Assert.Equal(["Copper Coldain Insignia Ring"], copper.Rewards);
+        Assert.Contains(copper.Items, i => i.Name == "High Quality Cougarskin" && i.Qty == 2);
+
+        // Chain semantics: each step turns in the previous step's reward.
+        var silver = Assert.Single(Cat.Quests, q => q.Name == "Silver Coldain Insignia Ring (#2)");
+        Assert.Contains(silver.Items, i => i.Name == "Copper Coldain Insignia Ring");
+
+        var chainPage = Assert.Single(Cat.Quests, q => q.Name == "Coldain Ring Quests");
+        Assert.True(chainPage.Collection);
+
+        // Ring 10 lives on its own wiki page — the split must delegate, not duplicate.
+        Assert.Single(Cat.Quests, q => q.Rewards.Contains("Ring of Dain Frostreaver IV"));
+
+        // The other split families: shawl chain, symbol chain, armor sets.
+        Assert.Single(Cat.Quests, q => q.Name == "Burlap Coldain Prayer Shawl (#1)");
+        Assert.Single(Cat.Quests, q => q.Name == "Initiate Symbol of Tunare");
+        Assert.Single(Cat.Quests, q => q.Name == "Trooper Scale Boots");
+
+        // Every step is a finishable quest: exactly one reward, at least one item,
+        // never Collection-flagged (their names never end in "Quests").
+        foreach (var step in Cat.Quests.Where(q => q.Name.EndsWith(')') && q.Name.Contains("(#")))
+        {
+            Assert.False(step.Collection, $"step '{step.Name}' flagged Collection");
+            Assert.NotEmpty(step.Items);
+        }
+    }
+
     [Fact]
     public void ErasStayOnTheLadder()
     {

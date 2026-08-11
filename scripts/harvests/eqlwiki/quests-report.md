@@ -2,11 +2,354 @@
 
 - Quest Items category members: 4003
 - Pages enumerated: 917
-- Parsed: 917 (empty pages: 0)
-- With turn-in items: 595
+- Parsed: 1167 (empty pages: 0)
+- With turn-in items: 845
 - Unique turn-in item names: 2263
 - Missing quest giver: 35
+- Collection pages split: 57 (250 step quests)
 - Backoff events: 0
+
+## Collection page splits
+- **Animal Skin Armor** -> not split
+  - note: 'Cougarskin Sleeves' already a standalone quest page
+  - note: 'Cougarskin Boots' already a standalone quest page
+  - note: 'Cougarskin Mask' already a standalone quest page
+  - note: 'Direwolf Fur Hood' already a standalone quest page
+  - note: 'Direwolf Fur Cloak' already a standalone quest page
+- **Armor of the Priest Quests** -> 6 steps
+  - Boots of the Reliant (3 items)
+  - Bracers of the Reverent (4 items)
+  - Chestplate of the Constant (4 items)
+  - Gauntlets of the Ardent (4 items)
+  - Greaves of the Penitent (4 items)
+  - Vambraces of the Fervent (5 items)
+- **Bard Kael Armor Quests** -> 6 steps
+  - Troubadour's Boots (2 items)
+  - Troubadour's Bracer (2 items)
+  - Troubadour's Breastplate (2 items)
+  - Troubadour's Gauntlets (2 items)
+  - Troubadour's Greaves (2 items)
+  - Troubadour's Helm (2 items)
+- **Bard Skyshrine Armor Quests** -> 6 steps
+  - Boots of Twilight (1 items)
+  - Bracer of Twilight (1 items)
+  - Breastplate of Twilight (1 items)
+  - Gauntlets of Twilight (1 items)
+  - Greaves of Twilight (1 items)
+  - Helm of Twilight (1 items)
+- **Bard Thurgadin Armor Quests** -> 3 steps
+  - Resonant Boots (2 items)
+  - Resonant Bracer (2 items)
+  - Resonant Gauntlets (2 items)
+  - note: 'Resonant Helm': no turn-in items parsed
+  - note: 'Resonant Breastplate': no turn-in items parsed
+  - note: 'Resonant Vambraces': no turn-in items parsed
+- **Brell Serilis Symbol Quests** -> 2 steps
+  - Disciple Symbol of Brell Serilis (10 items)
+  - Initiate Symbol of Brell Serilis (1 items)
+- **Cazic Thule Symbol Quests** -> not split
+  - note: 'Initiate Symbol of Cazic Thule': no turn-in items parsed
+  - note: 'Disciple Symbol of Cazic Thule': no turn-in items parsed
+- **Cleric Kael Armor Quests** -> 4 steps
+  - Templar's Boots (2 items)
+  - Templar's Bracer (2 items)
+  - Templar's Gauntlets (2 items)
+  - Templar's Vambraces (2 items)
+- **Cleric Skyshrine Armor Quests** -> 2 steps
+  - Akkirus' Boots of the Risen (1 items)
+  - Akkirus' Gauntlets of the Risen (1 items)
+  - note: 'Akkirus' Greaves of the Risen': no turn-in items parsed
+- **Cleric Thurgadin Armor Quests** -> 5 steps
+  - Boots of Forbidden Rites (2 items)
+  - Bracers of Forbidden Rites (2 items)
+  - Breastplate of Forbidden Rites (2 items)
+  - Gauntlets of Forbidden Rites (2 items)
+  - Vambraces of Forbidden Rites (2 items)
+- **Coldain Prayer Shawl Quests** -> 7 steps
+  - Burlap Coldain Prayer Shawl (#1) (1 items)
+  - Cloth Coldain Prayer Shawl (#2) (2 items)
+  - Woven Coldain Prayer Shawl (#3) (35 items)
+  - Fur-Lined Coldain Prayer Shawl (#4) (11 items)
+  - Silk Coldain Prayer Shawl (#5) (6 items)
+  - Embroidered Coldain Prayer Shawl (#6) (7 items)
+  - Runed Coldain Prayer Shawl (#7) (32 items)
+- **Coldain Ring Quests** -> 9 steps
+  - Copper Coldain Insignia Ring (#1) (3 items)
+  - Silver Coldain Insignia Ring (#2) (4 items)
+  - Gold Coldain Insignia Ring (#3) (5 items)
+  - Platinum Coldain Insignia Ring (#4) (3 items)
+  - Obsidian Coldain Insignia Ring (#5) (3 items)
+  - Mithril Coldain Insignia Ring (#6) (2 items)
+  - Adamantium Coldain Insignia Ring (#7) (2 items)
+  - Velium Coldain Insignia Ring (#8) (3 items)
+  - Coldain Hero's Insignia Ring (#9) (11 items)
+  - note: 'Ring of Dain Frostreaver IV' delegated to standalone page ['10th Coldain Ring Quest']
+- **Crusader's Tests** -> not split
+  - note: not split: 1 usable steps
+- **Darkforge Armor Quests** -> 7 steps
+  - Darkforge Boots (3 items)
+  - Darkforge Bracer (3 items)
+  - Darkforge Breastplate (3 items)
+  - Darkforge Gauntlets (3 items)
+  - Darkforge Greaves (3 items)
+  - Darkforge Helm (3 items)
+  - Darkforge Vambraces (3 items)
+- **Dreadscale Armor** -> 7 steps
+  - Dreadscale Boots (4 items)
+  - Dreadscale Bracer (3 items)
+  - Dreadscale Breastplate (4 items)
+  - Dreadscale Gauntlets (3 items)
+  - Dreadscale Greaves (4 items)
+  - Dreadscale Mask (3 items)
+  - Dreadscale Vambraces (3 items)
+- **Druid Kael Armor Quests** -> 4 steps
+  - Nature Walker's Boots (2 items)
+  - Nature Walker's Bracer (2 items)
+  - Nature Walker's Circlet (2 items)
+  - Nature Walker's Gauntlets (2 items)
+- **Druid Skyshrine Armor Quests** -> 2 steps
+  - Woven Grass Boots (2 items)
+  - Woven Grass Bracelet (2 items)
+- **Druid Thurgadin Armor Quests** -> 3 steps
+  - Rowyl's Boots of Nature (2 items)
+  - Rowyl's Bracer of Nature (2 items)
+  - Rowyl's Circlet of Nature (2 items)
+- **Enchanter Kael Armor Quests** -> 3 steps
+  - Dazzling Gloves (2 items)
+  - Dazzling Robe (2 items)
+  - Dazzling Sleeves (2 items)
+- **Enchanter Skyshrine Armor Quests** -> 3 steps
+  - Illusionist's Gloves (2 items)
+  - Illusionist's Robe (2 items)
+  - Illusionist's Sleeves (2 items)
+- **Enchanter Thurgadin Armor Quests** -> 3 steps
+  - Beguiler's Gloves (2 items)
+  - Beguiler's Robe (2 items)
+  - Beguiler's Sleeves (2 items)
+- **Incandescent Armor Quests** -> 3 steps
+  - Incandescent Gloves (4 items)
+  - Incandescent Mask (2 items)
+  - Incandescent Wand (4 items)
+- **Innoruuk Symbol Quests** -> 3 steps
+  - Disciple Symbol of Innoruuk (3 items)
+  - Initiate Symbol of Innoruuk (1 items)
+  - Regent Symbol of Innoruuk (4 items)
+- **Ivy Etched Armor Quests** -> 6 steps
+  - Ivy Etched Boots (2 items)
+  - Ivy Etched Bracer (3 items)
+  - Ivy Etched Gauntlets (2 items)
+  - Ivy Etched Helm (3 items)
+  - Ivy Etched Leggings (1 items)
+  - Ivy Etched Sleeves (3 items)
+- **Lambent Armor Quests** -> 7 steps
+  - Lambent Boots (5 items)
+  - Lambent Bracers (4 items)
+  - Lambent Breastplate (5 items)
+  - Lambent Gauntlets (5 items)
+  - Lambent Greaves (5 items)
+  - Lambent Helm (5 items)
+  - Lambent Vambraces (5 items)
+- **Magician Kael Armor Quests** -> 4 steps
+  - Summoner's Boots (2 items)
+  - Summoner's Gloves (2 items)
+  - Summoner's Robe (2 items)
+  - Summoner's Sleeves (2 items)
+- **Magician Skyshrine Armor Quests** -> 4 steps
+  - Prestidigitator's Boots (2 items)
+  - Prestidigitator's Gloves (2 items)
+  - Prestidigitator's Robe (2 items)
+  - Prestidigitator's Sleeves (2 items)
+- **Magician Thurgadin Armor Quests** -> 3 steps
+  - Arch Mage's Gloves (2 items)
+  - Arch Mage's Robe (2 items)
+  - Arch Mage's Sleeves (2 items)
+  - note: 'Arch Mage's Boots': no turn-in items parsed
+- **Monk Headband Quests** -> 5 steps
+  - Orange Headband (2 items)
+  - Purple Headband (3 items)
+  - Red Headband (3 items)
+  - White Headband (1 items)
+  - Yellow Headband (2 items)
+- **Monk Quests** -> not split
+  - note: 'Iksar Sparring Armor' delegated to standalone page ['Sparring Armor']
+  - note: 'Epic' delegated to standalone page ['Monk Epic Quest']
+- **Monk Sash Quests** -> 3 steps
+  - Red Sash of Order (3 items)
+  - White Training Sash (3 items)
+  - Yellow Sash of Order (3 items)
+  - note: 'Orange Sash of Order': no turn-in items parsed
+- **Necromancer Kael Armor Quests** -> 4 steps
+  - Plague Bearer's Boots (2 items)
+  - Plague Bearer's Gloves (2 items)
+  - Plague Bearer's Robe (2 items)
+  - Plague Bearer's Sleeves (2 items)
+- **Necromancer Skyshrine Armor Quests** -> 4 steps
+  - Rotting Boots (2 items)
+  - Rotting Gloves (2 items)
+  - Rotting Robe (2 items)
+  - Rotting Sleeves (2 items)
+- **Necromancer Thurgadin Armor Quests** -> 4 steps
+  - Warlock's Boots (2 items)
+  - Warlock's Gloves (2 items)
+  - Warlock's Robe (2 items)
+  - Warlock's Sleeves (2 items)
+- **Paladin Kael Armor Quests** -> 6 steps
+  - Shining Boots (2 items)
+  - Shining Bracer (2 items)
+  - Shining Breastplate (2 items)
+  - Shining Gauntlets (2 items)
+  - Shining Greaves (2 items)
+  - Shining Helm (2 items)
+- **Paladin Skyshrine Armor Quests** -> 7 steps
+  - Scaled Knight's Boots (1 items)
+  - Scaled Knight's Bracer (1 items)
+  - Scaled Knight's Breastplate (1 items)
+  - Scaled Knight's Gauntlets (1 items)
+  - Scaled Knight's Greaves (1 items)
+  - Scaled Knight's Helm (1 items)
+  - Scaled Knight's Vambraces (1 items)
+- **Paladin Thurgadin Armor Quests** -> 3 steps
+  - Runed Protector's Boots (2 items)
+  - Runed Protector's Bracer (2 items)
+  - Runed Protector's Gauntlets (2 items)
+  - note: 'Runed Protector's Helm': no turn-in items parsed
+  - note: 'Runed Protector's Breastplate': no turn-in items parsed
+- **Quellious Symbol Quests** -> 3 steps
+  - Disciple Symbol of Quellious (4 items)
+  - Initiate Symbol of Quellious (2 items)
+  - Regent Symbol of Quellious (4 items)
+- **Rallos Zek Symbol Quests** -> not split
+  - note: not split: 1 usable steps
+- **Ranger Kael Armor Quests** -> 4 steps
+  - Forest Stalker's Boots (2 items)
+  - Forest Stalker's Bracer (2 items)
+  - Forest Stalker's Breastplate (2 items)
+  - Forest Stalker's Gauntlets (2 items)
+- **Ranger Skyshrine Armor Quests** -> 5 steps
+  - Golden Leaf Boots (2 items)
+  - Golden Leaf Bracer (2 items)
+  - Golden Leaf Breastplate (2 items)
+  - Golden Leaf Gauntlets (2 items)
+  - Golden Leaf Helm (2 items)
+- **Ranger Thurgadin Armor Quests** -> 3 steps
+  - Runed Scout's Boots (2 items)
+  - Runed Scout's Bracer (2 items)
+  - Runed Scout's Gauntlets (2 items)
+  - note: 'Runed Scout's Helm': no turn-in items parsed
+- **Rogue Kael Armor Quests** -> 3 steps
+  - Deceiver's Boots (2 items)
+  - Deceiver's Bracer (2 items)
+  - Deceiver's Gauntlets (2 items)
+- **Rogue Skyshrine Armor Quests** -> 3 steps
+  - Shadow Boots (2 items)
+  - Shadow Bracer (2 items)
+  - Shadow Gauntlets (2 items)
+- **Rogue Thurgadin Armor Quests** -> 3 steps
+  - Brigand's Boots (2 items)
+  - Brigand's Bracer (2 items)
+  - Brigand's Gauntlets (2 items)
+- **Scaled Mystic Armor Quests** -> 7 steps
+  - Scaled Mystic Boots (4 items)
+  - Scaled Mystic Bracers (4 items)
+  - Scaled Mystic Cloak (4 items)
+  - Scaled Mystic Gauntlets (2 items)
+  - Scaled Mystic Greaves (4 items)
+  - Scaled Mystic Helm (4 items)
+  - Scaled Mystic Vambraces (4 items)
+- **Shadowknight Kael Armor Quests** -> 6 steps
+  - Malevolent Boots (2 items)
+  - Malevolent Bracer (2 items)
+  - Malevolent Breastplate (2 items)
+  - Malevolent Gauntlets (2 items)
+  - Malevolent Greaves (2 items)
+  - Malevolent Vambraces (2 items)
+- **Shadowknight Skyshrine Armor Quests** -> 4 steps
+  - Blood Lord's Boots (1 items)
+  - Blood Lord's Bracer (1 items)
+  - Blood Lord's Breastplate (1 items)
+  - Blood Lord's Gauntlets (1 items)
+- **Shadowknight Thurgadin Armor Quests** -> 3 steps
+  - Dark Runed Boots (2 items)
+  - Dark Runed Bracer (2 items)
+  - Dark Runed Gauntlets (2 items)
+  - note: 'Dark Runed Breastplate': no turn-in items parsed
+  - note: 'Dark Runed Vambraces': no turn-in items parsed
+  - note: 'Dark Runed Greaves': no turn-in items parsed
+- **Shaman Kael Armor Quests** -> 5 steps
+  - Spirit Caller's Boots (2 items)
+  - Spirit Caller's Bracer (2 items)
+  - Spirit Caller's Breastplate (2 items)
+  - Spirit Caller's Gauntlets (2 items)
+  - Spirit Caller's Helm (2 items)
+- **Shaman Skyshrine Armor Quests** -> 5 steps
+  - Wolf Caller's Boots (2 items)
+  - Wolf Caller's Bracer (2 items)
+  - Wolf Caller's Breastplate (2 items)
+  - Wolf Caller's Gauntlets (2 items)
+  - Wolf Caller's Helm (2 items)
+- **Shaman Thurgadin Armor Quests** -> 2 steps
+  - Rune Crafter's Boots (2 items)
+  - Rune Crafter's Helm (2 items)
+  - note: 'Rune Crafter's Bracer': no turn-in items parsed
+  - note: 'Rune Crafter's Gauntlets': no turn-in items parsed
+- **Totemic Armor Quests** -> 5 steps
+  - Totemic Boots (4 items)
+  - Totemic Bracers (4 items)
+  - Totemic Cloak (4 items)
+  - Totemic Gauntlets (4 items)
+  - Totemic Helm (4 items)
+- **Trooper Scale Armor** -> 8 steps
+  - Trooper Scale Boots (1 items)
+  - Trooper Scale Bracers (3 items)
+  - Trooper Scale Breastplate (3 items)
+  - Trooper Scale Gauntlets (2 items)
+  - Trooper Scale Greaves (2 items)
+  - Trooper Scale Helm (1 items)
+  - Trooper Scale Pauldron (9 items)
+  - Trooper Scale Vambraces (4 items)
+- **Tunare Symbol Quests** -> 3 steps
+  - Disciple Symbol of Tunare (4 items)
+  - Initiate Symbol of Tunare (2 items)
+  - Warden Symbol of Tunare (6 items)
+- **Warrior Kael Armor Quests** -> 5 steps
+  - Warlord's Boots (2 items)
+  - Warlord's Bracer (2 items)
+  - Warlord's Breastplate (2 items)
+  - Warlord's Gauntlets (2 items)
+  - Warlord's Greaves (2 items)
+- **Warrior Pike Quests** -> 5 steps
+  - Militia's Pike (#1) (3 items)
+  - Footman's Pike (#2) (3 items)
+  - Soldier's Pike (#3) (4 items)
+  - Trooper's Pike (#4) (1 items)
+  - Legionnaire's Mancatcher (#5) (3 items)
+  - note: 'Partisan's Pike': no turn-in items parsed
+- **Warrior Skyshrine Armor Quests** -> 5 steps
+  - Boots of the Myrmidon (1 items)
+  - Bracer of the Myrmidon (1 items)
+  - Breastplate of the Myrmidon (1 items)
+  - Gauntlets of the Myrmidon (1 items)
+  - Greaves of the Myrmidon (1 items)
+- **Warrior Thurgadin Armor Quests** -> 3 steps
+  - Champion's Boots (2 items)
+  - Champion's Bracer (2 items)
+  - Champion's Gauntlets (2 items)
+  - note: 'Champion's Breastplate': no turn-in items parsed
+- **Wizard Kael Armor Quests** -> 4 steps
+  - Boots of the Invoker (2 items)
+  - Gloves of the Invoker (2 items)
+  - Robe of the Invoker (2 items)
+  - Sleeves of the Invoker (2 items)
+- **Wizard Skyshrine Armor Quests** -> 4 steps
+  - Icicle Boots (2 items)
+  - Icicle Gloves (2 items)
+  - Icicle Sleeves (2 items)
+  - Robe of Icicles (2 items)
+- **Wizard Thurgadin Armor Quests** -> 4 steps
+  - Sage's Boots (2 items)
+  - Sage's Gloves (2 items)
+  - Sage's Robe (2 items)
+  - Sage's Sleeves (2 items)
 
 ## Quests with no turn-in items parsed (review these)
 - Aenia and Behroe

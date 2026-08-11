@@ -10,12 +10,13 @@ namespace EQBuddy.Core;
 ///
 /// COLLECTION pages ("Bard Skyshrine Armor Quests", "Coldain Ring Quests" — 77 of
 /// them end in "Quests", plus a curated handful of armor-set and key pages) document
-/// several quests at once. Unlike Sky, no local table knows their per-quest turn-in
-/// splits, so they stay — searchable, item-badged, openable — but flagged: a
-/// collection never computes a progress fraction, never flips "ready", and never
-/// enters the held tab, because a union of six quests' items is not a quest you can
-/// finish. The durable fix (harvest-side section splitting) is queued; this stops
-/// the lying today.
+/// several quests at once. The durable fix landed 2026-08-11: reward-anchored
+/// section splitting in quests-harvest.py emits real per-step quests for the chains
+/// and armor sets whose sections name their rewards (250 steps as of that harvest).
+/// The flag remains the safety net for pages that don't split — those stay
+/// searchable, item-badged, openable, but never compute a progress fraction, never
+/// flip "ready", never enter the held tab, because a union of six quests' items is
+/// not a quest you can finish.
 ///
 /// Deliberately untouched: the Epic quests (40+ items is the truth of an epic) and
 /// real single steps that merely sit near collections ("10th Coldain Ring Quest").

@@ -134,14 +134,7 @@ def parse_infobox_field(wikitext, label_pattern):
     return strip_links(m.group(1)) if m else ""
 
 
-def parse_quest(title, wikitext, quest_item_set):
-    q = {"name": title,
-         "url": "https://eqlwiki.com/" + urllib.parse.quote(title.replace(" ", "_"))}
-    for key, pat in INFOBOX_FIELDS.items():
-        q[key] = parse_infobox_field(wikitext, pat)
-    lvl = re.search(r"\d+", q["minLevel"] or "")
-    q["minLevel"] = int(lvl.group(0)) if lvl else 0
-
+def parse_turnin_items(wikitext, quest_giver, quest_item_set):
     # Turn-in items: lines that hand something to an NPC, plus requirement BULLETS —
     # pages like The Falchion list what to collect as "* [[Blue Orc Head]] (from …)"
     # with no give-verb at all (David's Crushbone pass, 2026-08-07). Reward-section
@@ -174,21 +167,37 @@ def parse_quest(title, wikitext, quest_item_set):
         # the cheap arbiter of "this is actually an item".
         for name in re.findall(LINK, line):
             name = name.strip()
-            if name in items or name == q["questGiver"]:
+            if name in items or name == quest_giver:
                 continue
             if re.search(r"\d+\s*x\s*\[\[" + re.escape(name), line):
                 continue
             if name not in quest_item_set:
                 continue
             items.setdefault(name, 1)
+    return items
+
+
+def parse_quest(title, wikitext, quest_item_set):
+    q = {"name": title,
+         "url": "https://eqlwiki.com/" + urllib.parse.quote(title.replace(" ", "_"))}
+    for key, pat in INFOBOX_FIELDS.items():
+        q[key] = parse_infobox_field(wikitext, pat)
+    lvl = re.search(r"\d+", q["minLevel"] or "")
+    q["minLevel"] = int(lvl.group(0)) if lvl else 0
+
+    items = parse_turnin_items(wikitext, q["questGiver"], quest_item_set)
     q["items"] = [{"name": n, "qty": c} for n, c in sorted(items.items())]
 
-    # Rewards: {{:Item}} transclusions plus links on lines under a Reward heading.
+    # Rewards: {{:Item}} transclusions plus links on lines under a Reward heading,
+    # plus {{Gear Set|A|B|…}} params — the armor-set pages (Trooper Scale, Dreadscale)
+    # list their pieces only through that template.
     rewards = set(re.findall(r"\{\{:\s*([^}|]+?)\s*\}\}", wikitext))
     reward_section = re.search(r"=+\s*Rewards?\s*=+([^=]*)", wikitext, re.IGNORECASE)
     if reward_section:
         rewards |= {n.strip() for n in re.findall(LINK, reward_section.group(1))}
-    q["rewards"] = sorted(rewards)
+    for gearset in re.findall(r"\{\{\s*Gear\s*Set\s*\|(.*?)\}\}", wikitext, re.DOTALL):
+        rewards |= {p.strip() for p in gearset.split("|") if p.strip()}
+    q["rewards"] = sorted(r for r in rewards if r)
 
     # Zone categories double as related-zone hints.
     q["categories"] = sorted(set(re.findall(r"\[\[Category:\s*([^\]|]+)\]\]", wikitext))
@@ -216,6 +225,142 @@ def parse_quest(title, wikitext, quest_item_set):
                        or bool(re.search(r"Repeatable\s*:?\s*'*\s*(?:\n\|\s*)?\s*yes",
                                          wikitext, re.IGNORECASE)))
     return q
+
+
+# ------------------------------------------------ collection section splitting
+# The durable fix behind CatalogHygiene's Collection flag (keep these two name
+# lists in sync with CatalogHygiene.cs): a page that documents a whole chain or
+# armor set splits into per-step quests here, reward-anchored — a section heading
+# that names exactly one of the page's rewards is one step ("Copper Coldain
+# Insignia Ring (#1)", "3rd: Woven Coldain Prayer Shawl", "Boots"). Pages whose
+# sections don't match stay whole and keep the Collection flag at load.
+
+INDEX_PAGES = {
+    "Popular Quests by Level", "Class Race Quest List",
+    "Velious Class Armor Comparisons", "Faction Quests",
+    "All Positive Faction Quests",
+}
+
+EXTRA_COLLECTIONS = {
+    "Plane of Sky Keys", "Custom Plate Helms - Kael Drakkel",
+    "Custom Plate Helms - Skyshrine", "Custom Plate Helms - Thurgadin",
+    "Trooper Scale Armor", "Dreadscale Armor", "Animal Skin Armor",
+    "Crusader's Tests", "Emerald Warriors' Items",
+}
+
+
+def is_collection(title):
+    return (title.endswith("Quests") or title in EXTRA_COLLECTIONS) \
+        and title not in INDEX_PAGES
+
+
+STOPWORDS = {"the", "of", "a", "an", "and"}
+
+
+def _tokens(s):
+    return {w.rstrip("s") for w in re.findall(r"[a-z0-9`']+", s.lower())} - STOPWORDS
+
+
+def clean_heading(raw):
+    """Heading → (label, order). Strips bold/link/transclusion markup and the
+    order decorations chains use — "(#3)" suffixes, "3rd:" prefixes — keeping
+    the number so the step can carry it in its name."""
+    t = re.sub(r"'''*", "", raw.strip())
+    t = re.sub(r"\{\{:\s*([^}|]+?)\s*\}\}", r"\1", t)
+    t = re.sub(LINK, r"\1", t)
+    order = None
+    m = re.search(r"\(\s*#\s*(\d+)\s*\)", t)
+    if m:
+        order, t = int(m.group(1)), t.replace(m.group(0), " ")
+    m = re.match(r"(\d+)(?:st|nd|rd|th)\s*[:.]?\s+", t, re.IGNORECASE)
+    if m:
+        order = order or int(m.group(1))
+        t = t[m.end():]
+    t = re.sub(r"\s*Quests?\s*$", "", t, flags=re.IGNORECASE)
+    return " ".join(t.split()), order
+
+
+def claimed_rewards(label, rewards):
+    """Which rewards a heading names: the reward inside the heading ("Copper
+    Coldain Insignia Ring (#1)") or the heading inside the reward ("Boots" for
+    "Trooper Scale Boots" — token match, singular/plural-blind)."""
+    if len(label) < 4:
+        return []
+    lt = _tokens(label)
+    if not lt:
+        return []
+    low = label.lower()
+    return [r for r in rewards if r.lower() in low or lt <= _tokens(r)]
+
+
+HEADING_RX = re.compile(r"^(=+)\s*(.+?)\s*=+\s*$", re.MULTILINE)
+
+
+def split_collection(page, wikitext, quest_titles, quest_item_set, taken_names):
+    """Per-step quests out of one collection page. Returns (steps, notes);
+    notes explain skipped sections for the harvest report."""
+    notes = []
+    heads = list(HEADING_RX.finditer(wikitext))
+    found = {}   # reward -> {"order", "items"}
+    for i, m in enumerate(heads):
+        label, order = clean_heading(m.group(2))
+        claims = claimed_rewards(label, page["rewards"])
+        if len(claims) > 1:   # keep the most specific when one contains the rest
+            claims = [c for c in claims
+                      if not any(c != o and _tokens(c) < _tokens(o) for o in claims)]
+        if len(claims) != 1:
+            if claims:
+                notes.append(f"ambiguous heading '{label}' -> {sorted(claims)}")
+            continue
+        reward = claims[0]
+        level = len(m.group(1))
+        end = next((m2.start() for m2 in heads[i + 1:] if len(m2.group(1)) <= level),
+                   len(wikitext))
+        body = wikitext[m.end():end]
+        # A section that transcludes another quest PAGE delegates to it — the
+        # standalone page is already its own catalog entry ("Ring of Dain
+        # Frostreaver IV (#10)" is just "{{: 10th Coldain Ring Quest}}").
+        delegated = [t.strip() for t in re.findall(r"\{\{:\s*([^}|]+?)\s*\}\}", body)
+                     if t.strip() in quest_titles]
+        if delegated:
+            notes.append(f"'{label}' delegated to standalone page {delegated}")
+            continue
+        items = parse_turnin_items(body, page["questGiver"], quest_item_set)
+        items.pop(reward, None)   # "…to receive your [[Gold Ring]]" is the prize
+        got = found.setdefault(reward, {"order": order, "items": {}})
+        got["order"] = got["order"] or order
+        for n, c in items.items():   # short+long walkthroughs merge (Trooper Scale)
+            got["items"][n] = max(got["items"].get(n, 0), c)
+
+    steps = []
+    for reward, got in found.items():
+        if reward in quest_titles or f"{reward} Quest" in quest_titles:
+            notes.append(f"'{reward}' already a standalone quest page")
+            continue
+        if not got["items"]:
+            notes.append(f"'{reward}': no turn-in items parsed")
+            continue
+        name = reward + (f" (#{got['order']})" if got["order"] else "")
+        if name.lower() in taken_names:
+            name = re.sub(r"\s*Quests$", "", page["name"]) + ": " + name
+        steps.append({
+            "name": name, "url": page["url"], "parent": page["name"],
+            "startZone": page["startZone"], "questGiver": page["questGiver"],
+            "minLevel": page["minLevel"], "classes": page["classes"],
+            "items": [{"name": n, "qty": c} for n, c in sorted(got["items"].items())],
+            "rewards": [reward],
+            "categories": page["categories"], "relatedZones": page["relatedZones"],
+            "era": page["era"], "repeatable": page["repeatable"],
+        })
+    # One matching section is not a chain; dozens is an index page in disguise.
+    if len(steps) < 2 or len(steps) > 25:
+        if steps:
+            notes.append(f"not split: {len(steps)} usable steps")
+        return [], notes
+    steps.sort(key=lambda s: (found[s["rewards"][0]]["order"] or 99, s["name"]))
+    for s in steps:
+        taken_names.add(s["name"].lower())
+    return steps, notes
 
 
 def enumerate_quest_items():
@@ -248,7 +393,9 @@ def main():
     quest_items = enumerate_quest_items()
     titles = enumerate_titles()
     quest_item_set = set(quest_items)
-    quests, empty = [], []
+    title_set = set(titles)
+    taken_names = {t.lower() for t in titles}
+    quests, empty, splits = [], [], []
     for i, title in enumerate(titles, 1):
         text = fetch_wikitext(title)
         if not text.strip():
@@ -256,6 +403,12 @@ def main():
             continue
         q = parse_quest(title, text, quest_item_set)
         quests.append(q)
+        if is_collection(title):
+            steps, notes = split_collection(q, text, title_set, quest_item_set,
+                                            taken_names)
+            quests += steps
+            if steps or notes:
+                splits.append((title, steps, notes))
         if i % 25 == 0:
             print(f"  parsed {i}/{len(titles)}", flush=True)
 
@@ -275,7 +428,17 @@ def main():
         f"- With turn-in items: {len(with_items)}",
         f"- Unique turn-in item names: {len(unique_items)}",
         f"- Missing quest giver: {len(no_giver)}",
+        f"- Collection pages split: {sum(1 for _, s, _ in splits if s)}"
+        f" ({sum(len(s) for _, s, _ in splits)} step quests)",
         f"- Backoff events: {len(backoff_events)}",
+        "",
+        "## Collection page splits",
+        *[line
+          for title, steps, notes in splits
+          for line in ([f"- **{title}** -> {len(steps)} steps" if steps
+                        else f"- **{title}** -> not split"]
+                       + [f"  - {s['name']} ({len(s['items'])} items)" for s in steps]
+                       + [f"  - note: {n}" for n in notes])],
         "",
         "## Quests with no turn-in items parsed (review these)",
         *[f"- {n}" for n in no_items],

@@ -458,7 +458,15 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Boots of Ro",
+   "Bracer of Ro",
+   "Breastplate of Ro",
+   "Gauntlets of Ro",
+   "Greaves of Ro",
+   "Helm of Ro",
+   "Vambraces of Ro"
+  ],
   "categories": [
    "Paladin Quests",
    "Temple of Solusek Ro"
@@ -554,6 +562,246 @@
    "Chestplate of the Constant",
    "Gauntlets of the Ardent",
    "Greaves of the Penitent",
+   "Vambraces of the Fervent"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Clan Runnyeye",
+   "Dagnor's Cauldron"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Boots of the Reliant",
+  "url": "https://eqlwiki.com/Armor_of_the_Priest_Quests",
+  "parent": "Armor of the Priest Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Gavel the Temperant, Blaize the Radiant",
+  "minLevel": 35,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Reliant",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Reliant",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Boots of the Reliant"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Clan Runnyeye",
+   "Dagnor's Cauldron"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Bracers of the Reverent",
+  "url": "https://eqlwiki.com/Armor_of_the_Priest_Quests",
+  "parent": "Armor of the Priest Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Gavel the Temperant, Blaize the Radiant",
+  "minLevel": 35,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 2
+   },
+   {
+    "name": "Icon of the Reverent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Reverent",
+    "qty": 1
+   },
+   {
+    "name": "Lianna's Flute",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Bracers of the Reverent"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Clan Runnyeye",
+   "Dagnor's Cauldron"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Chestplate of the Constant",
+  "url": "https://eqlwiki.com/Armor_of_the_Priest_Quests",
+  "parent": "Armor of the Priest Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Gavel the Temperant, Blaize the Radiant",
+  "minLevel": 35,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Galvanized Platinum Bar",
+    "qty": 2
+   },
+   {
+    "name": "Icon of the Constant",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Constant",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Chestplate of the Constant"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Clan Runnyeye",
+   "Dagnor's Cauldron"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Gauntlets of the Ardent",
+  "url": "https://eqlwiki.com/Armor_of_the_Priest_Quests",
+  "parent": "Armor of the Priest Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Gavel the Temperant, Blaize the Radiant",
+  "minLevel": 35,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Galvanized Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Ardent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Ardent",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Gauntlets of the Ardent"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Clan Runnyeye",
+   "Dagnor's Cauldron"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Greaves of the Penitent",
+  "url": "https://eqlwiki.com/Armor_of_the_Priest_Quests",
+  "parent": "Armor of the Priest Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Gavel the Temperant, Blaize the Radiant",
+  "minLevel": 35,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Penitent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Penitent",
+    "qty": 1
+   },
+   {
+    "name": "Magnetized Platinum Bar",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Greaves of the Penitent"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Clan Runnyeye",
+   "Dagnor's Cauldron"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Vambraces of the Fervent",
+  "url": "https://eqlwiki.com/Armor_of_the_Priest_Quests",
+  "parent": "Armor of the Priest Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Gavel the Temperant, Blaize the Radiant",
+  "minLevel": 35,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   },
+   {
+    "name": "Icon of the Fervent",
+    "qty": 1
+   },
+   {
+    "name": "Ingot of the Fervent",
+    "qty": 1
+   },
+   {
+    "name": "Tumpy Tonic",
+    "qty": 1
+   },
+   {
+    "name": "Vulcanized Platinum Bar",
+    "qty": 1
+   }
+  ],
+  "rewards": [
    "Vambraces of the Fervent"
   ],
   "categories": [
@@ -1152,7 +1400,207 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Troubadour's Boots",
+   "Troubadour's Bracer",
+   "Troubadour's Breastplate",
+   "Troubadour's Gauntlets",
+   "Troubadour's Greaves",
+   "Troubadour's Helm",
+   "Troubadour's Vambraces"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Troubadour's Boots",
+  "url": "https://eqlwiki.com/Bard_Kael_Armor_Quests",
+  "parent": "Bard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bygloirn Omorden",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Troubadour's Boots"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Troubadour's Bracer",
+  "url": "https://eqlwiki.com/Bard_Kael_Armor_Quests",
+  "parent": "Bard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bygloirn Omorden",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Troubadour's Bracer"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Troubadour's Breastplate",
+  "url": "https://eqlwiki.com/Bard_Kael_Armor_Quests",
+  "parent": "Bard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bygloirn Omorden",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Ancient Tarnished Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Troubadour's Breastplate"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Troubadour's Gauntlets",
+  "url": "https://eqlwiki.com/Bard_Kael_Armor_Quests",
+  "parent": "Bard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bygloirn Omorden",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Troubadour's Gauntlets"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Troubadour's Greaves",
+  "url": "https://eqlwiki.com/Bard_Kael_Armor_Quests",
+  "parent": "Bard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bygloirn Omorden",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Ancient Tarnished Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Troubadour's Greaves"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Troubadour's Helm",
+  "url": "https://eqlwiki.com/Bard_Kael_Armor_Quests",
+  "parent": "Bard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bygloirn Omorden",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Helmet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Coral",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Troubadour's Helm"
+  ],
   "categories": [
    "Bard Quests",
    "Kael Armor Quests",
@@ -1326,7 +1774,183 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Boots of Twilight",
+   "Bracer of Twilight",
+   "Breastplate of Twilight",
+   "Gauntlets of Twilight",
+   "Greaves of Twilight",
+   "Helm of Twilight",
+   "Vambraces of Twilight"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Boots of Twilight",
+  "url": "https://eqlwiki.com/Bard_Skyshrine_Armor_Quests",
+  "parent": "Bard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Umykith Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Boots of Twilight"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Bracer of Twilight",
+  "url": "https://eqlwiki.com/Bard_Skyshrine_Armor_Quests",
+  "parent": "Bard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Umykith Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Bracer of Twilight"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Breastplate of Twilight",
+  "url": "https://eqlwiki.com/Bard_Skyshrine_Armor_Quests",
+  "parent": "Bard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Umykith Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Breastplate of Twilight"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Gauntlets of Twilight",
+  "url": "https://eqlwiki.com/Bard_Skyshrine_Armor_Quests",
+  "parent": "Bard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Umykith Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Gauntlets of Twilight"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Greaves of Twilight",
+  "url": "https://eqlwiki.com/Bard_Skyshrine_Armor_Quests",
+  "parent": "Bard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Umykith Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Greaves of Twilight"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Helm of Twilight",
+  "url": "https://eqlwiki.com/Bard_Skyshrine_Armor_Quests",
+  "parent": "Bard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Umykith Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Crushed Coral",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Helm of Twilight"
+  ],
   "categories": [
    "Bard Quests",
    "Skyshrine",
@@ -1399,7 +2023,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Resonant Boots",
+   "Resonant Bracer",
+   "Resonant Breastplate",
+   "Resonant Gauntlets",
+   "Resonant Greaves",
+   "Resonant Helm",
+   "Resonant Vambraces"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Resonant Boots",
+  "url": "https://eqlwiki.com/Bard_Thurgadin_Armor_Quests",
+  "parent": "Bard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Leifur",
+  "minLevel": 45,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Corroded Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Resonant Boots"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Resonant Bracer",
+  "url": "https://eqlwiki.com/Bard_Thurgadin_Armor_Quests",
+  "parent": "Bard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Leifur",
+  "minLevel": 45,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Corroded Plate Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Resonant Bracer"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Resonant Gauntlets",
+  "url": "https://eqlwiki.com/Bard_Thurgadin_Armor_Quests",
+  "parent": "Bard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Leifur",
+  "minLevel": 45,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Corroded Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Resonant Gauntlets"
+  ],
   "categories": [
    "Bard Quests",
    "Thurgadin",
@@ -2846,6 +3574,102 @@
   "repeatable": false
  },
  {
+  "name": "Disciple Symbol of Brell Serilis",
+  "url": "https://eqlwiki.com/Brell_Serilis_Symbol_Quests",
+  "parent": "Brell Serilis Symbol Quests",
+  "startZone": "Kaladim",
+  "questGiver": "Bronlor Lightblade",
+  "minLevel": 14,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Dwarven Ale",
+    "qty": 1
+   },
+   {
+    "name": "Elven Wine",
+    "qty": 1
+   },
+   {
+    "name": "Forest Barley",
+    "qty": 1
+   },
+   {
+    "name": "Freeport Stout",
+    "qty": 1
+   },
+   {
+    "name": "Holy Cask",
+    "qty": 1
+   },
+   {
+    "name": "Initiate Symbol of Brell Serilis",
+    "qty": 1
+   },
+   {
+    "name": "Keg of Brells Blessed Stout",
+    "qty": 1
+   },
+   {
+    "name": "Note to Taldrik",
+    "qty": 1
+   },
+   {
+    "name": "Rat Sandwich",
+    "qty": 1
+   },
+   {
+    "name": "Summoned: Globe of Water",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Disciple Symbol of Brell Serilis"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "South Kaladim"
+  ],
+  "relatedZones": [
+   "Butcherblock Mountains",
+   "Kithicor Forest",
+   "Oasis of Marr",
+   "Unrest"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Initiate Symbol of Brell Serilis",
+  "url": "https://eqlwiki.com/Brell_Serilis_Symbol_Quests",
+  "parent": "Brell Serilis Symbol Quests",
+  "startZone": "Kaladim",
+  "questGiver": "Bronlor Lightblade",
+  "minLevel": 14,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Enraged Goblin Beads",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Initiate Symbol of Brell Serilis"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "South Kaladim"
+  ],
+  "relatedZones": [
+   "Butcherblock Mountains",
+   "Kithicor Forest",
+   "Oasis of Marr",
+   "Unrest"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
   "name": "Broken Lute",
   "url": "https://eqlwiki.com/Broken_Lute",
   "startZone": "Qeynos",
@@ -4121,7 +4945,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Templar's Boots",
+   "Templar's Bracer",
+   "Templar's Chestplate",
+   "Templar's Crown",
+   "Templar's Gauntlets",
+   "Templar's Leggings",
+   "Templar's Vambraces"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Templar's Boots",
+  "url": "https://eqlwiki.com/Cleric_Kael_Armor_Quests",
+  "parent": "Cleric Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Vylleam Vyaeltor",
+  "minLevel": 50,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Templar's Boots"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Templar's Bracer",
+  "url": "https://eqlwiki.com/Cleric_Kael_Armor_Quests",
+  "parent": "Cleric Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Vylleam Vyaeltor",
+  "minLevel": 50,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Templar's Bracer"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Templar's Gauntlets",
+  "url": "https://eqlwiki.com/Cleric_Kael_Armor_Quests",
+  "parent": "Cleric Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Vylleam Vyaeltor",
+  "minLevel": 50,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Lava Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Templar's Gauntlets"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Templar's Vambraces",
+  "url": "https://eqlwiki.com/Cleric_Kael_Armor_Quests",
+  "parent": "Cleric Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Vylleam Vyaeltor",
+  "minLevel": 50,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Ancient Tarnished Vambraces",
+    "qty": 1
+   },
+   {
+    "name": "Jaundice Gem",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Templar's Vambraces"
+  ],
   "categories": [
    "Cleric Quests",
    "Kael Armor Quests",
@@ -4241,7 +5201,71 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Akkirus' Boots of the Risen",
+   "Akkirus' Bracelet of the Risen",
+   "Akkirus' Chestplate of the Risen",
+   "Akkirus' Crown of the Risen",
+   "Akkirus' Gauntlets of the Risen",
+   "Akkirus' Greaves of the Risen",
+   "Akkirus' Vambraces of the Risen"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Akkirus' Boots of the Risen",
+  "url": "https://eqlwiki.com/Cleric_Skyshrine_Armor_Quests",
+  "parent": "Cleric Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Fardonad Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Akkirus' Boots of the Risen"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Akkirus' Gauntlets of the Risen",
+  "url": "https://eqlwiki.com/Cleric_Skyshrine_Armor_Quests",
+  "parent": "Cleric Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Fardonad Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Crushed Lava Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Akkirus' Gauntlets of the Risen"
+  ],
   "categories": [
    "Cleric Quests",
    "Skyshrine",
@@ -4426,7 +5450,175 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Boots of Forbidden Rites",
+   "Bracers of Forbidden Rites",
+   "Breastplate of Forbidden Rites",
+   "Crown of Forbidden Rites",
+   "Gauntlets of Forbidden Rites",
+   "Greaves of Forbidden Rites",
+   "Vambraces of Forbidden Rites"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Boots of Forbidden Rites",
+  "url": "https://eqlwiki.com/Cleric_Thurgadin_Armor_Quests",
+  "parent": "Cleric Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Dorinan",
+  "minLevel": 45,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Corroded Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Boots of Forbidden Rites"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Bracers of Forbidden Rites",
+  "url": "https://eqlwiki.com/Cleric_Thurgadin_Armor_Quests",
+  "parent": "Cleric Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Dorinan",
+  "minLevel": 45,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Corroded Plate Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Bracers of Forbidden Rites"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Breastplate of Forbidden Rites",
+  "url": "https://eqlwiki.com/Cleric_Thurgadin_Armor_Quests",
+  "parent": "Cleric Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Dorinan",
+  "minLevel": 45,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Black Marble",
+    "qty": 1
+   },
+   {
+    "name": "Corroded Breastplate",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Breastplate of Forbidden Rites"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Gauntlets of Forbidden Rites",
+  "url": "https://eqlwiki.com/Cleric_Thurgadin_Armor_Quests",
+  "parent": "Cleric Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Dorinan",
+  "minLevel": 45,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Corroded Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Lava Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Gauntlets of Forbidden Rites"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Vambraces of Forbidden Rites",
+  "url": "https://eqlwiki.com/Cleric_Thurgadin_Armor_Quests",
+  "parent": "Cleric Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Dorinan",
+  "minLevel": 45,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Corroded Plate Vambraces",
+    "qty": 1
+   },
+   {
+    "name": "Jaundice Gem",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Vambraces of Forbidden Rites"
+  ],
   "categories": [
    "Cleric Quests",
    "Thurgadin",
@@ -5098,6 +6290,578 @@
   "repeatable": false
  },
  {
+  "name": "Burlap Coldain Prayer Shawl (#1)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Frost Giant Toes",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Burlap Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Cloth Coldain Prayer Shawl (#2)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Kromrif Head",
+    "qty": 10
+   },
+   {
+    "name": "Preserved Kromrif Heads",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Cloth Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Woven Coldain Prayer Shawl (#3)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Bottle of Milk",
+    "qty": 1
+   },
+   {
+    "name": "Ceramic Lining",
+    "qty": 1
+   },
+   {
+    "name": "Ceramic Lining Sketch",
+    "qty": 1
+   },
+   {
+    "name": "Clump of Dough",
+    "qty": 1
+   },
+   {
+    "name": "Cup of Flour",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Firing Sheet",
+    "qty": 1
+   },
+   {
+    "name": "Jug of Sauces",
+    "qty": 1
+   },
+   {
+    "name": "Large Block of Clay",
+    "qty": 1
+   },
+   {
+    "name": "Loaf of Bread",
+    "qty": 1
+   },
+   {
+    "name": "Metal Bits",
+    "qty": 1
+   },
+   {
+    "name": "Mixing Bowl",
+    "qty": 1
+   },
+   {
+    "name": "Pie Tin",
+    "qty": 1
+   },
+   {
+    "name": "Pie Tin Mold",
+    "qty": 1
+   },
+   {
+    "name": "Pot",
+    "qty": 1
+   },
+   {
+    "name": "Pot Sketch",
+    "qty": 1
+   },
+   {
+    "name": "Quality Firing Sheet",
+    "qty": 1
+   },
+   {
+    "name": "Saucy Bearmeat",
+    "qty": 1
+   },
+   {
+    "name": "Saucy Bunnymeat",
+    "qty": 1
+   },
+   {
+    "name": "Small Block of Clay",
+    "qty": 1
+   },
+   {
+    "name": "Small Piece of Ore",
+    "qty": 2
+   },
+   {
+    "name": "Snake Egg",
+    "qty": 1
+   },
+   {
+    "name": "Snow Bunny Meat",
+    "qty": 2
+   },
+   {
+    "name": "Snow Bunny Stew",
+    "qty": 1
+   },
+   {
+    "name": "Snow Griffin Egg",
+    "qty": 4
+   },
+   {
+    "name": "Snow Griffin Souffle",
+    "qty": 1
+   },
+   {
+    "name": "Spices",
+    "qty": 1
+   },
+   {
+    "name": "Spicy Ulthork Meat",
+    "qty": 1
+   },
+   {
+    "name": "Tundra Kodiak Meat",
+    "qty": 1
+   },
+   {
+    "name": "Tundrabear Sandwich",
+    "qty": 1
+   },
+   {
+    "name": "Ulthork Meat",
+    "qty": 2
+   },
+   {
+    "name": "Ulthork Meat Pie",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Ceramic Lining",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Pot",
+    "qty": 1
+   },
+   {
+    "name": "Vinegar",
+    "qty": 1
+   },
+   {
+    "name": "Water Flask",
+    "qty": 2
+   }
+  ],
+  "rewards": [
+   "Woven Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Fur-Lined Coldain Prayer Shawl (#4)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Crystalline Silk",
+    "qty": 3
+   },
+   {
+    "name": "Glass Shard",
+    "qty": 2
+   },
+   {
+    "name": "High Quality Firing Sheet",
+    "qty": 1
+   },
+   {
+    "name": "Small Brick of Velium",
+    "qty": 1
+   },
+   {
+    "name": "Small Piece of Velium",
+    "qty": 2
+   },
+   {
+    "name": "Tanik's note",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Velium Vial",
+    "qty": 1
+   },
+   {
+    "name": "Velium Purifier",
+    "qty": 1
+   },
+   {
+    "name": "Velium Vial",
+    "qty": 1
+   },
+   {
+    "name": "Vial of Velium Vapors",
+    "qty": 1
+   },
+   {
+    "name": "Woven Coldain Prayer Shawl",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Fur-Lined Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Silk Coldain Prayer Shawl (#5)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Crystalline Silk Fiber",
+    "qty": 15
+   },
+   {
+    "name": "Crystalline Silk Thread",
+    "qty": 75
+   },
+   {
+    "name": "Fur-Lined Coldain Prayer Shawl",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Bile Soaker",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Crystalline  Silk Piece",
+    "qty": 5
+   },
+   {
+    "name": "Glowing Worm Bile",
+    "qty": 5
+   }
+  ],
+  "rewards": [
+   "Silk Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Embroidered Coldain Prayer Shawl (#6)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Drakkel Wolf Whisker",
+    "qty": 2
+   },
+   {
+    "name": "Embroidered Shawl Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Manticore Mane",
+    "qty": 2
+   },
+   {
+    "name": "Silk Coldain Prayer Shawl",
+    "qty": 1
+   },
+   {
+    "name": "Siren Hair",
+    "qty": 2
+   },
+   {
+    "name": "Spool of Sacred Coldain Thread",
+    "qty": 1
+   },
+   {
+    "name": "Woven Frost Giant Beard",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Embroidered Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Coldain Prayer Shawl (#7)",
+  "url": "https://eqlwiki.com/Coldain_Prayer_Shawl_Quests",
+  "parent": "Coldain Prayer Shawl Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Loremaster Borannin, Betti Frostweaver",
+  "minLevel": 35,
+  "classes": "All Bard, Cleric, Druid, Enchanter, Magician, Monk, Necromancer, Paladin, Ranger, Rogue, Shadow Knight, Shaman, Warrior, Wizard",
+  "items": [
+   {
+    "name": "Blank Rune",
+    "qty": 1
+   },
+   {
+    "name": "Burin",
+    "qty": 1
+   },
+   {
+    "name": "Cutlassfish Oil",
+    "qty": 1
+   },
+   {
+    "name": "Embroidered Coldain Prayer Shawl",
+    "qty": 1
+   },
+   {
+    "name": "Encased Velium Etched Rune",
+    "qty": 1
+   },
+   {
+    "name": "Enchanted Velium Powder",
+    "qty": 1
+   },
+   {
+    "name": "Etched Rune",
+    "qty": 1
+   },
+   {
+    "name": "Etched Rune Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Fish Oil Extractor",
+    "qty": 1
+   },
+   {
+    "name": "Fletching Kit",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Firing Sheet",
+    "qty": 1
+   },
+   {
+    "name": "Iceclad Cutlassfish",
+    "qty": 3
+   },
+   {
+    "name": "Liquid Velium",
+    "qty": 1
+   },
+   {
+    "name": "Molkor Hide",
+    "qty": 1
+   },
+   {
+    "name": "Mortar and Pestle",
+    "qty": 1
+   },
+   {
+    "name": "Platinum Bar",
+    "qty": 2
+   },
+   {
+    "name": "Royal Kromrif Blood",
+    "qty": 1
+   },
+   {
+    "name": "Royal Kromrif blood",
+    "qty": 1
+   },
+   {
+    "name": "Rubbing Alcohol",
+    "qty": 1
+   },
+   {
+    "name": "Rune Casing",
+    "qty": 1
+   },
+   {
+    "name": "Rune Casing Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Runed Prayer Shawl Pattern",
+    "qty": 1
+   },
+   {
+    "name": "Runed Sea Shell",
+    "qty": 1
+   },
+   {
+    "name": "Runed Sea Shell (Enduring Breath)",
+    "qty": 1
+   },
+   {
+    "name": "Sacred Velium Ink",
+    "qty": 1
+   },
+   {
+    "name": "Small Brick of Velium",
+    "qty": 1
+   },
+   {
+    "name": "Small Piece of Velium",
+    "qty": 1
+   },
+   {
+    "name": "Swordfish Tooth",
+    "qty": 1
+   },
+   {
+    "name": "Ulthork Tusks",
+    "qty": 1
+   },
+   {
+    "name": "Unfired Rune",
+    "qty": 1
+   },
+   {
+    "name": "Velium Etched Rune",
+    "qty": 1
+   },
+   {
+    "name": "Water Flask",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Coldain Prayer Shawl"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Thurgadin"
+  ],
+  "relatedZones": [
+   "Cobalt Scar",
+   "Eastern Wastes",
+   "Great Divide",
+   "Kael Drakkel",
+   "Siren's Grotto",
+   "Thurgadin"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
   "name": "Coldain Ring Quests",
   "url": "https://eqlwiki.com/Coldain_Ring_Quests",
   "startZone": "Eastern Wastes",
@@ -5299,6 +7063,348 @@
    "Traitor's Bane Box",
    "Velium Coldain Insignia Ring",
    "Wooly Rhino Horn"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Copper Coldain Insignia Ring (#1)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Coldain Hunting Blanket",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Cougarskin",
+    "qty": 2
+   },
+   {
+    "name": "High Quality Tundra Kodiak Pelt",
+    "qty": 2
+   }
+  ],
+  "rewards": [
+   "Copper Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Silver Coldain Insignia Ring (#2)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Broken Axe",
+    "qty": 1
+   },
+   {
+    "name": "Copper Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Dull Bladed Axe",
+    "qty": 1
+   },
+   {
+    "name": "Rabid Kodiak Skin",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Silver Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Gold Coldain Insignia Ring (#3)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Coldain Hunting Knife",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Walrus Hide",
+    "qty": 1
+   },
+   {
+    "name": "Silver Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Skinning Rock",
+    "qty": 1
+   },
+   {
+    "name": "Wooly Rhino Horn",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Gold Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Platinum Coldain Insignia Ring (#4)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Coldain Smithing Hammer",
+    "qty": 1
+   },
+   {
+    "name": "Frozen Elixir",
+    "qty": 1
+   },
+   {
+    "name": "Gold Coldain Insignia Ring",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Platinum Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Obsidian Coldain Insignia Ring (#5)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Head of Scarbrow",
+    "qty": 1
+   },
+   {
+    "name": "Platinum Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Ry'Gorr Invasion Plans",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Obsidian Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Mithril Coldain Insignia Ring (#6)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Note from Kromrif",
+    "qty": 1
+   },
+   {
+    "name": "Obsidian Coldain Insignia Ring",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Mithril Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Adamantium Coldain Insignia Ring (#7)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Mithril Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Shackle Key",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Adamantium Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Velium Coldain Insignia Ring (#8)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Adamantium Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Chief Ry`Gorr's Head",
+    "qty": 1
+   },
+   {
+    "name": "Marching Orders",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Velium Coldain Insignia Ring"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Eastern Wastes",
+   "Great Divide"
+  ],
+  "relatedZones": [],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Coldain Hero's Insignia Ring (#9)",
+  "url": "https://eqlwiki.com/Coldain_Ring_Quests",
+  "parent": "Coldain Ring Quests",
+  "startZone": "Eastern Wastes",
+  "questGiver": "Garadain Glacierbane",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [
+   {
+    "name": "Arctic Mussels",
+    "qty": 1
+   },
+   {
+    "name": "Bottle",
+    "qty": 1
+   },
+   {
+    "name": "Dirk of the Traitor",
+    "qty": 1
+   },
+   {
+    "name": "Ice Wyvern Stinger",
+    "qty": 1
+   },
+   {
+    "name": "Iceball",
+    "qty": 1
+   },
+   {
+    "name": "Letter to Doldigun",
+    "qty": 1
+   },
+   {
+    "name": "Letter to Peffin",
+    "qty": 1
+   },
+   {
+    "name": "Mind Melt",
+    "qty": 1
+   },
+   {
+    "name": "Peffin's head",
+    "qty": 1
+   },
+   {
+    "name": "Ring of the Coldain Council",
+    "qty": 1
+   },
+   {
+    "name": "Seahorse Scales",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Coldain Hero's Insignia Ring"
   ],
   "categories": [
    "All Classes Quests",
@@ -6377,7 +8483,19 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Curscale Belt",
+   "Curscale Boots",
+   "Curscale Cape",
+   "Curscale Choker",
+   "Curscale Gloves",
+   "Curscale Leggings",
+   "Curscale Shawl",
+   "Curscale Skullcap",
+   "Curscale Sleeves",
+   "Curscale Snout Mount",
+   "Curscale Tunic"
+  ],
   "categories": [
    "Armor Sets",
    "East Cabilis"
@@ -6745,6 +8863,258 @@
    "Darkforge Gauntlets",
    "Darkforge Greaves",
    "Darkforge Helm",
+   "Darkforge Vambraces"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Boots",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Decayed Left Boot",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Boot",
+    "qty": 1
+   },
+   {
+    "name": "Fairy Dust",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Darkforge Boots"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Bracer",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Broken Minotaur Lord's Horn",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Left Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Bracer",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Darkforge Bracer"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Breastplate",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Decayed Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Chainmail",
+    "qty": 1
+   },
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Darkforge Breastplate"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Gauntlets",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Decayed Left Gauntlet",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Gauntlet",
+    "qty": 1
+   },
+   {
+    "name": "Enchanted Platinum Bar",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Darkforge Gauntlets"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Greaves",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Decayed Left Legplate",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Legplate",
+    "qty": 1
+   },
+   {
+    "name": "Melatite",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Darkforge Greaves"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Helm",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Damaged Militia Helm",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Helm",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Visor",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Darkforge Helm"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [
+   "Cazic Thule",
+   "Steamfont Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Darkforge Vambraces",
+  "url": "https://eqlwiki.com/Darkforge_Armor_Quests",
+  "parent": "Darkforge Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "an undead knight",
+  "minLevel": 33,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Decayed Left Vambrace",
+    "qty": 1
+   },
+   {
+    "name": "Decayed Right Vambrace",
+    "qty": 1
+   },
+   {
+    "name": "Qeynos Kite Shield",
+    "qty": 1
+   }
+  ],
+  "rewards": [
    "Darkforge Vambraces"
   ],
   "categories": [
@@ -7291,7 +9661,259 @@
     "qty": 2
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Dreadscale Boots",
+   "Dreadscale Bracer",
+   "Dreadscale Breastplate",
+   "Dreadscale Gauntlets",
+   "Dreadscale Greaves",
+   "Dreadscale Helm",
+   "Dreadscale Mask",
+   "Dreadscale Vambraces"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Boots",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
+    "name": "Cactus Quills",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Skeletal Feet",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dreadscale Boots"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Bracer",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": ":Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": ":Bloodgill Scales",
+    "qty": 1
+   },
+   {
+    "name": "sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dreadscale Bracer"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Breastplate",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Banded Mail",
+    "qty": 1
+   },
+   {
+    "name": "Sarnak War Braid",
+    "qty": 1
+   },
+   {
+    "name": "Scorpion Chitin",
+    "qty": 1
+   },
+   {
+    "name": "ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dreadscale Breastplate"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Gauntlets",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Skeletal Hand",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 2
+   }
+  ],
+  "rewards": [
+   "Dreadscale Gauntlets"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Greaves",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": ":Banded Leggings",
+    "qty": 1
+   },
+   {
+    "name": ":Boots of Zorash",
+    "qty": 1
+   },
+   {
+    "name": ":Grachnist's Head",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dreadscale Greaves"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Mask",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Banded Mask",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Wings of the Drixie Queen",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dreadscale Mask"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Dreadscale Vambraces",
+  "url": "https://eqlwiki.com/Dreadscale_Armor",
+  "parent": "Dreadscale Armor",
+  "startZone": "Cabilis",
+  "questGiver": "Sirtha Scarscale, Sarth Scarscale",
+  "minLevel": 23,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Banded Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Golra Skin",
+    "qty": 1
+   },
+   {
+    "name": "sapphire",
+    "qty": 2
+   }
+  ],
+  "rewards": [
+   "Dreadscale Vambraces"
+  ],
   "categories": [
    "East Cabilis",
    "Shadow Knight Quests"
@@ -7655,7 +10277,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Nature Walker's Boots",
+   "Nature Walker's Bracer",
+   "Nature Walker's Chestguard",
+   "Nature Walker's Circlet",
+   "Nature Walker's Gauntlets",
+   "Nature Walker's Greaves",
+   "Nature Walker's Vambraces"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Nature Walker's Boots",
+  "url": "https://eqlwiki.com/Druid_Kael_Armor_Quests",
+  "parent": "Druid Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Jaglorm Ygorr",
+  "minLevel": 50,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Ancient Leather Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Nature Walker's Boots"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Nature Walker's Bracer",
+  "url": "https://eqlwiki.com/Druid_Kael_Armor_Quests",
+  "parent": "Druid Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Jaglorm Ygorr",
+  "minLevel": 50,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Ancient Leather Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Nature Walker's Bracer"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Nature Walker's Circlet",
+  "url": "https://eqlwiki.com/Druid_Kael_Armor_Quests",
+  "parent": "Druid Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Jaglorm Ygorr",
+  "minLevel": 50,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Ancient Leather Cap",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Onyx Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Nature Walker's Circlet"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Nature Walker's Gauntlets",
+  "url": "https://eqlwiki.com/Druid_Kael_Armor_Quests",
+  "parent": "Druid Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Jaglorm Ygorr",
+  "minLevel": 50,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Ancient Leather Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Lava Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Nature Walker's Gauntlets"
+  ],
   "categories": [
    "Druid Quests",
    "Kael Armor Quests",
@@ -7804,7 +10562,79 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Woven Grass Boots",
+   "Woven Grass Bracelet",
+   "Woven Grass Chestguard",
+   "Woven Grass Gauntlets",
+   "Woven Grass Greaves",
+   "Woven Grass Headband",
+   "Woven Grass Vambraces"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Woven Grass Boots",
+  "url": "https://eqlwiki.com/Druid_Skyshrine_Armor_Quests",
+  "parent": "Druid Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Qynydd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Leather Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Woven Grass Boots"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Woven Grass Bracelet",
+  "url": "https://eqlwiki.com/Druid_Skyshrine_Armor_Quests",
+  "parent": "Druid Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Qynydd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Leather Bracelet",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Woven Grass Bracelet"
+  ],
   "categories": [
    "Druid Quests",
    "Skyshrine",
@@ -7905,7 +10735,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Rowyl's Boots of Nature",
+   "Rowyl's Bracer of Nature",
+   "Rowyl's Chestguard of Nature",
+   "Rowyl's Circlet of Nature",
+   "Rowyl's Gauntlets of Nature",
+   "Rowyl's Greaves of Nature",
+   "Rowyl's Vambraces of Nature"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rowyl's Boots of Nature",
+  "url": "https://eqlwiki.com/Druid_Thurgadin_Armor_Quests",
+  "parent": "Druid Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Cobi Frostbeard",
+  "minLevel": 45,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Eroded Leather Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rowyl's Boots of Nature"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rowyl's Bracer of Nature",
+  "url": "https://eqlwiki.com/Druid_Thurgadin_Armor_Quests",
+  "parent": "Druid Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Cobi Frostbeard",
+  "minLevel": 45,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   },
+   {
+    "name": "Eroded Leather Bracelet",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rowyl's Bracer of Nature"
+  ],
+  "categories": [
+   "Druid Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rowyl's Circlet of Nature",
+  "url": "https://eqlwiki.com/Druid_Thurgadin_Armor_Quests",
+  "parent": "Druid Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Cobi Frostbeard",
+  "minLevel": 45,
+  "classes": "Druid",
+  "items": [
+   {
+    "name": "Crushed Onyx Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Eroded Leather Cap",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rowyl's Circlet of Nature"
+  ],
   "categories": [
    "Druid Quests",
    "Thurgadin",
@@ -8443,7 +11377,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Dazzling Circlet",
+   "Dazzling Gloves",
+   "Dazzling Robe",
+   "Dazzling Sleeves",
+   "Dazzling Slippers",
+   "Dazzling Trousers",
+   "Dazzling Wristguard"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Dazzling Gloves",
+  "url": "https://eqlwiki.com/Enchanter_Kael_Armor_Quests",
+  "parent": "Enchanter Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Stoem Lekbar",
+  "minLevel": 50,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Ancient Silk Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dazzling Gloves"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Dazzling Robe",
+  "url": "https://eqlwiki.com/Enchanter_Kael_Armor_Quests",
+  "parent": "Enchanter Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Stoem Lekbar",
+  "minLevel": 50,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Ancient Silk Robe",
+    "qty": 1
+   },
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dazzling Robe"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Kael Armor Quests",
+   "Kael Drakkel"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Dazzling Sleeves",
+  "url": "https://eqlwiki.com/Enchanter_Kael_Armor_Quests",
+  "parent": "Enchanter Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Stoem Lekbar",
+  "minLevel": 50,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Ancient Silk Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dazzling Sleeves"
+  ],
   "categories": [
    "Enchanter Quests",
    "Kael Armor Quests",
@@ -8591,7 +11629,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Illusionist's Gloves",
+   "Illusionist's Headband",
+   "Illusionist's Pantaloons",
+   "Illusionist's Robe",
+   "Illusionist's Sleeves",
+   "Illusionist's Slippers",
+   "Illusionist's Wristguard"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Illusionist's Gloves",
+  "url": "https://eqlwiki.com/Enchanter_Skyshrine_Armor_Quests",
+  "parent": "Enchanter Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Lothieder Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Illusionist's Gloves"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Illusionist's Robe",
+  "url": "https://eqlwiki.com/Enchanter_Skyshrine_Armor_Quests",
+  "parent": "Enchanter Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Lothieder Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Illusionist's Robe"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Illusionist's Sleeves",
+  "url": "https://eqlwiki.com/Enchanter_Skyshrine_Armor_Quests",
+  "parent": "Enchanter Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Lothieder Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Illusionist's Sleeves"
+  ],
   "categories": [
    "Enchanter Quests",
    "Skyshrine",
@@ -8740,7 +11882,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Beguiler's Crown",
+   "Beguiler's Gloves",
+   "Beguiler's Robe",
+   "Beguiler's Sleeves",
+   "Beguiler's Slippers",
+   "Beguiler's Trousers",
+   "Beguiler's Wristguard"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Beguiler's Gloves",
+  "url": "https://eqlwiki.com/Enchanter_Thurgadin_Armor_Quests",
+  "parent": "Enchanter Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Brita",
+  "minLevel": 45,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Beguiler's Gloves"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Beguiler's Robe",
+  "url": "https://eqlwiki.com/Enchanter_Thurgadin_Armor_Quests",
+  "parent": "Enchanter Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Brita",
+  "minLevel": 45,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Beguiler's Robe"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Beguiler's Sleeves",
+  "url": "https://eqlwiki.com/Enchanter_Thurgadin_Armor_Quests",
+  "parent": "Enchanter Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Brita",
+  "minLevel": 45,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Beguiler's Sleeves"
+  ],
   "categories": [
    "Enchanter Quests",
    "Thurgadin",
@@ -10276,7 +13522,18 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Faydark Ringmail Boots",
+   "Faydark Ringmail Bracer",
+   "Faydark Ringmail Coat",
+   "Faydark Ringmail Coif",
+   "Faydark Ringmail Collar",
+   "Faydark Ringmail Gloves",
+   "Faydark Ringmail Mantle",
+   "Faydark Ringmail Pants",
+   "Faydark Ringmail Skirt",
+   "Faydark Ringmail Sleeves"
+  ],
   "categories": [
    "Firiona Vie"
   ],
@@ -13654,7 +16911,111 @@
   ],
   "rewards": [
    "Incandescent Gloves",
+   "Incandescent Mask",
+   "Incandescent Wand"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Incandescent Gloves",
+  "url": "https://eqlwiki.com/Incandescent_Armor_Quests",
+  "parent": "Incandescent Armor Quests",
+  "startZone": "The Temple of Solusek Ro",
+  "questGiver": "Sultin",
+  "minLevel": 25,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Enchanted Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Gleaming Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Radiant Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Incandescent Gloves"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Incandescent Mask",
+  "url": "https://eqlwiki.com/Incandescent_Armor_Quests",
+  "parent": "Incandescent Armor Quests",
+  "startZone": "The Temple of Solusek Ro",
+  "questGiver": "Sultin",
+  "minLevel": 25,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Glowing Mask",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Fortune",
+    "qty": 1
+   }
+  ],
+  "rewards": [
    "Incandescent Mask"
+  ],
+  "categories": [
+   "Enchanter Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Incandescent Wand",
+  "url": "https://eqlwiki.com/Incandescent_Armor_Quests",
+  "parent": "Incandescent Armor Quests",
+  "startZone": "The Temple of Solusek Ro",
+  "questGiver": "Sultin",
+  "minLevel": 25,
+  "classes": "Enchanter",
+  "items": [
+   {
+    "name": "Blessed Silver Wand",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Silver Wand",
+    "qty": 1
+   },
+   {
+    "name": "Pouch of Silver Dust",
+    "qty": 1
+   },
+   {
+    "name": "Silver Wand",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Incandescent Wand"
   ],
   "categories": [
    "Enchanter Quests",
@@ -13841,6 +17202,104 @@
   "repeatable": false
  },
  {
+  "name": "Disciple Symbol of Innoruuk",
+  "url": "https://eqlwiki.com/Innoruuk_Symbol_Quests",
+  "parent": "Innoruuk Symbol Quests",
+  "startZone": "Neriak",
+  "questGiver": "Perrir Zexus , Ithvol K`Jasn",
+  "minLevel": 5,
+  "classes": "Cleric, Shaman",
+  "items": [
+   {
+    "name": "Halfling Druid Master's Head",
+    "qty": 1
+   },
+   {
+    "name": "Head of a Halfling Spy",
+    "qty": 1
+   },
+   {
+    "name": "Leatherfoot Raider Orders",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Disciple Symbol of Innoruuk"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Neriak Third Gate",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Initiate Symbol of Innoruuk",
+  "url": "https://eqlwiki.com/Innoruuk_Symbol_Quests",
+  "parent": "Innoruuk Symbol Quests",
+  "startZone": "Neriak",
+  "questGiver": "Perrir Zexus , Ithvol K`Jasn",
+  "minLevel": 5,
+  "classes": "Cleric, Shaman",
+  "items": [
+   {
+    "name": "Woven Grass Amulet",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Initiate Symbol of Innoruuk"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Neriak Third Gate",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Regent Symbol of Innoruuk",
+  "url": "https://eqlwiki.com/Innoruuk_Symbol_Quests",
+  "parent": "Innoruuk Symbol Quests",
+  "startZone": "Neriak",
+  "questGiver": "Perrir Zexus , Ithvol K`Jasn",
+  "minLevel": 5,
+  "classes": "Cleric, Shaman",
+  "items": [
+   {
+    "name": "Disciple Symbol of Innoruuk",
+    "qty": 1
+   },
+   {
+    "name": "Receipt for Provisions Crate",
+    "qty": 1
+   },
+   {
+    "name": "Swiftmoon's Head",
+    "qty": 1
+   },
+   {
+    "name": "Voucher of Service to Naythox",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Regent Symbol of Innoruuk"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Neriak Third Gate",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
   "name": "Ivan McMannus' Remains",
   "url": "https://eqlwiki.com/Ivan_McMannus%27_Remains",
   "startZone": "Halas",
@@ -13955,7 +17414,215 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Ivy Etched Boots",
+   "Ivy Etched Bracer",
+   "Ivy Etched Gauntlets",
+   "Ivy Etched Helm",
+   "Ivy Etched Leggings",
+   "Ivy Etched Sleeves",
+   "Ivy Etched Tunic"
+  ],
+  "categories": [
+   "Kithicor Forest",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Lesser Faydark",
+   "Steamfont Mountains"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Ivy Etched Boots",
+  "url": "https://eqlwiki.com/Ivy_Etched_Armor_Quests",
+  "parent": "Ivy Etched Armor Quests",
+  "startZone": "Kithicor Forest",
+  "questGiver": "Leaf Falldim, Gandari",
+  "minLevel": 35,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "A Bar of Ronium",
+    "qty": 1
+   },
+   {
+    "name": "Mistmoore Granite",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Ivy Etched Boots"
+  ],
+  "categories": [
+   "Kithicor Forest",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Lesser Faydark",
+   "Steamfont Mountains"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Ivy Etched Bracer",
+  "url": "https://eqlwiki.com/Ivy_Etched_Armor_Quests",
+  "parent": "Ivy Etched Armor Quests",
+  "startZone": "Kithicor Forest",
+  "questGiver": "Leaf Falldim, Gandari",
+  "minLevel": 35,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Ivy",
+    "qty": 1
+   },
+   {
+    "name": "Water Ring",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Ivy Etched Bracer"
+  ],
+  "categories": [
+   "Kithicor Forest",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Lesser Faydark",
+   "Steamfont Mountains"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Ivy Etched Gauntlets",
+  "url": "https://eqlwiki.com/Ivy_Etched_Armor_Quests",
+  "parent": "Ivy Etched Armor Quests",
+  "startZone": "Kithicor Forest",
+  "questGiver": "Leaf Falldim, Gandari",
+  "minLevel": 35,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Broken Bow Part A",
+    "qty": 1
+   },
+   {
+    "name": "Broken Bow Part B",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Ivy Etched Gauntlets"
+  ],
+  "categories": [
+   "Kithicor Forest",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Lesser Faydark",
+   "Steamfont Mountains"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Ivy Etched Helm",
+  "url": "https://eqlwiki.com/Ivy_Etched_Armor_Quests",
+  "parent": "Ivy Etched Armor Quests",
+  "startZone": "Kithicor Forest",
+  "questGiver": "Leaf Falldim, Gandari",
+  "minLevel": 35,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Cyclops Charm",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Ivy",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Ivy Etched Helm"
+  ],
+  "categories": [
+   "Kithicor Forest",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Lesser Faydark",
+   "Steamfont Mountains"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Ivy Etched Leggings",
+  "url": "https://eqlwiki.com/Ivy_Etched_Armor_Quests",
+  "parent": "Ivy Etched Armor Quests",
+  "startZone": "Kithicor Forest",
+  "questGiver": "Leaf Falldim, Gandari",
+  "minLevel": 35,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Star of Odus",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Ivy Etched Leggings"
+  ],
+  "categories": [
+   "Kithicor Forest",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Lesser Faydark",
+   "Steamfont Mountains"
+  ],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Ivy Etched Sleeves",
+  "url": "https://eqlwiki.com/Ivy_Etched_Armor_Quests",
+  "parent": "Ivy Etched Armor Quests",
+  "startZone": "Kithicor Forest",
+  "questGiver": "Leaf Falldim, Gandari",
+  "minLevel": 35,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Heart of Fire",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Ivy",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Ivy Etched Sleeves"
+  ],
   "categories": [
    "Kithicor Forest",
    "Ranger Quests"
@@ -14711,7 +18378,298 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Lambent Boots",
+   "Lambent Bracers",
+   "Lambent Breastplate",
+   "Lambent Gauntlets",
+   "Lambent Greaves",
+   "Lambent Helm",
+   "Lambent Vambraces"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Boots",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Firewalker Boots",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Rune of the One Eye",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Boots"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Bracers",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Fire Opal",
+    "qty": 1
+   },
+   {
+    "name": "Griffenne Charm",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Fire Opal",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Bracers"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Breastplate",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Basalt Carapace",
+    "qty": 1
+   },
+   {
+    "name": "Gypsy Lute",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Breastplate"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Gauntlets",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Black Silk Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Star Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Shin Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Gauntlets"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Greaves",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Fire Opal",
+    "qty": 1
+   },
+   {
+    "name": "Icy Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Fire Opal",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Shin Greaves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Greaves"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Helm",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Lambent Star Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Mudwater Rune",
+    "qty": 1
+   },
+   {
+    "name": "Opoline Helm",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Helm"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Temple of Solusek Ro"
+  ],
+  "relatedZones": [],
+  "era": "Temple",
+  "repeatable": false
+ },
+ {
+  "name": "Lambent Vambraces",
+  "url": "https://eqlwiki.com/Lambent_Armor_Quests",
+  "parent": "Lambent Armor Quests",
+  "startZone": "Temple of Solusek Ro",
+  "questGiver": "Cryssia Stardreamer, Walthin Fireweaver",
+  "minLevel": 30,
+  "classes": "Bard",
+  "items": [
+   {
+    "name": "Fiery Vambraces",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Lambent Stone",
+    "qty": 1
+   },
+   {
+    "name": "Rune of the One Eye",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Lambent Vambraces"
+  ],
   "categories": [
    "Bard Quests",
    "Temple of Solusek Ro"
@@ -15656,7 +19614,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Summoner's Boots",
+   "Summoner's Circlet",
+   "Summoner's Gloves",
+   "Summoner's Pantaloons",
+   "Summoner's Robe",
+   "Summoner's Sleeves",
+   "Summoner's Warband"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Magician Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Summoner's Boots",
+  "url": "https://eqlwiki.com/Magician_Kael_Armor_Quests",
+  "parent": "Magician Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Mjeldor Felstorm",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Ancient Silk Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Summoner's Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Magician Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Summoner's Gloves",
+  "url": "https://eqlwiki.com/Magician_Kael_Armor_Quests",
+  "parent": "Magician Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Mjeldor Felstorm",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Ancient Silk Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Summoner's Gloves"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Magician Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Summoner's Robe",
+  "url": "https://eqlwiki.com/Magician_Kael_Armor_Quests",
+  "parent": "Magician Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Mjeldor Felstorm",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Ancient Silk Robe",
+    "qty": 1
+   },
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Summoner's Robe"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Magician Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Summoner's Sleeves",
+  "url": "https://eqlwiki.com/Magician_Kael_Armor_Quests",
+  "parent": "Magician Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Mjeldor Felstorm",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Ancient Silk Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Summoner's Sleeves"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -15808,7 +19902,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Prestidigitator's Boots",
+   "Prestidigitator's Gloves",
+   "Prestidigitator's Headband",
+   "Prestidigitator's Robe",
+   "Prestidigitator's Sleeves",
+   "Prestidigitator's Trousers",
+   "Prestidigitator's Wristband"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Prestidigitator's Boots",
+  "url": "https://eqlwiki.com/Magician_Skyshrine_Armor_Quests",
+  "parent": "Magician Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Ocoenydd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Prestidigitator's Boots"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Prestidigitator's Gloves",
+  "url": "https://eqlwiki.com/Magician_Skyshrine_Armor_Quests",
+  "parent": "Magician Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Ocoenydd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Prestidigitator's Gloves"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Prestidigitator's Robe",
+  "url": "https://eqlwiki.com/Magician_Skyshrine_Armor_Quests",
+  "parent": "Magician Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Ocoenydd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Prestidigitator's Robe"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Prestidigitator's Sleeves",
+  "url": "https://eqlwiki.com/Magician_Skyshrine_Armor_Quests",
+  "parent": "Magician Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Ocoenydd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Prestidigitator's Sleeves"
+  ],
   "categories": [
    "Magician Quests",
    "Skyshrine",
@@ -15962,7 +20192,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Arch Mage's Boots",
+   "Arch Mage's Crown",
+   "Arch Mage's Gloves",
+   "Arch Mage's Pantaloons",
+   "Arch Mage's Robe",
+   "Arch Mage's Sleeves",
+   "Arch Mage's Warband"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Arch Mage's Gloves",
+  "url": "https://eqlwiki.com/Magician_Thurgadin_Armor_Quests",
+  "parent": "Magician Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Kyla Frostbeard",
+  "minLevel": 45,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Arch Mage's Gloves"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Arch Mage's Robe",
+  "url": "https://eqlwiki.com/Magician_Thurgadin_Armor_Quests",
+  "parent": "Magician Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Kyla Frostbeard",
+  "minLevel": 45,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Arch Mage's Robe"
+  ],
+  "categories": [
+   "Magician Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Arch Mage's Sleeves",
+  "url": "https://eqlwiki.com/Magician_Thurgadin_Armor_Quests",
+  "parent": "Magician Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Kyla Frostbeard",
+  "minLevel": 45,
+  "classes": "Magician",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Arch Mage's Sleeves"
+  ],
   "categories": [
    "Magician Quests",
    "Thurgadin",
@@ -16083,7 +20417,13 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Leech Husk Boots",
+   "Leech Husk Gloves",
+   "Leech Husk Leggings",
+   "Leech Husk Tunic",
+   "Leech Husk Wrist Bands"
+  ],
   "categories": [
    "East Cabilis"
   ],
@@ -16819,6 +21159,155 @@
   "repeatable": false
  },
  {
+  "name": "Orange Headband",
+  "url": "https://eqlwiki.com/Monk_Headband_Quests",
+  "parent": "Monk Headband Quests",
+  "startZone": "Qeynos",
+  "questGiver": "Phin Esrinap, Togahn Sorast",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Blackburrow Gnoll Pelt",
+    "qty": 2
+   },
+   {
+    "name": "Blackburrow Gnoll Skin",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Orange Headband"
+  ],
+  "categories": [
+   "Monk Quests",
+   "North Qeynos"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Purple Headband",
+  "url": "https://eqlwiki.com/Monk_Headband_Quests",
+  "parent": "Monk Headband Quests",
+  "startZone": "Qeynos",
+  "questGiver": "Phin Esrinap, Togahn Sorast",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Dagger of Marnek",
+    "qty": 1
+   },
+   {
+    "name": "Skull of Jhen`Tra",
+    "qty": 1
+   },
+   {
+    "name": "Zaharn's Coronet",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Purple Headband"
+  ],
+  "categories": [
+   "Monk Quests",
+   "North Qeynos"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Red Headband",
+  "url": "https://eqlwiki.com/Monk_Headband_Quests",
+  "parent": "Monk Headband Quests",
+  "startZone": "Qeynos",
+  "questGiver": "Phin Esrinap, Togahn Sorast",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Dareb's Skull",
+    "qty": 1
+   },
+   {
+    "name": "Head of Ghanex Drah",
+    "qty": 1
+   },
+   {
+    "name": "Head of Shen",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Red Headband"
+  ],
+  "categories": [
+   "Monk Quests",
+   "North Qeynos"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "White Headband",
+  "url": "https://eqlwiki.com/Monk_Headband_Quests",
+  "parent": "Monk Headband Quests",
+  "startZone": "Qeynos",
+  "questGiver": "Phin Esrinap, Togahn Sorast",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Gnoll Pup Scalp",
+    "qty": 4
+   }
+  ],
+  "rewards": [
+   "White Headband"
+  ],
+  "categories": [
+   "Monk Quests",
+   "North Qeynos"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Yellow Headband",
+  "url": "https://eqlwiki.com/Monk_Headband_Quests",
+  "parent": "Monk Headband Quests",
+  "startZone": "Qeynos",
+  "questGiver": "Phin Esrinap, Togahn Sorast",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Putrid Rib Bone",
+    "qty": 3
+   },
+   {
+    "name": "White Headband",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Yellow Headband"
+  ],
+  "categories": [
+   "Monk Quests",
+   "North Qeynos"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
   "name": "Monk Kael Armor Quests",
   "url": "https://eqlwiki.com/Monk_Kael_Armor_Quests",
   "startZone": "Kael Drakkel",
@@ -16911,7 +21400,15 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Fist of the Golden Star",
+   "Golden Star Arm Wraps",
+   "Golden Star Chest Wraps",
+   "Golden Star Headband",
+   "Golden Star Pants",
+   "Golden Star Slippers",
+   "Golden Star Wrist Wraps"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -17076,6 +21573,105 @@
    "Orange Sash of Order",
    "Red Sash of Order",
    "White Training Sash",
+   "Yellow Sash of Order"
+  ],
+  "categories": [
+   "Monk Quests",
+   "West Freeport"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Red Sash of Order",
+  "url": "https://eqlwiki.com/Monk_Sash_Quests",
+  "parent": "Monk Sash Quests",
+  "startZone": "Freeport",
+  "questGiver": "Velan Torresk, Reyia Beslin",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Blackened Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Blackened Wand",
+    "qty": 1
+   },
+   {
+    "name": "Orange Sash of Order",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Red Sash of Order"
+  ],
+  "categories": [
+   "Monk Quests",
+   "West Freeport"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "White Training Sash",
+  "url": "https://eqlwiki.com/Monk_Sash_Quests",
+  "parent": "Monk Sash Quests",
+  "startZone": "Freeport",
+  "questGiver": "Velan Torresk, Reyia Beslin",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Bone Chips",
+    "qty": 1
+   },
+   {
+    "name": "Deathfist Pawn Scalp",
+    "qty": 1
+   },
+   {
+    "name": "Snake Fang",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "White Training Sash"
+  ],
+  "categories": [
+   "Monk Quests",
+   "West Freeport"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Yellow Sash of Order",
+  "url": "https://eqlwiki.com/Monk_Sash_Quests",
+  "parent": "Monk Sash Quests",
+  "startZone": "Freeport",
+  "questGiver": "Velan Torresk, Reyia Beslin",
+  "minLevel": 1,
+  "classes": "Monk",
+  "items": [
+   {
+    "name": "Deathfist Slashed Belt",
+    "qty": 1
+   },
+   {
+    "name": "Desert Tarantula Chitin",
+    "qty": 1
+   },
+   {
+    "name": "Giant Snake Rattle",
+    "qty": 1
+   }
+  ],
+  "rewards": [
    "Yellow Sash of Order"
   ],
   "categories": [
@@ -17338,7 +21934,15 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Fist of the White Lotus",
+   "White Lotus Arm Wraps",
+   "White Lotus Chest Wraps",
+   "White Lotus Headband",
+   "White Lotus Pants",
+   "White Lotus Slippers",
+   "White Lotus Wrist Wraps"
+  ],
   "categories": [
    "Monk Quests",
    "Skyshrine",
@@ -17443,7 +22047,15 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Fist of the Grand Master",
+   "Grand Master's Arm Wraps",
+   "Grand Master's Chest Wraps",
+   "Grand Master's Headband",
+   "Grand Master's Leg Wraps",
+   "Grand Master's Slippers",
+   "Grand Master's Wrist Wraps"
+  ],
   "categories": [
    "Monk Quests",
    "Thurgadin",
@@ -17938,7 +22550,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Plague Bearer's Boots",
+   "Plague Bearer's Circlet",
+   "Plague Bearer's Gloves",
+   "Plague Bearer's Robe",
+   "Plague Bearer's Sleeves",
+   "Plague Bearer's Trousers",
+   "Plague Bearer's Wristguard"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Necromancer Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Plague Bearer's Boots",
+  "url": "https://eqlwiki.com/Necromancer_Kael_Armor_Quests",
+  "parent": "Necromancer Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bjarorm Mjlorn",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Ancient Silk Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Plague Bearer's Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Necromancer Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Plague Bearer's Gloves",
+  "url": "https://eqlwiki.com/Necromancer_Kael_Armor_Quests",
+  "parent": "Necromancer Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bjarorm Mjlorn",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Ancient Silk Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Plague Bearer's Gloves"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Necromancer Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Plague Bearer's Robe",
+  "url": "https://eqlwiki.com/Necromancer_Kael_Armor_Quests",
+  "parent": "Necromancer Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bjarorm Mjlorn",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Ancient Silk Robe",
+    "qty": 1
+   },
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Plague Bearer's Robe"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Necromancer Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Plague Bearer's Sleeves",
+  "url": "https://eqlwiki.com/Necromancer_Kael_Armor_Quests",
+  "parent": "Necromancer Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Bjarorm Mjlorn",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Ancient Silk Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Plague Bearer's Sleeves"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -18228,7 +22976,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Rotting Boots",
+   "Rotting Crown",
+   "Rotting Gloves",
+   "Rotting Robe",
+   "Rotting Sleeves",
+   "Rotting Trousers",
+   "Rotting Wristguard"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rotting Boots",
+  "url": "https://eqlwiki.com/Necromancer_Skyshrine_Armor_Quests",
+  "parent": "Necromancer Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Abudan Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rotting Boots"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rotting Gloves",
+  "url": "https://eqlwiki.com/Necromancer_Skyshrine_Armor_Quests",
+  "parent": "Necromancer Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Abudan Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rotting Gloves"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rotting Robe",
+  "url": "https://eqlwiki.com/Necromancer_Skyshrine_Armor_Quests",
+  "parent": "Necromancer Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Abudan Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rotting Robe"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rotting Sleeves",
+  "url": "https://eqlwiki.com/Necromancer_Skyshrine_Armor_Quests",
+  "parent": "Necromancer Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Abudan Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rotting Sleeves"
+  ],
   "categories": [
    "Necromancer Quests",
    "Skyshrine",
@@ -18355,7 +23239,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Warlock's Boots",
+   "Warlock's Crown",
+   "Warlock's Gloves",
+   "Warlock's Pantaloons",
+   "Warlock's Robe",
+   "Warlock's Sleeves",
+   "Warlock's Wristguard"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlock's Boots",
+  "url": "https://eqlwiki.com/Necromancer_Thurgadin_Armor_Quests",
+  "parent": "Necromancer Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Zorik",
+  "minLevel": 45,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlock's Boots"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlock's Gloves",
+  "url": "https://eqlwiki.com/Necromancer_Thurgadin_Armor_Quests",
+  "parent": "Necromancer Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Zorik",
+  "minLevel": 45,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlock's Gloves"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlock's Robe",
+  "url": "https://eqlwiki.com/Necromancer_Thurgadin_Armor_Quests",
+  "parent": "Necromancer Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Zorik",
+  "minLevel": 45,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlock's Robe"
+  ],
+  "categories": [
+   "Necromancer Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlock's Sleeves",
+  "url": "https://eqlwiki.com/Necromancer_Thurgadin_Armor_Quests",
+  "parent": "Necromancer Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Lorekeeper Zorik",
+  "minLevel": 45,
+  "classes": "Necromancer",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlock's Sleeves"
+  ],
   "categories": [
    "Necromancer Quests",
    "Thurgadin",
@@ -19483,7 +24503,207 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Shining Boots",
+   "Shining Bracer",
+   "Shining Breastplate",
+   "Shining Gauntlets",
+   "Shining Greaves",
+   "Shining Helm",
+   "Shining Vambraces"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Paladin Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shining Boots",
+  "url": "https://eqlwiki.com/Paladin_Kael_Armor_Quests",
+  "parent": "Paladin Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Barlek Stonefist",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shining Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Paladin Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shining Bracer",
+  "url": "https://eqlwiki.com/Paladin_Kael_Armor_Quests",
+  "parent": "Paladin Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Barlek Stonefist",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shining Bracer"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Paladin Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shining Breastplate",
+  "url": "https://eqlwiki.com/Paladin_Kael_Armor_Quests",
+  "parent": "Paladin Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Barlek Stonefist",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Ancient Tarnished Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shining Breastplate"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Paladin Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shining Gauntlets",
+  "url": "https://eqlwiki.com/Paladin_Kael_Armor_Quests",
+  "parent": "Paladin Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Barlek Stonefist",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shining Gauntlets"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Paladin Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shining Greaves",
+  "url": "https://eqlwiki.com/Paladin_Kael_Armor_Quests",
+  "parent": "Paladin Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Barlek Stonefist",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Ancient Tarnished Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shining Greaves"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Paladin Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shining Helm",
+  "url": "https://eqlwiki.com/Paladin_Kael_Armor_Quests",
+  "parent": "Paladin Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Barlek Stonefist",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Helmet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Coral",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shining Helm"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -19630,7 +24850,211 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Scaled Knight's Boots",
+   "Scaled Knight's Bracer",
+   "Scaled Knight's Breastplate",
+   "Scaled Knight's Gauntlets",
+   "Scaled Knight's Greaves",
+   "Scaled Knight's Helm",
+   "Scaled Knight's Vambraces"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Boots",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Boots"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Bracer",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Bracer"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Breastplate",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Breastplate"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Gauntlets",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Gauntlets"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Greaves",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Greaves"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Helm",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Crushed Coral",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Helm"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Knight's Vambraces",
+  "url": "https://eqlwiki.com/Paladin_Skyshrine_Armor_Quests",
+  "parent": "Paladin Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Adwetram Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Flawed Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Knight's Vambraces"
+  ],
   "categories": [
    "Paladin Quests",
    "Skyshrine",
@@ -19703,7 +25127,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Runed Protector's Boots",
+   "Runed Protector's Bracer",
+   "Runed Protector's Breastplate",
+   "Runed Protector's Gauntlets",
+   "Runed Protector's Greaves",
+   "Runed Protector's Helm",
+   "Runed Protector's Vambraces"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Protector's Boots",
+  "url": "https://eqlwiki.com/Paladin_Thurgadin_Armor_Quests",
+  "parent": "Paladin Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Battlepriest Daragor",
+  "minLevel": 45,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Corroded Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Protector's Boots"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Protector's Bracer",
+  "url": "https://eqlwiki.com/Paladin_Thurgadin_Armor_Quests",
+  "parent": "Paladin Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Battlepriest Daragor",
+  "minLevel": 45,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Corroded Plate Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Protector's Bracer"
+  ],
+  "categories": [
+   "Paladin Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Protector's Gauntlets",
+  "url": "https://eqlwiki.com/Paladin_Thurgadin_Armor_Quests",
+  "parent": "Paladin Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Battlepriest Daragor",
+  "minLevel": 45,
+  "classes": "Paladin",
+  "items": [
+   {
+    "name": "Corroded Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Protector's Gauntlets"
+  ],
   "categories": [
    "Paladin Quests",
    "Thurgadin",
@@ -21039,6 +26567,118 @@
   "repeatable": false
  },
  {
+  "name": "Disciple Symbol of Quellious",
+  "url": "https://eqlwiki.com/Quellious_Symbol_Quests",
+  "parent": "Quellious Symbol Quests",
+  "startZone": "Erudin",
+  "questGiver": "Leraena Shelyrak",
+  "minLevel": 10,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Embroidered Bag of Bronze Symbols",
+    "qty": 1
+   },
+   {
+    "name": "Initiate Symbol of Quellious",
+    "qty": 1
+   },
+   {
+    "name": "Odd Bronze Necklace",
+    "qty": 1
+   },
+   {
+    "name": "Regent Symbol of Quellious",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Disciple Symbol of Quellious"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Erudin"
+  ],
+  "relatedZones": [
+   "Steamfont Mountains",
+   "The Warrens"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Initiate Symbol of Quellious",
+  "url": "https://eqlwiki.com/Quellious_Symbol_Quests",
+  "parent": "Quellious Symbol Quests",
+  "startZone": "Erudin",
+  "questGiver": "Leraena Shelyrak",
+  "minLevel": 10,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Embroidered Bag of Bone Necklaces",
+    "qty": 1
+   },
+   {
+    "name": "Odd Bone Necklace",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Initiate Symbol of Quellious"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Erudin"
+  ],
+  "relatedZones": [
+   "Steamfont Mountains",
+   "The Warrens"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Regent Symbol of Quellious",
+  "url": "https://eqlwiki.com/Quellious_Symbol_Quests",
+  "parent": "Quellious Symbol Quests",
+  "startZone": "Erudin",
+  "questGiver": "Leraena Shelyrak",
+  "minLevel": 10,
+  "classes": "Cleric",
+  "items": [
+   {
+    "name": "Disciple Symbol of Quellious",
+    "qty": 1
+   },
+   {
+    "name": "Hieroglyph Translations",
+    "qty": 1
+   },
+   {
+    "name": "Odd Cold Iron Necklace",
+    "qty": 1
+   },
+   {
+    "name": "Sealed Parchment",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Regent Symbol of Quellious"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Erudin"
+  ],
+  "relatedZones": [
+   "Steamfont Mountains",
+   "The Warrens"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
   "name": "Quench Lasen's Thirst",
   "url": "https://eqlwiki.com/Quench_Lasen%27s_Thirst",
   "startZone": "Qeynos",
@@ -21588,7 +27228,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Forest Stalker's Boots",
+   "Forest Stalker's Bracer",
+   "Forest Stalker's Breastplate",
+   "Forest Stalker's Coif",
+   "Forest Stalker's Gauntlets",
+   "Forest Stalker's Greaves",
+   "Forest Stalker's Vambraces"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Forest Stalker's Boots",
+  "url": "https://eqlwiki.com/Ranger_Kael_Armor_Quests",
+  "parent": "Ranger Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Gragek Mjlorkigar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Forest Stalker's Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Forest Stalker's Bracer",
+  "url": "https://eqlwiki.com/Ranger_Kael_Armor_Quests",
+  "parent": "Ranger Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Gragek Mjlorkigar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Forest Stalker's Bracer"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Forest Stalker's Breastplate",
+  "url": "https://eqlwiki.com/Ranger_Kael_Armor_Quests",
+  "parent": "Ranger Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Gragek Mjlorkigar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Tunic",
+    "qty": 1
+   },
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Forest Stalker's Breastplate"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Ranger Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Forest Stalker's Gauntlets",
+  "url": "https://eqlwiki.com/Ranger_Kael_Armor_Quests",
+  "parent": "Ranger Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Gragek Mjlorkigar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Forest Stalker's Gauntlets"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -21740,7 +27516,175 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Golden Leaf Boots",
+   "Golden Leaf Bracer",
+   "Golden Leaf Breastplate",
+   "Golden Leaf Gauntlets",
+   "Golden Leaf Greaves",
+   "Golden Leaf Helm",
+   "Golden Leaf Vambraces"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Golden Leaf Boots",
+  "url": "https://eqlwiki.com/Ranger_Skyshrine_Armor_Quests",
+  "parent": "Ranger Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Nalelin Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Golden Leaf Boots"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Golden Leaf Bracer",
+  "url": "https://eqlwiki.com/Ranger_Skyshrine_Armor_Quests",
+  "parent": "Ranger Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Nalelin Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Bracer",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Golden Leaf Bracer"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Golden Leaf Breastplate",
+  "url": "https://eqlwiki.com/Ranger_Skyshrine_Armor_Quests",
+  "parent": "Ranger Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Nalelin Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Tunic",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Golden Leaf Breastplate"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Golden Leaf Gauntlets",
+  "url": "https://eqlwiki.com/Ranger_Skyshrine_Armor_Quests",
+  "parent": "Ranger Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Nalelin Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Gauntlets",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Golden Leaf Gauntlets"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Golden Leaf Helm",
+  "url": "https://eqlwiki.com/Ranger_Skyshrine_Armor_Quests",
+  "parent": "Ranger Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Nalelin Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Crushed Coral",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Coif",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Golden Leaf Helm"
+  ],
   "categories": [
    "Ranger Quests",
    "Skyshrine",
@@ -21813,7 +27757,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Runed Scout's Boots",
+   "Runed Scout's Bracer",
+   "Runed Scout's Breastplate",
+   "Runed Scout's Gauntlets",
+   "Runed Scout's Greaves",
+   "Runed Scout's Helm",
+   "Runed Scout's Vambraces"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Scout's Boots",
+  "url": "https://eqlwiki.com/Ranger_Thurgadin_Armor_Quests",
+  "parent": "Ranger Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Argash",
+  "minLevel": 45,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Corroded Chain Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Scout's Boots"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Scout's Bracer",
+  "url": "https://eqlwiki.com/Ranger_Thurgadin_Armor_Quests",
+  "parent": "Ranger Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Argash",
+  "minLevel": 45,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Corroded Chain Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Scout's Bracer"
+  ],
+  "categories": [
+   "Ranger Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Runed Scout's Gauntlets",
+  "url": "https://eqlwiki.com/Ranger_Thurgadin_Armor_Quests",
+  "parent": "Ranger Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Argash",
+  "minLevel": 45,
+  "classes": "Ranger",
+  "items": [
+   {
+    "name": "Corroded Chain Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Runed Scout's Gauntlets"
+  ],
   "categories": [
    "Ranger Quests",
    "Thurgadin",
@@ -23026,7 +29074,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Deceiver's Boots",
+   "Deceiver's Bracer",
+   "Deceiver's Chestguard",
+   "Deceiver's Crown",
+   "Deceiver's Gauntlets",
+   "Deceiver's Greaves",
+   "Deceiver's Vambraces"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Rogue Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Deceiver's Boots",
+  "url": "https://eqlwiki.com/Rogue_Kael_Armor_Quests",
+  "parent": "Rogue Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kelenek Bluadfeth",
+  "minLevel": 50,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Deceiver's Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Rogue Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Deceiver's Bracer",
+  "url": "https://eqlwiki.com/Rogue_Kael_Armor_Quests",
+  "parent": "Rogue Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kelenek Bluadfeth",
+  "minLevel": 50,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Deceiver's Bracer"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Rogue Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Deceiver's Gauntlets",
+  "url": "https://eqlwiki.com/Rogue_Kael_Armor_Quests",
+  "parent": "Rogue Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kelenek Bluadfeth",
+  "minLevel": 50,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Deceiver's Gauntlets"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -23290,7 +29442,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Shadow Boots",
+   "Shadow Bracer",
+   "Shadow Chestguard",
+   "Shadow Crown",
+   "Shadow Gauntlets",
+   "Shadow Greaves",
+   "Shadow Vambraces"
+  ],
+  "categories": [
+   "Rogue Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shadow Boots",
+  "url": "https://eqlwiki.com/Rogue_Skyshrine_Armor_Quests",
+  "parent": "Rogue Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Crendatha Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shadow Boots"
+  ],
+  "categories": [
+   "Rogue Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shadow Bracer",
+  "url": "https://eqlwiki.com/Rogue_Skyshrine_Armor_Quests",
+  "parent": "Rogue Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Crendatha Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Bracer",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shadow Bracer"
+  ],
+  "categories": [
+   "Rogue Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Shadow Gauntlets",
+  "url": "https://eqlwiki.com/Rogue_Skyshrine_Armor_Quests",
+  "parent": "Rogue Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Crendatha Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Gauntlets",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Shadow Gauntlets"
+  ],
   "categories": [
    "Rogue Quests",
    "Skyshrine",
@@ -23363,7 +29619,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Brigand's Boots",
+   "Brigand's Bracer",
+   "Brigand's Chestguard",
+   "Brigand's Circlet",
+   "Brigand's Gauntlets",
+   "Brigand's Greaves",
+   "Brigand's Vambraces"
+  ],
+  "categories": [
+   "Rogue Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Brigand's Boots",
+  "url": "https://eqlwiki.com/Rogue_Thurgadin_Armor_Quests",
+  "parent": "Rogue Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Foreman Felspar",
+  "minLevel": 45,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Corroded Chain Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Brigand's Boots"
+  ],
+  "categories": [
+   "Rogue Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Brigand's Bracer",
+  "url": "https://eqlwiki.com/Rogue_Thurgadin_Armor_Quests",
+  "parent": "Rogue Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Foreman Felspar",
+  "minLevel": 45,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Corroded Chain Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Brigand's Bracer"
+  ],
+  "categories": [
+   "Rogue Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Brigand's Gauntlets",
+  "url": "https://eqlwiki.com/Rogue_Thurgadin_Armor_Quests",
+  "parent": "Rogue Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Foreman Felspar",
+  "minLevel": 45,
+  "classes": "Rogue",
+  "items": [
+   {
+    "name": "Corroded Chain Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Brigand's Gauntlets"
+  ],
   "categories": [
    "Rogue Quests",
    "Thurgadin",
@@ -23771,7 +30131,273 @@
    }
   ],
   "rewards": [
-   "Category:Armor Sets"
+   "Category:Armor Sets",
+   "Scaled Mystic Boots",
+   "Scaled Mystic Bracers",
+   "Scaled Mystic Breastplate",
+   "Scaled Mystic Cloak",
+   "Scaled Mystic Gauntlets",
+   "Scaled Mystic Greaves",
+   "Scaled Mystic Helm",
+   "Scaled Mystic Vambraces"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Boots",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Rhino Hoof",
+    "qty": 1
+   },
+   {
+    "name": "Spirit Caller Beads",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Boots"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Bracers",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Coercion Implant",
+    "qty": 1
+   },
+   {
+    "name": "Gooey Adhesive",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Bracers"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Cloak",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Forest Giant Hammer",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Worn Charbone",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Cloak"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Gauntlets",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Gauntlets"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Greaves",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Leggings",
+    "qty": 1
+   },
+   {
+    "name": "Exiled Iksar Head",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Sarnak Recruitment Letter",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Greaves"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Helm",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Helm",
+    "qty": 1
+   },
+   {
+    "name": "Bargynn's Digger",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Sythrax Building Plans",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Helm"
+  ],
+  "categories": [
+   "Armor Sets",
+   "East Cabilis",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "Epics",
+  "repeatable": false
+ },
+ {
+  "name": "Scaled Mystic Vambraces",
+  "url": "https://eqlwiki.com/Scaled_Mystic_Armor_Quests",
+  "parent": "Scaled Mystic Armor Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Zazlan Furscale, Shezlie Furscale",
+  "minLevel": 20,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Frenzied Gnawer Tail",
+    "qty": 1
+   },
+   {
+    "name": "Froglok Treated Planks",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Scaled Mystic Vambraces"
   ],
   "categories": [
    "Armor Sets",
@@ -24486,7 +31112,11 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Robe of Enshroudment",
+   "ShadowBound Boots",
+   "ShadowBound Gloves"
+  ],
   "categories": [
    "Necromancer Quests",
    "Temple of Solusek Ro"
@@ -24594,7 +31224,207 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Malevolent Boots",
+   "Malevolent Bracer",
+   "Malevolent Breastplate",
+   "Malevolent Crown",
+   "Malevolent Gauntlets",
+   "Malevolent Greaves",
+   "Malevolent Vambraces"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Malevolent Boots",
+  "url": "https://eqlwiki.com/Shadowknight_Kael_Armor_Quests",
+  "parent": "Shadowknight Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Veldern Blackhammer",
+  "minLevel": 50,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Malevolent Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Malevolent Bracer",
+  "url": "https://eqlwiki.com/Shadowknight_Kael_Armor_Quests",
+  "parent": "Shadowknight Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Veldern Blackhammer",
+  "minLevel": 50,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Malevolent Bracer"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Malevolent Breastplate",
+  "url": "https://eqlwiki.com/Shadowknight_Kael_Armor_Quests",
+  "parent": "Shadowknight Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Veldern Blackhammer",
+  "minLevel": 50,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Ancient Tarnished Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Malevolent Breastplate"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Malevolent Gauntlets",
+  "url": "https://eqlwiki.com/Shadowknight_Kael_Armor_Quests",
+  "parent": "Shadowknight Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Veldern Blackhammer",
+  "minLevel": 50,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Malevolent Gauntlets"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Malevolent Greaves",
+  "url": "https://eqlwiki.com/Shadowknight_Kael_Armor_Quests",
+  "parent": "Shadowknight Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Veldern Blackhammer",
+  "minLevel": 50,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Ancient Tarnished Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Malevolent Greaves"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shadow Knight Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Malevolent Vambraces",
+  "url": "https://eqlwiki.com/Shadowknight_Kael_Armor_Quests",
+  "parent": "Shadowknight Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Veldern Blackhammer",
+  "minLevel": 50,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Ancient Tarnished Vambraces",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Malevolent Vambraces"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -24671,7 +31501,127 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Blood Lord's Boots",
+   "Blood Lord's Bracer",
+   "Blood Lord's Breastplate",
+   "Blood Lord's Crown",
+   "Blood Lord's Gauntlets",
+   "Blood Lord's Greaves",
+   "Blood Lord's Vambraces"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Blood Lord's Boots",
+  "url": "https://eqlwiki.com/Shadowknight_Skyshrine_Armor_Quests",
+  "parent": "Shadowknight Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Onerind Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shadowknight",
+  "items": [
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Blood Lord's Boots"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Blood Lord's Bracer",
+  "url": "https://eqlwiki.com/Shadowknight_Skyshrine_Armor_Quests",
+  "parent": "Shadowknight Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Onerind Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shadowknight",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Blood Lord's Bracer"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Blood Lord's Breastplate",
+  "url": "https://eqlwiki.com/Shadowknight_Skyshrine_Armor_Quests",
+  "parent": "Shadowknight Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Onerind Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shadowknight",
+  "items": [
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Blood Lord's Breastplate"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Blood Lord's Gauntlets",
+  "url": "https://eqlwiki.com/Shadowknight_Skyshrine_Armor_Quests",
+  "parent": "Shadowknight Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Onerind Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shadowknight",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Blood Lord's Gauntlets"
+  ],
   "categories": [
    "Shadow Knight Quests",
    "Skyshrine",
@@ -24744,7 +31694,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Dark Runed Boots",
+   "Dark Runed Bracer",
+   "Dark Runed Breastplate",
+   "Dark Runed Crown",
+   "Dark Runed Gauntlets",
+   "Dark Runed Greaves",
+   "Dark Runed Vambraces"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Dark Runed Boots",
+  "url": "https://eqlwiki.com/Shadowknight_Thurgadin_Armor_Quests",
+  "parent": "Shadowknight Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Dalgrim Underbelly",
+  "minLevel": 45,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Corroded Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dark Runed Boots"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Dark Runed Bracer",
+  "url": "https://eqlwiki.com/Shadowknight_Thurgadin_Armor_Quests",
+  "parent": "Shadowknight Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Dalgrim Underbelly",
+  "minLevel": 45,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Corroded Plate Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dark Runed Bracer"
+  ],
+  "categories": [
+   "Shadow Knight Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Dark Runed Gauntlets",
+  "url": "https://eqlwiki.com/Shadowknight_Thurgadin_Armor_Quests",
+  "parent": "Shadowknight Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Dalgrim Underbelly",
+  "minLevel": 45,
+  "classes": "Shadow Knight",
+  "items": [
+   {
+    "name": "Corroded Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Dark Runed Gauntlets"
+  ],
   "categories": [
    "Shadow Knight Quests",
    "Thurgadin",
@@ -24981,7 +32035,175 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Spirit Caller's Boots",
+   "Spirit Caller's Bracer",
+   "Spirit Caller's Breastplate",
+   "Spirit Caller's Gauntlets",
+   "Spirit Caller's Greaves",
+   "Spirit Caller's Helm",
+   "Spirit Caller's Vambraces"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shaman Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Spirit Caller's Boots",
+  "url": "https://eqlwiki.com/Shaman_Kael_Armor_Quests",
+  "parent": "Shaman Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Yeeldan Spiritcaller",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Spirit Caller's Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shaman Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Spirit Caller's Bracer",
+  "url": "https://eqlwiki.com/Shaman_Kael_Armor_Quests",
+  "parent": "Shaman Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Yeeldan Spiritcaller",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Spirit Caller's Bracer"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shaman Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Spirit Caller's Breastplate",
+  "url": "https://eqlwiki.com/Shaman_Kael_Armor_Quests",
+  "parent": "Shaman Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Yeeldan Spiritcaller",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Tunic",
+    "qty": 1
+   },
+   {
+    "name": "Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Spirit Caller's Breastplate"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shaman Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Spirit Caller's Gauntlets",
+  "url": "https://eqlwiki.com/Shaman_Kael_Armor_Quests",
+  "parent": "Shaman Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Yeeldan Spiritcaller",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Lava Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Spirit Caller's Gauntlets"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Shaman Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Spirit Caller's Helm",
+  "url": "https://eqlwiki.com/Shaman_Kael_Armor_Quests",
+  "parent": "Shaman Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Yeeldan Spiritcaller",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Ancient Tarnished Chain Coif",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Onyx Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Spirit Caller's Helm"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -25227,7 +32449,175 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Wolf Caller's Boots",
+   "Wolf Caller's Bracer",
+   "Wolf Caller's Breastplate",
+   "Wolf Caller's Gauntlets",
+   "Wolf Caller's Greaves",
+   "Wolf Caller's Helm",
+   "Wolf Caller's Vambraces"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Wolf Caller's Boots",
+  "url": "https://eqlwiki.com/Shaman_Skyshrine_Armor_Quests",
+  "parent": "Shaman Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Asteinnon Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Wolf Caller's Boots"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Wolf Caller's Bracer",
+  "url": "https://eqlwiki.com/Shaman_Skyshrine_Armor_Quests",
+  "parent": "Shaman Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Asteinnon Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Crushed Opal",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Bracer",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Wolf Caller's Bracer"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Wolf Caller's Breastplate",
+  "url": "https://eqlwiki.com/Shaman_Skyshrine_Armor_Quests",
+  "parent": "Shaman Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Asteinnon Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Black Marble",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Tunic",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Wolf Caller's Breastplate"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Wolf Caller's Gauntlets",
+  "url": "https://eqlwiki.com/Shaman_Skyshrine_Armor_Quests",
+  "parent": "Shaman Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Asteinnon Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Crushed Lava Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Gauntlets",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Wolf Caller's Gauntlets"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Skyshrine",
+   "Skyshrine Armor Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Wolf Caller's Helm",
+  "url": "https://eqlwiki.com/Shaman_Skyshrine_Armor_Quests",
+  "parent": "Shaman Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Asteinnon Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Crushed Onyx Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Unadorned Chain Coif",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Wolf Caller's Helm"
+  ],
   "categories": [
    "Shaman Quests",
    "Skyshrine",
@@ -25370,7 +32760,79 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Rune Crafter's Boots",
+   "Rune Crafter's Bracer",
+   "Rune Crafter's Breastplate",
+   "Rune Crafter's Gauntlets",
+   "Rune Crafter's Greaves",
+   "Rune Crafter's Helm",
+   "Rune Crafter's Vambraces"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rune Crafter's Boots",
+  "url": "https://eqlwiki.com/Shaman_Thurgadin_Armor_Quests",
+  "parent": "Shaman Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Terman Underbelly",
+  "minLevel": 45,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Corroded Chain Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rune Crafter's Boots"
+  ],
+  "categories": [
+   "Shaman Quests",
+   "Thurgadin",
+   "Thurgadin Armor Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Rune Crafter's Helm",
+  "url": "https://eqlwiki.com/Shaman_Thurgadin_Armor_Quests",
+  "parent": "Shaman Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Terman Underbelly",
+  "minLevel": 45,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Corroded Chain Coif",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Onyx Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Rune Crafter's Helm"
+  ],
   "categories": [
    "Shaman Quests",
    "Thurgadin",
@@ -26176,7 +33638,18 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Sparring Arm Guards",
+   "Sparring Clogs",
+   "Sparring Collar",
+   "Sparring Facemask",
+   "Sparring Grappler Gloves",
+   "Sparring Harness",
+   "Sparring Headgear",
+   "Sparring Rib Pad",
+   "Sparring Shin Guards",
+   "Sparring Shoulder Pads"
+  ],
   "categories": [
    "East Cabilis",
    "Monk Quests"
@@ -30876,6 +38349,191 @@
   "repeatable": false
  },
  {
+  "name": "Totemic Boots",
+  "url": "https://eqlwiki.com/Totemic_Armor_Quests",
+  "parent": "Totemic Armor Quests",
+  "startZone": "Lake Rathetear",
+  "questGiver": "Vrynn, Kyralynn",
+  "minLevel": 0,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Boots",
+    "qty": 1
+   },
+   {
+    "name": "Chief's Tongue",
+    "qty": 1
+   },
+   {
+    "name": "Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Terror Spines",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Totemic Boots"
+  ],
+  "categories": [
+   "Lake Rathetear",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "",
+  "repeatable": false
+ },
+ {
+  "name": "Totemic Bracers",
+  "url": "https://eqlwiki.com/Totemic_Armor_Quests",
+  "parent": "Totemic Armor Quests",
+  "startZone": "Lake Rathetear",
+  "questGiver": "Vrynn, Kyralynn",
+  "minLevel": 0,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Bull Elephant Tooth",
+    "qty": 1
+   },
+   {
+    "name": "Cauldron Shell",
+    "qty": 1
+   },
+   {
+    "name": "Dufrenite",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Totemic Bracers"
+  ],
+  "categories": [
+   "Lake Rathetear",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "",
+  "repeatable": false
+ },
+ {
+  "name": "Totemic Cloak",
+  "url": "https://eqlwiki.com/Totemic_Armor_Quests",
+  "parent": "Totemic Armor Quests",
+  "startZone": "Lake Rathetear",
+  "questGiver": "Vrynn, Kyralynn",
+  "minLevel": 0,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Basalt Drake Scales",
+    "qty": 1
+   },
+   {
+    "name": "Driftwood Pipe",
+    "qty": 1
+   },
+   {
+    "name": "Powdered Dufrenite",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Totemic Cloak"
+  ],
+  "categories": [
+   "Lake Rathetear",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "",
+  "repeatable": false
+ },
+ {
+  "name": "Totemic Gauntlets",
+  "url": "https://eqlwiki.com/Totemic_Armor_Quests",
+  "parent": "Totemic Armor Quests",
+  "startZone": "Lake Rathetear",
+  "questGiver": "Vrynn, Kyralynn",
+  "minLevel": 0,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Griffenne Downfeather",
+    "qty": 1
+   },
+   {
+    "name": "Mammoth Rib Bone",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Totemic Gauntlets"
+  ],
+  "categories": [
+   "Lake Rathetear",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "",
+  "repeatable": false
+ },
+ {
+  "name": "Totemic Helm",
+  "url": "https://eqlwiki.com/Totemic_Armor_Quests",
+  "parent": "Totemic Armor Quests",
+  "startZone": "Lake Rathetear",
+  "questGiver": "Vrynn, Kyralynn",
+  "minLevel": 0,
+  "classes": "Shaman",
+  "items": [
+   {
+    "name": "Banded Helm",
+    "qty": 1
+   },
+   {
+    "name": "Glacier Bear Pelt",
+    "qty": 1
+   },
+   {
+    "name": "Ground Dufrenite",
+    "qty": 1
+   },
+   {
+    "name": "Ogreskin Chamois",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Totemic Helm"
+  ],
+  "categories": [
+   "Lake Rathetear",
+   "Shaman Quests"
+  ],
+  "relatedZones": [],
+  "era": "",
+  "repeatable": false
+ },
+ {
   "name": "Toxdil's Poison",
   "url": "https://eqlwiki.com/Toxdil%27s_Poison",
   "startZone": "Freeport",
@@ -31089,7 +38747,284 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Trooper Scale Boots",
+   "Trooper Scale Bracers",
+   "Trooper Scale Breastplate",
+   "Trooper Scale Gauntlets",
+   "Trooper Scale Greaves",
+   "Trooper Scale Helm",
+   "Trooper Scale Pauldron",
+   "Trooper Scale Vambraces"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Boots",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Boots"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Bracers",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Banded Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Traitor's Heart",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Bracers"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Breastplate",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Daelione's Implant",
+    "qty": 1
+   },
+   {
+    "name": "Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Straeven's Head",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Breastplate"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Gauntlets",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Head of Blackhand",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Gauntlets"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Greaves",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Iron Bound Tome",
+    "qty": 1
+   },
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Greaves"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Helm",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Star Ruby",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Helm"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Pauldron",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Bottle",
+    "qty": 1
+   },
+   {
+    "name": "Fire Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Gray Colored Ice",
+    "qty": 1
+   },
+   {
+    "name": "Grayish Liquid",
+    "qty": 1
+   },
+   {
+    "name": "Hopeless Willow Moss",
+    "qty": 1
+   },
+   {
+    "name": "Pondfish Spine",
+    "qty": 1
+   },
+   {
+    "name": "Pot",
+    "qty": 1
+   },
+   {
+    "name": "Spine Poison Extract",
+    "qty": 1
+   },
+   {
+    "name": "Water Flask",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Pauldron"
+  ],
+  "categories": [
+   "The Overthere",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper Scale Vambraces",
+  "url": "https://eqlwiki.com/Trooper_Scale_Armor",
+  "parent": "Trooper Scale Armor",
+  "startZone": "The Overthere",
+  "questGiver": "Xlixinar Arcut, Drixiv Arcut",
+  "minLevel": 20,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Diseased Tongue",
+    "qty": 1
+   },
+   {
+    "name": "Hierophant's Knife",
+    "qty": 1
+   },
+   {
+    "name": "Opal",
+    "qty": 1
+   },
+   {
+    "name": "Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper Scale Vambraces"
+  ],
   "categories": [
    "The Overthere",
    "Warrior Quests"
@@ -31347,6 +39282,129 @@
   "rewards": [
    "Disciple Symbol of Tunare",
    "Initiate Symbol of Tunare",
+   "Warden Symbol of Tunare"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Druid Quests",
+   "Northern Felwithe"
+  ],
+  "relatedZones": [
+   "Greater Faydark",
+   "Lesser Faydark"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Disciple Symbol of Tunare",
+  "url": "https://eqlwiki.com/Tunare_Symbol_Quests",
+  "parent": "Tunare Symbol Quests",
+  "startZone": "Felwithe",
+  "questGiver": "Yeolarn Bronzeleaf",
+  "minLevel": 8,
+  "classes": "Cleric, Druid",
+  "items": [
+   {
+    "name": "Initiate Symbol of Tunare",
+    "qty": 1
+   },
+   {
+    "name": "Larik Z`Vole's Head",
+    "qty": 1
+   },
+   {
+    "name": "Teir`Dal Courier's Head",
+    "qty": 1
+   },
+   {
+    "name": "Teir`Dal Crate",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Disciple Symbol of Tunare"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Druid Quests",
+   "Northern Felwithe"
+  ],
+  "relatedZones": [
+   "Greater Faydark",
+   "Lesser Faydark"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Initiate Symbol of Tunare",
+  "url": "https://eqlwiki.com/Tunare_Symbol_Quests",
+  "parent": "Tunare Symbol Quests",
+  "startZone": "Felwithe",
+  "questGiver": "Yeolarn Bronzeleaf",
+  "minLevel": 8,
+  "classes": "Cleric, Druid",
+  "items": [
+   {
+    "name": "Bone Chips",
+    "qty": 4
+   },
+   {
+    "name": "Putrescent Heart",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Initiate Symbol of Tunare"
+  ],
+  "categories": [
+   "Cleric Quests",
+   "Druid Quests",
+   "Northern Felwithe"
+  ],
+  "relatedZones": [
+   "Greater Faydark",
+   "Lesser Faydark"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Warden Symbol of Tunare",
+  "url": "https://eqlwiki.com/Tunare_Symbol_Quests",
+  "parent": "Tunare Symbol Quests",
+  "startZone": "Felwithe",
+  "questGiver": "Yeolarn Bronzeleaf",
+  "minLevel": 8,
+  "classes": "Cleric, Druid",
+  "items": [
+   {
+    "name": "Disciple Symbol of Tunare",
+    "qty": 1
+   },
+   {
+    "name": "Divinatory concoction",
+    "qty": 1
+   },
+   {
+    "name": "Pouch of Red Dust",
+    "qty": 1
+   },
+   {
+    "name": "Powder of Unanimation",
+    "qty": 1
+   },
+   {
+    "name": "Thick Caustic Fluid",
+    "qty": 1
+   },
+   {
+    "name": "White Hellebore",
+    "qty": 1
+   }
+  ],
+  "rewards": [
    "Warden Symbol of Tunare"
   ],
   "categories": [
@@ -32147,6 +40205,166 @@
   "repeatable": false
  },
  {
+  "name": "Warlord's Boots",
+  "url": "https://eqlwiki.com/Warrior_Kael_Armor_Quests",
+  "parent": "Warrior Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kragek Thunderforge",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlord's Boots"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlord's Bracer",
+  "url": "https://eqlwiki.com/Warrior_Kael_Armor_Quests",
+  "parent": "Warrior Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kragek Thunderforge",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Bracelet",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlord's Bracer"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlord's Breastplate",
+  "url": "https://eqlwiki.com/Warrior_Kael_Armor_Quests",
+  "parent": "Warrior Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kragek Thunderforge",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Ancient Tarnished Breastplate",
+    "qty": 1
+   },
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlord's Breastplate"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlord's Gauntlets",
+  "url": "https://eqlwiki.com/Warrior_Kael_Armor_Quests",
+  "parent": "Warrior Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kragek Thunderforge",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Ancient Tarnished Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlord's Gauntlets"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Warlord's Greaves",
+  "url": "https://eqlwiki.com/Warrior_Kael_Armor_Quests",
+  "parent": "Warrior Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Kragek Thunderforge",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Ancient Tarnished Greaves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Warlord's Greaves"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
   "name": "Warrior Pike Quests",
   "url": "https://eqlwiki.com/Warrior_Pike_Quests",
   "startZone": "Cabilis",
@@ -32221,6 +40439,167 @@
    "Soldier's Pike",
    "Trooper's Pike",
    "Warlord Mancatcher"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Militia's Pike (#1)",
+  "url": "https://eqlwiki.com/Warrior_Pike_Quests",
+  "parent": "Warrior Pike Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Drill Master Vygan",
+  "minLevel": 1,
+  "classes": "Warrior (Iksar)",
+  "items": [
+   {
+    "name": "Bixie Berry Pie",
+    "qty": 1
+   },
+   {
+    "name": "Froglok Escort Fife",
+    "qty": 1
+   },
+   {
+    "name": "Iksar Head",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Militia's Pike"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Footman's Pike (#2)",
+  "url": "https://eqlwiki.com/Warrior_Pike_Quests",
+  "parent": "Warrior Pike Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Drill Master Vygan",
+  "minLevel": 1,
+  "classes": "Warrior (Iksar)",
+  "items": [
+   {
+    "name": "Footman's Pike Head",
+    "qty": 1
+   },
+   {
+    "name": "Geozite Tool",
+    "qty": 1
+   },
+   {
+    "name": "Petrified Redwood",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Footman's Pike"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Soldier's Pike (#3)",
+  "url": "https://eqlwiki.com/Warrior_Pike_Quests",
+  "parent": "Warrior Pike Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Drill Master Vygan",
+  "minLevel": 1,
+  "classes": "Warrior (Iksar)",
+  "items": [
+   {
+    "name": "A Ruby",
+    "qty": 1
+   },
+   {
+    "name": "A Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "An Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Thick Iksar Skull",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Soldier's Pike"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Trooper's Pike (#4)",
+  "url": "https://eqlwiki.com/Warrior_Pike_Quests",
+  "parent": "Warrior Pike Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Drill Master Vygan",
+  "minLevel": 1,
+  "classes": "Warrior (Iksar)",
+  "items": [
+   {
+    "name": "Froglok Head",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Trooper's Pike"
+  ],
+  "categories": [
+   "East Cabilis",
+   "Warrior Quests"
+  ],
+  "relatedZones": [],
+  "era": "Kunark",
+  "repeatable": false
+ },
+ {
+  "name": "Legionnaire's Mancatcher (#5)",
+  "url": "https://eqlwiki.com/Warrior_Pike_Quests",
+  "parent": "Warrior Pike Quests",
+  "startZone": "Cabilis",
+  "questGiver": "Drill Master Vygan",
+  "minLevel": 1,
+  "classes": "Warrior (Iksar)",
+  "items": [
+   {
+    "name": "Goblin Warlord Warbeads",
+    "qty": 1
+   },
+   {
+    "name": "Krup Warrior Guard",
+    "qty": 1
+   },
+   {
+    "name": "Tattooed Sarnak Head",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Legionnaire's Mancatcher"
   ],
   "categories": [
    "East Cabilis",
@@ -32343,7 +40722,155 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Boots of the Myrmidon",
+   "Bracer of the Myrmidon",
+   "Breastplate of the Myrmidon",
+   "Crown of the Myrmidon",
+   "Gauntlets of the Myrmidon",
+   "Greaves of the Myrmidon",
+   "Vambraces of the Myrmidon"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Boots of the Myrmidon",
+  "url": "https://eqlwiki.com/Warrior_Skyshrine_Armor_Quests",
+  "parent": "Warrior Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Jendavudd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Boots of the Myrmidon"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Bracer of the Myrmidon",
+  "url": "https://eqlwiki.com/Warrior_Skyshrine_Armor_Quests",
+  "parent": "Warrior Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Jendavudd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Bracer of the Myrmidon"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Breastplate of the Myrmidon",
+  "url": "https://eqlwiki.com/Warrior_Skyshrine_Armor_Quests",
+  "parent": "Warrior Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Jendavudd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Flawless Diamond",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Breastplate of the Myrmidon"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Gauntlets of the Myrmidon",
+  "url": "https://eqlwiki.com/Warrior_Skyshrine_Armor_Quests",
+  "parent": "Warrior Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Jendavudd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Gauntlets of the Myrmidon"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Greaves of the Myrmidon",
+  "url": "https://eqlwiki.com/Warrior_Skyshrine_Armor_Quests",
+  "parent": "Warrior Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Jendavudd Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Flawed Sea Sapphire",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Greaves of the Myrmidon"
+  ],
   "categories": [
    "Skyshrine",
    "Skyshrine Armor Quests",
@@ -32416,7 +40943,111 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Champion's Boots",
+   "Champion's Bracer",
+   "Champion's Breastplate",
+   "Champion's Crown",
+   "Champion's Gauntlets",
+   "Champion's Greaves",
+   "Champion's Vambraces"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Champion's Boots",
+  "url": "https://eqlwiki.com/Warrior_Thurgadin_Armor_Quests",
+  "parent": "Warrior Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Captain Njall",
+  "minLevel": 45,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Corroded Plate Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Black Marble",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Champion's Boots"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Champion's Bracer",
+  "url": "https://eqlwiki.com/Warrior_Thurgadin_Armor_Quests",
+  "parent": "Warrior Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Captain Njall",
+  "minLevel": 45,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Corroded Plate Bracer",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Flame Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Champion's Bracer"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Warrior Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Champion's Gauntlets",
+  "url": "https://eqlwiki.com/Warrior_Thurgadin_Armor_Quests",
+  "parent": "Warrior Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Captain Njall",
+  "minLevel": 45,
+  "classes": "Warrior",
+  "items": [
+   {
+    "name": "Corroded Plate Gauntlets",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Champion's Gauntlets"
+  ],
   "categories": [
    "Thurgadin",
    "Thurgadin Armor Quests",
@@ -32976,7 +41607,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Bangle of the Invoker",
+   "Boots of the Invoker",
+   "Circlet of the Invoker",
+   "Gloves of the Invoker",
+   "Pants of the Invoker",
+   "Robe of the Invoker",
+   "Sleeves of the Invoker"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Boots of the Invoker",
+  "url": "https://eqlwiki.com/Wizard_Kael_Armor_Quests",
+  "parent": "Wizard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Ulkar Jollkarek",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Ancient Silk Boots",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Boots of the Invoker"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Gloves of the Invoker",
+  "url": "https://eqlwiki.com/Wizard_Kael_Armor_Quests",
+  "parent": "Wizard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Ulkar Jollkarek",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Ancient Silk Gloves",
+    "qty": 1
+   },
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Gloves of the Invoker"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Robe of the Invoker",
+  "url": "https://eqlwiki.com/Wizard_Kael_Armor_Quests",
+  "parent": "Wizard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Ulkar Jollkarek",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Ancient Silk Robe",
+    "qty": 1
+   },
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Robe of the Invoker"
+  ],
+  "categories": [
+   "Kael Armor Quests",
+   "Kael Drakkel",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Sleeves of the Invoker",
+  "url": "https://eqlwiki.com/Wizard_Kael_Armor_Quests",
+  "parent": "Wizard Kael Armor Quests",
+  "startZone": "Kael Drakkel",
+  "questGiver": "Ulkar Jollkarek",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Ancient Silk Sleeves",
+    "qty": 1
+   },
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Sleeves of the Invoker"
+  ],
   "categories": [
    "Kael Armor Quests",
    "Kael Drakkel",
@@ -33128,7 +41895,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Icicle Boots",
+   "Icicle Bracelet",
+   "Icicle Circlet",
+   "Icicle Gloves",
+   "Icicle Pantaloons",
+   "Icicle Sleeves",
+   "Robe of Icicles"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Icicle Boots",
+  "url": "https://eqlwiki.com/Wizard_Skyshrine_Armor_Quests",
+  "parent": "Wizard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Elaend Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Icicle Boots"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Icicle Gloves",
+  "url": "https://eqlwiki.com/Wizard_Skyshrine_Armor_Quests",
+  "parent": "Wizard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Elaend Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Icicle Gloves"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Icicle Sleeves",
+  "url": "https://eqlwiki.com/Wizard_Skyshrine_Armor_Quests",
+  "parent": "Wizard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Elaend Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Icicle Sleeves"
+  ],
+  "categories": [
+   "Skyshrine",
+   "Skyshrine Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Temple of Veeshan"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Robe of Icicles",
+  "url": "https://eqlwiki.com/Wizard_Skyshrine_Armor_Quests",
+  "parent": "Wizard Skyshrine Armor Quests",
+  "startZone": "Skyshrine",
+  "questGiver": "Elaend Fe`Dhar",
+  "minLevel": 50,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Tattered Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Robe of Icicles"
+  ],
   "categories": [
    "Skyshrine",
    "Skyshrine Armor Quests",
@@ -33277,7 +42180,143 @@
     "qty": 1
    }
   ],
-  "rewards": [],
+  "rewards": [
+   "Sage's Boots",
+   "Sage's Bracelet",
+   "Sage's Crown",
+   "Sage's Gloves",
+   "Sage's Pantaloons",
+   "Sage's Robe",
+   "Sage's Sleeves"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Sage's Boots",
+  "url": "https://eqlwiki.com/Wizard_Thurgadin_Armor_Quests",
+  "parent": "Wizard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Mauren Frostbeard",
+  "minLevel": 45,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Crushed Jaundice Gem",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Boots",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Sage's Boots"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Sage's Gloves",
+  "url": "https://eqlwiki.com/Wizard_Thurgadin_Armor_Quests",
+  "parent": "Wizard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Mauren Frostbeard",
+  "minLevel": 45,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Crushed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Gloves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Sage's Gloves"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Sage's Robe",
+  "url": "https://eqlwiki.com/Wizard_Thurgadin_Armor_Quests",
+  "parent": "Wizard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Mauren Frostbeard",
+  "minLevel": 45,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Pristine Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Robe",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Sage's Robe"
+  ],
+  "categories": [
+   "Thurgadin",
+   "Thurgadin Armor Quests",
+   "Wizard Quests"
+  ],
+  "relatedZones": [
+   "Kael Drakkel"
+  ],
+  "era": "Velious",
+  "repeatable": false
+ },
+ {
+  "name": "Sage's Sleeves",
+  "url": "https://eqlwiki.com/Wizard_Thurgadin_Armor_Quests",
+  "parent": "Wizard Thurgadin Armor Quests",
+  "startZone": "Thurgadin",
+  "questGiver": "Mauren Frostbeard",
+  "minLevel": 45,
+  "classes": "Wizard",
+  "items": [
+   {
+    "name": "Flawed Topaz",
+    "qty": 1
+   },
+   {
+    "name": "Torn Enchanted Silk Sleeves",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Sage's Sleeves"
+  ],
   "categories": [
    "Thurgadin",
    "Thurgadin Armor Quests",

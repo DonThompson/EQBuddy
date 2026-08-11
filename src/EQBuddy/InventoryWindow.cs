@@ -45,6 +45,20 @@ public sealed class InventoryWindow : Window
         refresh.Click += (_, _) => Render();
         DockPanel.SetDock(refresh, Dock.Right);
         bar.Children.Add(refresh);
+        // Same one-click command as the quest tracker's held tab (David's ask,
+        // 2026-08-11): copy here, paste in the game's chat, click ⟳.
+        var copyCmd = Theming.Button("⧉ copy  /outputfile inventory");
+        copyCmd.FontSize = 11;
+        copyCmd.Margin = new Thickness(0, 0, 6, 0);
+        copyCmd.ToolTip = "Copies the command — paste it into the game's chat and the game " +
+            "writes your inventory file; this window reads it. Re-run any time your bags change.";
+        copyCmd.Click += (_, _) =>
+        {
+            try { Clipboard.SetText("/outputfile inventory"); copyCmd.Content = "✓ copied — paste in game chat"; }
+            catch { /* clipboard momentarily held by another app */ }
+        };
+        DockPanel.SetDock(copyCmd, Dock.Right);
+        bar.Children.Add(copyCmd);
         bar.Children.Add(_status);
 
         var root = new DockPanel();

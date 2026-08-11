@@ -3,6 +3,11 @@
 # item (and the giver) appears in the page text. Run after big harvest changes.
 # 2026-08-11 baseline: 917 quests, ZERO item mismatches; 23 giver-string findings,
 # all multi-giver combined strings or loc-suffixed givers (display-only, not errors).
+# 2026-08-11 (post section-splitting) baseline: 1167 quests (250 chain/armor-set
+# steps), still ZERO split-attributable item mismatches; giver-string findings grow
+# to ~87 because steps inherit their chain page's combined giver — same benign class.
+# ("Cleric Plane of Sky Tests" may report items until the weekly refresh catches the
+# live page edit; the app replaces that aggregate at load via SkyTestSplit.)
 # Full-catalog verification: for every quest, fetch its wiki page and confirm each
 # parsed turn-in item and the quest giver actually appear in the page text.
 # Polite: ~4 concurrent, api.php only. Output: verify-report.txt (mismatches only).
