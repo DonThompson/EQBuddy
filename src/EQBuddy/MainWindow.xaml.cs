@@ -2484,12 +2484,13 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>One raised pill for the mini dashboard (2026-08-11 modernization):
-    /// glyph + value on the raised tone with a hairline edge — the minimized widget
-    /// becomes a row of small gauges instead of a run of loose text.</summary>
-    private Border MiniChip(string glyph, string value, string valueBrush, string? edgeBrush = null)
+    /// <summary>One mini-dashboard stat (2026-08-11, take two — David: no ovals):
+    /// glyph + semibold tabular value as clean text, separated from its neighbor by
+    /// a thin hairline divider rather than any chip chrome. A counting-down watch
+    /// rule still announces itself by color alone.</summary>
+    private StackPanel MiniChip(string glyph, string value, string valueBrush, string? edgeBrush = null)
     {
-        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 0) };
         panel.Children.Add(new TextBlock
         {
             Text = glyph, FontSize = 11.5, Opacity = 0.9,
@@ -2500,17 +2501,20 @@ public partial class MainWindow : Window
             Text = value, FontSize = 12.5, FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        v.SetResourceReference(TextBlock.ForegroundProperty, valueBrush);
+        v.SetResourceReference(TextBlock.ForegroundProperty, edgeBrush ?? valueBrush);
         panel.Children.Add(v);
-        var chip = new Border
-        {
-            Child = panel, CornerRadius = new CornerRadius(999),
-            BorderThickness = new Thickness(1),
-            Padding = new Thickness(9, 2, 10, 3), Margin = new Thickness(0, 0, 6, 0),
-        };
-        chip.SetResourceReference(Border.BackgroundProperty, "RaisedBrush");
-        chip.SetResourceReference(Border.BorderBrushProperty, edgeBrush ?? "HairlineBrush");
-        return chip;
+        var divider = new Border { Width = 1, Margin = new Thickness(10, 2, 0, 2) };
+        divider.SetResourceReference(Border.BackgroundProperty, "HairlineBrush");
+        panel.Children.Add(divider);
+        return panel;
+    }
+
+    /// <summary>The last chip's divider has nothing to divide — trim it.</summary>
+    private static void TrimLastMiniDivider(Panel chips)
+    {
+        if (chips.Children.Count > 0 && chips.Children[^1] is StackPanel { Children.Count: > 0 } last
+            && last.Children[^1] is Border divider)
+            divider.Visibility = Visibility.Collapsed;
     }
 
     private void UpdateMiniChips(StatsSnapshot s)
@@ -2558,6 +2562,7 @@ public partial class MainWindow : Window
                 : MiniChip("🎯", $"{name} {result?.TotalQuantity ?? 0}", "AccentBrush"));
         }
 
+        TrimLastMiniDivider(MiniChips);
         // The hint belongs at the end, and only when there's genuinely nothing to show. It
         // used to return early when no stats were starred, which meant someone who pinned
         // watch rules but starred nothing got the hint instead of their chips.
