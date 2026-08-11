@@ -21,9 +21,8 @@ if (-not ($whatsNew | Where-Object { $_.version -eq $version })) {
     throw "No What's-new entry for $version in src\EQBuddy.Core\Data\WhatsNew.json — add one before releasing."
 }
 
-# Remember the running app so it comes back at the end — this kill used to be silent,
-# and David's widget vanished mid-fight when v1.39.0 shipped (2026-08-07).
-$runningApp = (Get-Process EQBuddy -ErrorAction SilentlyContinue | Select-Object -First 1).Path
+# The kill is loud on purpose (v1.39.0 shipped mid-fight and the widget just
+# vanished); the /SILENT install at the end brings the app back — on the NEW build.
 Get-Process EQBuddy -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Sleep -Seconds 1
 
@@ -86,7 +85,10 @@ if ($Tag) {
     Write-Host "GitHub release $Tag published"
 }
 
-if ($runningApp -and (Test-Path $runningApp)) {
-    Start-Process -FilePath $runningApp | Out-Null
-    Write-Host "Relaunched $runningApp"
-}
+# Bring THIS machine current too. Relaunching $runningApp shipped the machine that
+# built the release back onto the PREVIOUS version (caught twice on 2026-08-10:
+# 1.53.2's release left 1.53.1 running, 1.54.0's left 1.53.2) and left the stale
+# app racing its own auto-updater. The installer we just built closes any running
+# copy, installs, and relaunches — same path install-local.ps1 uses.
+Start-Process "$repo\dist\EQBuddySetup.exe" -ArgumentList '/SILENT'
+Write-Host "Installing $version locally (/SILENT); EQBuddy relaunches when it finishes."

@@ -760,6 +760,19 @@ public partial class MainWindow : Window
         _settings.Save();
     }
 
+    /// <summary>#89 (jeremycranfill): the fight as a Discord-ready code block on the
+    /// clipboard — the official Discord bans image sharing, so parses travel as text.</summary>
+    private void OnCopyFight(object sender, RoutedEventArgs e)
+    {
+        if (CurrentSnapshot().LastFight is not { } f) return;
+        try
+        {
+            Clipboard.SetText(EQBuddy.UI.Shared.FightExport.ToText(
+                f, Identity.Character, $"v{UpdateChecker.CurrentVersion}"));
+        }
+        catch (Exception ex) { App.LogError(ex); }
+    }
+
     private void OnOpenWebsite(object sender, RoutedEventArgs e) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
             "https://github.com/DranakCorps-bot/EQBuddy") { UseShellExecute = true });
@@ -1269,6 +1282,8 @@ public partial class MainWindow : Window
             var combatTime = TimeSpan.FromSeconds(s.CombatSeconds);
             ShowLastFight(s, CombatFightLabel, CombatFightBody, CombatFightText, CombatFightList,
                 healing: false, _settings.ShowCombatFight);
+            CombatFightCopy.Visibility = s.LastFight is not null
+                ? Visibility.Visible : Visibility.Collapsed;
             CombatSummary.Text =
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
@@ -1322,6 +1337,12 @@ public partial class MainWindow : Window
             FillList(AreaSpellList, s.AreaSpells.Select(x =>
                 (x.Name, $"{x.DamagePerCast:N0}/cast · ×{x.Casts} · {x.AvgTargets:0.#} targets" +
                          (x.MaxTargets > x.AvgTargets + 0.05 ? $" (best {x.MaxTargets})" : ""))));
+            // Procs per combat-minute (#85, Kerdude): same denominator as DPS, so
+            // downtime doesn't flatter the weapon.
+            ProcLabel.Visibility = s.Procs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            var combatMinutes = Math.Max(1.0 / 60, s.CombatSeconds / 60.0);
+            FillList(ProcList, s.Procs.Select(x =>
+                (x.Name, $"×{x.Count} · {x.Damage:N0} dmg · {x.Count / combatMinutes:0.#}/min")));
             StanceLabel.Visibility = s.Stances.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(StanceList, s.Stances.Select(x =>
                 (x.Name, $"{x.Damage:N0} dmg · {(int)x.CombatSeconds}s · {x.Dps:0.#} dps")));
@@ -1738,6 +1759,113 @@ public partial class MainWindow : Window
     {
         var available = SectionScroll.MaxHeight > 0 ? SectionScroll.MaxHeight - 220 : 260;
         return Math.Clamp(available, 180, 320);
+    }
+
+    /// <summary>#88 (typical-usual-chaos): read the game's own `/outputfile achievements`
+    /// dump and pre-mark Sky rewards completed before EQBuddy existed. Preview first,
+    /// nothing applies until confirmed, and the import only ever adds — the same
+    /// never-regress rule the AA ledger lives by. Unmatched names are shown, not
+    /// silently dropped (reward names drift from the wiki's).</summary>
+    private void OnImportAchievements(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Pick the game's achievements dump (/outputfile achievements)",
+            Filter = "Achievements dump (*.txt)|*.txt|All files (*.*)|*.*",
+        };
+        // /outputfile writes beside eqgame.exe — the Logs folder's parent.
+        if (_settings.LogFolder is { Length: > 0 } lf
+            && System.IO.Path.GetDirectoryName(System.IO.Path.TrimEndingDirectorySeparator(lf)) is { } root
+            && System.IO.Directory.Exists(root))
+            dlg.InitialDirectory = root;
+        if (dlg.ShowDialog(this) != true) return;
+        try
+        {
+            var achievements = AchievementsImport.Parse(System.IO.File.ReadLines(dlg.FileName));
+            var (matches, unmatched) = AchievementsImport.SkyRewards(achievements, _settings.SkyQuestChecklist);
+            ShowAchievementsPreview(matches, unmatched, achievements.Count);
+        }
+        catch (Exception ex)
+        {
+            App.LogError(ex);
+            MessageBox.Show(this, $"Couldn't read that file — {ex.Message}", "Import achievements");
+        }
+    }
+
+    private void ShowAchievementsPreview(List<SkyRewardMatch> matches, List<string> unmatched, int total)
+    {
+        var win = new Window
+        {
+            Title = "Import achievements — preview",
+            Width = 460, Height = 480, Owner = this,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        win.SetResourceReference(BackgroundProperty, "BgBrush");
+        var panel = new StackPanel { Margin = new Thickness(10) };
+        void Add(string text, string brush, bool bold = false)
+        {
+            var tb = new TextBlock
+            {
+                Text = text, FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 1, 0, 1),
+                FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal,
+            };
+            tb.SetResourceReference(TextBlock.ForegroundProperty, brush);
+            panel.Children.Add(tb);
+        }
+
+        var fresh = matches.Where(m =>
+            !IsSkyRewardCompleted(m.ClassName, m.Reward)).ToList();
+        Add($"{total} achievements read · {matches.Count} Sky rewards recognized", "TextBrush", bold: true);
+        Add(fresh.Count > 0
+            ? $"{fresh.Count} will be marked turned-in (the rest already are):"
+            : "Everything recognized is already marked — nothing to apply.", "TextBrush");
+        foreach (var m in matches)
+        {
+            var already = !fresh.Contains(m);
+            Add($"  ✓ {m.ClassName} — {m.Reward}" + (already ? "   (already marked)" : ""),
+                already ? "DimBrush" : "GoodBrush");
+        }
+        if (unmatched.Count > 0)
+        {
+            Add($"Completed in the file but not recognized ({unmatched.Count}) — left untouched; " +
+                "tell the discussions board and matching improves:", "WarnBrush", bold: true);
+            foreach (var u in unmatched) Add($"  ? {u}", "DimBrush");
+        }
+        Add("Applying only ADDS: nothing currently tracked gets unchecked.", "DimBrush");
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(10),
+        };
+        var apply = Theming.Button($"Apply ({fresh.Count})");
+        apply.IsEnabled = fresh.Count > 0;
+        apply.Click += (_, _) =>
+        {
+            AchievementsImport.Apply(matches, _settings);
+            _settings.Save();
+            UpdateSkyQuestHeaderOnly();
+            _skyQuestDirty = true;
+            win.Close();
+        };
+        var cancel = Theming.Button("Cancel");
+        cancel.Margin = new Thickness(8, 0, 0, 0);
+        cancel.Click += (_, _) => win.Close();
+        buttons.Children.Add(apply);
+        buttons.Children.Add(cancel);
+
+        var root = new DockPanel();
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        root.Children.Add(buttons);
+        root.Children.Add(new ScrollViewer
+        {
+            Content = panel,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        });
+        win.Content = root;
+        win.ShowDialog();
     }
 
     private static string SkyRewardKey(string className, string reward) => className + "|" + reward;

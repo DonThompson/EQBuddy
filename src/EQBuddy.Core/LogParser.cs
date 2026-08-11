@@ -52,6 +52,11 @@ public static partial class LogParser
     [GeneratedRegex(@"^You hit (?<target>.+?) for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.(?: \((?<note>[^)]+)\))?$")]
     private static partial Regex SchoolNukeOutRx();
 
+    // Your Polished Mithril Mask (Exaltation) feels alive with power.  — an item proc
+    // firing (Kerdude's spellblade snippet, #85); the damage line follows within a beat.
+    [GeneratedRegex(@"^Your (?<item>.+?) feels alive with power\.$")]
+    private static partial Regex ItemProcRx();
+
     // ice boned skeleton hit you for 20 points of cold damage by Ice Bone Frost Burst.
     [GeneratedRegex(@"^(?<attacker>.+?) hit you for (?<dmg>\d+) points? of \w+ damage by (?<spell>.+?)\.$", RegexOptions.IgnoreCase)]
     private static partial Regex SchoolHitInRx();
@@ -484,6 +489,9 @@ public static partial class LogParser
             return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),
                 int.Parse(r.Groups["dmg"].Value), DamageKind.Spell, "Direct spell",
                 IsCritNote(r));
+
+        if ((r = ItemProcRx().Match(msg)).Success)
+            return new ItemProcEvent(ts, r.Groups["item"].Value);
 
         if ((r = MeleeOutRx().Match(msg)).Success)
             return new DamageDealtEvent(ts, Normalize(r.Groups["target"].Value),

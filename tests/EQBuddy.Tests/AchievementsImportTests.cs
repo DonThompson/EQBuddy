@@ -1,0 +1,82 @@
+using EQBuddy.Core;
+using Xunit;
+
+namespace EQBuddy.Tests;
+
+/// <summary>The /outputfile achievements import (#88): C/I-flagged sections →
+/// achievements → criteria, Sky rewards resolved from completed "Obtain X" lines with
+/// drift-tolerant matching, and an apply step that only ever adds progress. Fixture is
+/// typical-usual-chaos's real file from the discussion.</summary>
+public class AchievementsImportTests
+{
+    private static string[] Fixture() =>
+        File.ReadAllLines(Path.Combine(AppContext.BaseDirectory,
+            "..", "..", "..", "..", "fixtures", "achievements", "averaj.txt"));
+
+    [Fact]
+    public void ParsesSectionsAchievementsAndFlaggedCriteria()
+    {
+        var all = AchievementsImport.Parse(Fixture());
+        Assert.True(all.Count > 100, $"only {all.Count} achievements parsed");
+
+        var barb = Assert.Single(all, a => a.Name == "Race Unlock - Barbarian");
+        Assert.Equal("Untapped Potential: Races", barb.Section);
+        Assert.True(barb.Complete);
+        Assert.Contains(barb.Criteria, c =>
+            c.Text == "Get maximum faction with Wolves of the North." && c.Complete);
+
+        // Incomplete achievements keep their per-criterion detail.
+        var bard = Assert.Single(all, a => a.Name == "Primary Class Unlock - Bard");
+        Assert.False(bard.Complete);
+        Assert.Contains(bard.Criteria, c => c.Text == "Obtain Amulet of the Fae." && c.Complete);
+        Assert.Contains(bard.Criteria, c => c.Text == "Obtain Mask of Song." && !c.Complete);
+    }
+
+    [Fact]
+    public void CompletedObtainsResolveToSkyRewardsIncompleteOnesDoNot()
+    {
+        var checklist = new List<SkyQuestChecklistItem>
+        {
+            new() { Id = "1", ClassName = "Bard", Reward = "Amulet of the Fae", QuestItem = "x" },
+            new() { Id = "2", ClassName = "Bard", Reward = "Mask of Song", QuestItem = "y" },
+            new() { Id = "3", ClassName = "Bard", Reward = "Harmonic Spear", QuestItem = "z" },
+            new() { Id = "4", ClassName = "Beastlord", Reward = "Windhowl/Spirit Render", QuestItem = "w" },
+        };
+        var (matches, _) = AchievementsImport.SkyRewards(AchievementsImport.Parse(Fixture()), checklist);
+
+        // Bard: Amulet of the Fae is C in the fixture, Mask of Song is I.
+        Assert.Contains(matches, m => m is { ClassName: "Bard", Reward: "Amulet of the Fae" });
+        Assert.DoesNotContain(matches, m => m.Reward == "Mask of Song");
+        // Drift: the fixture's incomplete "Obtain Spear of Harmony." must NOT match,
+        // but a completed one would — prove the matcher itself handles the drift.
+        Assert.True(AchievementsImport.NamesMatch("Harmonic Spear", "Spear of Harmony"));
+        Assert.True(AchievementsImport.NamesMatch("Windhowl/Spirit Render", "Windhowl and Spirit Render"));
+        Assert.False(AchievementsImport.NamesMatch("Wind Rune Azia", "Wind Rune Fana"));
+    }
+
+    [Fact]
+    public void ApplyAddsWithoutEverRegressing()
+    {
+        var settings = new AppSettings
+        {
+            SkyQuestChecklist =
+            [
+                new() { Id = "1", ClassName = "Berserker", Reward = "Skycleaver", QuestItem = "x" },
+                new() { Id = "2", ClassName = "Berserker", Reward = "Cudgel of the Fool", QuestItem = "y", Acquired = true },
+            ],
+            SkyQuestCompleted = ["Berserker|Cudgel of the Fool"],
+        };
+        var matches = new List<SkyRewardMatch>
+        {
+            new("Berserker", "Skycleaver", "Skycleaver"),
+            new("Berserker", "Cudgel of the Fool", "Cudgel of the Fool"),
+        };
+
+        Assert.Equal(1, AchievementsImport.Apply(matches, settings));   // only the new one counts
+        Assert.Contains("Berserker|Skycleaver", settings.SkyQuestCompleted);
+        Assert.All(settings.SkyQuestChecklist, i => Assert.True(i.Acquired));
+
+        // Re-applying is a no-op — the import can teach, never untick.
+        Assert.Equal(0, AchievementsImport.Apply(matches, settings));
+    }
+}

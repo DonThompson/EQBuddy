@@ -86,6 +86,10 @@ public record FactionEvent(DateTime Time, string Faction, int Delta, bool Capped
     bool CappedDown = false) : GameEvent(Time);
 public record ZoneEvent(DateTime Time, string Zone) : GameEvent(Time);
 public record CraftEvent(DateTime Time, string Item) : GameEvent(Time);
+/// <summary>"Your Polished Mithril Mask (Exaltation) feels alive with power." — an item
+/// (or invocation vehicle) proc firing; the proc's damage line follows within a beat
+/// (Kerdude's spellblade snippet, #85).</summary>
+public record ItemProcEvent(DateTime Time, string Item) : GameEvent(Time);
 public record FizzleEvent(DateTime Time, string Spell = "") : GameEvent(Time);
 /// <summary>"You begin casting X." / "You begin singing X." — the player started a cast.
 /// Only the player's own casts are parsed; other entities' casts are deliberately ignored.</summary>

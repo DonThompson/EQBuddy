@@ -30,6 +30,35 @@ public class SessionStatsTests
         Assert.Equal(0, s.HealingDone);              // estimates never join real totals
     }
 
+    /// <summary>Procs (#85, Kerdude's spellblade snippet): a cast nuke and a weapon proc
+    /// print the identical damage line — the missing "You begin casting X." is the only
+    /// tell. An item-proc line just before the hit names the vehicle; incoming spell
+    /// damage ("hit you ... by Fire Bolt") must never be mistaken for an own proc.</summary>
+    [Fact]
+    public void UncastSpellDamageCountsAsAProcCastSpellDamageDoesNot()
+    {
+        var stats = new SessionStats();
+        void Line(int mm, int ss, string msg) =>
+            stats.Apply(LogParser.Parse($"[Mon Aug 10 11:{mm:D2}:{ss:D2} 2026] {msg}")!);
+        Line(15, 1, "You begin casting Burst of Fire.");
+        Line(15, 3, "You hit a pledge familiar for 14 points of fire damage by Burst of Fire.");
+        Line(15, 3, "a pledge familiar hit you for 70 points of fire damage by Fire Bolt.");
+        Line(15, 5, "Your Polished Mithril Mask (Exaltation) feels alive with power.");
+        Line(15, 5, "You hit a pledge familiar for 325 points of fire damage by Bolt of Flame.");
+        Line(15, 45, "You hit a pledge familiar for 135 points of fire damage by Bolt of Flame.");
+
+        var s = stats.Snapshot();
+        Assert.Equal(2, s.Procs.Count);
+        var withItem = Assert.Single(s.Procs,
+            p => p.Name == "Bolt of Flame · Polished Mithril Mask (Exaltation)");
+        Assert.Equal((1, 325L), (withItem.Count, withItem.Damage));
+        var bare = Assert.Single(s.Procs, p => p.Name == "Bolt of Flame");
+        Assert.Equal((1, 135L), (bare.Count, bare.Damage));
+        // The cast nuke and the enemy's own Fire Bolt stay out.
+        Assert.DoesNotContain(s.Procs, p => p.Name.Contains("Burst of Fire"));
+        Assert.DoesNotContain(s.Procs, p => p.Name.Contains("Fire Bolt"));
+    }
+
     [Fact]
     public void RegenOverrideOutranksTheWikiBaseAndNoCastMeansCountOnly()
     {

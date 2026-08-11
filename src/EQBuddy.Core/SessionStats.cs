@@ -258,6 +258,19 @@ public sealed class SessionStats
     /// learned-category store (tests don't, keeping learning session-local).</summary>
     public SpellCatalog Spells => _spells;
     private (string Spell, DateTime Time)? _pendingCast;     // last cast started
+
+    // ---- procs (#85, Kerdude): spell damage whose spell was never cast ----
+    /// <summary>How long after "You begin casting X." damage "by X" still counts as the
+    /// cast (cast time + travel + log flush). Longer than this, or never cast at all,
+    /// and the hit is a proc. Kerdude's snippet: Grasping Roots cast→hit 2s.</summary>
+    private static readonly TimeSpan ProcCastWindow = TimeSpan.FromSeconds(12);
+    /// <summary>An item-proc line this close before the damage names the vehicle
+    /// ("Your Polished Mithril Mask (Exaltation) feels alive with power." then the
+    /// Bolt of Flame hit, same second in the field snippet).</summary>
+    private static readonly TimeSpan ProcItemWindow = TimeSpan.FromSeconds(2.5);
+    private readonly Dictionary<string, (int Count, long Damage)> _procs = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTime> _spellCastAt = new(StringComparer.OrdinalIgnoreCase);
+    private (string Item, DateTime Time)? _lastItemProc;
     // A cast that preceded a blink or charmed line, held until a "Master" tell proves it
     // was a charm. Pet carries the creature the line named: the tell must name the SAME
     // creature to teach, so a bystander's charm coinciding with our own unrelated cast
@@ -532,6 +545,9 @@ public sealed class SessionStats
                     // cast-completion stats — twisting would swamp them.
                     if (!started.Song) _castsStarted++;
                     _pendingCast = (started.Spell, started.Time);
+                    // Proc detection reads this: damage "by <Spell>" with no cast-start
+                    // for that spell on record is a proc (#85).
+                    _spellCastAt[started.Spell] = started.Time;
                     // Amount-less regen family: remember the last one cast/sung, so the
                     // shared "wounds begin to heal" tick line knows whose ticks these are.
                     if (RegenCatalog.PerTick(SpellCatalog.BaseName(started.Spell)) is not null)
@@ -610,6 +626,23 @@ public sealed class SessionStats
                         {
                             _directSpellDamage += dd.Amount;
                             _spells.Learn(dd.Source, SpellCategory.DirectDamage);
+                            // A proc IS the absence: spell damage whose spell was never
+                            // cast (Kerdude's Bolt of Flame, #85). The log prints the
+                            // identical line for a cast nuke and a weapon/poison proc —
+                            // the missing "You begin casting X." is the only tell. The
+                            // generic "Direct spell" label can't name a proc, so it
+                            // stays out. An item-proc line just before it names the
+                            // vehicle ("... feels alive with power.").
+                            if (dd.Source != "Direct spell"
+                                && !(_spellCastAt.TryGetValue(dd.Source, out var castAt)
+                                     && dd.Time - castAt <= ProcCastWindow))
+                            {
+                                var label = _lastItemProc is { } ip
+                                    && dd.Time - ip.Time <= ProcItemWindow
+                                    ? $"{dd.Source} · {ip.Item}" : dd.Source;
+                                var p = _procs.TryGetValue(label, out var prev) ? prev : (0, 0L);
+                                _procs[label] = (p.Item1 + 1, p.Item2 + dd.Amount);
+                            }
                         }
                         TrackSpellBurst(dd.Source, dd.Target, dd.Amount, dd.Time);
                     }
@@ -905,6 +938,7 @@ public sealed class SessionStats
                     break;
                 case FizzleEvent: _fizzles++; break;
                 case ResistEvent: _resists++; break;
+                case ItemProcEvent iproc: _lastItemProc = (iproc.Item, iproc.Time); break;
                 case SessionMarkerEvent mk:
                     _markers.Add((mk.Time, mk.Label));
                     break;
@@ -1366,6 +1400,7 @@ public sealed class SessionStats
         _lastDestroyed = null; _pendingXp.Clear(); _pendingCoin.Clear();
         _currentStance = null; _stanceAgg.Clear();
         _currentInvocation = null; _invocationAgg.Clear();
+        _procs.Clear(); _spellCastAt.Clear(); _lastItemProc = null;
     }
 
     private static void Bump(Dictionary<string, int> d, string key) =>
@@ -1680,6 +1715,9 @@ public sealed class SessionStats
                     })
                     .ToList(),
                 AreaSpells = BuildAreaSpells(),
+                Procs = _procs
+                    .Select(kv => (kv.Key, kv.Value.Count, kv.Value.Damage))
+                    .OrderByDescending(x => x.Damage).ToList(),
                 CurrentStance = _currentStance ?? "",
                 Stances = _stanceAgg
                     .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,
@@ -1873,6 +1911,9 @@ public sealed class StatsSnapshot
     /// cast rather than per target — the figures that decide whether pulling a group and
     /// AoEing it beats killing them one at a time.</summary>
     public List<AreaSpellInfo> AreaSpells { get; init; } = [];
+    /// <summary>Spell damage whose spell was never cast (#85): weapon/poison/item procs,
+    /// each with hit count and total damage. Rate display divides by combat minutes.</summary>
+    public List<(string Name, int Count, long Damage)> Procs { get; init; } = [];
 
     /// <summary>Format copper as "3p 2g 4s 7c".</summary>
     public static string FormatCoin(long copper)
