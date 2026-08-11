@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.55.1",
+  "date": "2026-08-11",
+  "highlights": [
+   "Two Reddit asks from release morning, shipped by lunch: the quest tracker grew a STATE filter — any state · open · ready · done — that cuts across every tab and search (browse a zone's open quests, list everything ready to turn in, or admire the done pile). And the Plane of Sky checklist now floats your UNFINISHED quests to the top of each class tab, with each quest's still-missing items listed first — down to 1-2 left per class, the things you keep forgetting are now the first things you see. Completed quests sink to the bottom as trophies."
+  ]
+ },
+ {
   "version": "1.55.0",
   "date": "2026-08-11",
   "highlights": [

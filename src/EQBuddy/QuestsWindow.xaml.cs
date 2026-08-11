@@ -34,6 +34,8 @@ public partial class QuestsWindow : Window
         foreach (var era in QuestEraLadder.Eras) EraCombo.Items.Add($"≤ {era}");
         var savedEra = Array.IndexOf(QuestEraLadder.Eras, _settings.QuestEraFilter);
         EraCombo.SelectedIndex = savedEra >= 0 ? savedEra + 1 : 0;
+        foreach (var s in new[] { "any state", "open", "ready", "done" }) StateCombo.Items.Add(s);
+        StateCombo.SelectedIndex = 0;
         ApplyModeVisual();
         ChipScale.Apply(this, 1.0);   // quests read at widget size, not chip size
         if (ScreenGuard.OnScreen(_settings.QuestsLeft, _settings.QuestsTop, Width, 200))
@@ -154,6 +156,18 @@ public partial class QuestsWindow : Window
     private void OnClassBtn(object sender, RoutedEventArgs e) =>
         ClassPopup.IsOpen = !ClassPopup.IsOpen;
 
+    // The state filter (Reddit ask, 2026-08-11): cuts across every tab and search —
+    // session-scoped on purpose, like the search box; a sticky "done" filter would
+    // read as an empty tracker tomorrow.
+    private string _state = "any state";
+
+    private void OnStateChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (StateCombo.SelectedItem is not string s) return;
+        _state = s;
+        Refresh(force: true);
+    }
+
     private void OnEraChanged(object sender, SelectionChangedEventArgs e)
     {
         if (EraCombo.SelectedIndex < 0) return;
@@ -200,7 +214,7 @@ public partial class QuestsWindow : Window
             classes = [inf];
         }
 
-        var sig = $"{key}|{filter}|{_mode}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
+        var sig = $"{key}|{filter}|{_mode}|st:{_state}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
             $"|{string.Join(";", tracked.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", hidden.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", completed.Select(kv => $"{kv.Key}:{kv.Value}"))}" +
@@ -225,6 +239,13 @@ public partial class QuestsWindow : Window
         bool ClassOk(QuestEntry q) =>
             QuestClassFilter.MatchesAny(q.Classes, classes)
             && QuestEraLadder.Allowed(q.Era, era);
+        bool StateOk(QuestMatch m) => _state switch
+        {
+            "open" => completed.GetValueOrDefault(m.Quest.Name) == 0,
+            "ready" => m.Complete && m.ItemsTotal > 0,
+            "done" => completed.GetValueOrDefault(m.Quest.Name) > 0,
+            _ => true,
+        };
         QuestMatch Progressed(QuestEntry quest)
         {
             var progress = quest.Items
@@ -256,6 +277,7 @@ public partial class QuestsWindow : Window
             var found = _main.QuestCatalog.Quests
                 .Where(q => MatchesFilter(q, filter) && ClassOk(q))
                 .Select(Progressed)
+                .Where(StateOk)
                 .OrderByDescending(m => m.Tracked)
                 .ThenByDescending(m => m.Fraction)
                 .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
@@ -277,10 +299,12 @@ public partial class QuestsWindow : Window
         switch (_mode)
         {
             case "all":
-                foreach (var quest in _main.QuestCatalog.Quests
+                foreach (var m in _main.QuestCatalog.Quests
                              .Where(q => ClassOk(q))
-                             .OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase))
-                    AddCard(Progressed(quest));
+                             .OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase)
+                             .Select(Progressed)
+                             .Where(StateOk))
+                    AddCard(m);
                 break;
 
             case "zone" when _main.CurrentZoneName.Length == 0:
@@ -303,6 +327,7 @@ public partial class QuestsWindow : Window
                     .Where(q => q.TouchesZone(_main.CurrentZoneName)
                                 && MatchesFilter(q, filter) && ClassOk(q))
                     .Select(Progressed)
+                    .Where(StateOk)
                     .OrderByDescending(m => m.Tracked)
                     .ThenByDescending(m => m.Fraction)
                     .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
@@ -381,7 +406,9 @@ public partial class QuestsWindow : Window
                     StringComparer.OrdinalIgnoreCase);
                 doneForGood.UnionWith(hidden);
                 var matches = QuestMatcher.Match(_main.QuestCatalog, owned, tracked, doneForGood);
-                var shown = matches.Where(m => MatchesFilter(m.Quest, filter) && ClassOk(m.Quest)).ToList();
+                var shown = matches
+                    .Where(m => MatchesFilter(m.Quest, filter) && ClassOk(m.Quest) && StateOk(m))
+                    .ToList();
                 foreach (var m in shown) AddCard(m);
                 if (shown.Count == 0)
                     EmptyNote(matches.Count == 0

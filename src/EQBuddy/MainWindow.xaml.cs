@@ -1671,7 +1671,12 @@ public partial class MainWindow : Window
             var classDone = classGroup.Count(i => i.Acquired);
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
 
-            foreach (var rewardGroup in classGroup.GroupBy(i => i.Reward).OrderBy(g => g.Key))
+            // Unfinished quests float to the top (Reddit, 2026-08-11: "I've only got
+            // 1-2 left for each class and I keep forgetting which items I need") —
+            // the ✔ rows are trophies now and read fine from the bottom of the list.
+            foreach (var rewardGroup in classGroup.GroupBy(i => i.Reward)
+                         .OrderBy(g => IsSkyRewardCompleted(classGroup.Key, g.Key))
+                         .ThenBy(g => g.Key))
             {
                 // The reward line is itself a checkbox: "I turned this in" (#73).
                 // Manual only — the log shows nothing reliable at the NPC hand-over.
@@ -1698,7 +1703,8 @@ public partial class MainWindow : Window
                     OnSkyRewardToggled(classGroup.Key, rewardGroup.Key, rewardItems, false);
                 panel.Children.Add(rewardCheck);
 
-                foreach (var item in rewardGroup.OrderBy(i => i.QuestItem))
+                // Within a quest, what's MISSING leads; what's banked follows.
+                foreach (var item in rewardGroup.OrderBy(i => i.Acquired).ThenBy(i => i.QuestItem))
                 {
                     var text = new StackPanel();
                     text.Children.Add(new TextBlock

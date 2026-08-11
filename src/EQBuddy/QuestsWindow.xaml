@@ -53,15 +53,21 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" TextChanged="OnFilterChanged"
                          ToolTip="Search the whole catalog — quest names, turn-in items, rewards, quest givers, zones. Pin 📌 a result to track it."/>
                 <ComboBox x:Name="EraCombo" Grid.Column="1" Width="104" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnEraChanged"
                           ToolTip="Hide quests from later eras than the world has (unmarked quests always show)"/>
+                <!-- State filter (Reddit ask, 2026-08-11): every tab and search can
+                     narrow to open / ready / completed. -->
+                <ComboBox x:Name="StateCombo" Grid.Column="2" Width="86" FontSize="11"
+                          Margin="6,0,0,0" SelectionChanged="OnStateChanged"
+                          ToolTip="Any state · open (not yet completed) · ready (turn-ins in hand) · done (marked completed)"/>
                 <!-- Multiclass filter (Legends: up to 3 active classes): a checkbox
                      popup, selection remembered per character. -->
-                <Button x:Name="ClassBtn" Grid.Column="2" Content="Any class"
+                <Button x:Name="ClassBtn" Grid.Column="3" Content="Any class"
                         Style="{StaticResource ActionButton}" FontSize="11" Padding="8,2"
                         Margin="6,0,0,0" Click="OnClassBtn"
                         ToolTip="Pick your class(es) — quests any of them can do stay visible"/>
@@ -75,7 +81,7 @@
                 </Popup>
                 <!-- mine = your items + 📌 pins · zone = doable where you're standing ·
                      all = the whole catalog -->
-                <Border Grid.Column="3" BorderBrush="{DynamicResource BorderBrush}"
+                <Border Grid.Column="4" BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1" CornerRadius="9" Margin="6,0,0,0"
                         VerticalAlignment="Center" Padding="1">
                     <StackPanel Orientation="Horizontal">
