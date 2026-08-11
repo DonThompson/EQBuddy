@@ -277,6 +277,16 @@ Quests (tracker, Sky checklist, ledger):
   a tab per class (contributed by dandrews2930). Loot auto-checks boxes for the class
   tab you use, and each reward line is its own "I turned this in" checkbox — completed
   quests dim their items and stay done across restarts.
+- **The accuracy contract.** Quest data mirrors [eqlwiki.com](https://eqlwiki.com) —
+  EQBuddy is exactly as accurate as the wiki is, no more and no less. We hold up our
+  half: every quest's turn-in items are **verified item-for-item against the live
+  wiki** (the audit script ships in `scripts/harvests/`, last full run found 917/917
+  clean), and sanity gates run on every weekly catalog refresh so a bad harvest
+  can't merge. When something still looks wrong, the ⚑ on any quest card opens a
+  prefilled report — and if the *wiki page* is what's wrong, editing the page fixes
+  every EQBuddy install on the next weekly refresh. The road runs both ways: your
+  own play feeds the wiki through **✦ Copy for wiki** (drops the wiki doesn't know,
+  marked in red) and `/consider` level observations.
 
 Target drops, item info & giving back to the wiki:
 - **While you fight, the Loot card shows what the creature can drop** — wiki knowledge

@@ -110,8 +110,15 @@
             <StackPanel x:Name="QuestsPanel" Margin="0,0,6,0"/>
         </ScrollViewer>
 
-        <TextBlock Grid.Row="3" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="16,8,16,14"
-                   Text="Counts what you loot, minus what the log sees leave (sales, merges, destroys), plus what you add above. Hand-ins aren't in the log — click ✔ ready when you turn in, or right-click an item row to clear it. Click a quest name for the full wiki walkthrough."/>
+        <StackPanel Grid.Row="3" Margin="16,8,16,14">
+            <TextBlock Style="{StaticResource Dim}" TextWrapping="Wrap"
+                       Text="Counts what you loot, minus what the log sees leave (sales, merges, destroys), plus what you add above. Hand-ins aren't in the log — click ✔ ready when you turn in, or right-click an item row to clear it. Click a quest name for the full wiki walkthrough."/>
+            <!-- The accuracy contract, said plainly (David, 2026-08-11): we mirror the
+                 wiki, we're exactly as right as it is, and the door to fixing BOTH
+                 swings from here. -->
+            <TextBlock Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,6,0,0"
+                       Text="Every quest here mirrors eqlwiki.com — verified item-for-item against it, so EQBuddy is exactly as accurate as the wiki is today. Spot something wrong? ⚑ on the card tells us; fixing the wiki page itself fixes it for everyone (the catalog re-harvests weekly). Your own discoveries flow back too: Drops by Creature marks wiki-unknown drops in red with a paste-ready page edit."/>
+        </StackPanel>
       </Grid>
     </Border>
 </Window>

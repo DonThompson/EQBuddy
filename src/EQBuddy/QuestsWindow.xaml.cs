@@ -590,7 +590,10 @@ public partial class QuestsWindow : Window
             var body =
                 $"Quest: {m.Quest.Name}\nWiki page: {m.Quest.Url}\n" +
                 $"EQBuddy shows: {m.ItemsTotal} turn-in item(s) — {string.Join(", ", m.Quest.Items.Select(i => i.Qty > 1 ? $"{i.Name} x{i.Qty}" : i.Name))}\n" +
-                $"Giver: {m.Quest.QuestGiver} · Zone: {m.Quest.StartZone}\n\nWhat's wrong:\n";
+                $"Giver: {m.Quest.QuestGiver} · Zone: {m.Quest.StartZone}\n\nWhat's wrong:\n\n\n" +
+                "---\nNote: EQBuddy mirrors eqlwiki.com, so if the wiki page itself is wrong, " +
+                "editing the page is the strongest fix — the catalog re-harvests it weekly. " +
+                "If the page is right and EQBuddy read it wrong, this report is exactly the right place.\n";
             OpenUrl("https://github.com/DranakCorps-bot/EQBuddy/discussions/new?category=q-a" +
                 "&title=" + Uri.EscapeDataString($"Quest data: {m.Quest.Name}") +
                 "&body=" + Uri.EscapeDataString(body));
