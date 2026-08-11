@@ -38,6 +38,7 @@ public partial class SpawnChipsWindow : Window
         if (ScreenGuard.OnScreen(_settings.SpawnChipsLeft, _settings.SpawnChipsTop, Width, Height))
         { Left = _settings.SpawnChipsLeft; Top = _settings.SpawnChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 40; }
+        ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
         Closed += (_, _) =>
         {
             _settings.SpawnChipsLeft = Left;

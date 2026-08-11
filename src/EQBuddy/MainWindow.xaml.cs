@@ -1095,6 +1095,7 @@ public partial class MainWindow : Window
 
     private void ReassertTopmost()
     {
+        if (!_settings.KeepAboveOverlays) return;   // #91: opt out for capture setups
         if (++_topmostTick < TopmostReassertSeconds) return;
         _topmostTick = 0;
         foreach (Window w in Application.Current.Windows)

@@ -138,6 +138,27 @@
             <TextBlock Text="Alt-tab to a browser and the widget (and its chips and breakout windows) gets out of the way; alt-tab back to the game and everything returns. The widget always shows when the game isn't running."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
+            <CheckBox x:Name="KeepAboveCheck" Margin="0,10,0,0"
+                      Checked="OnKeepAboveToggled" Unchecked="OnKeepAboveToggled">
+                <TextBlock Text="Keep EQBuddy above fullscreen overlays (Lossless Scaling and kin)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Overlay apps created after EQBuddy land above it in Windows' always-on-top pile, hiding the widget; this quietly re-lifts every EQBuddy window every few seconds. Untick if your screen-capture setup shows the widget twice (a real copy plus the captured one)."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <CheckBox x:Name="SpawnGrowUpCheck" Margin="0,10,0,0"
+                      Checked="OnChipGrowToggled" Unchecked="OnChipGrowToggled">
+                <TextBlock Text="Spawn chips grow upward" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <CheckBox x:Name="MezGrowUpCheck" Margin="0,4,0,0"
+                      Checked="OnChipGrowToggled" Unchecked="OnChipGrowToggled">
+                <TextBlock Text="Mez chips grow upward" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="A stack normally holds its top edge and grows downward as chips arrive. Grown-upward it holds its BOTTOM edge instead — park boss timers above mez timers and each grows away from the other."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                 <TextBlock Text="Regen heals about" FontSize="12" VerticalAlignment="Center"
                            Foreground="{DynamicResource TextBrush}"/>

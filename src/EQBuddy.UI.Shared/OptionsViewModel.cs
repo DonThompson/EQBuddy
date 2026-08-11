@@ -219,6 +219,21 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         get => _settings.HideWhenGameUnfocused;
         set { _settings.HideWhenGameUnfocused = value; PersistAnd(); }
     }
+    public bool KeepAboveOverlays
+    {
+        get => _settings.KeepAboveOverlays;
+        set { _settings.KeepAboveOverlays = value; PersistAnd(); }
+    }
+    public bool SpawnChipsGrowUp
+    {
+        get => _settings.SpawnChipsGrowUp;
+        set { _settings.SpawnChipsGrowUp = value; PersistAnd(); }
+    }
+    public bool MezChipsGrowUp
+    {
+        get => _settings.MezChipsGrowUp;
+        set { _settings.MezChipsGrowUp = value; PersistAnd(); }
+    }
     /// <summary>0 = wiki base. Clamped to a sane band — a typo of 90000 would turn the
     /// estimate into an absurdity that outlives the typo.</summary>
     public int RegenPerTickOverride

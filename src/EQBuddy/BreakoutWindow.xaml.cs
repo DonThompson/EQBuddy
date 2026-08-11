@@ -307,8 +307,25 @@ public partial class BreakoutWindow : Window
 
     /// <summary>Refresh from the 1 s snapshot tick. Rebuilds rows only when the numbers
     /// actually changed (same signature idiom as the chip windows).</summary>
+    // ---- background see-through (#96, badly-developed): breakouts follow the main
+    // widget's setting — only the panel fades, text stays sharp, same rule as the
+    // widget. Re-checked on the shared tick so Options changes and theme switches
+    // reach an already-open breakout without a rebuild.
+    private (double Opacity, Color Tint) _appliedBg = (-1, default);
+
+    private void ApplyBackgroundOpacity()
+    {
+        var opacity = _settings.BackgroundOpacity;
+        var tint = ((SolidColorBrush)FindResource("BgBrush")).Color;
+        if (_appliedBg == (opacity, tint)) return;
+        _appliedBg = (opacity, tint);
+        Chrome.Background = new SolidColorBrush(
+            Color.FromArgb((byte)(opacity * 255), tint.R, tint.G, tint.B));
+    }
+
     public void Update(StatsSnapshot s)
     {
+        ApplyBackgroundOpacity();
         if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
         if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
         var f = s.LastFight;

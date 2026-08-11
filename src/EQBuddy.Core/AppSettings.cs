@@ -28,6 +28,15 @@ public sealed class AppSettings
     public Dictionary<string, double> WindowZooms { get; set; } = new();
     /// <summary>Opacity of the widget's background panel only — text stays fully opaque.</summary>
     public double BackgroundOpacity { get; set; } = 0.95;
+    /// <summary>Re-lift EQBuddy's windows above later-created topmost overlays every few
+    /// seconds (#91: Lossless Scaling's upscale surface buried the widget). Off = the old
+    /// behavior, for screen-capture setups where the re-lift makes a visible double.</summary>
+    public bool KeepAboveOverlays { get; set; } = true;
+    /// <summary>Chip-stack growth direction (#95): anchored at the bottom edge, new
+    /// chips push the stack upward — so boss timers can sit above mez timers with
+    /// each growing away from the other.</summary>
+    public bool SpawnChipsGrowUp { get; set; }
+    public bool MezChipsGrowUp { get; set; }
     /// <summary>Section-list height chosen by dragging the widget's bottom edge, in
     /// pre-scale units so it survives UiScale changes (Reddit ask, 2026-08-09: grow the
     /// window without growing the text). NaN = automatic, fit the monitor.</summary>

@@ -47,6 +47,9 @@ public partial class OptionsWindow : Window
         GridSpacingLabel.Text = $"{GridSpacingSlider.Value:0} px";
         TargetDropsCheck.IsChecked = _vm.ShowTargetDrops;
         HideUnfocusedCheck.IsChecked = _vm.HideWhenGameUnfocused;
+        KeepAboveCheck.IsChecked = _vm.KeepAboveOverlays;
+        SpawnGrowUpCheck.IsChecked = _vm.SpawnChipsGrowUp;
+        MezGrowUpCheck.IsChecked = _vm.MezChipsGrowUp;
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
 
@@ -156,6 +159,18 @@ public partial class OptionsWindow : Window
         GridSpacingLabel.Text = $"{GridSpacingSlider.Value:0} px";
         _vm.Persist();
         _main.RefreshGridSpacing();   // live while the grid is up
+    }
+
+    private void OnKeepAboveToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _vm.KeepAboveOverlays = KeepAboveCheck.IsChecked == true;
+    }
+
+    private void OnChipGrowToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _vm.SpawnChipsGrowUp = SpawnGrowUpCheck.IsChecked == true;
+        _vm.MezChipsGrowUp = MezGrowUpCheck.IsChecked == true;
     }
 
     private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)
