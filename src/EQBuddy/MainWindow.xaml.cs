@@ -2484,36 +2484,59 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>One raised pill for the mini dashboard (2026-08-11 modernization):
+    /// glyph + value on the raised tone with a hairline edge — the minimized widget
+    /// becomes a row of small gauges instead of a run of loose text.</summary>
+    private Border MiniChip(string glyph, string value, string valueBrush, string? edgeBrush = null)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        panel.Children.Add(new TextBlock
+        {
+            Text = glyph, FontSize = 11.5, Opacity = 0.9,
+            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0),
+        });
+        var v = new TextBlock
+        {
+            Text = value, FontSize = 12.5, FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        v.SetResourceReference(TextBlock.ForegroundProperty, valueBrush);
+        panel.Children.Add(v);
+        var chip = new Border
+        {
+            Child = panel, CornerRadius = new CornerRadius(999),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(9, 2, 10, 3), Margin = new Thickness(0, 0, 6, 0),
+        };
+        chip.SetResourceReference(Border.BackgroundProperty, "RaisedBrush");
+        chip.SetResourceReference(Border.BorderBrushProperty, edgeBrush ?? "HairlineBrush");
+        return chip;
+    }
+
     private void UpdateMiniChips(StatsSnapshot s)
     {
         MiniChips.Children.Clear();
         var selected = MiniStatOrder.Where(_settings.MiniStats.Contains).ToList();
         foreach (var key in selected)
         {
-            var text = key switch
+            var (glyph, text) = key switch
             {
-                "kills" => $"\U0001F480 {s.YourKillCount}",
-                "dps" => s.CurrentDps > 0 ? $"⚔ {s.CurrentDps:0} dps" : $"⚔ {s.SessionDps:0} dps",
-                "hps" => $"✚ {s.Hps:0.#} hps",
-                "pet" => $"🐾 {s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps",
-                "loot" => $"\U0001F392 {s.LootTotal}",
-                "motes" => Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
-                    ? $"\U0001F52E {mo.Total} · {mo.PerHour:0.#}/hr" : "\U0001F52E 0",
-                "money" => $"\U0001F4B0 {StatsSnapshot.FormatCoin(s.Copper)}",
+                "kills" => ("\U0001F480", $"{s.YourKillCount}"),
+                "dps" => ("⚔", s.CurrentDps > 0 ? $"{s.CurrentDps:0} dps" : $"{s.SessionDps:0} dps"),
+                "hps" => ("✚", $"{s.Hps:0.#} hps"),
+                "pet" => ("🐾", $"{s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps"),
+                "loot" => ("\U0001F392", $"{s.LootTotal}"),
+                "motes" => ("\U0001F52E", Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
+                    ? $"{mo.Total} · {mo.PerHour:0.#}/hr" : "0"),
+                "money" => ("\U0001F4B0", StatsSnapshot.FormatCoin(s.Copper)),
                 // Rate, not total: minimized is farming mode, and "how fast am I
                 // gaining" is the number a farmer watches (MorrolanTV, discussion #63).
-                "xp" => $"\U0001F4C8 {s.XpPerHour:0.#}%/hr" +
-                        (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : ""),
-                "deaths" => $"☠ {s.Deaths.Count}",
-                _ => "",
+                "xp" => ("\U0001F4C8", $"{s.XpPerHour:0.#}%/hr" +
+                        (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : "")),
+                "deaths" => ("☠", $"{s.Deaths.Count}"),
+                _ => ("", ""),
             };
-            MiniChips.Children.Add(new TextBlock
-            {
-                Text = text, FontSize = 13, FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("AccentBrush"),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 12, 0),
-            });
+            MiniChips.Children.Add(MiniChip(glyph, text, "AccentBrush"));
         }
 
         // Per-rule pins: only the rules you picked (📌 in Options), not every enabled one.
@@ -2528,17 +2551,11 @@ public partial class MainWindow : Window
             // A rule with a cue in flight shows time remaining instead of its count: while
             // something is counting down, when it fires is the only thing you want to know.
             var counting = due.TryGetValue(rule.Id, out var at);
-            var text = counting
-                ? $"⏳ {name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}"
-                : $"🎯 {name} {result?.TotalQuantity ?? 0}";
-            MiniChips.Children.Add(new TextBlock
-            {
-                Text = text,
-                FontSize = 13, FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource(counting ? "WarnBrush" : "AccentBrush"),
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 12, 0),
-            });
+            // A counting-down chip wears the warn edge too — state has a shape.
+            MiniChips.Children.Add(counting
+                ? MiniChip("⏳", $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}",
+                    "WarnBrush", edgeBrush: "WarnBrush")
+                : MiniChip("🎯", $"{name} {result?.TotalQuantity ?? 0}", "AccentBrush"));
         }
 
         // The hint belongs at the end, and only when there's genuinely nothing to show. It
