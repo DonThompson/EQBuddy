@@ -95,12 +95,37 @@ public partial class SpawnChipsWindow : Window
             row.Children.Add(countdown);
             _countdowns.Add(countdown);
 
+            // The countdown made visual (2026-08-11): a progress track along the chip's
+            // bottom edge — elapsed share fills in accent, DUE fills solid in the warn
+            // red. A stack of chips reads as a stack of gauges.
+            var host = new Grid();
+            host.RowDefinitions.Add(new RowDefinition());
+            host.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            host.Children.Add(row);
+            if (chip.Fraction is not null || chip.IsDue)
+            {
+                var track = new Grid { Height = 2.5, Margin = new Thickness(0, 3, 0, 0) };
+                var trackBg = new Border { CornerRadius = new CornerRadius(1.25) };
+                trackBg.SetResourceReference(Border.BackgroundProperty, "TrackBrush");
+                track.Children.Add(trackBg);
+                var fill = new Border
+                {
+                    CornerRadius = new CornerRadius(1.25),
+                    HorizontalAlignment = HorizontalAlignment.Left, Width = 0,
+                };
+                fill.SetResourceReference(Border.BackgroundProperty, chip.IsDue ? "BadBrush" : "AccentBrush");
+                track.Children.Add(fill);
+                var frac = chip.IsDue ? 1.0 : chip.Fraction!.Value;
+                track.SizeChanged += (_, se) => fill.Width = Math.Max(0, se.NewSize.Width * frac);
+                Grid.SetRow(track, 1);
+                host.Children.Add(track);
+            }
             var border = new Border
             {
-                Child = row,
+                Child = host,
                 ToolTip = chip.Detail + "\nRight-click: dismiss this timer",
-                CornerRadius = new CornerRadius(6),
-                Padding = new Thickness(8, 3, 8, 3),
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(8, 3, 8, 4),
                 Margin = new Thickness(0, 0, 0, 3),
                 BorderThickness = new Thickness(1),
                 Tag = chip,

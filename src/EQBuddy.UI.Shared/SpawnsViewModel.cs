@@ -7,7 +7,13 @@ namespace EQBuddy.UI.Shared;
 /// "⏳" spawn countdowns, "💤" active mezzes (Zone is "" for those — they belong to no
 /// zone list and their due-click clears nothing).</summary>
 public sealed record SpawnChip(string Zone, string Name, string CountdownText, bool IsDue, string Detail,
-    string Icon = "⏳");
+    string Icon = "⏳")
+{
+    /// <summary>Elapsed share of the countdown, 0..1 — the chip's bottom progress
+    /// track (2026-08-11 modernization): a stack of chips reads as a stack of
+    /// gauges. Null when no duration is known (the track hides).</summary>
+    public double? Fraction { get; init; }
+}
 
 /// <summary>One row in the Spawns window, ready to render.</summary>
 public sealed record SpawnRow(
@@ -239,7 +245,12 @@ public sealed class SpawnsViewModel
             var detail = t.DueAt is { } d
                 ? $"{t.Zone} — due {d:t}. Double-click for the zone list; click a due chip to dismiss it."
                 : $"{t.Zone} — no respawn time known (set one in the zone list). Double-click to open it.";
-            return new SpawnChip(t.Zone, t.Name, text, t.IsDue(now), detail);
+            return new SpawnChip(t.Zone, t.Name, text, t.IsDue(now), detail)
+            {
+                Fraction = t is { DueAt: { } dueAt, DurationSeconds: { } dur } && dur > 0
+                    ? Math.Clamp(1 - (dueAt - now).TotalSeconds / dur, 0, 1)
+                    : null,
+            };
         }).ToList();
     }
 

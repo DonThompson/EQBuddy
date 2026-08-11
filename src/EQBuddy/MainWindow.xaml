@@ -1,4 +1,4 @@
-﻿<Window x:Class="EQBuddy.MainWindow"
+<Window x:Class="EQBuddy.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="EQBuddy" SizeToContent="WidthAndHeight"
@@ -234,13 +234,11 @@
                                    Margin="0,1,0,2"/>
                         <TextBlock x:Name="CombatFightSplit" Style="{StaticResource Dim}" TextWrapping="Wrap"
                                    Margin="0,0,0,2" Visibility="Collapsed"/>
-                        <TextBlock x:Name="CombatFightOutLabel" Text="Your damage" FontSize="11"
-                                   FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
-                                   Visibility="Collapsed"/>
+                        <TextBlock x:Name="CombatFightOutLabel" Text="Your damage"
+                                   Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                         <ItemsControl x:Name="CombatFightList" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="CombatFightInLabel" Text="Damage you took" FontSize="11"
-                                   FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"
-                                   Visibility="Collapsed"/>
+                        <TextBlock x:Name="CombatFightInLabel" Text="Damage you took"
+                                   Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                         <ItemsControl x:Name="CombatFightInList" Margin="0,2,0,4"/>
                     </StackPanel>
                     <Button x:Name="CombatSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
@@ -249,7 +247,7 @@
                     <StackPanel x:Name="CombatSessionBody">
                     <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
-                        <TextBlock Text="Damage by attack" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                        <TextBlock Text="Damage by attack" Style="{StaticResource SectionLabel}"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="sort:" FontSize="10" Foreground="{DynamicResource DimBrush}" Margin="0,0,4,0"/>
                             <TextBlock x:Name="DmgOutSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
@@ -264,13 +262,12 @@
                         </StackPanel>
                     </Grid>
                     <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="PetAbilityLabel" Text="▸ Pet abilities" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"
+                    <TextBlock x:Name="PetAbilityLabel" Text="▸ Pet abilities" Style="{StaticResource SectionLabel}" Visibility="Collapsed"
                                Cursor="Hand" MouseLeftButtonDown="OnPetAbilitiesToggled"
                                ToolTip="What your pet is using, split out of its Pet row above — click to expand"/>
                     <ItemsControl x:Name="PetAbilityList" Margin="0,2,0,4" Visibility="Collapsed"/>
                     <Grid>
-                        <TextBlock Text="Damage taken from" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                        <TextBlock Text="Damage taken from" Style="{StaticResource SectionLabel}"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                             <TextBlock Text="sort:" FontSize="10" Foreground="{DynamicResource DimBrush}" Margin="0,0,4,0"/>
                             <TextBlock x:Name="DmgInSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
@@ -282,21 +279,16 @@
                         </StackPanel>
                     </Grid>
                     <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="RecentFightsLabel" Text="Recent fights" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="RecentFightsLabel" Text="Recent fights" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="RecentFightsList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="AreaSpellLabel" Text="Area spells (per cast)" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="AreaSpellLabel" Text="Area spells (per cast)" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="AreaSpellList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="ProcLabel" Text="⚡ Procs" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"
+                    <TextBlock x:Name="ProcLabel" Text="⚡ Procs" Style="{StaticResource SectionLabel}" Visibility="Collapsed"
                                ToolTip="Spell damage that fired without a cast — weapon procs, poisons, item effects. Rate is per minute of combat, the same denominator as DPS."/>
                     <ItemsControl x:Name="ProcList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="StanceLabel" Text="By stance" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="StanceLabel" Text="By stance" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="StanceList" Margin="0,2,0,0"/>
-                    <TextBlock x:Name="InvocationLabel" Text="By invocation" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="InvocationLabel" Text="By invocation" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="InvocationList" Margin="0,2,0,0"/>
                     </StackPanel>
                 </StackPanel>
@@ -371,11 +363,9 @@
                 <StackPanel>
                     <TextBlock x:Name="KillsSummary" Style="{StaticResource Dim}" Margin="0,2,0,4"/>
                     <ItemsControl x:Name="KillList"/>
-                    <TextBlock x:Name="FarmingLabel" Text="Farming (per creature)" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="FarmingLabel" Text="Farming (per creature)" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>
                     <ItemsControl x:Name="FarmingList" Margin="0,2,0,0"/>
-                    <TextBlock x:Name="PartyKillsLabel" Text="Group kills" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Margin="0,6,0,0"/>
+                    <TextBlock x:Name="PartyKillsLabel" Text="Group kills" Style="{StaticResource SectionLabel}" Margin="0,6,0,0"/>
                     <ItemsControl x:Name="PartyKillList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
@@ -413,8 +403,7 @@
                                    Tag="name" MouseLeftButtonDown="OnLootSort"/>
                     </StackPanel>
                     <ItemsControl x:Name="LootList"/>
-                    <TextBlock x:Name="CraftedLabel" Text="Created by merging" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="CraftedLabel" Text="Created by merging" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>
                     <ItemsControl x:Name="CraftedList" Margin="0,2,0,0"/>
                     <!-- Target drops (TARGET-*): what the creature you're fighting can drop,
                          wiki knowledge merged with this session's observed counts. -->
@@ -557,8 +546,7 @@
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock x:Name="MoneySummary" Style="{StaticResource Dim}" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="SoldLabel" Text="Sold to merchants" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="SoldLabel" Text="Sold to merchants" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>
                     <ItemsControl x:Name="SoldList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
@@ -579,12 +567,11 @@
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock x:Name="ProgressSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-                    <TextBlock Text="Skill-ups" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                    <TextBlock Text="Skill-ups" Style="{StaticResource SectionLabel}"/>
                     <ItemsControl x:Name="SkillList" Margin="0,2,0,0"/>
                     <!-- Character state, not session activity: what the log's whole history
                          (plus the durable ledger) says this character owns. -->
-                    <TextBlock x:Name="AaAbilitiesLabel" Text="AA abilities" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Margin="0,4,0,0"
+                    <TextBlock x:Name="AaAbilitiesLabel" Text="AA abilities" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
                                Visibility="Collapsed"/>
                     <ItemsControl x:Name="AaAbilityList" Margin="0,2,0,0"/>
                 </StackPanel>
@@ -621,10 +608,9 @@
                 <StackPanel>
                     <TextBlock Text="Deaths" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BadBrush}"/>
                     <ItemsControl x:Name="DeathList" Margin="0,2,0,4"/>
-                    <TextBlock Text="Zones visited" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}"/>
+                    <TextBlock Text="Zones visited" Style="{StaticResource SectionLabel}"/>
                     <ItemsControl x:Name="ZoneList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="MarkersLabel" Text="Camp markers" FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}" Visibility="Collapsed"/>
+                    <TextBlock x:Name="MarkersLabel" Text="Camp markers" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="MarkerList" Margin="0,2,0,0"/>
                 </StackPanel>
             </Expander>
