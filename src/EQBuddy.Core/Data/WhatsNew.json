@@ -1,5 +1,16 @@
 [
  {
+  "version": "1.56.0",
+  "date": "2026-08-11",
+  "highlights": [
+   "✨ THE WHOLE APP GOT SHARPER. Same Parchment & Brass soul, a real visual system underneath: every number in the app is now tabular (countdowns and dps figures line up), section headings became quiet small-caps labels, cards wear rounded hairline edges instead of solid boxes, and the stat bars moved UNDER the text — crisp names, instant comparison, no more reading through a bar.",
+   "📊 The widget opens with a KPI strip — dps · kills · loot · xp/hr, always visible — and the Combat card finally DRAWS the damage timeline it's been recording all along: a damage-per-minute sparkline for your last half hour, hottest minute marked, quiet minutes honestly flat.",
+   "⏱ Countdowns you can read from across the room: spawn chips fill a thin gauge along their bottom edge as the respawn approaches (DUE fills solid red), mez chips DRAIN theirs like a buff bar, and the zone map's named panel became cards with the same gauges. The minimized dashboard tightened up too — cleaner type, hairline dividers, and a counting-down watch rule announces itself by color.",
+   "Every window came along: the breakouts, Quest Tracker, Sky checklist (compact class chips), Inventory, Spawns, Options. All seven themes — and your Custom colors — inherit the entire system automatically, with the same contrast guarantees as before. Incoming damage now wears a cool blue in every theme, so it can never be misread as yours. Windows-side first; the Linux/macOS build follows on its own track as always.",
+   "Not one feature moved. If your hands know EQBuddy, they still do — it just stopped dressing like a spreadsheet."
+  ]
+ },
+ {
   "version": "1.55.3",
   "date": "2026-08-11",
   "highlights": [
