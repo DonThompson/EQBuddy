@@ -343,15 +343,37 @@ public partial class QuestsWindow : Window
 
             case "held":
             {
-                // What the bags could turn in RIGHT NOW (David, 2026-08-11): the game's
-                // own /outputfile inventory dump vs each quest's full turn-in list.
+                // What the bags could turn in right now, AND what they contribute to
+                // (David, 2026-08-11, round two): fully-covered quests lead, partial
+                // overlaps follow sorted by closeness — "available quests based on
+                // what's in my inventory". The /outputfile command is one click to
+                // copy, one paste into the game's chat.
                 var snap = _main.LatestInventory(refresh: force);
+                Button CopyCmd()
+                {
+                    var b = new Button
+                    {
+                        Style = (Style)FindResource("ActionButton"), FontSize = 11,
+                        Content = "⧉ copy  /outputfile inventory",
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        Margin = new Thickness(0, 4, 0, 6),
+                        ToolTip = "Copies the command — paste it into the game's chat and the " +
+                            "game writes your inventory file; this tab reads it. Re-run any " +
+                            "time your bags change.",
+                    };
+                    b.Click += (_, _) =>
+                    {
+                        try { Clipboard.SetText("/outputfile inventory"); b.Content = "✓ copied — paste in game chat"; }
+                        catch { /* clipboard momentarily held by another app */ }
+                    };
+                    return b;
+                }
                 if (snap is null)
                 {
-                    EmptyNote("No inventory dump found yet.\n\nIn game, type:  /outputfile inventory\n" +
-                        "The game writes <name>_<server>-Inventory.txt beside its own folders and " +
-                        "this tab reads it — EQBuddy never scans the game itself. Re-type the " +
-                        "command whenever your bags change.");
+                    EmptyNote("No inventory dump found yet. In game, run this (the game writes " +
+                        "<name>_<server>-Inventory.txt beside its own folders and this tab reads " +
+                        "it — EQBuddy never scans the game itself):");
+                    QuestsPanel.Children.Add(CopyCmd());
                     break;
                 }
                 var invAge = DateTime.Now - snap.WrittenAt;
@@ -360,23 +382,43 @@ public partial class QuestsWindow : Window
                     Text = $"📦 {System.IO.Path.GetFileName(snap.Path)} — written " +
                         (invAge.TotalMinutes < 1 ? "just now" : invAge.TotalHours < 1
                             ? $"{(int)invAge.TotalMinutes}m ago" : $"{(int)invAge.TotalHours}h ago") +
-                        " · re-type /outputfile inventory in game to update",
-                    FontSize = 11, Margin = new Thickness(2, 0, 0, 5), TextWrapping = TextWrapping.Wrap,
+                        " (plus everything looted since)",
+                    FontSize = 11, Margin = new Thickness(2, 0, 0, 2), TextWrapping = TextWrapping.Wrap,
                 };
                 invLabel.SetResourceReference(TextBlock.ForegroundProperty, "WarnBrush");
                 QuestsPanel.Children.Add(invLabel);
-                var held = _main.QuestCatalog.Quests
-                    .Where(q => q.Items.Count > 0 && !q.Collection && ClassOk(q) && !hidden.Contains(q.Name)
-                                && q.Items.All(i => snap.CountOf(i.Name) >= i.Qty))
-                    .Select(q => new QuestMatch(q, q.Items.Count, q.Items.Count,
+                QuestsPanel.Children.Add(CopyCmd());
+
+                var overlapping = _main.QuestCatalog.Quests
+                    .Where(q => q.Items.Count > 0 && !q.Collection && ClassOk(q) && !hidden.Contains(q.Name))
+                    .Select(q => new QuestMatch(q,
+                        q.Items.Count(i => snap.CountOf(i.Name) > 0), q.Items.Count,
                         q.Items.Select(i => new QuestItemProgress(i.Name, i.Qty, snap.CountOf(i.Name))).ToList(),
                         tracked.Contains(q.Name)))
-                    .OrderBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
+                    .Where(m => m.ItemsHave > 0)
                     .ToList();
-                foreach (var m in held) AddCard(m);
-                if (held.Count == 0)
-                    EmptyNote("Your bags don't fully cover any catalogued quest yet — partial " +
-                              "progress still shows as counts under mine, zone, and all.");
+                void Section(string text)
+                {
+                    var tb = new TextBlock { Text = text, Style = (Style)FindResource("SectionLabel") };
+                    QuestsPanel.Children.Add(tb);
+                }
+                var ready = overlapping.Where(m => m.Complete)
+                    .OrderBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                var partial = overlapping.Where(m => !m.Complete)
+                    .OrderByDescending(m => m.Fraction)
+                    .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                if (ready.Count > 0)
+                {
+                    Section($"Ready from your bags ({ready.Count})");
+                    foreach (var m in ready) AddCard(m);
+                }
+                if (partial.Count > 0)
+                {
+                    Section($"Your bags contribute ({partial.Count})");
+                    foreach (var m in partial) AddCard(m);
+                }
+                if (overlapping.Count == 0)
+                    EmptyNote("Nothing in your bags matches a catalogued quest's turn-ins yet.");
                 break;
             }
 

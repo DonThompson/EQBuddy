@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.57.5",
+  "date": "2026-08-11",
+  "highlights": [
+   "The quest tracker's \"held\" tab now shows everything your inventory is GOOD FOR, not just what's finished: \"Ready from your bags\" leads, then \"Your bags contribute\" — every quest your items partly cover, sorted by how close you are. And the /outputfile inventory reminder became a button: click ⧉ copy, paste into the game's chat, done — the game writes the file, EQBuddy reads it, and everything you loot afterward counts on top automatically."
+  ]
+ }, {
   "version": "1.57.4",
   "date": "2026-08-11",
   "highlights": [
