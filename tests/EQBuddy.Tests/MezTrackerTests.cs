@@ -232,6 +232,36 @@ public class MezTrackerTests
     /// as Mesmerize's "duration" and shrank every chip on the machine. The worn-off
     /// line fires on breaks too — an observation under the catalog base (ranks only
     /// lengthen) must never teach.</summary>
+    /// <summary>The Reddit report (2026-08-10): an AoE mez re-cast on cooldown showed
+    /// 1+ minute chips. Re-mezzing an already-mezzed target logs NO new landing line,
+    /// so the entry's anchor stays at the FIRST landing and the eventual natural fade
+    /// measures the whole chain — and a camper who always chains never produces the
+    /// clean fade that latest-wins healing needs. The visible re-casts themselves are
+    /// the tell: a fade with a same-spell cast after the landing teaches nothing.</summary>
+    [Fact]
+    public void AChainedAoeMezFadeTeachesNothing()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization."),
+            Ev(3, "an orc pawn has been mesmerized."),        // anchor: t=3, base 24s
+            Ev(20, "You begin casting Mesmerization."),       // re-mez in place — no landing line
+            Ev(40, "You begin casting Mesmerization."),       // and again
+            Ev(63, "Your Mesmerization spell has worn off of an orc pawn."));   // 60s chain
+
+        Assert.False(t.LearnedDurations.ContainsKey("Mesmerization"),
+            "a chain-spanning fade must not become the learned duration");
+
+        // The next cast still shows the catalog's 24s, not a one-minute chip.
+        t.Apply(Ev(100, "You begin casting Mesmerization."));
+        t.Apply(Ev(103, "an orc pawn has been mesmerized."));
+        var chip = Assert.Single(t.Snapshot(T0.AddSeconds(104)));
+        Assert.Equal(23, chip.RemainingSeconds(T0.AddSeconds(104))!.Value, 0);
+
+        // A clean cycle (no re-cast before the fade) still teaches normally.
+        t.Apply(Ev(127, "Your Mesmerization spell has worn off of an orc pawn."));
+        Assert.Equal(24, t.LearnedDurations["Mesmerization"]);
+    }
+
     [Fact]
     public void AnEarlyBreakFadeDoesNotPoisonTheLearnedDuration()
     {

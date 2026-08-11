@@ -9,7 +9,9 @@ card to drill into details; every session lands in a local searchable history.
 
 **Log-only, by principle.** EQBuddy never reads game memory, never uploads anything,
 and never measures other players — it knows only what your own log says. Windows
-first (WPF), with a Linux build ([Avalonia](#for-developers)) that tracks closely.
+first (WPF), with a cross-platform build ([Avalonia](#for-developers)) that tracks
+closely: **Linux** (built and maintained by Don Thompson) and **macOS** (click-through,
+spoken alerts, and Wine-prefix log detection contributed by quasarj).
 
 **Download:** grab `EQBuddySetup.exe` from the
 [latest release](https://github.com/DranakCorps-bot/EQBuddy/releases/latest).
@@ -159,9 +161,11 @@ screenshots and a use-case cookbook for every rule kind:
   call in one rule. Case-insensitive like the plain mode; an invalid pattern matches
   nothing and explains itself in the box's tooltip; a runaway pattern is cut off at
   100 ms so log tailing never stalls.
-- **Spoken alerts.** The **S** toggle reads the alert aloud with the Windows voice —
-  "Spirit of the Puma faded off you" — with duplicate lines suppressed so a chain of
-  fades doesn't chant at you. A rule can ding, speak, both, or neither.
+- **Spoken alerts** (contributed by dandrews2930). The **S** toggle reads the alert
+  aloud — "Spirit of the Puma faded off you" — with duplicate lines suppressed so a
+  chain of fades doesn't chant at you. A rule can ding, speak, both, or neither.
+  Speaks with the Windows voice, and on macOS too (that side contributed by quasarj);
+  on Linux the toggle says so honestly instead of pretending.
 - **Share rules as text.** The ⤴ on any rule copies it as a compact `EQB1` string
   sized for guild chat; the import box turns one back into a rule — with a preview of
   exactly what it does before you accept, rebuilt field by field so a share string
@@ -344,7 +348,8 @@ Notes:
 - The widget always stays on top of the game. Drag anywhere on it to move it;
   its position is remembered.
 - ⚙ (or right-click) → **Options…** has a **theme** picker (Parchment & Brass, Blue Grey,
-  Turquoise, Redish, Grey, Solarized, Solarized Dark) and sliders for widget size (scales
+  Turquoise, Redish, Grey, Solarized, Solarized Dark — the theme system was contributed
+  by ahaselden) and sliders for widget size (scales
   everything, fonts included, 80–160%), background see-through (only the panel fades — text
   stays sharp so you can watch the game through the widget), and whole-widget opacity.
   Changes apply live — the theme repaints open windows instantly — and are remembered.
@@ -403,9 +408,11 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
   Build: `dotnet build src/EQBuddy.Avalonia/EQBuddy.Avalonia.csproj -c Release`.
   It also builds and runs on macOS with no extra dependencies (the .NET 10 SDK is
   enough), which is useful when the game itself runs under a Windows compatibility
-  layer. Click-through (`ClickThrough.cs` dispatches to X11 input shapes or NSWindow
-  `ignoresMouseEvents`), spoken alerts (`say`), and log-folder auto-detection are
-  implemented there. No macOS build is published.
+  layer. The macOS features — click-through (`ClickThrough.cs` dispatches to X11
+  input shapes or NSWindow `ignoresMouseEvents`), spoken alerts (`say`), and
+  Wine/CrossOver/Whisky log-folder auto-detection — were contributed by
+  [quasarj](https://github.com/quasarj) (PR #90; thanks!). No macOS binary is
+  published yet — build from source with the one command above.
 - `src/EQBuddy.Core` — shared parser, watcher, settings, update, and session-stat logic.
   Both UI projects reference this; UI-independent code goes here.
 - `src/EQBuddy.Core/LogParser.cs` — one regex per log-line type; add new patterns here.

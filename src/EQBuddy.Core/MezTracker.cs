@@ -80,6 +80,12 @@ public sealed class MezTracker
     private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<MezState> _active = [];
     private readonly List<(string Caster, string Spell, DateTime Time)> _recentCasts = [];
+    // Latest cast per exact spell name, kept indefinitely (unlike _recentCasts' 8s
+    // window): re-mezzing an already-mezzed target logs NO new landing line, so the
+    // only visible evidence that a fade measures a CHAIN rather than one mez is the
+    // re-cast itself (the 2026-08-10 Reddit report: an AoE mez camped on cooldown
+    // learned 1+ minute and, with no clean fade ever arriving, kept it).
+    private readonly Dictionary<string, DateTime> _lastCastOf = new(StringComparer.OrdinalIgnoreCase);
     // The awake ledger (issue #35): creatures of this name currently believed awake,
     // and when one last acted. Once a break wakes one twin, its ongoing fight keeps
     // generating damage lines for the shared name — those attribute HERE instead of
@@ -183,6 +189,7 @@ public sealed class MezTracker
                     changed = _active.Count > 0;
                     _active.Clear();
                     _recentCasts.Clear();
+                    _lastCastOf.Clear();
                     _awake.Clear();
                     break;
             }
@@ -218,6 +225,7 @@ public sealed class MezTracker
     {
         _recentCasts.Add((caster, spell, t));
         if (_recentCasts.Count > 32) _recentCasts.RemoveRange(0, 16);
+        _lastCastOf[spell] = t;
     }
 
     private bool OnLanding(MezzedEvent mez)
@@ -282,10 +290,20 @@ public sealed class MezTracker
             ? info.DurationSeconds ?? 0 : 0;
         var brokeRecently = _awake.TryGetValue(name, out var aw)
             && (wo.Time - aw.Last).Duration() <= TimeSpan.FromSeconds(3);
+        // A later cast of the SAME spell contaminates the observation: re-mezzing an
+        // already-mezzed target logs no fresh landing line, so this fade may span a
+        // whole chain of casts — a camper re-mezzing on cooldown would learn the
+        // chain length as "the duration" and never see a clean fade to heal it
+        // (Reddit report, 2026-08-10: AoE mez chips claiming 1+ minute). Clickies
+        // log no cast line and stay invisible; those artifacts still heal via
+        // latest-clean-wins on the next honest cycle.
+        var recastAfterLanding = _lastCastOf.TryGetValue(entry.Spell, out var lastCast)
+            && lastCast > entry.LandedAt.AddSeconds(1);
         // Latest clean observation wins, longer OR shorter (see class summary): a
         // chain-mez artifact heals on the next single mez, a stale short value heals
         // on the next upgraded cast — either way one honest fade fixes the chip.
         if (observed is > 3 and < 600 && observed >= baseFloor && !brokeRecently
+            && !recastAfterLanding
             && (!_learned.TryGetValue(entry.Spell, out var known) || Math.Abs(observed - known) > 0.5))
         {
             _learned[entry.Spell] = Math.Round(observed, 1);
