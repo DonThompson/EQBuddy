@@ -1,5 +1,19 @@
 [
  {
+  "version": "1.55.0",
+  "date": "2026-08-11",
+  "highlights": [
+   "🎒 YOUR BAGS, IN THE WIDGET: type /outputfile inventory in game and EQBuddy reads the file the game writes — right-click → Inventory… shows your worn gear by slot and what's in every bag, and the quest tracker grows a \"held\" tab: quests whose ENTIRE turn-in list your bags already cover. Better still, the log keeps it current — loot something and the counts update live, with a \"Looted since this dump\" section so the view stays honest about what the dump knows versus what the log saw. Plane of Sky planning just got a lot shorter.",
+   "✓ Check off your history: every quest card now carries a ✓ — did a quest before EQBuddy existed? Mark it done (consumes nothing; click again to undo) and it moves to the new \"done\" tab. Between held, done, and the achievements import below, a returning player can catch the tracker up to years of play in minutes.",
+   "🏆 Import achievements (typical-usual-chaos's ask, #88): right-click → Import achievements… reads the game's /outputfile achievements dump and pre-marks Sky rewards you completed before EQBuddy — preview first, nothing applies until you confirm, adds only, never unticks. Drift-tolerant matching (\"Spear of Harmony\" = \"Harmonic Spear\"), and anything unrecognized is listed openly, never silently dropped.",
+   "⚡ Procs per minute (Kerdude's ask, #85): the Combat card's new Procs block counts every spell that dealt damage without a cast — weapon procs, poisons, item effects — with damage and procs per combat-minute (DPS's denominator, so downtime doesn't flatter your weapon). When the game names the vehicle (\"Your Polished Mithril Mask feels alive with power.\"), the row says which item fired. Built on Kerdude's live spellblade log.",
+   "⧉ Share a parse (jeremycranfill's ask, #89): the Combat card's Last fight line grows a copy button — one click puts the fight on your clipboard as a Discord-ready monospace block, abilities aligned with percentages, pet rows labeled in. The official Discord blocks images; text travels. Share-only by design: no uploads, no leaderboards, only your own numbers.",
+   "🎭 EQBuddy infers your class from your most-used class-unique skills (Backstab, Harm Touch, the monk kicks, bard songs…) and pre-filters the quest tracker with it when you haven't picked classes — always labeled \"(inferred)\", never persisted, and one pick in the class filter overrides it. Clickies lose the vote by volume.",
+   "📐 Windows behave (badly-developed's asks, #95/#96): chip stacks can GROW UPWARD (Options — anchored at their bottom edge, so boss timers sit above mez timers with each growing away from the other), and breakout windows now follow the main widget's background see-through. Plus \"Keep EQBuddy above fullscreen overlays\" is now a checkbox (flclfool's Lossless Scaling saga, #91) — default on, off for screen-capture setups.",
+   "The wiki contribution pack folds upgrade tiers into one entry (Frankthetankk's catch, #65) — no more identical duplicate lines when base and +1 both dropped."
+  ]
+ },
+ {
   "version": "1.54.0",
   "date": "2026-08-10",
   "highlights": [
