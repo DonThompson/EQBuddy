@@ -134,6 +134,14 @@ public static class WikiContribution
         string currentZone)
     {
         var status = news[0].Status;
+        // Upgrade tiers fold to one wiki entry (#65, Frankthetankk's catch): the
+        // {{:Item}} transclusion drops the "+N" suffix, so base and +1 rows produced
+        // two IDENTICAL <li> lines. One line per base item; the first row (the
+        // tier-merged observation order) speaks for the family.
+        news = news
+            .GroupBy(n => QuestCatalog.BaseItemName(n.Loot.Item), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.First())
+            .ToList();
         // A resolved page keeps its real title (edit links must hit the page that
         // answered, "(Zone)" suffix and all); a missing page is created at the
         // observed name — named mobs live at bare names per the wiki's own habit.
