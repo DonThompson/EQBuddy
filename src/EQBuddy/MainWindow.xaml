@@ -569,11 +569,15 @@
                     <TextBlock x:Name="ProgressSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <TextBlock Text="Skill-ups" Style="{StaticResource SectionLabel}"/>
                     <ItemsControl x:Name="SkillList" Margin="0,2,0,0"/>
-                    <!-- Character state, not session activity: what the log's whole history
-                         (plus the durable ledger) says this character owns. -->
-                    <TextBlock x:Name="AaAbilitiesLabel" Text="AA abilities" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
+                    <!-- Session-new AAs lead (Reddit, 2026-08-11); the full character
+                         ledger folds behind the ▸ label, Pet-abilities style. -->
+                    <TextBlock x:Name="AaNewLabel" Text="AA learned this session" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
                                Visibility="Collapsed"/>
-                    <ItemsControl x:Name="AaAbilityList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="AaNewList" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="AaAbilitiesLabel" Text="▸ All AA abilities" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
+                               Visibility="Collapsed" Cursor="Hand" MouseLeftButtonDown="OnAaAllToggled"
+                               ToolTip="Everything the log's history (plus the durable ledger) says this character owns — click to expand or fold"/>
+                    <ItemsControl x:Name="AaAbilityList" Margin="0,2,0,0" Visibility="Collapsed"/>
                 </StackPanel>
             </Expander>
 

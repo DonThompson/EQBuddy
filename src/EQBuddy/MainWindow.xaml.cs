@@ -820,6 +820,13 @@ public partial class MainWindow : Window
         catch (Exception ex) { App.LogError(ex); }
     }
 
+    private void OnAaAllToggled(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        _settings.ShowAllAAs = !_settings.ShowAllAAs;
+        _settings.Save();
+    }
+
     private void OnOpenWebsite(object sender, RoutedEventArgs e) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
             "https://github.com/DranakCorps-bot/EQBuddy") { UseShellExecute = true });
@@ -1208,8 +1215,10 @@ public partial class MainWindow : Window
 
         // The mez stack lives its own life, independent of spawn tracking: it exists
         // exactly while a mez is believed active, in its own window (David's call —
-        // mez chips park next to the fight, spawn chips are ambient).
-        if (!_hiddenForFocus && _mezTracker.Snapshot(DateTime.Now).Count > 0)
+        // mez chips park next to the fight, spawn chips are ambient). Optional since
+        // the 2026-08-11 Reddit ask — a non-CC class never wants the stack.
+        if (_settings.MezChipsEnabled && !_hiddenForFocus
+            && _mezTracker.Snapshot(DateTime.Now).Count > 0)
         {
             if (_mezWindow is not { IsLoaded: true })
             {
@@ -1528,10 +1537,26 @@ public partial class MainWindow : Window
                     }))
                     : "");
             FillList(SkillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
-            AaAbilitiesLabel.Visibility = s.AaAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillList(AaAbilityList, s.AaAbilities.Select(a =>
+            // AA display, rethought (Reddit, 2026-08-11: "is it supposed to just show
+            // newly learned this session?" — yes, now it is): session-new AAs lead,
+            // the full ledger folds behind a click, same idiom as Pet abilities.
+            var newAas = s.SessionStart is { } sess
+                ? s.AaAbilities.Where(a => a.Time >= sess).ToList()
+                : [];
+            AaNewLabel.Visibility = newAas.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            AaNewList.Visibility = AaNewLabel.Visibility;
+            FillList(AaNewList, newAas.Select(a =>
                     (a.Name, a.Rank > 1 ? $"rank {a.Rank}" : "")),
                 tooltip: name => AaCatalog.Find(name)?.Effect);
+            AaAbilitiesLabel.Visibility = s.AaAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            AaAbilitiesLabel.Text = _settings.ShowAllAAs
+                ? "▾ All AA abilities"
+                : $"▸ All AA abilities ({s.AaAbilities.Count})";
+            AaAbilityList.Visibility = _settings.ShowAllAAs ? Visibility.Visible : Visibility.Collapsed;
+            if (_settings.ShowAllAAs)
+                FillList(AaAbilityList, s.AaAbilities.Select(a =>
+                        (a.Name, a.Rank > 1 ? $"rank {a.Rank}" : "")),
+                    tooltip: name => AaCatalog.Find(name)?.Effect);
         }
 
         if (FactionSection.IsExpanded)

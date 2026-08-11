@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.57.2",
+  "date": "2026-08-11",
+  "highlights": [
+   "Two Reddit asks, same day: mez countdown chips can now be turned OFF (⚙ Options — untick and the stack never appears; a class that never mezzes never wanted it), and the Progress card stops reciting your entire AA history — \"AA learned this session\" shows what's new, and the full ledger folds behind an \"▸ All AA abilities\" click, exactly like Pet abilities."
+  ]
+ }, {
   "version": "1.57.1",
   "date": "2026-08-11",
   "highlights": [

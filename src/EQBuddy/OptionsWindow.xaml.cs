@@ -51,6 +51,7 @@ public partial class OptionsWindow : Window
         KeepAboveCheck.IsChecked = _vm.KeepAboveOverlays;
         SpawnGrowUpCheck.IsChecked = _vm.SpawnChipsGrowUp;
         MezGrowUpCheck.IsChecked = _vm.MezChipsGrowUp;
+        MezChipsCheck.IsChecked = _main.Settings.MezChipsEnabled;
         BuildHotkeyRows();
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
@@ -166,6 +167,13 @@ public partial class OptionsWindow : Window
     private void OnKeepAboveToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.KeepAboveOverlays = KeepAboveCheck.IsChecked == true;
+    }
+
+    private void OnMezChipsToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.Settings.MezChipsEnabled = MezChipsCheck.IsChecked == true;
+        _main.Settings.Save();
     }
 
     private void OnChipGrowToggled(object sender, RoutedEventArgs e)

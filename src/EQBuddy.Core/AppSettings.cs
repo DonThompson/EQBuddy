@@ -38,6 +38,13 @@ public sealed class AppSettings
     /// and the feature was removed; it returns only in this bind-it-yourself form.</summary>
     public Dictionary<string, string> Hotkeys { get; set; } = new();
 
+    /// <summary>The mez chip stack, off-switchable (Reddit ask, 2026-08-11): a class
+    /// that never mezzes never wants the window popping mid-fight.</summary>
+    public bool MezChipsEnabled { get; set; } = true;
+    /// <summary>The Progress card's full AA ledger, folded by default (same Reddit
+    /// report): session-new AAs show always; the complete list is a click away.</summary>
+    public bool ShowAllAAs { get; set; }
+
     /// <summary>Chip-stack growth direction (#95): anchored at the bottom edge, new
     /// chips push the stack upward — so boss timers can sit above mez timers with
     /// each growing away from the other.</summary>

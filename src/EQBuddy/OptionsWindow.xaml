@@ -146,6 +146,14 @@
             <TextBlock Text="Overlay apps created after EQBuddy land above it in Windows' always-on-top pile, hiding the widget; this quietly re-lifts every EQBuddy window every few seconds. Untick if your screen-capture setup shows the widget twice (a real copy plus the captured one)."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
+            <CheckBox x:Name="MezChipsCheck" Margin="0,10,0,0"
+                      Checked="OnMezChipsToggled" Unchecked="OnMezChipsToggled">
+                <TextBlock Text="Mez countdown chips (who's asleep, wake-up timers)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Untick if your class never mezzes — the stack stops appearing entirely."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
             <CheckBox x:Name="SpawnGrowUpCheck" Margin="0,10,0,0"
                       Checked="OnChipGrowToggled" Unchecked="OnChipGrowToggled">
                 <TextBlock Text="Spawn chips grow upward" FontSize="12"
