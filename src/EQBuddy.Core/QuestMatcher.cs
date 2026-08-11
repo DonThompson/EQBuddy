@@ -6,13 +6,15 @@ public sealed record QuestMatch(QuestEntry Quest, int ItemsHave, int ItemsTotal,
     IReadOnlyList<QuestItemProgress> Items, bool Tracked = false)
 {
     /// <summary>Distinct turn-in items with at least one copy owned, over distinct
-    /// required — the "3/5 items" a card shows.</summary>
-    public double Fraction => ItemsTotal == 0 ? 0 : (double)ItemsHave / ItemsTotal;
-    public bool Complete => ItemsTotal > 0 && Items.All(i => i.Have >= i.Need);
+    /// required — the "3/5 items" a card shows. Collection pages report no fraction:
+    /// their item list is a union of several quests (CatalogHygiene).</summary>
+    public double Fraction => ItemsTotal == 0 || Quest.Collection ? 0 : (double)ItemsHave / ItemsTotal;
+    public bool Complete => ItemsTotal > 0 && !Quest.Collection && Items.All(i => i.Have >= i.Need);
 
     /// <summary>How many full turn-in sets the owned counts afford — "ready ×3" on a
     /// repeatable (min over items of have ÷ need).</summary>
-    public int ReadyCount => ItemsTotal == 0 ? 0 : Items.Min(i => i.Have / Math.Max(1, i.Need));
+    public int ReadyCount => ItemsTotal == 0 || Quest.Collection ? 0
+        : Items.Min(i => i.Have / Math.Max(1, i.Need));
 }
 
 /// <summary>

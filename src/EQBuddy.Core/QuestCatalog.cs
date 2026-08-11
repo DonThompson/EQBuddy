@@ -35,6 +35,12 @@ public sealed class QuestEntry
     /// "Sky"/"Epics"), or "" when the page carries none.</summary>
     public string Era { get; set; } = "";
 
+    /// <summary>A page that documents SEVERAL quests (armor sets, ring chains — see
+    /// CatalogHygiene): stays searchable and item-badged, but never computes a
+    /// progress fraction, never reads "ready", never enters the held tab — a union
+    /// of six quests' items is not a quest you can finish.</summary>
+    public bool Collection { get; set; }
+
     /// <summary>Does the quest touch this zone? Names drift between the log, the wiki,
     /// and the atlas ("The Greater Faydark" / "Greater Faydark"), so match on the
     /// article-stripped form, containment either way as backstop.</summary>
@@ -205,8 +211,10 @@ public sealed class QuestCatalog
             var catalog = JsonSerializer.Deserialize<QuestCatalog>(stream,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new QuestCatalog();
             // Before any lazy index is built: the per-class Sky aggregate pages
-            // split into real per-test quests (#99) — see SkyTestSplit.
+            // split into real per-test quests (#99), then the catalog-wide pass —
+            // index pages dropped, collection pages flagged (CatalogHygiene).
             SkyTestSplit.Apply(catalog);
+            CatalogHygiene.Apply(catalog);
             return catalog;
         }
         catch (Exception ex)

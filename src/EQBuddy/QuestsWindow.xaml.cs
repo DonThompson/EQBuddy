@@ -363,7 +363,7 @@ public partial class QuestsWindow : Window
                 invLabel.SetResourceReference(TextBlock.ForegroundProperty, "WarnBrush");
                 QuestsPanel.Children.Add(invLabel);
                 var held = _main.QuestCatalog.Quests
-                    .Where(q => q.Items.Count > 0 && ClassOk(q) && !hidden.Contains(q.Name)
+                    .Where(q => q.Items.Count > 0 && !q.Collection && ClassOk(q) && !hidden.Contains(q.Name)
                                 && q.Items.All(i => snap.CountOf(i.Name) >= i.Qty))
                     .Select(q => new QuestMatch(q, q.Items.Count, q.Items.Count,
                         q.Items.Select(i => new QuestItemProgress(i.Name, i.Qty, snap.CountOf(i.Name))).ToList(),
@@ -456,14 +456,22 @@ public partial class QuestsWindow : Window
 
         var count = new TextBlock
         {
-            Text = m.ItemsTotal == 0 ? "steps"
+            // Collection pages (CatalogHygiene): several quests share the page, so a
+            // fraction over the union would lie — the label says what it is instead.
+            Text = m.Quest.Collection ? "📚 set of quests"
+                : m.ItemsTotal == 0 ? "steps"
                 : m.Complete
                     ? m.Quest.Repeatable && m.ReadyCount > 1 ? $"✔ ready ×{m.ReadyCount}" : "✔ ready"
                     : $"{m.ItemsHave}/{m.ItemsTotal}",
             FontSize = 12, FontWeight = FontWeights.Bold, Margin = new Thickness(8, 0, 0, 0),
+            ToolTip = m.Quest.Collection
+                ? "This wiki page documents several quests at once, so per-page progress would " +
+                  "mislead — open the page for the individual quests. Your items still show below."
+                : null,
         };
         count.SetResourceReference(TextBlock.ForegroundProperty,
-            m.Complete ? "GoodBrush" : m.ItemsHave > 0 ? "AccentBrush" : "DimBrush");
+            m.Quest.Collection ? "DimBrush"
+            : m.Complete ? "GoodBrush" : m.ItemsHave > 0 ? "AccentBrush" : "DimBrush");
         // A ready card's count doubles as the "I handed it in" button: consumes one set
         // of turn-ins and bumps the done counter. Dialogue quests mark done for free.
         if (m.Complete || m.ItemsTotal == 0)
