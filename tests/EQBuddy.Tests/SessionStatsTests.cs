@@ -30,6 +30,27 @@ public class SessionStatsTests
         Assert.Equal(0, s.HealingDone);              // estimates never join real totals
     }
 
+    /// <summary>Class inference (David, 2026-08-11): class-unique abilities vote,
+    /// frequency wins (a clicky's one-off loses to real swings), three sightings
+    /// minimum, and a character switch clears the ballot.</summary>
+    [Fact]
+    public void ClassIsInferredFromMostUsedUniqueSkillsAndClearsOnSwitch()
+    {
+        var stats = new SessionStats();
+        void Line(int ss, string msg) =>
+            stats.Apply(LogParser.Parse($"[Mon Aug 10 11:15:{ss:D2} 2026] {msg}")!);
+
+        Line(1, "You backstab orc centurion for 50 points of damage.");
+        Line(2, "You backstab orc centurion for 55 points of damage.");
+        Assert.Equal("", stats.Snapshot().InferredClass);   // under the floor: no call yet
+
+        Line(3, "You backstab orc centurion for 60 points of damage.");
+        Assert.Equal("Rogue", stats.Snapshot().InferredClass);
+
+        stats.ClearCharacterState();
+        Assert.Equal("", stats.Snapshot().InferredClass);
+    }
+
     /// <summary>Procs (#85, Kerdude's spellblade snippet): a cast nuke and a weapon proc
     /// print the identical damage line — the missing "You begin casting X." is the only
     /// tell. An item-proc line just before the hit names the vehicle; incoming spell

@@ -268,6 +268,26 @@ public sealed class SessionStats
     /// ("Your Polished Mithril Mask (Exaltation) feels alive with power." then the
     /// Bolt of Flame hit, same second in the field snippet).</summary>
     private static readonly TimeSpan ProcItemWindow = TimeSpan.FromSeconds(2.5);
+    // ---- inferred class (David, 2026-08-11): class-unique signals, frequency-weighted ----
+    /// <summary>Abilities and spells only one class has. Deliberately small and certain:
+    /// a wrong inference filters quests wrongly, so ambiguous signals (Kick, Bash,
+    /// generic nukes) stay out and clickies lose by volume. Labeled "(inferred)"
+    /// everywhere it's used — players swap classes, so this is a reading, not a fact.</summary>
+    private static readonly Dictionary<string, string> ClassSignals = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Backstab"] = "Rogue",
+        ["Harm Touch"] = "Shadow Knight",
+        ["Lay on Hands"] = "Paladin",
+        ["Lay Hands"] = "Paladin",
+        ["Flying Kick"] = "Monk", ["Round Kick"] = "Monk", ["Tiger Claw"] = "Monk",
+        ["Eagle Strike"] = "Monk", ["Dragon Punch"] = "Monk",
+        ["Frenzy"] = "Berserker",
+    };
+    private readonly Dictionary<string, int> _classEvidence = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Three sightings before an inference exists at all — one clicky or one
+    /// mis-parsed line must not relabel a character.</summary>
+    private const int ClassEvidenceFloor = 3;
+
     private readonly Dictionary<string, (int Count, long Damage)> _procs = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _spellCastAt = new(StringComparer.OrdinalIgnoreCase);
     private (string Item, DateTime Time)? _lastItemProc;
@@ -544,6 +564,9 @@ public sealed class SessionStats
                     // Songs correlate (bard charms/mezzes ARE songs) but stay out of the
                     // cast-completion stats — twisting would swamp them.
                     if (!started.Song) _castsStarted++;
+                    else _classEvidence["Bard"] = _classEvidence.GetValueOrDefault("Bard") + 1;
+                    if (ClassSignals.TryGetValue(SpellCatalog.BaseName(started.Spell), out var castCls))
+                        _classEvidence[castCls] = _classEvidence.GetValueOrDefault(castCls) + 1;
                     _pendingCast = (started.Spell, started.Time);
                     // Proc detection reads this: damage "by <Spell>" with no cast-start
                     // for that spell on record is a proc (#85).
@@ -613,6 +636,12 @@ public sealed class SessionStats
                     _damageDealt += dd.Amount;
                     AddTimelineDamage(dd.Time, dd.Amount);
                     if (dd.Kind == DamageKind.Melee) _meleeDamage += dd.Amount; else _spellDamage += dd.Amount;
+                    // Class inference (David, 2026-08-11): class-unique abilities vote,
+                    // most-used wins — a rogue clicky in a warrior's hand loses to ten
+                    // thousand real swings. Character-scoped, cleared on switch.
+                    if (dd.Kind == DamageKind.Melee
+                        && ClassSignals.TryGetValue(dd.Source, out var cls))
+                        _classEvidence[cls] = _classEvidence.GetValueOrDefault(cls) + 1;
                     // Damage spells label themselves by line shape, so classification is
                     // observed rather than looked up in a table.
                     if (dd.Kind == DamageKind.Spell && !dd.IsAux)
@@ -1359,7 +1388,11 @@ public sealed class SessionStats
     /// lines, so a restart after auto-empty starts the ledger over.</summary>
     public void ClearCharacterState()
     {
-        lock (_lock) _aaAbilities.Clear();
+        lock (_lock)
+        {
+            _aaAbilities.Clear();
+            _classEvidence.Clear();   // the next character's swings vote fresh
+        }
     }
 
     private void ResetLocked()
@@ -1718,6 +1751,10 @@ public sealed class SessionStats
                 Procs = _procs
                     .Select(kv => (kv.Key, kv.Value.Count, kv.Value.Damage))
                     .OrderByDescending(x => x.Damage).ToList(),
+                InferredClass = _classEvidence
+                    .Where(kv => kv.Value >= ClassEvidenceFloor)
+                    .OrderByDescending(kv => kv.Value)
+                    .Select(kv => kv.Key).FirstOrDefault() ?? "",
                 CurrentStance = _currentStance ?? "",
                 Stances = _stanceAgg
                     .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,
@@ -1914,6 +1951,9 @@ public sealed class StatsSnapshot
     /// <summary>Spell damage whose spell was never cast (#85): weapon/poison/item procs,
     /// each with hit count and total damage. Rate display divides by combat minutes.</summary>
     public List<(string Name, int Count, long Damage)> Procs { get; init; } = [];
+    /// <summary>Most-evidenced class from class-unique signals — "" until enough
+    /// sightings. ALWAYS present as "(inferred)": players swap classes.</summary>
+    public string InferredClass { get; init; } = "";
 
     /// <summary>Format copper as "3p 2g 4s 7c".</summary>
     public static string FormatCoin(long copper)

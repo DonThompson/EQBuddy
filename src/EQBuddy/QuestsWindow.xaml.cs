@@ -190,8 +190,17 @@ public partial class QuestsWindow : Window
         var filter = FilterBox.Text.Trim();
         var classes = _main.QuestLedger?.ClassesFor(key) ?? [];
         SyncClassChecks(classes);
+        // No classes picked? The log's own evidence pre-filters — ALWAYS labeled
+        // inferred, never persisted, and one popup pick overrides it (David,
+        // 2026-08-11: players swap classes, so this is a reading, not a fact).
+        var inferred = "";
+        if (classes.Count == 0 && _main.CurrentSnapshot().InferredClass is { Length: > 0 } inf)
+        {
+            inferred = inf;
+            classes = [inf];
+        }
 
-        var sig = $"{key}|{filter}|{_mode}|{string.Join("+", classes)}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
+        var sig = $"{key}|{filter}|{_mode}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
             $"|{string.Join(";", tracked.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", hidden.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", completed.Select(kv => $"{kv.Key}:{kv.Value}"))}" +
@@ -200,6 +209,17 @@ public partial class QuestsWindow : Window
         _signature = sig;
 
         QuestsPanel.Children.Clear();
+        if (inferred.Length > 0)
+        {
+            var note = new TextBlock
+            {
+                Text = $"🎭 Filtering for {inferred} (inferred from your most-used skills — " +
+                    "pick classes above to override; inference follows you if you swap)",
+                FontSize = 10.5, Margin = new Thickness(2, 0, 0, 4), TextWrapping = TextWrapping.Wrap,
+            };
+            note.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            QuestsPanel.Children.Add(note);
+        }
 
         var era = _settings.QuestEraFilter;
         bool ClassOk(QuestEntry q) =>
