@@ -1,5 +1,15 @@
 [
  {
+  "version": "1.57.0",
+  "date": "2026-08-11",
+  "highlights": [
+   "🗺 Sky quests tell the truth now (wizen's diagnosis, #99 — exactly right): the wiki documents each class's Sky tests on one big page, and the tracker was treating each page as ONE quest demanding every class item at once. Each now splits into real per-test quests — \"Wizard Sky Test: Nargon's Staff\" with just that test's items and NPC — class-scoped, era-tagged, and finally in agreement with the Sky checklist card. The held/ready/done filters mean something per test now.",
+   "📚 The same audit ran across all 900+ quests: pure index pages (\"Popular Quests by Level\" was polluting every reward search with 347 entries) are gone, and 80+ collection pages — per-class armor sets, the Coldain Ring chain, deity Symbol chains — now say \"set of quests\" instead of pretending a union of six quests is one you can finish. The epics keep their honest 40-item lists; they really are one quest.",
+   "✅ THE ACCURACY CONTRACT: our quest data mirrors eqlwiki.com, and we verified it — every one of 917 quests' turn-in items checked item-for-item against the live wiki (zero mismatches), with sanity gates now running on every weekly catalog refresh so bad data can't slip in. Every quest card carries a ⚑ to report anything that still looks wrong: if EQBuddy misread the page we fix it fast, and if the PAGE is wrong, editing the wiki fixes every install on the next refresh. Your discoveries flow the other way through the red ✦ Copy for wiki.",
+   "⌨ Hotkeys are back — on your terms only (jlcrisp's ask, #100): ⚙ Options → Global hotkeys. NOTHING is bound by default; click a box, press your combo, ✕ unbinds. Bind show/hide-everything, the zone map, quest tracker, spawn timers, or click-through. A bound key is claimed system-wide while EQBuddy runs — the UI says so — which is why the old default binds are never coming back."
+  ]
+ },
+ {
   "version": "1.56.0",
   "date": "2026-08-11",
   "highlights": [
