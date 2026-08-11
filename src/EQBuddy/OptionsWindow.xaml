@@ -159,6 +159,12 @@
             <TextBlock Text="A stack normally holds its top edge and grows downward as chips arrive. Grown-upward it holds its BOTTOM edge instead — park boss timers above mez timers and each grows away from the other."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
+            <TextBlock Text="Global hotkeys" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
+                       Foreground="{DynamicResource TextBrush}"/>
+            <TextBlock Text="Nothing is bound until you bind it. A bound key is claimed system-wide while EQBuddy runs — it will stop reaching the game and every other app — so pick combos nothing else uses (Ctrl+Alt+… is usually safe). Click a box, press your keys; ✕ unbinds."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+            <StackPanel x:Name="HotkeysPanel" Margin="0,2,0,0"/>
+
             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                 <TextBlock Text="Regen heals about" FontSize="12" VerticalAlignment="Center"
                            Foreground="{DynamicResource TextBrush}"/>

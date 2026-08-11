@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
@@ -50,6 +51,7 @@ public partial class OptionsWindow : Window
         KeepAboveCheck.IsChecked = _vm.KeepAboveOverlays;
         SpawnGrowUpCheck.IsChecked = _vm.SpawnChipsGrowUp;
         MezGrowUpCheck.IsChecked = _vm.MezChipsGrowUp;
+        BuildHotkeyRows();
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
 
@@ -171,6 +173,87 @@ public partial class OptionsWindow : Window
         if (!_ready) return;
         _vm.SpawnChipsGrowUp = SpawnGrowUpCheck.IsChecked == true;
         _vm.MezChipsGrowUp = MezGrowUpCheck.IsChecked == true;
+    }
+
+    // ---- global hotkeys, opt-in only (#100 — see HotkeyManager) ----
+
+    private string? _recordingAction;
+
+    private void BuildHotkeyRows()
+    {
+        HotkeysPanel.Children.Clear();
+        foreach (var (key, label) in HotkeyManager.Actions)
+        {
+            var row = new Grid { Margin = new Thickness(0, 3, 0, 0) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var name = new TextBlock { Text = label, FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
+            name.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+            row.Children.Add(name);
+
+            var bound = _main.Settings.Hotkeys.GetValueOrDefault(key, "");
+            var recorder = new Button
+            {
+                Style = (Style)FindResource("ActionButton"), FontSize = 11,
+                Content = _recordingAction == key ? "press keys… (Esc cancels)"
+                    : bound.Length > 0 ? bound : "not bound — click to set",
+                Tag = key,
+            };
+            recorder.Click += (_, _) =>
+            {
+                _recordingAction = _recordingAction == key ? null : key;
+                BuildHotkeyRows();
+            };
+            Grid.SetColumn(recorder, 1);
+            row.Children.Add(recorder);
+
+            var clear = new Button
+            {
+                Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+                Margin = new Thickness(4, 0, 0, 0), ToolTip = "Unbind",
+                Visibility = bound.Length > 0 ? Visibility.Visible : Visibility.Hidden,
+            };
+            clear.Click += (_, _) =>
+            {
+                _main.Settings.Hotkeys.Remove(key);
+                _main.Settings.Save();
+                _main.ApplyHotkeys();
+                _recordingAction = null;
+                BuildHotkeyRows();
+            };
+            Grid.SetColumn(clear, 2);
+            row.Children.Add(clear);
+            HotkeysPanel.Children.Add(row);
+        }
+    }
+
+    protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
+    {
+        if (_recordingAction is not { } action) { base.OnPreviewKeyDown(e); return; }
+        e.Handled = true;
+        var key = e.Key == System.Windows.Input.Key.System ? e.SystemKey : e.Key;
+        if (key == System.Windows.Input.Key.Escape) { _recordingAction = null; BuildHotkeyRows(); return; }
+        // A bare modifier press isn't a gesture yet — wait for the real key.
+        if (key is System.Windows.Input.Key.LeftCtrl or System.Windows.Input.Key.RightCtrl
+            or System.Windows.Input.Key.LeftAlt or System.Windows.Input.Key.RightAlt
+            or System.Windows.Input.Key.LeftShift or System.Windows.Input.Key.RightShift
+            or System.Windows.Input.Key.LWin or System.Windows.Input.Key.RWin) return;
+        var mods = System.Windows.Input.Keyboard.Modifiers;
+        var parts = new List<string>();
+        if (mods.HasFlag(System.Windows.Input.ModifierKeys.Control)) parts.Add("Ctrl");
+        if (mods.HasFlag(System.Windows.Input.ModifierKeys.Alt)) parts.Add("Alt");
+        if (mods.HasFlag(System.Windows.Input.ModifierKeys.Shift)) parts.Add("Shift");
+        if (mods.HasFlag(System.Windows.Input.ModifierKeys.Windows)) parts.Add("Win");
+        parts.Add(key.ToString());
+        var gesture = string.Join("+", parts);
+        // Modifier required — a bare global letter would eat the game's chat typing.
+        if (HotkeyManager.Parse(gesture) is null) return;
+        _main.Settings.Hotkeys[action] = gesture;
+        _main.Settings.Save();
+        _main.ApplyHotkeys();
+        _recordingAction = null;
+        BuildHotkeyRows();
     }
 
     private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)

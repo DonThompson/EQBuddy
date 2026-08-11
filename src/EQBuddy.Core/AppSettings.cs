@@ -32,6 +32,12 @@ public sealed class AppSettings
     /// seconds (#91: Lossless Scaling's upscale surface buried the widget). Off = the old
     /// behavior, for screen-capture setups where the re-lift makes a visible double.</summary>
     public bool KeepAboveOverlays { get; set; } = true;
+    /// <summary>Global hotkeys, opt-in only (#100): action key → gesture text
+    /// ("Ctrl+Alt+M"). EMPTY BY DEFAULT and stays that way unless the player binds
+    /// keys in Options — the 1.12–1.34 era's default binds ate other apps' shortcuts
+    /// and the feature was removed; it returns only in this bind-it-yourself form.</summary>
+    public Dictionary<string, string> Hotkeys { get; set; } = new();
+
     /// <summary>Chip-stack growth direction (#95): anchored at the bottom edge, new
     /// chips push the stack upward — so boss timers can sit above mez timers with
     /// each growing away from the other.</summary>

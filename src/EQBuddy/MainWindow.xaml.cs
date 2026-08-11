@@ -2922,6 +2922,61 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
         _hwndSource = (System.Windows.Interop.HwndSource)PresentationSource.FromVisual(this)!;
+        _hwndSource.AddHook(_hotkeys.Hook);
+        ApplyHotkeys();
+    }
+
+    // ---- global hotkeys, opt-in only (#100 — see HotkeyManager) ----
+
+    private readonly HotkeyManager _hotkeys = new();
+    private bool _hotkeyHidden;
+    private readonly List<Window> _hotkeyHiddenWindows = [];
+
+    /// <summary>Registers whatever the player bound in Options; called at startup
+    /// and again after any Options edit.</summary>
+    internal void ApplyHotkeys()
+    {
+        if (_hwndSource is null) return;
+        _hotkeys.Apply(_hwndSource.Handle, _settings.Hotkeys, action => Dispatcher.BeginInvoke(() =>
+        {
+            switch (action)
+            {
+                case "toggleAll":
+                    // The get-out-of-my-way key: everything hides as one, comes back
+                    // as it was. Same idea as focus-hide, but on demand.
+                    if (_hotkeyHidden)
+                    {
+                        foreach (var w in _hotkeyHiddenWindows) if (w.IsLoaded) w.Show();
+                        _hotkeyHiddenWindows.Clear();
+                        _hotkeyHidden = false;
+                    }
+                    else
+                    {
+                        foreach (Window w in Application.Current.Windows)
+                            if (w.IsVisible) { _hotkeyHiddenWindows.Add(w); w.Hide(); }
+                        _hotkeyHidden = _hotkeyHiddenWindows.Count > 0;
+                    }
+                    break;
+                case "toggleMap":
+                    if (_mapWindow is { IsLoaded: true, IsVisible: true }) _mapWindow.Hide();
+                    else if (_mapWindow is { IsLoaded: true }) _mapWindow.Show();
+                    else OnZoneMap(this, new RoutedEventArgs());
+                    break;
+                case "toggleQuests":
+                    if (_questsWindow is { IsLoaded: true, IsVisible: true }) _questsWindow.Hide();
+                    else if (_questsWindow is { IsLoaded: true }) _questsWindow.Show();
+                    else OnQuestsWindow(this, new RoutedEventArgs());
+                    break;
+                case "toggleSpawns":
+                    if (_spawnsWindow is { IsLoaded: true, IsVisible: true }) _spawnsWindow.Hide();
+                    else if (_spawnsWindow is { IsLoaded: true }) _spawnsWindow.Show();
+                    else ShowSpawnsWindow(null);
+                    break;
+                case "toggleClickThrough":
+                    OnClickThrough(this, new RoutedEventArgs());
+                    break;
+            }
+        }));
     }
 
     private ClickThroughChip? _unlockChip;

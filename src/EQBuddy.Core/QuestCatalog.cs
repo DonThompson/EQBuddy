@@ -202,8 +202,12 @@ public sealed class QuestCatalog
         if (stream is null) return new QuestCatalog();
         try
         {
-            return JsonSerializer.Deserialize<QuestCatalog>(stream,
+            var catalog = JsonSerializer.Deserialize<QuestCatalog>(stream,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new QuestCatalog();
+            // Before any lazy index is built: the per-class Sky aggregate pages
+            // split into real per-test quests (#99) — see SkyTestSplit.
+            SkyTestSplit.Apply(catalog);
+            return catalog;
         }
         catch (Exception ex)
         {
