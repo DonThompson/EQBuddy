@@ -472,7 +472,7 @@
                                     <ControlTemplate TargetType="TabItem">
                                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
-                                                CornerRadius="999" Margin="0,0,3,3" Padding="{TemplateBinding Padding}">
+                                                CornerRadius="5" Margin="0,0,3,3" Padding="{TemplateBinding Padding}">
                                             <ContentPresenter ContentSource="Header"
                                                               HorizontalAlignment="Center"
                                                               TextElement.Foreground="{TemplateBinding Foreground}"/>

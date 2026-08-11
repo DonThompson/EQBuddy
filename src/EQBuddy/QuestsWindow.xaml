@@ -82,7 +82,7 @@
                 <!-- mine = your items + 📌 pins · zone = doable where you're standing ·
                      all = the whole catalog -->
                 <Border Grid.Column="4" BorderBrush="{DynamicResource BorderBrush}"
-                        BorderThickness="1" CornerRadius="9" Margin="6,0,0,0"
+                        BorderThickness="1" CornerRadius="6" Margin="6,0,0,0"
                         VerticalAlignment="Center" Padding="1">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ModeMine" Text="mine" Tag="mine" FontSize="10.5"

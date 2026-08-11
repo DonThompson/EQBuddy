@@ -313,7 +313,7 @@ public sealed class MapWindow : Window
             var gaugeRow = new Grid { Margin = new Thickness(0, 5, 0, 0) };
             gaugeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             gaugeRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            var pill = new Border { CornerRadius = new CornerRadius(999), Padding = new Thickness(8, 1, 8, 2) };
+            var pill = new Border { CornerRadius = new CornerRadius(4), Padding = new Thickness(7, 1, 7, 2) };
             pill.SetResourceReference(Border.BackgroundProperty, isDue ? "BadBrush" : "TrackBrush");
             var pillText = new TextBlock { Text = countdown, FontSize = 10.5, FontWeight = FontWeights.Bold };
             if (isDue) pillText.Foreground = Brushes.White;

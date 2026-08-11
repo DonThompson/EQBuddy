@@ -22,7 +22,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="TitleText" FontSize="12.5" FontWeight="SemiBold"
                            TextTrimming="CharacterEllipsis"/>
-                <Border Grid.Column="1" x:Name="ScopeBorder" CornerRadius="9" BorderThickness="1"
+                <Border Grid.Column="1" x:Name="ScopeBorder" CornerRadius="6" BorderThickness="1"
                         Margin="6,0,6,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ScopeFight" Text="Fight" FontSize="10" Padding="7,1"
