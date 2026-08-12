@@ -57,6 +57,10 @@ public sealed class LogWatcher : IDisposable
     /// timers still running from casts already in today's log.</summary>
     public BuffTracker? Buffs { get; set; }
 
+    /// <summary>Optional sixth consumer: the raid-kill ledger — its own high-water
+    /// mark makes replay idempotent, so it just rides the pipeline.</summary>
+    public RaidKillLedger? Raids { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -297,6 +301,7 @@ public sealed class LogWatcher : IDisposable
                             Mez?.Apply(evt);
                             Slow?.Apply(evt);
                             Buffs?.Apply(evt);
+                            Raids?.Apply(evt);
                         }
                         // Every line, parsed or not: a Text watch rule matches the line's
                         // words, not whatever event we did or didn't make of it.

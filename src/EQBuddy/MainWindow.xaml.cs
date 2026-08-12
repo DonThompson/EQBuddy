@@ -70,6 +70,9 @@ public partial class MainWindow : Window
         _slowTracker.Landed += OnSlowLanded;
         _buffTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "buff-durations.json"));
         _watcher.Buffs = _buffTracker;
+        _raidLedger = new RaidKillLedger(AppPaths.File("raid-kills.json"))
+        { CharacterKey = () => _stats.LedgerCharacterKey };
+        _watcher.Raids = _raidLedger;
         // Spawn timers ride the watcher's event stream — wired before the first Select so
         // the startup replay re-derives countdowns from kills already in the log.
         var spawnCatalog = SpawnCatalog.LoadEmbedded();
@@ -315,6 +318,7 @@ public partial class MainWindow : Window
         ["loot"] = LootSection, ["motes"] = MotesSection, ["sky"] = SkyQuestSection,
         ["tracked"] = TrackedSection,
         ["buffs"] = BuffsSection,
+        ["raids"] = RaidsSection,
         ["money"] = MoneySection,
         ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
     };
@@ -332,7 +336,7 @@ public partial class MainWindow : Window
         {
             var el = map[key];
             SectionsPanel.Children.Add(el);
-            if (key is not ("tracked" or "buffs"))   // these manage their own visibility (empty = hidden)
+            if (key is not ("tracked" or "buffs" or "raids"))   // these manage their own visibility (empty = hidden)
                 ((FrameworkElement)el).Visibility = _settings.HiddenSections.Contains(key)
                     ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -521,6 +525,7 @@ public partial class MainWindow : Window
     private readonly MezTracker _mezTracker = new();
     private readonly SlowTracker _slowTracker = new();
     private readonly BuffTracker _buffTracker = new();
+    private readonly RaidKillLedger _raidLedger;
 
     private readonly EqlWikiItemService _wikiItems =
         new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "items"));
@@ -894,6 +899,62 @@ public partial class MainWindow : Window
                     : null,
             };
         }).ToList();
+    }
+
+    /// <summary>
+    /// The Raids card: every raid target the game's own achievements list names, per
+    /// zone, with the personal record — witnessed kills with dates, or the imported
+    /// Conqueror achievement for clears from before EQBuddy. No difficulty tiers on
+    /// purpose: neither the log nor the dump names the instance tier, and a badge the
+    /// data can't back would be decoration, not information. Hidden until something
+    /// is defeated (or Options unhides it) — a fresh character owes nobody a zero.
+    /// </summary>
+    private void RenderRaids()
+    {
+        var hidden = _settings.HiddenSections.Contains("raids");
+        var defeated = hidden ? 0 : _raidLedger.DefeatedCount();
+        RaidsSection.Visibility = defeated > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (defeated == 0) return;
+        var catalog = RaidTargetCatalog.Default;
+        RaidsHeader.Text = $"{defeated} / {catalog.BossCount}";
+        if (!RaidsSection.IsExpanded) return;
+
+        RaidsPanel.Children.Clear();
+        foreach (var zone in catalog.Zones)
+        {
+            var records = zone.Bosses.Select(b => (Boss: b, Rec: _raidLedger.For(b))).ToList();
+            var done = records.Count(x => x.Rec is { } r && (r.Kills > 0 || r.AchievementComplete));
+            RaidsPanel.Children.Add(new TextBlock
+            {
+                Text = $"{zone.Zone} — {done}/{zone.Bosses.Length}",
+                FontSize = 11, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 1),
+                Foreground = (Brush)FindResource(done == zone.Bosses.Length ? "GoodBrush" : "AccentBrush"),
+            });
+            foreach (var (boss, rec) in records)
+            {
+                var cleared = rec is { } rr && (rr.Kills > 0 || rr.AchievementComplete);
+                var detail = rec switch
+                {
+                    { Kills: > 0 } k =>
+                        $"{(k.Kills > 1 ? $"×{k.Kills} · " : "")}last {k.LastKill:MMM d}",
+                    { AchievementComplete: true } => "cleared (from achievements)",
+                    _ => "",
+                };
+                RaidsPanel.Children.Add(new TextBlock
+                {
+                    Text = $"{(cleared ? "✓" : "·")} {boss}{(detail.Length > 0 ? $" — {detail}" : "")}",
+                    FontSize = 11.5, Margin = new Thickness(6, 0, 0, 0),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Foreground = (Brush)FindResource(cleared ? "TextBrush" : "DimBrush"),
+                });
+            }
+        }
+        RaidsPanel.Children.Add(new TextBlock
+        {
+            Text = "Kills count when your log sees the boss die; import /outputfile achievements to mark older clears.",
+            FontSize = 10, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0),
+            Foreground = (Brush)FindResource("DimBrush"),
+        });
     }
 
     /// <summary>
@@ -1726,6 +1787,7 @@ public partial class MainWindow : Window
 
         RenderTracked(s);   // per-tick: live ⏳ cue countdowns and "last: … ago" ages
         RenderBuffs();      // per-tick: the countdowns ARE the content
+        if (fullRender) RenderRaids();   // changes on kills and imports only
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
         {
@@ -2126,6 +2188,10 @@ public partial class MainWindow : Window
             var achievements = AchievementsImport.Parse(System.IO.File.ReadLines(dlg.FileName));
             var (matches, unmatched, autoGranted) =
                 AchievementsImport.SkyRewards(achievements, _settings.SkyQuestChecklist);
+            // The same dump carries the Conqueror sections — the Raids card's memory
+            // of clears from before EQBuddy. Marking is add-only and idempotent, so
+            // it needs no preview step of its own.
+            _raidLedger.MarkAchievements(achievements);
             ShowAchievementsPreview(matches, unmatched, autoGranted, achievements.Count);
         }
         catch (Exception ex)

@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.66.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW: 🐉 Raids card — every raid target from the game's own achievements list, per zone, with YOUR record: kills your log witnessed (with dates — a kill counts because you were there, whoever landed the blow), plus clears from before EQBuddy via the achievements import. No difficulty-tier badges yet, deliberately: neither the log nor the dump names the instance tier, and we won't decorate what the data can't back — if you know a log line that reveals the tier, tell us!",
+   "A reminder as these features pour in: EQBuddy is a BETA. Every card, timer and number in it got better because someone spoke up — keep the feedback and suggestions coming in GitHub Discussions, rough edges and wild ideas alike."
+  ]
+ }, {
   "version": "1.65.0",
   "date": "2026-08-12",
   "highlights": [

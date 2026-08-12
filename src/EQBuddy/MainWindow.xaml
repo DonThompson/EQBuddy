@@ -552,6 +552,20 @@
                 <StackPanel x:Name="TrackedPanel"/>
             </Expander>
 
+            <Expander x:Name="RaidsSection" Style="{StaticResource Section}" Visibility="Collapsed">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F409; Raids" FontSize="13"/>
+                        <TextBlock x:Name="RaidsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel x:Name="RaidsPanel"/>
+            </Expander>
+
             <Expander x:Name="BuffsSection" Style="{StaticResource Section}" Visibility="Collapsed">
                 <Expander.Header>
                     <Grid>
