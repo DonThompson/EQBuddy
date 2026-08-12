@@ -57,6 +57,7 @@ public partial class OptionsWindow : Window
         SlowRaidOnlyCheck.IsChecked = _main.Settings.SlowAlertRaidOnly;
         BuffExpiringOnlyCheck.IsChecked = _main.Settings.BuffTimersExpiringOnly;
         BuffWarnBox.Text = _main.Settings.BuffWarnSeconds.ToString("0");
+        CursorRingCheck.IsChecked = _main.Settings.ShowCursorRing;
         SelectTab(_main.Settings.OptionsTab);
         BuildHotkeyRows();
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
@@ -189,6 +190,11 @@ public partial class OptionsWindow : Window
         _main.Settings.SlowAlertSpoken = SlowSpokenCheck.IsChecked == true;
         _main.Settings.SlowAlertRaidOnly = SlowRaidOnlyCheck.IsChecked == true;
         _main.Settings.Save();
+    }
+
+    private void OnCursorRingToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _main.SetCursorRing(CursorRingCheck.IsChecked == true);
     }
 
     private void OnBuffDisplayChanged(object sender, RoutedEventArgs e)

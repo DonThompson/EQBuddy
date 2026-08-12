@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.67.1",
+  "date": "2026-08-12",
+  "highlights": [
+   "The ⚙ gear menu got the same treatment as Options: your windows up top (map, travel, quests, spawns, inventory, history, drops), the two in-play actions (camp marker, click-through), and everything else shelved under Data & imports and Help. Set-and-forget toggles — track spawns, grid overlay, cursor ring — now live in Options tabs where settings belong (cursor ring: Look tab)."
+  ]
+ }, {
   "version": "1.67.0",
   "date": "2026-08-12",
   "highlights": [

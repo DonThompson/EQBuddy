@@ -265,7 +265,6 @@ public partial class MainWindow : Window
                 Loaded += (_, _) => new WhatsNewWindow(this, notes).Show();
         }
 
-        TrackSpawnsItem.IsChecked = _settings.TrackSpawns;
         // No auto-open here: the window pops from RefreshUi when a countdown exists —
         // including ones recovered from the log during startup ingest. A tracker parked
         // on screen with nothing to say was the 1.20.0 behaviour, and it was noise.
@@ -1159,9 +1158,6 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private void OnTrackSpawns(object sender, RoutedEventArgs e) =>
-        SetTrackSpawns(TrackSpawnsItem.IsChecked);
-
     private void OnSpawnsWindow(object sender, RoutedEventArgs e) => ShowSpawnsWindow();
 
     private QuestsWindow? _questsWindow;
@@ -1199,7 +1195,6 @@ public partial class MainWindow : Window
     {
         _settings.TrackSpawns = on;
         _settings.Save();
-        TrackSpawnsItem.IsChecked = on;
         if (_optionsWindow is { IsLoaded: true } ow) ow.SyncTrackSpawns(on);
         if (!on)
         {
@@ -3389,9 +3384,6 @@ public partial class MainWindow : Window
 
     private GridOverlayWindow? _gridOverlay;
 
-    private void OnGridOverlay(object sender, RoutedEventArgs e) =>
-        SetGridOverlay(!_settings.ShowGridOverlay);
-
     /// <summary>Menu toggle and Options checkbox both land here, so they stay in
     /// lockstep (the SetTrackSpawns pattern). The overlay window exists only while
     /// the grid is on — nothing invisible lingers.</summary>
@@ -3399,7 +3391,6 @@ public partial class MainWindow : Window
     {
         _settings.ShowGridOverlay = on;
         _settings.Save();
-        GridOverlayItem.IsChecked = on;
         if (on)
         {
             if (_gridOverlay is not { IsLoaded: true })
@@ -3463,16 +3454,12 @@ public partial class MainWindow : Window
 
     private CursorRingWindow? _cursorRing;
 
-    private void OnCursorRing(object sender, RoutedEventArgs e) =>
-        SetCursorRing(!_settings.ShowCursorRing);
-
     /// <summary>Same lockstep shape as SetGridOverlay: the window exists only while
     /// the ring is on, and the menu check always tells the truth.</summary>
     internal void SetCursorRing(bool on)
     {
         _settings.ShowCursorRing = on;
         _settings.Save();
-        CursorRingItem.IsChecked = on;
         if (on)
         {
             if (_cursorRing is not { IsLoaded: true })

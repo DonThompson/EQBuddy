@@ -122,6 +122,14 @@
                     IsSnapToTickEnabled="True" Margin="20,4,0,4"
                     ValueChanged="OnGridSpacingChanged"/>
 
+            <CheckBox x:Name="CursorRingCheck" Margin="0,10,0,0"
+                      Checked="OnCursorRingToggled" Unchecked="OnCursorRingToggled">
+                <TextBlock Text="Cursor ring (never lose your pointer)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="A soft ring follows your mouse everywhere — click-through, over the game too. Drag its edge to resize it."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
             <TextBlock Text="Size also scales all text. Changes apply instantly and are saved. Drag either side edge to widen this window."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
         </StackPanel>
