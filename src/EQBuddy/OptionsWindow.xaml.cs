@@ -74,6 +74,7 @@ public partial class OptionsWindow : Window
 
         BuildRulesEditor();
         BuildCardsEditor();
+        UpdateGearImportStatus();
         UpdateCustomColorsPanel();
         BuildBreakoutChecks();
 
@@ -1268,6 +1269,70 @@ public partial class OptionsWindow : Window
     {
         _main.ApplySectionLayout();
         BuildCardsEditor();
+    }
+
+    private void UpdateGearImportStatus()
+    {
+        var total = _main.Settings.GearChecklist.Count;
+        if (total == 0)
+        {
+            GearImportStatus.Text = "No gear list imported.";
+            GearClearBtn.IsEnabled = false;
+            return;
+        }
+
+        var done = _main.Settings.GearChecklist.Count(i => i.Acquired);
+        var name = _main.Settings.GearChecklistName.Length > 0
+            ? _main.Settings.GearChecklistName
+            : "Imported gear list";
+        GearImportStatus.Text = $"{name}: {done}/{total} checked.";
+        GearClearBtn.IsEnabled = true;
+    }
+
+    private void OnImportGearChecklist(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import EQ Legends Tools shopping list",
+            Filter = "HTML files (*.html;*.htm)|*.html;*.htm|All files (*.*)|*.*",
+        };
+        if (dlg.ShowDialog(this) != true) return;
+
+        try
+        {
+            var import = GearChecklistImporter.ImportFile(dlg.FileName);
+            if (import.Items.Count == 0)
+            {
+                GearImportStatus.Text = "No gear items found in that file.";
+                return;
+            }
+
+            _main.ImportGearChecklist(import);
+            UpdateGearImportStatus();
+        }
+        catch (Exception ex)
+        {
+            GearImportStatus.Text = $"Import failed: {ex.Message}";
+        }
+    }
+
+    private void OnOpenGearTools(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
+                "https://eqlegendstools.com/char-sheet/") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            GearImportStatus.Text = $"Could not open EQ Legends Tools: {ex.Message}";
+        }
+    }
+
+    private void OnClearGearChecklist(object sender, RoutedEventArgs e)
+    {
+        _main.ClearGearChecklist();
+        UpdateGearImportStatus();
     }
 
     private System.Windows.Controls.Button CardButton(string glyph, string tip, int column, Action action)

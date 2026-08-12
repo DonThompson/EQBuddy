@@ -561,6 +561,30 @@
                 </StackPanel>
             </Expander>
 
+            <Expander x:Name="GearSection" Style="{StaticResource Section}">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x1F6E1; Gear" FontSize="13"/>
+                        <TextBlock x:Name="GearHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0/0"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel>
+                    <TextBlock x:Name="GearListName" Style="{StaticResource Dim}"
+                               TextWrapping="Wrap" Margin="0,2,0,4"/>
+                    <ScrollViewer MaxHeight="320"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  PanningMode="VerticalOnly"
+                                  Padding="0,0,4,0">
+                        <ItemsControl x:Name="GearChecklistList"/>
+                    </ScrollViewer>
+                </StackPanel>
+            </Expander>
+
             <Expander x:Name="TrackedSection" Style="{StaticResource Section}" Visibility="Collapsed">
                 <Expander.Header>
                     <Grid>

@@ -36,6 +36,7 @@ public partial class MainWindow : Window
     // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
     // does elsewhere — the checklist re-renders only when a box actually changed.
     private bool _skyQuestDirty = true;
+    private bool _gearChecklistDirty = true;
     // Perf audit #1: the version last painted into the expanded sections, and the
     // last time a full paint happened (10 s heartbeat keeps time-derived rates live).
     private long _lastRenderedVersion = -1;
@@ -177,7 +178,7 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
-                         MotesSection, SkyQuestSection, TrackedSection, MoneySection,
+                         MotesSection, SkyQuestSection, GearSection, TrackedSection, MoneySection,
                          ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
@@ -319,9 +320,8 @@ public partial class MainWindow : Window
     {
         ["combat"] = CombatSection, ["healing"] = HealingSection, ["kills"] = KillsSection,
         ["loot"] = LootSection, ["motes"] = MotesSection, ["sky"] = SkyQuestSection,
-        ["tracked"] = TrackedSection,
-        ["buffs"] = BuffsSection,
-        ["raids"] = RaidsSection,
+        ["gear"] = GearSection, ["tracked"] = TrackedSection,
+        ["buffs"] = BuffsSection, ["raids"] = RaidsSection,
         ["money"] = MoneySection,
         ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
     };
@@ -1575,6 +1575,7 @@ public partial class MainWindow : Window
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         UpdateSkyQuestChecklist(s);
+        UpdateGearHeaderOnly();
         MoneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         ProgressHeader.Text = $"{s.XpPercent:0.0}% xp"
             + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "")
@@ -1765,6 +1766,12 @@ public partial class MainWindow : Window
         {
             RenderSkyQuestChecklist();
             _skyQuestDirty = false;
+        }
+
+        if (GearSection.IsExpanded && _gearChecklistDirty)
+        {
+            RenderGearChecklist();
+            _gearChecklistDirty = false;
         }
 
         if (MoneySection.IsExpanded)
@@ -2018,6 +2025,114 @@ public partial class MainWindow : Window
     private static string FormatAge(TimeSpan age) => age.TotalMinutes < 1
         ? $"{Math.Max(0, (int)age.TotalSeconds)}s"
         : age.TotalHours < 1 ? $"{(int)age.TotalMinutes}m" : $"{(int)age.TotalHours}h {age.Minutes}m";
+
+    internal void ImportGearChecklist(GearChecklistImportResult import)
+    {
+        _settings.GearChecklist = import.Items;
+        _settings.GearChecklistName = import.Name;
+        _settings.Save();
+        _gearChecklistDirty = true;
+        UpdateGearHeaderOnly();
+        RefreshUi();
+    }
+
+    internal void ClearGearChecklist()
+    {
+        _settings.GearChecklist.Clear();
+        _settings.GearChecklistName = "";
+        _settings.Save();
+        _gearChecklistDirty = true;
+        UpdateGearHeaderOnly();
+        RefreshUi();
+    }
+
+    private void RenderGearChecklist()
+    {
+        GearChecklistList.Items.Clear();
+        var total = _settings.GearChecklist.Count;
+        if (total == 0)
+        {
+            GearListName.Text = "Import an EQ Legends Tools shopping-list HTML in Options.";
+            GearChecklistList.Items.Add(new TextBlock
+            {
+                Text = "No gear list imported.",
+                FontSize = 11,
+                Foreground = (Brush)FindResource("DimBrush"),
+                TextWrapping = TextWrapping.Wrap,
+            });
+            UpdateGearHeaderOnly();
+            return;
+        }
+
+        var done = _settings.GearChecklist.Count(i => i.Acquired);
+        GearListName.Text = _settings.GearChecklistName.Length > 0
+            ? $"{_settings.GearChecklistName} - {done}/{total}"
+            : $"{done}/{total} imported gear pieces";
+
+        foreach (var item in _settings.GearChecklist)
+        {
+            var text = new StackPanel();
+            text.Children.Add(new TextBlock
+            {
+                Text = item.Slot,
+                FontSize = 10,
+                Foreground = (Brush)FindResource("DimBrush"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+            text.Children.Add(new TextBlock
+            {
+                Text = item.Item,
+                FontSize = 12,
+                Foreground = (Brush)FindResource("TextBrush"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+            if (item.Source.Length > 0)
+            {
+                text.Children.Add(new TextBlock
+                {
+                    Text = item.Source,
+                    FontSize = 10,
+                    Foreground = (Brush)FindResource("DimBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                });
+            }
+
+            var tip = $"{item.Slot}: {item.Item}";
+            if (item.Source.Length > 0) tip += "\n" + item.Source;
+            if (item.Url.Length > 0) tip += "\n" + item.Url;
+            var check = new CheckBox
+            {
+                IsChecked = item.Acquired,
+                Content = text,
+                Margin = new Thickness(0, 2, 0, 2),
+                ToolTip = tip,
+            };
+            check.Checked += (_, _) => OnGearToggled(item, true);
+            check.Unchecked += (_, _) => OnGearToggled(item, false);
+            GearChecklistList.Items.Add(check);
+        }
+
+        UpdateGearHeaderOnly();
+    }
+
+    private void OnGearToggled(GearChecklistItem item, bool acquired)
+    {
+        item.Acquired = acquired;
+        _settings.Save();
+        UpdateGearHeaderOnly();
+        var total = _settings.GearChecklist.Count;
+        var done = _settings.GearChecklist.Count(i => i.Acquired);
+        GearListName.Text = _settings.GearChecklistName.Length > 0
+            ? $"{_settings.GearChecklistName} - {done}/{total}"
+            : $"{done}/{total} imported gear pieces";
+    }
+
+    private void UpdateGearHeaderOnly()
+    {
+        var total = _settings.GearChecklist.Count;
+        var acquired = _settings.GearChecklist.Count(i => i.Acquired);
+        GearHeader.Text = $"{acquired}/{total}";
+    }
 
     private void UpdateSkyQuestChecklist(StatsSnapshot s)
     {

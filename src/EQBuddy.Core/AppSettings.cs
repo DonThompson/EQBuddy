@@ -167,6 +167,11 @@ public sealed class AppSettings
     /// for quests finished before this feature existed. Marking one complete also
     /// checks its items (they were acquired and then handed over).</summary>
     public List<string> SkyQuestCompleted { get; set; } = [];
+    /// <summary>Imported equipment shopping list from EQ Legends Tools, shown as a
+    /// lightweight in-game checklist. Manual checkboxes: imports replace the list,
+    /// toggles persist until the next import or clear.</summary>
+    public List<GearChecklistItem> GearChecklist { get; set; } = [];
+    public string GearChecklistName { get; set; } = "";
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
@@ -330,6 +335,7 @@ public sealed class AppSettings
         // happens to save settings.
         var changed = settings.ApplyDefaultRules();
         changed |= settings.ApplyDefaultSkyQuestSection();
+        changed |= settings.ApplyDefaultGearSection();
         changed |= settings.ApplyDefaultSkyQuestChecklist();
         if (changed | settings.TrackedRules.Any(r => r.IdWasGenerated))
             settings.Save();
@@ -385,6 +391,16 @@ public sealed class AppSettings
         return true;
     }
 
+    public bool ApplyDefaultGearSection()
+    {
+        if (SectionOrder.Count == 0 || SectionOrder.Contains("gear")) return false;
+        var sky = SectionOrder.IndexOf("sky");
+        var motes = SectionOrder.IndexOf("motes");
+        var anchor = sky >= 0 ? sky : motes;
+        SectionOrder.Insert(anchor < 0 ? SectionOrder.Count : anchor + 1, "gear");
+        return true;
+    }
+
     public bool ApplyDefaultSkyQuestChecklist()
     {
         SkyQuestChecklist ??= [];
@@ -435,4 +451,13 @@ public sealed class SkyQuestChecklistItem
         Source = Source,
         Acquired = Acquired,
     };
+}
+
+public sealed class GearChecklistItem
+{
+    public string Slot { get; set; } = "";
+    public string Item { get; set; } = "";
+    public string Source { get; set; } = "";
+    public string Url { get; set; } = "";
+    public bool Acquired { get; set; }
 }
