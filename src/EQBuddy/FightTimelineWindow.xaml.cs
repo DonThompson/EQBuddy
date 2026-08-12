@@ -23,6 +23,12 @@ public partial class FightTimelineWindow : Window
     private readonly DispatcherTimer _tick = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly TimelineViewport _view = new();
     private string _signature = "";
+    private long _sourceVersion = -1;
+
+    /// <summary>The stats version, polled before pulling the source: a quiet second
+    /// (nobody swung, nothing dropped) used to cost a full snapshot plus a journal
+    /// copy just to learn nothing changed (2026-08-12 tuning pass).</summary>
+    internal Func<long>? SourceVersion { get; set; }
 
     public FightTimelineWindow(AppSettings settings,
         Func<(LastFightInfo?, List<GameEvent>, string)> source)
@@ -79,6 +85,9 @@ public partial class FightTimelineWindow : Window
     /// pull). Fit-mode keeps refitting as a live fight grows; a user viewport holds.</summary>
     private void Refresh()
     {
+        var version = SourceVersion?.Invoke() ?? -1;
+        if (version >= 0 && version == _sourceVersion && _view.Timeline is not null) return;
+        _sourceVersion = version;
         var (fight, events, pet) = _source();
         if (fight is null || fight.Start == DateTime.MinValue)
         {

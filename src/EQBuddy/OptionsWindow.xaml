@@ -376,6 +376,14 @@
                 <TextBlock Text="Show quick tutorial at launch" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
+
+            <CheckBox x:Name="PerfStatsCheck" Margin="0,10,0,0"
+                      Checked="OnPerfStatsToggled" Unchecked="OnPerfStatsToggled">
+                <TextBlock Text="Show EQBuddy's own CPU &amp; memory in the title bar" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="A small dim readout (&quot;0.3% · 84 MB&quot;) refreshed every few seconds — CPU is the share of ALL cores. Diagnostic honesty: if EQBuddy ever hogs your machine, this is how you catch it and tell us."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
         </StackPanel>
 
         </Grid>

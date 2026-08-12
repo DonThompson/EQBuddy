@@ -123,6 +123,12 @@ public sealed class SlowTracker
         return doomed.Count > 0;
     }
 
+    /// <summary>Cheap emptiness probe for per-tick gates — no list, no sort.</summary>
+    public bool Any(DateTime now)
+    {
+        lock (_lock) return _active.Values.Any(s => !Stale(s, now));
+    }
+
     /// <summary>Active slows, worst first; expired entries linger at 0:00 briefly.</summary>
     public List<SlowState> Snapshot(DateTime now)
     {

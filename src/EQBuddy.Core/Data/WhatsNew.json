@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.69.1",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW (discussion #112, thanks Frankthetankk): Options → Behavior → \"Show EQBuddy's own CPU & memory in the title bar\" — a small dim readout (\"0.3% · 84 MB\", refreshed every few seconds, CPU as a share of ALL cores) so you can hold the widget accountable. Off by default; diagnostics aren't furniture.",
+   "Under the hood, a tuning pass to keep that number honest: the fight timeline no longer rebuilds its data every second when nothing happened, the chip stack stopped assembling itself twice a second just to learn it was empty, and the Buffs card updates its clocks in place instead of rebuilding rows every tick. Ingest benchmarks now guard the pipeline: ~88,000 log lines/second — a full day's raid log replays in about two."
+  ]
+ },
+ {
   "version": "1.69.0",
   "date": "2026-08-12",
   "highlights": [

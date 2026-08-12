@@ -762,6 +762,42 @@ public partial class MainWindow : Window
         _heightDragStart = SectionScroll.ActualHeight;
     }
 
+    // ---- #112 (Frankthetankk): the widget's own footprint, on the record ----
+    private readonly System.Diagnostics.Process _self = System.Diagnostics.Process.GetCurrentProcess();
+    private DateTime _perfSampledAt;
+    private TimeSpan _perfCpuAt;
+
+    /// <summary>CPU% (share of ALL cores, so 100% = the whole machine) and working
+    /// set, sampled every 3 s from the process's own counters — cheap enough that
+    /// measuring the app doesn't meaningfully show up in the measurement. Off by
+    /// default; the label collapses without leaving a gap.</summary>
+    private void UpdatePerfStats()
+    {
+        if (!_settings.ShowPerfStats)
+        {
+            if (PerfLabel.Visibility != Visibility.Collapsed)
+                PerfLabel.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var now = DateTime.UtcNow;
+        if ((now - _perfSampledAt).TotalSeconds < 3) return;
+        try
+        {
+            _self.Refresh();
+            var cpu = _self.TotalProcessorTime;
+            if (_perfSampledAt != default)
+            {
+                var pct = (cpu - _perfCpuAt).TotalMilliseconds
+                          / ((now - _perfSampledAt).TotalMilliseconds * Environment.ProcessorCount) * 100;
+                PerfLabel.Text = $"{Math.Max(0, pct):0.0}% · {_self.WorkingSet64 / (1024.0 * 1024.0):0} MB";
+                PerfLabel.Visibility = Visibility.Visible;
+            }
+            _perfSampledAt = now;
+            _perfCpuAt = cpu;
+        }
+        catch (Exception ex) { App.LogError(ex); _settings.ShowPerfStats = false; }
+    }
+
     /// <summary>The one-line body of a card that has nothing yet — the card stays
     /// where Options put it (David's verdict: "show what I've selected to see"),
     /// and the line says what will fill it.</summary>
@@ -872,7 +908,8 @@ public partial class MainWindow : Window
     internal void OpenFightTimeline()
     {
         if (_timelineWindow is { IsLoaded: true } open) { open.Activate(); return; }
-        _timelineWindow = new FightTimelineWindow(_settings, TimelineSource);
+        _timelineWindow = new FightTimelineWindow(_settings, TimelineSource)
+        { SourceVersion = () => _stats.CurrentVersion };
         _timelineWindow.Show();
     }
 
@@ -999,37 +1036,55 @@ public partial class MainWindow : Window
     /// landings ("You feel different." with nobody seen casting) show the line
     /// itself and the longest candidate duration — honest range, never a guess.
     /// </summary>
+    /// <summary>Per-tick clock TextBlocks + their buff labels, so a tick with an
+    /// unchanged buff SET updates text in place instead of rebuilding rows (the mez
+    /// window's signature idiom — 2026-08-12 tuning pass).</summary>
+    private readonly List<(TextBlock Clock, string Label)> _buffClocks = [];
+    private string _buffsSignature = "";
+
     private void RenderBuffs()
     {
         if (_settings.HiddenSections.Contains("buffs")) return;   // layout collapsed it
         BuffsSection.Visibility = Visibility.Visible;
-        var buffs = _buffTracker.Snapshot(DateTime.Now);
-        BuffsHeader.Text = buffs.Count.ToString();
+        var count = _buffTracker.ActiveCount;   // header needs a number, not a list
+        BuffsHeader.Text = count.ToString();
         if (!BuffsSection.IsExpanded) return;
-        if (buffs.Count == 0)
-        {
-            BuffsPanel.Children.Clear();
-            BuffsPanel.Children.Add(EmptyCardLine(
-                "Nothing running — a buff landing on you starts its countdown here."));
-            return;
-        }
+        var now = DateTime.Now;
+        var buffs = count > 0 ? _buffTracker.Snapshot(now) : [];
 
         // Expiring-only mode (David): the card stays quiet until a buff is inside the
         // warning window — "tell me when it matters", with the rest counted honestly.
         var quiet = 0;
-        if (_settings.BuffTimersExpiringOnly)
+        if (_settings.BuffTimersExpiringOnly && buffs.Count > 0)
         {
             var warn = Math.Max(10, _settings.BuffWarnSeconds);
-            var urgent = buffs.Where(b => b.RemainingSeconds(DateTime.Now) is { } r && r <= warn).ToList();
+            var urgent = buffs.Where(b => b.RemainingSeconds(now) is { } r && r <= warn).ToList();
             quiet = buffs.Count - urgent.Count;
             buffs = urgent;
         }
 
+        var signature = string.Join("|", buffs.Select(b => b.Label + (b.Estimated ? "~" : ""))) + "·" + quiet;
+        if (signature == _buffsSignature)
+        {
+            // Same rows, newer clocks: update text and urgency tint in place.
+            for (var i = 0; i < _buffClocks.Count && i < buffs.Count; i++)
+            {
+                var remaining = buffs[i].RemainingSeconds(now);
+                _buffClocks[i].Clock.Text = ClockText(remaining, buffs[i].Estimated);
+                _buffClocks[i].Clock.SetResourceReference(TextBlock.ForegroundProperty,
+                    remaining is < 60 ? "WarnBrush" : "DimBrush");
+            }
+            return;
+        }
+        _buffsSignature = signature;
+        _buffClocks.Clear();
+
         BuffsPanel.Children.Clear();
         if (buffs.Count == 0)
         {
-            BuffsPanel.Children.Add(EmptyCardLine(
-                $"{quiet} running quietly — timers appear at {Math.Max(10, _settings.BuffWarnSeconds):0}s left."));
+            BuffsPanel.Children.Add(EmptyCardLine(_settings.BuffTimersExpiringOnly && quiet > 0
+                ? $"{quiet} running quietly — timers appear at {Math.Max(10, _settings.BuffWarnSeconds):0}s left."
+                : "Nothing running — a buff landing on you starts its countdown here."));
             return;
         }
         foreach (var b in buffs)
@@ -1050,20 +1105,19 @@ public partial class MainWindow : Window
                           + (b.Estimated ? " · est = wiki base; a natural fade teaches your real duration" : ""),
             };
             row.Children.Add(name);
-            var remaining = b.RemainingSeconds(DateTime.Now);
-            var clock = new TextBlock
-            {
-                Text = remaining is { } r
-                    ? $"{(int)r / 60}:{(int)r % 60:00}{(b.Estimated ? " est" : "")}"
-                    : "?",
-                FontSize = 12,
-                Foreground = (Brush)FindResource(
-                    remaining is < 60 ? "WarnBrush" : "DimBrush"),
-            };
+            var remaining = b.RemainingSeconds(now);
+            var clock = new TextBlock { Text = ClockText(remaining, b.Estimated), FontSize = 12 };
+            clock.SetResourceReference(TextBlock.ForegroundProperty,
+                remaining is < 60 ? "WarnBrush" : "DimBrush");
             Grid.SetColumn(clock, 1);
             row.Children.Add(clock);
             BuffsPanel.Children.Add(row);
+            _buffClocks.Add((clock, b.Label));
         }
+
+        static string ClockText(double? remaining, bool estimated) => remaining is { } r
+            ? $"{(int)r / 60}:{(int)r % 60:00}{(estimated ? " est" : "")}"
+            : "?";
     }
 
     /// <summary>Everything the fight-side chip stack shows: mez chips and slow chips,
@@ -1475,7 +1529,13 @@ public partial class MainWindow : Window
         // the 2026-08-11 Reddit ask — a non-CC class never wants the stack.
         // Slow chips (#94) ride the same stack: both are "active effect, counting
         // down, parked next to the fight", and one window means one saved position.
-        if (!_hiddenForFocus && FightChips(DateTime.Now).Count > 0)
+        // Emptiness is probed cheaply first (2026-08-12 tuning pass): building the
+        // full chip list twice a second to learn it was empty was pure churn.
+        var chipsNow = DateTime.Now;
+        var haveFightChips = !_hiddenForFocus
+            && ((_settings.MezChipsEnabled && _mezTracker.Any(chipsNow))
+                || (SlowChipsVisible(chipsNow) && _slowTracker.Any(chipsNow)));
+        if (haveFightChips)
         {
             if (_mezWindow is not { IsLoaded: true })
             {
@@ -1842,6 +1902,7 @@ public partial class MainWindow : Window
         RenderTracked(s);   // per-tick: live ⏳ cue countdowns and "last: … ago" ages
         RenderBuffs();      // per-tick: the countdowns ARE the content
         if (fullRender) RenderRaids();   // changes on kills and imports only
+        UpdatePerfStats();  // #112: self-measurement, every few seconds, off by default
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
         {

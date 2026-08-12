@@ -225,6 +225,12 @@ public sealed class BuffTracker
         return doomed.Count > 0;
     }
 
+    /// <summary>Cheap count for headers and per-tick gates — no list, no sort.</summary>
+    public int ActiveCount
+    {
+        get { lock (_lock) return _active.Count; }
+    }
+
     /// <summary>Active buffs, soonest to fade first; expired entries hold at 0:00
     /// until their fade line or the linger cap (estimates are floors, not facts).</summary>
     public List<BuffState> Snapshot(DateTime now)

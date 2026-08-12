@@ -70,6 +70,10 @@ public sealed class AppSettings
     /// click per visit. "look" / "alerts" / "watch" / "cards" / "behavior".</summary>
     public string OptionsTab { get; set; } = "look";
 
+    /// <summary>#112 (Frankthetankk): show EQBuddy's own CPU/memory in the title bar.
+    /// Off by default — diagnostic info, not furniture.</summary>
+    public bool ShowPerfStats { get; set; }
+
     /// <summary>Fight-timeline window placement; 0 width = never opened, defaults apply.</summary>
     public double TimelineLeft { get; set; }
     public double TimelineTop { get; set; }

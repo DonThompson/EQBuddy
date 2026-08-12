@@ -58,6 +58,7 @@ public partial class OptionsWindow : Window
         BuffExpiringOnlyCheck.IsChecked = _main.Settings.BuffTimersExpiringOnly;
         BuffWarnBox.Text = _main.Settings.BuffWarnSeconds.ToString("0");
         CursorRingCheck.IsChecked = _main.Settings.ShowCursorRing;
+        PerfStatsCheck.IsChecked = _main.Settings.ShowPerfStats;
         SelectTab(_main.Settings.OptionsTab);
         BuildHotkeyRows();
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
@@ -195,6 +196,13 @@ public partial class OptionsWindow : Window
     private void OnCursorRingToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _main.SetCursorRing(CursorRingCheck.IsChecked == true);
+    }
+
+    private void OnPerfStatsToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.Settings.ShowPerfStats = PerfStatsCheck.IsChecked == true;
+        _main.Settings.Save();
     }
 
     private void OnBuffDisplayChanged(object sender, RoutedEventArgs e)

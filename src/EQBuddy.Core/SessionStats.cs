@@ -435,6 +435,11 @@ public sealed class SessionStats
     /// hundred WPF rows per second during idle was the app's main steady-state cost).</summary>
     private long _version;
 
+    /// <summary>The version WITHOUT building a snapshot — for consumers that only
+    /// need "did anything happen since I last looked" (the fight timeline's tick was
+    /// paying a full snapshot + journal copy every second to learn the answer was no).</summary>
+    public long CurrentVersion { get { lock (_lock) return _version; } }
+
     public void Apply(GameEvent e)
     {
         var rolled = false;

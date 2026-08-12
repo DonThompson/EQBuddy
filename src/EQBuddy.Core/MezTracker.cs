@@ -198,6 +198,13 @@ public sealed class MezTracker
         if (changed) Changed?.Invoke();
     }
 
+    /// <summary>Cheap emptiness probe for per-tick gates — no list, no sort.</summary>
+    public bool Any(DateTime now)
+    {
+        lock (_lock)
+            return _active.Any(m => m.ExpiresAt is null || now - m.ExpiresAt < ExpiryLinger);
+    }
+
     /// <summary>Active mezzes at <paramref name="now"/>, soonest wake-up first;
     /// unknown-duration entries sort last (nothing to warn about yet). Entries past
     /// their expiry stay visible (at 0:00) for <see cref="ExpiryLinger"/> — the mez
