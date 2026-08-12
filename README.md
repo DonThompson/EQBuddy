@@ -1,11 +1,20 @@
 # EQBuddy — EverQuest Legends Session Tracker
 
 An always-on-top widget that reads your EverQuest Legends `/log` file live and turns
-it into everything worth knowing about your session: kills and DPS, loot with personal
-drop rates, money, XP, spawn timers that learn from your kills, mez countdowns, a
-quest tracker that flags what you're ready to turn in, and alerts you write yourself
-(substring or regex, with per-rule sounds, colors, and a spoken voice). Click any
-card to drill into details; every session lands in a local searchable history.
+it into everything worth knowing about your session: kills and DPS, a **fight
+timeline** that draws every swing on one canvas, loot with personal drop rates,
+money, XP, spawn timers that learn from your kills, mez countdowns, **buff timers
+that learn your character's real durations**, **raid-target tracking**, a **slow
+alert with the cure attached**, a quest tracker that flags what you're ready to turn
+in, and alerts you write yourself (substring or regex, per-rule sounds and colors, a
+spoken voice — or just click a recent log line and it becomes a rule). Click any
+card to drill into details; every session lands in a local searchable history with
+level and AA progress charts.
+
+**EQBuddy is a beta, improving weekly — and most features on this page started as a
+player's suggestion.** Rough edges, wild ideas, wrong numbers: [say so in
+Discussions](https://github.com/DranakCorps-bot/EQBuddy/discussions) and watch what
+happens.
 
 **Log-only, by principle.** EQBuddy never reads game memory, never uploads anything,
 and never measures other players — it knows only what your own log says. Windows
@@ -27,17 +36,19 @@ page instead.
 | | |
 |---|---|
 | ![Compact view](docs/screenshots/widget-compact.png) | ![Expanded details](docs/screenshots/widget-expanded.png) |
-| **The widget at a glance** — one line per card: Combat, Kills, Loot, Motes, Sky Quest, Watch, Money, Progress, Faction. Click any card to expand it. | **Full drill-down** — damage per skill/spell/pet with crit rates, recent fights with per-fight DPS, per-creature farming with your observed drop rates |
+| **The widget at a glance** — one line per card: Combat, Kills, Loot, Motes, Sky Quest, Watch, Buffs, Raids, Money, Progress, Faction. Click any card to expand it. | **Full drill-down** — damage per skill with crit *and miss* rates inline, hit ranges on hover, last-fight breakdowns, and both session DPS models labeled: in-combat and wall-clock |
+| ![Fight timeline](docs/screenshots/fight-timeline.png) | ![Buffs, raids and watch cards](docs/screenshots/widget-cards.png) |
+| **Fight timeline** — the whole pull on one canvas: a lane per skill, solid bars for hits (taller = harder, orange = critical), hollow outlines for misses and resists with the log's own words on hover, plus DPS-over-time with the peak flagged. Scroll zooms, drag pans, and a live fight keeps drawing | **Buff timers & raid targets** — buffs count down with honest `est` labels until a natural fade teaches your character's *real* duration (your Spell Casting Reinforcement rank included); the Raids card remembers every raid target your log saw die, with dates |
 | ![Drops by Creature](docs/screenshots/drops-window.png) | ![Quest Tracker](docs/screenshots/quest-tracker.png) |
 | **Drops by Creature** — your personal drop rates per mob, with ✦ marking drops the [community wiki](https://eqlwiki.com) doesn't know yet and **✦ Copy for wiki** building a paste-ready contribution | **Quest Tracker** — 900+ wiki quests; loot something a quest wants and it flips to **✓ ready**, sorted by how close the quest is to where you're standing |
 | ![Sky Quest checklist](docs/screenshots/sky-quest.png) | ![Spawn timers](docs/screenshots/spawns-window.png) |
 | **Plane of Sky checklist** — all 222 turn-in items, a tab per class; loot auto-checks *your* class's boxes, and a reward's own checkbox marks the quest turned in | **Spawn timers** — kill a named (or its placeholder) and a countdown chip appears; timers tighten themselves from your own kills, every duration editable |
-| ![Session history](docs/screenshots/history-window.png) | ![Review an archived session](docs/screenshots/session-picker.png) |
-| **Session history** — every session in a local, searchable database: notes, tags, side-by-side compare, export | **Archive review** — replay any saved log read-only; a multi-session file asks which evening you meant. Drops and wiki export work on the past |
+| ![Session history with progress charts](docs/screenshots/history-progress.png) | ![Review an archived session](docs/screenshots/session-picker.png) |
+| **Session history & progress charts** — every session in a local, searchable database (notes, tags, compare, export), and per-character **level and AA charts**: every ding at its exact time, a staircase not a slope | **Archive review** — replay any saved log read-only; a multi-session file asks which evening you meant. Drops and wiki export work on the past |
 | ![Mini dashboard](docs/screenshots/widget-mini-chips.png) | ![Breakout windows](docs/screenshots/breakout-windows.png) |
 | **Mini mode** — a one-line pill of your starred stats plus live watch-rule chips; alerts still pop | **Breakout windows** — floating bar charts for your damage, healing, and pet, per fight or per session |
-| ![Options](docs/screenshots/options-window.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
-| **Options** — themes, sizes, and the watch-rule editor: per-rule sounds, colors, spoken alerts, delays, and a `.*` regex toggle | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
+| ![Options, tabbed](docs/screenshots/options-tabs.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
+| **Options, now in tabs** — Look · Alerts & chips · Watch rules · Cards & windows · Behavior. The alerts tab shown: the 🐌 slow alert (with its spoken voice and raid-only mode) and the buff-timer display controls | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
 | ![Zone map](docs/screenshots/map-window.png) | ![Travel route](docs/screenshots/travel-window.png) |
 | **Zone map** — classic map packs with your `/loc` marker and a comet-tail breadcrumb trail of your last minute of movement; every running spawn timer shows in the side panel **and** as a camp pin on the map with its countdown ticking beside it | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
