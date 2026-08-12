@@ -331,14 +331,16 @@ public partial class MainWindow : Window
         foreach (var (key, _) in SectionCatalog)
             if (!order.Contains(key)) order.Add(key);
 
+        // Options is the whole truth (David's 1.66.2 verdict): a card the user hasn't
+        // hidden SHOWS, empty or not — self-hiding cards read as missing features. The
+        // renders fill an honest one-line empty state instead of vanishing the card.
         SectionsPanel.Children.Clear();
         foreach (var key in order)
         {
             var el = map[key];
             SectionsPanel.Children.Add(el);
-            if (key is not ("tracked" or "buffs" or "raids"))   // these manage their own visibility (empty = hidden)
-                ((FrameworkElement)el).Visibility = _settings.HiddenSections.Contains(key)
-                    ? Visibility.Collapsed : Visibility.Visible;
+            ((FrameworkElement)el).Visibility = _settings.HiddenSections.Contains(key)
+                ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 
@@ -757,6 +759,16 @@ public partial class MainWindow : Window
         _heightDragStart = SectionScroll.ActualHeight;
     }
 
+    /// <summary>The one-line body of a card that has nothing yet — the card stays
+    /// where Options put it (David's verdict: "show what I've selected to see"),
+    /// and the line says what will fill it.</summary>
+    private TextBlock EmptyCardLine(string text) => new()
+    {
+        Text = text, FontSize = 11, TextWrapping = TextWrapping.Wrap,
+        Margin = new Thickness(0, 2, 0, 2),
+        Foreground = (Brush)FindResource("DimBrush"),
+    };
+
     /// <summary>The grip's tooltip states what a drag can actually do RIGHT NOW —
     /// with every card already visible, dragging down is a no-op, and a control
     /// that silently does nothing reads as broken (David's 1.66.1 retest). The
@@ -765,9 +777,9 @@ public partial class MainWindow : Window
     {
         var scrolling = SectionsPanel.ActualHeight > SectionScroll.ActualHeight + 1;
         HeightGrip.ToolTip = scrolling
-            ? "Drag down to show more cards (the list is scrolling); drag up to shorten. Double-click: fit to screen."
-            : "Every card is already visible, so dragging down has nothing more to show — drag up to shorten the " +
-              "widget (the list scrolls). Cards marked · auto in Options appear when they have content.";
+            ? "Drag down to show more cards (the list is scrolling); drag up to shorten. Double-click: back to automatic."
+            : "The widget is sizing itself automatically — everything you've selected in Options is shown. " +
+              "Drag up if you'd rather have it shorter (the list scrolls); double-click returns to automatic.";
     }
 
     private void OnHeightGripDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
@@ -924,13 +936,20 @@ public partial class MainWindow : Window
     /// </summary>
     private void RenderRaids()
     {
-        var hidden = _settings.HiddenSections.Contains("raids");
-        var defeated = hidden ? 0 : _raidLedger.DefeatedCount();
-        RaidsSection.Visibility = defeated > 0 ? Visibility.Visible : Visibility.Collapsed;
-        if (defeated == 0) return;
+        if (_settings.HiddenSections.Contains("raids")) return;   // layout collapsed it
+        RaidsSection.Visibility = Visibility.Visible;
+        var defeated = _raidLedger.DefeatedCount();
         var catalog = RaidTargetCatalog.Default;
         RaidsHeader.Text = $"{defeated} / {catalog.BossCount}";
         if (!RaidsSection.IsExpanded) return;
+        if (defeated == 0)
+        {
+            RaidsPanel.Children.Clear();
+            RaidsPanel.Children.Add(EmptyCardLine(
+                "Nothing defeated yet — kills your log witnesses land here, and importing " +
+                "/outputfile achievements marks clears from before EQBuddy."));
+            return;
+        }
 
         RaidsPanel.Children.Clear();
         foreach (var zone in catalog.Zones)
@@ -979,12 +998,18 @@ public partial class MainWindow : Window
     /// </summary>
     private void RenderBuffs()
     {
-        var hidden = _settings.HiddenSections.Contains("buffs");
-        var buffs = hidden ? [] : _buffTracker.Snapshot(DateTime.Now);
-        BuffsSection.Visibility = buffs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        if (buffs.Count == 0) return;
+        if (_settings.HiddenSections.Contains("buffs")) return;   // layout collapsed it
+        BuffsSection.Visibility = Visibility.Visible;
+        var buffs = _buffTracker.Snapshot(DateTime.Now);
         BuffsHeader.Text = buffs.Count.ToString();
         if (!BuffsSection.IsExpanded) return;
+        if (buffs.Count == 0)
+        {
+            BuffsPanel.Children.Clear();
+            BuffsPanel.Children.Add(EmptyCardLine(
+                "Nothing running — a buff landing on you starts its countdown here."));
+            return;
+        }
 
         BuffsPanel.Children.Clear();
         foreach (var b in buffs)
@@ -1832,13 +1857,18 @@ public partial class MainWindow : Window
 
     private void RenderTracked(StatsSnapshot s)
     {
-        var haveRules = _settings.TrackedRules.Count > 0 &&
-                        !_settings.HiddenSections.Contains("tracked");
-        TrackedSection.Visibility = haveRules ? Visibility.Visible : Visibility.Collapsed;
-        if (!haveRules) return;
-
+        if (_settings.HiddenSections.Contains("tracked")) return;   // layout collapsed it
+        TrackedSection.Visibility = Visibility.Visible;
         TrackedHeader.Text = s.Tracked.Sum(t => t.TotalQuantity).ToString();
         if (!TrackedSection.IsExpanded) return;
+
+        if (_settings.TrackedRules.Count == 0)
+        {
+            TrackedPanel.Children.Clear();
+            TrackedPanel.Children.Add(EmptyCardLine(
+                "No watch rules yet — add one under ⚙ Options (or pick a recent log line there)."));
+            return;
+        }
 
         TrackedPanel.Children.Clear();
 

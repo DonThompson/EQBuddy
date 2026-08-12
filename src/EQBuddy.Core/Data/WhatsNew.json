@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.66.3",
+  "date": "2026-08-12",
+  "highlights": [
+   "Cards you haven’t hidden now ALWAYS show — what you select in Options is what the widget displays, automatically. A card with nothing yet (Buffs before a buff lands, Raids before a kill, Watch before your first rule) shows one honest line saying what will fill it, instead of hiding and reading as a missing feature. The widget grows on its own as cards fill; the bottom grip is only for choosing a SHORTER widget (double-click returns to automatic)."
+  ]
+ }, {
   "version": "1.66.2",
   "date": "2026-08-12",
   "highlights": [

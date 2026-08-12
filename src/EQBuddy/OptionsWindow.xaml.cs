@@ -1199,20 +1199,12 @@ public partial class OptionsWindow : Window
             for (var i = 0; i < 3; i++)
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
 
-            // Self-hiding cards say so: moving one while it's empty changes nothing
-            // visible, which read as "the arrows are broken" in the 1.66 field test.
-            var selfHiding = card.Key is "tracked" or "buffs" or "raids";
+            // Since 1.66.3 every unhidden card shows (with an empty state when it has
+            // nothing yet) — Options is the whole truth, no self-hiding asterisks.
             row.Children.Add(new System.Windows.Controls.TextBlock
             {
-                Text = card.Title + (selfHiding ? "  · auto" : ""),
-                FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+                Text = card.Title, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
                 Foreground = (System.Windows.Media.Brush)FindResource(card.Hidden ? "DimBrush" : "TextBrush"),
-                ToolTip = selfHiding ? card.Key switch
-                {
-                    "buffs" => "Appears on its own when a buff timer is running — an empty Buffs card would just be furniture.",
-                    "raids" => "Appears on its own once a raid target has been defeated (or imported from achievements).",
-                    _ => "Appears on its own while you have watch rules.",
-                } : null,
             });
 
             row.Children.Add(CardButton("↑", "Move up", 1, () => { _vm.MoveCard(card.Key, -1); ApplyCards(); }));
