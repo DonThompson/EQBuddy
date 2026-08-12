@@ -637,6 +637,50 @@ public partial class OptionsWindow : Window
         BuildRulesEditor();
     }
 
+    /// <summary>"That thing that just happened — alert on it." The picker lists the
+    /// last few log lines; clicking one mints a Text rule with the line as its match,
+    /// ready to trim. Nobody should have to remember a log line to watch for it
+    /// (Companion-parity idea, our picker).</summary>
+    private void OnAddRuleFromLog(object sender, RoutedEventArgs e)
+    {
+        RecentLinesChrome.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "PopupBrush");
+        RecentLinesChrome.SetResourceReference(System.Windows.Controls.Border.BorderBrushProperty, "AccentBrush");
+        RecentLinesList.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty, "PopupBrush");
+        RecentLinesList.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "TextBrush");
+
+        var lines = _main.RecentLogLines();
+        RecentLinesList.Items.Clear();
+        // Newest first: "just happened" is the whole point of the picker.
+        for (var i = lines.Count - 1; i >= 0; i--)
+        {
+            var (time, message) = lines[i];
+            RecentLinesList.Items.Add(new System.Windows.Controls.ListBoxItem
+            {
+                Content = $"{time:HH:mm:ss}  {(message.Length <= 96 ? message : message[..95] + "…")}",
+                Tag = message,
+                ToolTip = message,
+            });
+        }
+        if (RecentLinesList.Items.Count == 0)
+            RecentLinesList.Items.Add(new System.Windows.Controls.ListBoxItem
+            { Content = "No log lines seen yet — play a little first.", IsEnabled = false });
+        RecentLinesPopup.IsOpen = true;
+    }
+
+    private void OnRecentLinePicked(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!_ready || RecentLinesList.SelectedItem is not System.Windows.Controls.ListBoxItem
+            { Tag: string message }) return;
+        RecentLinesPopup.IsOpen = false;
+        RecentLinesList.SelectedItem = null;
+        var rule = _vm.AddRule();
+        rule.Kind = EQBuddy.Core.WatchKind.Text;
+        rule.Pattern = message;
+        rule.Name = message.Length <= 28 ? message : message[..27] + "…";
+        _vm.Persist();
+        BuildRulesEditor();
+    }
+
     /// <summary>
     /// Column layout for both the header and every rule row. Auto columns are matched by
     /// SharedSizeGroup (the panel is a shared-size scope) so the header labels stay lined
@@ -664,6 +708,7 @@ public partial class OptionsWindow : Window
         Auto("RuleDelay");
         Auto("RuleShare");
         Auto("RuleDelete");
+        Auto("RuleArrange");
         return grid;
     }
 
@@ -1021,6 +1066,25 @@ public partial class OptionsWindow : Window
             };
             System.Windows.Controls.Grid.SetColumn(del, 10);
             row.Children.Add(del);
+
+            // Arrange (#105, wizen): this order IS the Tracked card's "manual" sort.
+            // Stacked ▲▼ in one cell — precise where drag would fight the text boxes.
+            var arrange = new System.Windows.Controls.StackPanel { Margin = new Thickness(2, 0, 0, 0) };
+            foreach (var (glyph, delta) in new[] { ("▲", -1), ("▼", +1) })
+            {
+                var move = new System.Windows.Controls.Button
+                {
+                    Content = glyph, Style = (Style)FindResource("IconButton"),
+                    FontSize = 7, Padding = new Thickness(2, 0, 2, 0),
+                    ToolTip = "Move this rule " + (delta < 0 ? "up" : "down") +
+                              " — the watch display's \"manual\" sort follows this order",
+                };
+                var d = delta;
+                move.Click += (_, _) => { _vm.MoveRule(rule, d); BuildRulesEditor(); };
+                arrange.Children.Add(move);
+            }
+            System.Windows.Controls.Grid.SetColumn(arrange, 11);
+            row.Children.Add(arrange);
 
             RulesPanel.Children.Add(row);
         }

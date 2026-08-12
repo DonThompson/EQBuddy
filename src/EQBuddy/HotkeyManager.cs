@@ -18,6 +18,7 @@ public sealed class HotkeyManager
     public static readonly (string Key, string Label)[] Actions =
     [
         ("toggleAll", "Show / hide all of EQBuddy"),
+        ("toggleMinimize", "Minimize / restore the dashboard"),
         ("toggleMap", "Zone map"),
         ("toggleQuests", "Quest tracker"),
         ("toggleSpawns", "Spawn timers"),

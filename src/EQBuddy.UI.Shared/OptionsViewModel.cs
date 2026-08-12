@@ -337,6 +337,19 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         PersistAnd(nameof(Rules));
     }
 
+    /// <summary>Move a rule up (-1) or down (+1) in the list — the "manual" watch
+    /// sort shows rules exactly in this order (#105, wizen). No-op at the edges.</summary>
+    public void MoveRule(TrackedRule rule, int delta)
+    {
+        var rules = _settings.TrackedRules;
+        var at = rules.IndexOf(rule);
+        var to = at + delta;
+        if (at < 0 || to < 0 || to >= rules.Count) return;
+        rules.RemoveAt(at);
+        rules.Insert(to, rule);
+        PersistAnd(nameof(Rules));
+    }
+
     /// <summary>Append rules decoded from a share string — WatchRuleShare already
     /// rebuilt them with fresh ids and sanitized fields; this just lands them.</summary>
     public void ImportRules(IEnumerable<TrackedRule> rules)

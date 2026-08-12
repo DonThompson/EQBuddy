@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.64.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW: \"+ From a recent log line…\" in Options → watch rules — pick any line that just happened in your log and it becomes a Text rule instantly, match prefilled, ready to trim. Nobody should have to remember a log line to watch for it.",
+   "The Tracked card learned to sort (discussion #105, thanks wizen): manual / a–z / total / recent links on the card, and ▲▼ arrows in Options arrange the manual order.",
+   "New hotkey action (discussion #100, thanks jlcrisp): minimize / restore the dashboard — bind it under Options → Global hotkeys."
+  ]
+ }, {
   "version": "1.63.0",
   "date": "2026-08-12",
   "highlights": [

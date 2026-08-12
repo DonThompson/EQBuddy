@@ -383,12 +383,30 @@ public sealed class SessionStats
     /// Only lines matching an active pattern are kept, so with no text rules configured
     /// this costs one array-length check per line and changes nothing else.
     /// </summary>
+    /// <summary>The last few raw messages, newest last — the "new rule from a recent
+    /// line" picker's menu (Companion-parity idea: alerts built from what just
+    /// happened instead of typed from memory). Bounded ring, kept even with no text
+    /// rules configured — the picker is how the FIRST rule gets made.</summary>
+    public const int RecentLineCap = 80;
+    private readonly Queue<(DateTime Time, string Message)> _recentLines = new();
+
+    /// <summary>Snapshot copy of the recent-lines ring, oldest first.</summary>
+    public List<(DateTime Time, string Message)> RecentLines()
+    {
+        lock (_lock) return [.. _recentLines];
+    }
+
     public void ObserveRawLine(string line)
     {
         TrackedRule[] patterns;
         lock (_lock) patterns = _textPatterns;
-        if (patterns.Length == 0) return;
         if (!LogParser.TrySplitLine(line, out var ts, out var msg)) return;
+        lock (_lock)
+        {
+            _recentLines.Enqueue((ts, msg));
+            if (_recentLines.Count > RecentLineCap) _recentLines.Dequeue();
+        }
+        if (patterns.Length == 0) return;
 
         foreach (var pattern in patterns)
         {

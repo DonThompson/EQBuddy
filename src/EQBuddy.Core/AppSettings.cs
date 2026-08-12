@@ -52,6 +52,10 @@ public sealed class AppSettings
     /// chat, the log's only raid signal. Off = alert everywhere.</summary>
     public bool SlowAlertRaidOnly { get; set; }
 
+    /// <summary>How the Tracked card orders its rules (#105, wizen): "manual" (the
+    /// Options list order, rearrangeable there), "alpha", "total", or "recent".</summary>
+    public string WatchSortMode { get; set; } = "manual";
+
     /// <summary>Fight-timeline window placement; 0 width = never opened, defaults apply.</summary>
     public double TimelineLeft { get; set; }
     public double TimelineTop { get; set; }

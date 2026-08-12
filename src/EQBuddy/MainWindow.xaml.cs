@@ -823,6 +823,9 @@ public partial class MainWindow : Window
         catch (Exception ex) { App.LogError(ex); }
     }
 
+    /// <summary>Recent raw log messages for the Options "rule from a recent line" picker.</summary>
+    internal List<(DateTime Time, string Message)> RecentLogLines() => _stats.RecentLines();
+
     private FightTimelineWindow? _timelineWindow;
 
     private void OnOpenTimeline(object sender, RoutedEventArgs e) => OpenFightTimeline();
@@ -1707,8 +1710,60 @@ public partial class MainWindow : Window
         if (!TrackedSection.IsExpanded) return;
 
         TrackedPanel.Children.Clear();
+
+        // Sort links (#105, wizen): manual follows the Options list order (arrange
+        // with ▲▼ there); the rest re-order the display without touching the rules.
+        if (s.Tracked.Count > 1)
+        {
+            var sortBar = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 2, 2, 0),
+            };
+            sortBar.Children.Add(new TextBlock
+            {
+                Text = "sort:", FontSize = 10, Margin = new Thickness(0, 0, 4, 0),
+                Foreground = (Brush)FindResource("DimBrush"),
+            });
+            foreach (var (mode, label) in new[]
+                     { ("manual", "manual"), ("alpha", "a–z"), ("total", "total"), ("recent", "recent") })
+            {
+                var active = _settings.WatchSortMode == mode;
+                var link = new TextBlock
+                {
+                    Text = label, FontSize = 10, Cursor = Cursors.Hand,
+                    Margin = new Thickness(0, 0, 6, 0),
+                    FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal,
+                    Foreground = (Brush)FindResource(active ? "AccentBrush" : "DimBrush"),
+                    ToolTip = mode == "manual"
+                        ? "The Options list order — rearrange rules with ▲▼ in Options → watch rules"
+                        : null,
+                };
+                var picked = mode;
+                link.MouseLeftButtonDown += (_, e) =>
+                {
+                    e.Handled = true;
+                    _settings.WatchSortMode = picked;
+                    _settings.Save();
+                    RenderTracked(CurrentSnapshot());
+                };
+                sortBar.Children.Add(link);
+            }
+            TrackedPanel.Children.Add(sortBar);
+        }
+
+        var ordered = _settings.WatchSortMode switch
+        {
+            "alpha" => s.Tracked.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToList(),
+            "total" => s.Tracked.OrderByDescending(t => t.TotalQuantity).ToList(),
+            // Never-matched rules sink to the bottom rather than jumbling the top.
+            "recent" => s.Tracked.OrderByDescending(t => t.LastMatch ?? DateTime.MinValue).ToList(),
+            _ => s.Tracked,
+        };
+
         var dueByRule = _delayedAlerts.NextDueByRule(DateTime.Now);
-        foreach (var r in s.Tracked)
+        foreach (var r in ordered)
         {
             var head = new Grid { Margin = new Thickness(0, 4, 0, 0) };
             head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -3133,6 +3188,10 @@ public partial class MainWindow : Window
                     break;
                 case "toggleClickThrough":
                     OnClickThrough(this, new RoutedEventArgs());
+                    break;
+                // #100 round two (jlcrisp): the pill/dashboard flip, from the keyboard.
+                case "toggleMinimize":
+                    SetMode(!_settings.Minimized);
                     break;
             }
         }));

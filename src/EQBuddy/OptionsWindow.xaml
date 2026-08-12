@@ -240,8 +240,20 @@
             </Border>
             <!-- Shared-size scope so the header row's Auto columns track the rule rows'. -->
             <StackPanel x:Name="RulesPanel" Margin="0,4,0,0" Grid.IsSharedSizeScope="True"/>
-            <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource ActionButton}"
-                    HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="AddRuleBtn" Content="+ Add watch rule" Style="{StaticResource ActionButton}"
+                        HorizontalAlignment="Left" FontSize="12" Click="OnAddRule"/>
+                <Button x:Name="AddFromLogBtn" Content="+ From a recent log line…" Style="{StaticResource ActionButton}"
+                        HorizontalAlignment="Left" FontSize="12" Margin="8,0,0,0" Click="OnAddRuleFromLog"
+                        ToolTip="Pick a line that just happened in your log — it becomes a Text rule, no typing. Edit the match afterward to taste."/>
+            </StackPanel>
+            <Popup x:Name="RecentLinesPopup" PlacementTarget="{Binding ElementName=AddFromLogBtn}"
+                   Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                <Border x:Name="RecentLinesChrome" BorderThickness="1" Padding="2" CornerRadius="6">
+                    <ListBox x:Name="RecentLinesList" MaxHeight="300" MaxWidth="560" FontSize="11.5"
+                             SelectionChanged="OnRecentLinePicked"/>
+                </Border>
+            </Popup>
             <Grid Margin="0,6,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
