@@ -181,6 +181,21 @@ public partial class MainWindow : Window
                          ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
+        // Expanding a card renders it NOW (David's field report: sections only fill
+        // inside the fullRender gate, so a click during a quiet moment stared at an
+        // empty body until the next event or the 10 s heartbeat — up to "multiple
+        // seconds to open"). Background priority lets the expander's own layout land
+        // first, so the click still feels mechanical.
+        foreach (var el in SectionMap().Values)
+            if (el is Expander section)
+                section.Expanded += (_, _) =>
+                {
+                    _lastRenderedVersion = -1;
+                    _skyQuestDirty = true;
+                    Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
+                        RefreshUi);
+                };
+
         if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
             StartCrowdControlCapture();
 
@@ -3200,11 +3215,17 @@ public partial class MainWindow : Window
     /// parser convention: ability damage ÷ total time in combat, so an ability's dps
     /// falls the longer you go without using it. The burst rate (total ÷ the ability's
     /// own active time) lives in the tooltip. The bar follows the sorted column.</summary>
+    /// <summary>Card lists cap at 30 rows with a spoken overflow line (David's field
+    /// report: a long session's Combat card built EVERY ability row ever seen — procs
+    /// and clickies included — and first-expand paid seconds of layout for rows below
+    /// the fold). Sorting still surfaces anything; breakouts and History stay uncapped.</summary>
+    private const int CardRowCap = 30;
+
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
         StatSort sort, double combatSeconds, string rateLabel,
         IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null) =>
         BreakdownRows.FillAbilityRowsSorted(this, list, stats, sort, combatSeconds, rateLabel,
-            resists: resists);
+            CardRowCap, resists: resists);
 
     /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>
     private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)

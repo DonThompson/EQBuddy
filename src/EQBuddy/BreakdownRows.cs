@@ -146,6 +146,9 @@ internal static class BreakdownRows
         };
         var topMetric = Math.Max(1e-9, sorted.Max(metric));
         var barBrush = BarBrush(resources);
+        // Overflow is said out loud, never silently truncated: a capped list that
+        // looks complete would misstate the session (the no-silent-caps rule).
+        var overflow = sorted.Count - max;
         foreach (var d in sorted.Take(max))
         {
             var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
@@ -174,5 +177,14 @@ internal static class BreakdownRows
                 + resistTip;
             list.Items.Add(Row(resources, d.Name, value, metric(d) / topMetric, barBrush, tooltip));
         }
+        if (overflow > 0)
+            list.Items.Add(new TextBlock
+            {
+                Text = $"…{overflow} more (smaller) — sorting reorders the top; the breakout window shows all",
+                FontSize = 10,
+                Foreground = (Brush)resources.FindResource("DimBrush"),
+                Margin = new Thickness(0, 2, 0, 0),
+                TextWrapping = TextWrapping.Wrap,
+            });
     }
 }
