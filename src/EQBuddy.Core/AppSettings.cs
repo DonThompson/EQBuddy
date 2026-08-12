@@ -41,6 +41,16 @@ public sealed class AppSettings
     /// <summary>The mez chip stack, off-switchable (Reddit ask, 2026-08-11): a class
     /// that never mezzes never wants the window popping mid-fight.</summary>
     public bool MezChipsEnabled { get; set; } = true;
+
+    /// <summary>The slow alert (#94): a chip + optional voice when an attack-speed
+    /// debuff lands on you — a silent 40% slow quietly doubles a fight.</summary>
+    public bool SlowAlertEnabled { get; set; } = true;
+    /// <summary>Speak the slow when it lands ("Slowed 40 percent") — the chip alone
+    /// is easy to miss in exactly the busy fights slows matter most in.</summary>
+    public bool SlowAlertSpoken { get; set; } = true;
+    /// <summary>Alert only while raiding (#94's toggle) — detected from raid-channel
+    /// chat, the log's only raid signal. Off = alert everywhere.</summary>
+    public bool SlowAlertRaidOnly { get; set; }
     /// <summary>The Progress card's full AA ledger, folded by default (same Reddit
     /// report): session-new AAs show always; the complete list is a click away.</summary>
     public bool ShowAllAAs { get; set; }

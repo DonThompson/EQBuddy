@@ -1,5 +1,11 @@
 [
  {
+  "version": "1.61.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW: slow alert (discussion #94, thanks Frankthetankk) — when an attack-speed debuff lands on you, a 🐌 chip appears with the slow's % and counter count (\"Slowed 40% · 12 disease counters\"), an optional voice announces it once, and the chip clears when the debuff fades or runs out. Hover the chip for the cure line, strongest first (\"Abolish Disease removes 36/cast\"). Built in for all 34 known slows — no per-spell setup. When several slows share a landing line, the chip shows the honest range (\"Slowed 23–75%\") instead of guessing. Options has the off-switch, the voice toggle, and a raids-only mode (detected from raid-channel chat)."
+  ]
+ }, {
   "version": "1.60.0",
   "date": "2026-08-11",
   "highlights": [

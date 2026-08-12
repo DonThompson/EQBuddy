@@ -424,7 +424,8 @@ public sealed class SessionStats
             // A matched text line is not evidence you were playing — a raid-assist macro or
             // a guild chat pattern fires just as happily while you're stood in the bank or
             // away from the keyboard. Active-play buckets stay a record of your own actions.
-            if (e is not RawLineEvent)
+            // Raid chatter is other people's typing — the same rule, for the same reason.
+            if (e is not RawLineEvent and not RaidChatterEvent)
                 _activeBuckets.Add(e.Time.Ticks / ActiveBucket.Ticks);
             if (++_journalAppendsSincePrune >= 512)
             {

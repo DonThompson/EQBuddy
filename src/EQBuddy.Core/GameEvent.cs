@@ -67,6 +67,14 @@ public record SpellWornOffEvent(DateTime Time, string Spell, string Target, bool
 /// through <see cref="FadeMessageCatalog"/>: the log names no spell, so the event
 /// carries every candidate that shares the message plus a display label.</summary>
 public record BuffFadeEvent(DateTime Time, string Label, string[] Spells, string Category = "") : GameEvent(Time);
+/// <summary>An attack-speed debuff's cast-on-you line ("You feel lethargic.") mapped
+/// through <see cref="SlowDebuffCatalog"/> (#94). Self-targeted by construction — these
+/// lines only print when the slow lands on YOU. Carries the message rather than the
+/// candidates; <see cref="SlowTracker"/> resolves it against its own catalog.</summary>
+public record SlowLandedEvent(DateTime Time, string Message) : GameEvent(Time);
+/// <summary>A raid-channel chat line — the only signal in the log that you are in a
+/// raid, used by the slow alert's raid-only mode. Carries nothing: the content is chat.</summary>
+public record RaidChatterEvent(DateTime Time) : GameEvent(Time);
 /// <summary>A /loc line. EQ prints "Y, X, Z" — the famous axis order — and the
 /// values here keep the log's naming so nothing downstream has to remember which
 /// was first. Map plotting goes through <see cref="ZoneMap.FromLoc"/>.</summary>

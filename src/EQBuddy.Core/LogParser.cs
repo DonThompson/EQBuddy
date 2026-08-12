@@ -583,6 +583,17 @@ public static partial class LogParser
         if (FadeMessageCatalog.Default.Find(msg) is { } fade)
             return new BuffFadeEvent(ts, fade.Label, fade.Spells, fade.Category);
 
+        // Slow landing lines ("You feel lethargic.") — same exact-match economics.
+        // The harvest guarantees the two catalogs never claim the same message.
+        if (SlowDebuffCatalog.Default.Find(msg) is not null)
+            return new SlowLandedEvent(ts, msg);
+
+        // Raid chat proves raid membership (the log carries no other raid signal).
+        // Both directions: "Xxx tells the raid, '…'" and your own "You tell your raid, '…'".
+        if (msg.Contains(" tells the raid, '", StringComparison.Ordinal)
+            || msg.StartsWith("You tell your raid, '", StringComparison.Ordinal))
+            return new RaidChatterEvent(ts);
+
         if ((r = PetSpellWornOffRx().Match(msg)).Success)
             return new SpellWornOffEvent(ts, r.Groups["spell"].Value,
                 r.Groups["target"].Success ? Normalize(r.Groups["target"].Value) : "", Pet: true);

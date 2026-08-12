@@ -154,6 +154,26 @@
             <TextBlock Text="Untick if your class never mezzes — the stack stops appearing entirely."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
+            <CheckBox x:Name="SlowAlertCheck" Margin="0,10,0,0"
+                      Checked="OnSlowAlertToggled" Unchecked="OnSlowAlertToggled">
+                <TextBlock Text="Slow alert (an attack-speed debuff lands on you)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="A 🐌 chip shows the slow's % and its counters; hover it for the cure line. A silent 40% slow quietly doubles a fight."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+            <CheckBox x:Name="SlowSpokenCheck" Margin="20,6,0,0"
+                      Checked="OnSlowAlertToggled" Unchecked="OnSlowAlertToggled">
+                <TextBlock Text="Speak it when it lands (&quot;Slowed 40 percent&quot;)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <CheckBox x:Name="SlowRaidOnlyCheck" Margin="20,6,0,0"
+                      Checked="OnSlowAlertToggled" Unchecked="OnSlowAlertToggled">
+                <TextBlock Text="Only during raids" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Raids are detected from raid-channel chat — the log's only raid signal. A raid nobody has typed in for 10 minutes counts as over."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="40,2,0,0"/>
+
             <CheckBox x:Name="SpawnGrowUpCheck" Margin="0,10,0,0"
                       Checked="OnChipGrowToggled" Unchecked="OnChipGrowToggled">
                 <TextBlock Text="Spawn chips grow upward" FontSize="12"

@@ -52,6 +52,9 @@ public partial class OptionsWindow : Window
         SpawnGrowUpCheck.IsChecked = _vm.SpawnChipsGrowUp;
         MezGrowUpCheck.IsChecked = _vm.MezChipsGrowUp;
         MezChipsCheck.IsChecked = _main.Settings.MezChipsEnabled;
+        SlowAlertCheck.IsChecked = _main.Settings.SlowAlertEnabled;
+        SlowSpokenCheck.IsChecked = _main.Settings.SlowAlertSpoken;
+        SlowRaidOnlyCheck.IsChecked = _main.Settings.SlowAlertRaidOnly;
         BuildHotkeyRows();
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
@@ -173,6 +176,15 @@ public partial class OptionsWindow : Window
     {
         if (!_ready) return;
         _main.Settings.MezChipsEnabled = MezChipsCheck.IsChecked == true;
+        _main.Settings.Save();
+    }
+
+    private void OnSlowAlertToggled(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.Settings.SlowAlertEnabled = SlowAlertCheck.IsChecked == true;
+        _main.Settings.SlowAlertSpoken = SlowSpokenCheck.IsChecked == true;
+        _main.Settings.SlowAlertRaidOnly = SlowRaidOnlyCheck.IsChecked == true;
         _main.Settings.Save();
     }
 

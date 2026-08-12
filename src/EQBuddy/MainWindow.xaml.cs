@@ -66,6 +66,8 @@ public partial class MainWindow : Window
         _stats.QuestStore = QuestLedger;
         _watcher = new LogWatcher(_stats);
         _watcher.Mez = _mezTracker;
+        _watcher.Slow = _slowTracker;
+        _slowTracker.Landed += OnSlowLanded;
         // Spawn timers ride the watcher's event stream — wired before the first Select so
         // the startup replay re-derives countdowns from kills already in the log.
         var spawnCatalog = SpawnCatalog.LoadEmbedded();
@@ -514,6 +516,7 @@ public partial class MainWindow : Window
     private SpawnChipsWindow? _chipsWindow;
     private MezChipsWindow? _mezWindow;
     private readonly MezTracker _mezTracker = new();
+    private readonly SlowTracker _slowTracker = new();
 
     private readonly EqlWikiItemService _wikiItems =
         new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "items"));
@@ -860,6 +863,62 @@ public partial class MainWindow : Window
                     : null,
             };
         }).ToList();
+    }
+
+    /// <summary>Everything the fight-side chip stack shows: mez chips and slow chips,
+    /// each behind its own Options toggle, sharing one window and saved position.</summary>
+    private List<SpawnChip> FightChips(DateTime now)
+    {
+        var chips = _settings.MezChipsEnabled ? MezChips(now) : [];
+        if (SlowChipsVisible(now)) chips.AddRange(SlowChips(now));
+        return chips;
+    }
+
+    private bool SlowChipsVisible(DateTime now) =>
+        _settings.SlowAlertEnabled
+        && (!_settings.SlowAlertRaidOnly || _slowTracker.InRaid(now));
+
+    /// <summary>Slow chips (#94): the debuff's honest % (a range when several slows
+    /// share the landing line), time left when the wiki documents a duration, and the
+    /// cure line in the tooltip — "how do I get rid of this" attached to the alert.</summary>
+    private List<SpawnChip> SlowChips(DateTime now) =>
+        _slowTracker.Snapshot(now).Select(s =>
+        {
+            var remaining = s.RemainingSeconds(now);
+            var detail = string.Join(" · ", new[]
+            {
+                s.Spells.Length == 1 ? s.Spells[0] : "One of: " + string.Join(", ", s.Spells),
+                s.CounterText,
+                _slowTracker.CureLine(s),
+                $"landed {s.LandedAt:h:mm:ss tt}",
+            }.Where(part => part.Length > 0));
+            return new SpawnChip(
+                Zone: "", Name: $"Slowed {s.PctText}",
+                CountdownText: remaining is { } r ? $"{(int)r / 60}:{(int)r % 60:00}" : "?",
+                IsDue: false, Detail: detail, Icon: "🐌")
+            {
+                Fraction = s.ExpiresAt is { } exp && (exp - s.LandedAt).TotalSeconds is > 0 and var dur
+                    ? Math.Clamp((now - s.LandedAt).TotalSeconds / dur, 0, 1)
+                    : null,
+            };
+        }).ToList();
+
+    /// <summary>
+    /// A slow landed on the player, straight off the ingest thread. Speaks once per
+    /// landing (never on the refresh of one already showing — a chain-slowing NPC must
+    /// not turn the voice into a metronome); the chip itself appears via the 1 s tick.
+    /// Suppressed during the startup replay like every other alert — a slow from an
+    /// hour ago is history, not news.
+    /// </summary>
+    private void OnSlowLanded(SlowState state, bool isNew)
+    {
+        if (!isNew || !_watcher.InitialIngestDone) return;
+        if (!_settings.SlowAlertEnabled || !_settings.SlowAlertSpoken) return;
+        if (_settings.SlowAlertRaidOnly && !_slowTracker.InRaid(state.LandedAt)) return;
+        var pct = state.PctMin == state.PctMax
+            ? $"{state.PctMax} percent"
+            : $"up to {state.PctMax} percent";
+        EQBuddy.UI.Shared.SpokenAlerts.Speak($"Slowed {pct}");
     }
 
     private void CloseChips()
@@ -1217,12 +1276,13 @@ public partial class MainWindow : Window
         // exactly while a mez is believed active, in its own window (David's call —
         // mez chips park next to the fight, spawn chips are ambient). Optional since
         // the 2026-08-11 Reddit ask — a non-CC class never wants the stack.
-        if (_settings.MezChipsEnabled && !_hiddenForFocus
-            && _mezTracker.Snapshot(DateTime.Now).Count > 0)
+        // Slow chips (#94) ride the same stack: both are "active effect, counting
+        // down, parked next to the fight", and one window means one saved position.
+        if (!_hiddenForFocus && FightChips(DateTime.Now).Count > 0)
         {
             if (_mezWindow is not { IsLoaded: true })
             {
-                _mezWindow = new MezChipsWindow(_settings, MezChips, SetChipScale);
+                _mezWindow = new MezChipsWindow(_settings, FightChips, SetChipScale);
                 _mezWindow.Show();
             }
             _mezWindow.RefreshChips(DateTime.Now);

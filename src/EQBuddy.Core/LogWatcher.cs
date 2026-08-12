@@ -49,6 +49,10 @@ public sealed class LogWatcher : IDisposable
     /// pipeline (its entries are short-lived, so replay mostly proves them expired).</summary>
     public MezTracker? Mez { get; set; }
 
+    /// <summary>Optional fourth consumer: attack-speed debuffs on the player (#94) —
+    /// same replay-safe pipeline; replay proves old slows expired, live tail alerts.</summary>
+    public SlowTracker? Slow { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -287,6 +291,7 @@ public sealed class LogWatcher : IDisposable
                             _stats.Apply(evt);
                             Spawns?.Apply(evt);
                             Mez?.Apply(evt);
+                            Slow?.Apply(evt);
                         }
                         // Every line, parsed or not: a Text watch rule matches the line's
                         // words, not whatever event we did or didn't make of it.
