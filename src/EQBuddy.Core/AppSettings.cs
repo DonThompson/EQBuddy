@@ -56,6 +56,10 @@ public sealed class AppSettings
     /// Options list order, rearrangeable there), "alpha", "total", or "recent".</summary>
     public string WatchSortMode { get; set; } = "manual";
 
+    /// <summary>The recent-lines rule picker's chat filter (David's field note: General
+    /// chat drowns the combat lines). Off by default — a "WTS" watch is a real rule.</summary>
+    public bool RecentLinesHideChat { get; set; }
+
     /// <summary>Fight-timeline window placement; 0 width = never opened, defaults apply.</summary>
     public double TimelineLeft { get; set; }
     public double TimelineTop { get; set; }

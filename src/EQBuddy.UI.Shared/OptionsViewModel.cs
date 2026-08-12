@@ -385,8 +385,22 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     private void NormalizeSectionOrder()
     {
         var order = _settings.SectionOrder.Where(k => OverlaySections.Catalog.Any(c => c.Key == k)).ToList();
-        foreach (var (key, _) in OverlaySections.Catalog)
-            if (!order.Contains(key)) order.Add(key);
+        // A key this install has never seen slots in at its CATALOG position (after its
+        // nearest catalog predecessor the user already has) — appending at the end put
+        // every new card below the fold, where "new in this release!" reads as "missing"
+        // (David's 1.66 field test: Buffs and Raids were invisible on a tall layout).
+        for (var i = 0; i < OverlaySections.Catalog.Length; i++)
+        {
+            var key = OverlaySections.Catalog[i].Key;
+            if (order.Contains(key)) continue;
+            var at = order.Count;
+            for (var j = i - 1; j >= 0; j--)
+            {
+                var prev = order.IndexOf(OverlaySections.Catalog[j].Key);
+                if (prev >= 0) { at = prev + 1; break; }
+            }
+            order.Insert(at, key);
+        }
         _settings.SectionOrder = order;
     }
 

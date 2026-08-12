@@ -250,8 +250,15 @@
             <Popup x:Name="RecentLinesPopup" PlacementTarget="{Binding ElementName=AddFromLogBtn}"
                    Placement="Top" StaysOpen="False" AllowsTransparency="True">
                 <Border x:Name="RecentLinesChrome" BorderThickness="1" Padding="2" CornerRadius="6">
-                    <ListBox x:Name="RecentLinesList" MaxHeight="300" MaxWidth="560" FontSize="11.5"
-                             SelectionChanged="OnRecentLinePicked"/>
+                    <StackPanel>
+                        <CheckBox x:Name="RecentLinesHideChat" Margin="4,3,4,3"
+                                  Checked="OnRecentLinesFilterChanged" Unchecked="OnRecentLinesFilterChanged">
+                            <TextBlock Text="Hide chat (say/tell/channels) — combat and system lines only" FontSize="11"
+                                       Foreground="{DynamicResource DimBrush}"/>
+                        </CheckBox>
+                        <ListBox x:Name="RecentLinesList" MaxHeight="300" MaxWidth="560" FontSize="11.5"
+                                 SelectionChanged="OnRecentLinePicked"/>
+                    </StackPanel>
                 </Border>
             </Popup>
             <Grid Margin="0,6,0,0">

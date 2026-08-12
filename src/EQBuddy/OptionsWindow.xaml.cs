@@ -216,13 +216,18 @@ public partial class OptionsWindow : Window
             var recorder = new Button
             {
                 Style = (Style)FindResource("ActionButton"), FontSize = 11,
-                Content = _recordingAction == key ? "press keys… (Esc cancels)"
+                // The recording prompt names the rule instead of hiding it: a bare key
+                // is rejected on purpose (a global "G" would eat chat typing), and the
+                // 1.66 field test proved silent rejection reads as a dead recorder.
+                Content = _recordingAction == key
+                    ? _recordingHint ?? "press Ctrl/Alt/Shift + a key…"
                     : bound.Length > 0 ? bound : "not bound — click to set",
                 Tag = key,
             };
             recorder.Click += (_, _) =>
             {
                 _recordingAction = _recordingAction == key ? null : key;
+                _recordingHint = null;
                 BuildHotkeyRows();
             };
             Grid.SetColumn(recorder, 1);
@@ -268,13 +273,23 @@ public partial class OptionsWindow : Window
         parts.Add(key.ToString());
         var gesture = string.Join("+", parts);
         // Modifier required — a bare global letter would eat the game's chat typing.
-        if (HotkeyManager.Parse(gesture) is null) return;
+        // Say so on the button itself: a silent return looks like a dead recorder.
+        if (HotkeyManager.Parse(gesture) is null)
+        {
+            _recordingHint = $"{key} alone won't do — add Ctrl, Alt or Shift";
+            BuildHotkeyRows();
+            return;
+        }
         _main.Settings.Hotkeys[action] = gesture;
         _main.Settings.Save();
         _main.ApplyHotkeys();
         _recordingAction = null;
+        _recordingHint = null;
         BuildHotkeyRows();
     }
+
+    /// <summary>Transient message shown in the recording button after a rejected press.</summary>
+    private string? _recordingHint;
 
     private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)
     {
@@ -648,12 +663,24 @@ public partial class OptionsWindow : Window
         RecentLinesList.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty, "PopupBrush");
         RecentLinesList.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "TextBrush");
 
+        RecentLinesHideChat.IsChecked = _main.Settings.RecentLinesHideChat;
+        FillRecentLines();
+        RecentLinesPopup.IsOpen = true;
+    }
+
+    private void FillRecentLines()
+    {
         var lines = _main.RecentLogLines();
         RecentLinesList.Items.Clear();
+        var hideChat = RecentLinesHideChat.IsChecked == true;
         // Newest first: "just happened" is the whole point of the picker.
         for (var i = lines.Count - 1; i >= 0; i--)
         {
             var (time, message) = lines[i];
+            // Chat lines quote their body (", '") — a busy General channel drowns the
+            // combat lines the picker exists for (David's field note), but chat stays
+            // one untick away: a "WTS" watch is a legitimate rule too.
+            if (hideChat && message.Contains(", '", StringComparison.Ordinal)) continue;
             RecentLinesList.Items.Add(new System.Windows.Controls.ListBoxItem
             {
                 Content = $"{time:HH:mm:ss}  {(message.Length <= 96 ? message : message[..95] + "…")}",
@@ -663,8 +690,19 @@ public partial class OptionsWindow : Window
         }
         if (RecentLinesList.Items.Count == 0)
             RecentLinesList.Items.Add(new System.Windows.Controls.ListBoxItem
-            { Content = "No log lines seen yet — play a little first.", IsEnabled = false });
-        RecentLinesPopup.IsOpen = true;
+            {
+                Content = hideChat ? "Nothing but chat seen lately — untick the filter."
+                    : "No log lines seen yet — play a little first.",
+                IsEnabled = false,
+            });
+    }
+
+    private void OnRecentLinesFilterChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.Settings.RecentLinesHideChat = RecentLinesHideChat.IsChecked == true;
+        _main.Settings.Save();
+        FillRecentLines();
     }
 
     private void OnRecentLinePicked(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -1161,10 +1199,20 @@ public partial class OptionsWindow : Window
             for (var i = 0; i < 3; i++)
                 row.ColumnDefinitions.Add(new System.Windows.Controls.ColumnDefinition { Width = GridLength.Auto });
 
+            // Self-hiding cards say so: moving one while it's empty changes nothing
+            // visible, which read as "the arrows are broken" in the 1.66 field test.
+            var selfHiding = card.Key is "tracked" or "buffs" or "raids";
             row.Children.Add(new System.Windows.Controls.TextBlock
             {
-                Text = card.Title, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+                Text = card.Title + (selfHiding ? "  · auto" : ""),
+                FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
                 Foreground = (System.Windows.Media.Brush)FindResource(card.Hidden ? "DimBrush" : "TextBrush"),
+                ToolTip = selfHiding ? card.Key switch
+                {
+                    "buffs" => "Appears on its own when a buff timer is running — an empty Buffs card would just be furniture.",
+                    "raids" => "Appears on its own once a raid target has been defeated (or imported from achievements).",
+                    _ => "Appears on its own while you have watch rules.",
+                } : null,
             });
 
             row.Children.Add(CardButton("↑", "Move up", 1, () => { _vm.MoveCard(card.Key, -1); ApplyCards(); }));
