@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.63.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "Breakdown rows learned their misses: melee rows now show an inline miss % (\"14% miss\", out of attempts — hover for the raw count), and every row's tooltip carries the hit range (\"hits 88–412\"). Works on the Combat card, the breakout windows, and per-fight views alike.",
+   "The Combat card now states BOTH session DPS models, labeled: \"Session dps: 412 in combat · 267 wall-clock\" — in-combat is the honest camp number (medding doesn't dilute it), wall-clock is what the whole session actually produced. Pick the one that matches your question."
+  ]
+ }, {
   "version": "1.62.0",
   "date": "2026-08-12",
   "highlights": [

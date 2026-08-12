@@ -1443,6 +1443,13 @@ public partial class MainWindow : Window
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
                 $"In combat {(int)combatTime.TotalMinutes}m {combatTime.Seconds}s this session\n" +
+                // Both DPS models, labeled (Companion-parity ask): in-combat is the
+                // honest camp number (medding doesn't dilute it), wall-clock is what a
+                // raid night actually produced. Neither is "the" DPS; say which is which.
+                (s.SessionDps > 0 && s.SessionStart is { } ss0 && s.LastEventTime is { } le0
+                    ? $"Session dps: {s.SessionDps:0.#} in combat · " +
+                      $"{s.DamageDealt / Math.Max(1, (le0 - ss0).TotalSeconds):0.#} wall-clock\n"
+                    : "") +
                 (s.Recent is { } rc
                     ? $"Last {(int)rc.Window.TotalMinutes}m: {rc.Dps:0.#} dps{(rc.HasFullWindow ? "" : " (partial window)")}\n"
                     : "") +

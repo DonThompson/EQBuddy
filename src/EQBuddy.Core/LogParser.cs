@@ -506,7 +506,8 @@ public static partial class LogParser
         if ((r = MeleeMissRx().Match(msg)).Success)
             return new MissEvent(ts, Outgoing: true,
                 Ability: VerbToSkill(r.Groups["verb"].Value),
-                Reason: r.Groups["reason"].Value.TrimEnd('!'));
+                Reason: r.Groups["reason"].Value.TrimEnd('!'),
+                Target: Normalize(r.Groups["target"].Value));
 
         if ((r = RuneBlockInRx().Match(msg)).Success)
             return new RuneBlockEvent(ts, Normalize(r.Groups["attacker"].Value));

@@ -160,11 +160,18 @@ internal static class BreakdownRows
                 resistPart = $" · {Math.Min(100, 100.0 * rr.Resists / Math.Max(1, rr.Casts)):0}% resist";
                 resistTip = $" · {rr.Resists} resist{(rr.Resists == 1 ? "" : "s")} across {rr.Casts} casts this session";
             }
-            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#} · {Rate(d):0.#} {rateLabel}{critPart}{resistPart}";
-            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {rateLabel} = total ÷ {secs:0}s in combat" +
+            // Miss % out of ATTEMPTS (hits + misses), the number a player means by it;
+            // melee only — a spell's failure is its resist %, never both.
+            var missPart = d.Misses > 0
+                ? $" · {100.0 * d.Misses / (d.Hits + d.Misses):0}% miss" : "";
+            var rangePart = d.MaxHit > 0 ? $" · hits {d.MinHit:N0}–{d.MaxHit:N0}" : "";
+            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#} · {Rate(d):0.#} {rateLabel}{critPart}{missPart}{resistPart}";
+            var tooltip = $"{100.0 * d.Total / grand:0.#}% of total{rangePart} · {rateLabel} = total ÷ {secs:0}s in combat" +
                 (d.ActiveSeconds > 0
                     ? $" · burst {d.Total / Math.Max(1, d.ActiveSeconds):0.#}/s over the ~{d.ActiveSeconds:0}s it was in use"
-                    : "") + resistTip;
+                    : "") +
+                (d.Misses > 0 ? $" · {d.Misses} miss{(d.Misses == 1 ? "" : "es")} in {d.Hits + d.Misses} attempts" : "")
+                + resistTip;
             list.Items.Add(Row(resources, d.Name, value, metric(d) / topMetric, barBrush, tooltip));
         }
     }

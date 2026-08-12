@@ -36,6 +36,13 @@ public sealed class SessionStats
     {
         public int Count; public long Total; public int Crits;
         public double ActiveSeconds; public DateTime LastTime;
+        /// <summary>Smallest/largest single hit — the "88 – 412 dmg" range on the
+        /// breakdown rows. Min is 0 until the first hit lands.</summary>
+        public long Min; public long Max;
+        /// <summary>Swings of this skill the log saw fail (miss/dodge/parry/riposte) —
+        /// the row's miss %. Only melee misses name a skill, so spells stay at 0
+        /// (their failure is the resist count, tracked separately).</summary>
+        public int Misses;
 
         public void Add(DateTime t, long amount, bool crit = false)
         {
@@ -43,7 +50,13 @@ public sealed class SessionStats
             ActiveSeconds += Count == 0 || gap < 0 || gap > AbilityGapSeconds
                 ? IsolatedHitSeconds : gap;
             LastTime = t; Count++; Total += amount; if (crit) Crits++;
+            if (Min == 0 || amount < Min) Min = amount;
+            if (amount > Max) Max = amount;
         }
+
+        /// <summary>A miss is an attempt, not damage: it must not touch the hit count,
+        /// the range, or the active-time clock the rate is computed from.</summary>
+        public void AddMiss() => Misses++;
     }
     private const double AbilityGapSeconds = 10;
     private const double IsolatedHitSeconds = 2.5;
@@ -717,6 +730,18 @@ public sealed class SessionStats
                 case MissEvent { Outgoing: true } m:
                     _missCount++;
                     TrackCombat(m.Time);
+                    // Per-skill miss tallies (the breakdown's miss %). Filed under the
+                    // same substituted skill name as the hits, or the whole row would
+                    // split in two the moment Round Kick takes Kick over. A miss joins
+                    // an EXISTING fight only — an attempt that never landed is not
+                    // evidence enough to open one (the encounter rules are unchanged).
+                    if (m.Ability.Length > 0)
+                    {
+                        var missSkill = SkillName(m.Ability);
+                        Ability(_damageBySource, missSkill).AddMiss();
+                        if (m.Target.Length > 0 && _activeFights.TryGetValue(m.Target, out var missFight))
+                            Ability(missFight.ByAbility, missSkill).AddMiss();
+                    }
                     break;
                 case MissEvent m:
                     _avoidedIncoming++;
@@ -1342,7 +1367,8 @@ public sealed class SessionStats
     private static List<SourceDamage> Breakdown(Dictionary<string, AbilityAgg> d) =>
         d.OrderByDescending(kv => kv.Value.Total)
             .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
-                kv.Value.Crits, kv.Value.ActiveSeconds))
+                kv.Value.Crits, kv.Value.ActiveSeconds)
+            { MinHit = kv.Value.Min, MaxHit = kv.Value.Max, Misses = kv.Value.Misses })
             .ToList();
 
     private void SweepStaleFights(DateTime now)
@@ -1704,12 +1730,8 @@ public sealed class SessionStats
                 MissCount = _missCount,
                 MaxHit = _maxHit,
                 MaxHitDesc = _maxHitDesc,
-                DamageBySource = _damageBySource.OrderByDescending(kv => kv.Value.Total)
-                    .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
-                        kv.Value.Crits, kv.Value.ActiveSeconds)).ToList(),
-                PetAbilities = _petAbilities.OrderByDescending(kv => kv.Value.Total)
-                    .Select(kv => new SourceDamage(kv.Key, kv.Value.Count, kv.Value.Total,
-                        kv.Value.Crits, kv.Value.ActiveSeconds)).ToList(),
+                DamageBySource = Breakdown(_damageBySource),
+                PetAbilities = Breakdown(_petAbilities),
                 PetName = _petName ?? "",
                 SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
@@ -1859,7 +1881,15 @@ public record TimelinePoint(DateTime Time, long Damage);
 /// <summary>ActiveSeconds &gt; 0 enables per-ability rate display (Total ÷ ActiveSeconds);
 /// it is 0 for lists that don't track it (damage taken, healers) and for
 /// sessions stored before it existed.</summary>
-public record SourceDamage(string Name, int Hits, long Total, int Crits = 0, double ActiveSeconds = 0);
+public record SourceDamage(string Name, int Hits, long Total, int Crits = 0, double ActiveSeconds = 0)
+{
+    /// <summary>Smallest/largest single hit (0 when unknown — sessions archived before
+    /// these existed deserialize as unknown and the range simply doesn't render).</summary>
+    public long MinHit { get; init; }
+    public long MaxHit { get; init; }
+    /// <summary>Failed swings of this skill (melee only — spells fail as resists).</summary>
+    public int Misses { get; init; }
+}
 public record LootDetail(string Item, int Count, string LastSource);
 public record SkillDetail(string Skill, int Ups, int Value);
 public record SoldDetail(string Item, int Count, long Copper);

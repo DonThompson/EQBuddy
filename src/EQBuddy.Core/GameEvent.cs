@@ -27,7 +27,8 @@ public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool 
 /// log's own words ("miss", "orc pawn dodges") for the tooltip. Both "" on lines
 /// parsed before these fields existed and on incoming misses (the mob's skill lane
 /// is not a thing we draw).</summary>
-public record MissEvent(DateTime Time, bool Outgoing, string Ability = "", string Reason = "") : GameEvent(Time);
+public record MissEvent(DateTime Time, bool Outgoing, string Ability = "", string Reason = "",
+    string Target = "") : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "", bool OverTime = false) : GameEvent(Time);
 /// <summary>"X tries to hit YOU, but YOUR magical skin absorbs the blow!" — an incoming
 /// melee attack fully absorbed by the player's own rune (not the generic dodge/parry

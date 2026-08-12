@@ -109,7 +109,13 @@ public static class EncounterGrouping
     private static List<SourceDamage> Merge(IEnumerable<SourceDamage> rows) =>
         rows.GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .Select(g => new SourceDamage(g.First().Name, g.Sum(r => r.Hits), g.Sum(r => r.Total),
-                g.Sum(r => r.Crits), g.Sum(r => r.ActiveSeconds)))
+                g.Sum(r => r.Crits), g.Sum(r => r.ActiveSeconds))
+            {
+                // Min of the fights that saw a hit (0 = never hit, not "hit for 0").
+                MinHit = g.Where(r => r.MinHit > 0).Select(r => r.MinHit).DefaultIfEmpty(0).Min(),
+                MaxHit = g.Max(r => r.MaxHit),
+                Misses = g.Sum(r => r.Misses),
+            })
             .OrderByDescending(r => r.Total)
             .ToList();
 }
