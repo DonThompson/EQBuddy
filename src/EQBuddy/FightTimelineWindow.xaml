@@ -11,7 +11,8 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="88"/>
+                <RowDefinition Height="96"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -38,7 +39,11 @@
 
             <local:DpsGraphPanel Grid.Row="1" x:Name="Graph" ClipToBounds="True" Margin="0,0,0,2"/>
 
-            <ScrollViewer Grid.Row="2" x:Name="LaneScroll" VerticalScrollBarVisibility="Auto"
+            <TextBlock Grid.Row="2" x:Name="LegendText" FontSize="10" Margin="0,1,0,3"
+                       TextTrimming="CharacterEllipsis"
+                       Text="▮ hit — taller = harder · orange = critical · ▢ miss / resist (hover for the log's words) · Incoming = damage you took"/>
+
+            <ScrollViewer Grid.Row="3" x:Name="LaneScroll" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
                 <local:LanesPanel x:Name="Lanes" ClipToBounds="True" VerticalAlignment="Top"/>
             </ScrollViewer>
@@ -50,7 +55,7 @@
                 </Border>
             </Popup>
 
-            <Thumb Grid.Row="2" Width="14" Height="14"
+            <Thumb Grid.Row="3" Width="14" Height="14"
                    HorizontalAlignment="Right" VerticalAlignment="Bottom"
                    Cursor="SizeNWSE" Margin="0,0,-6,-6" DragDelta="OnGripDrag"
                    ToolTip="Drag to resize">

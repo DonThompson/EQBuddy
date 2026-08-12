@@ -36,7 +36,7 @@ public partial class FightTimelineWindow : Window
         TipChrome.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "BgBrush");
         TipChrome.SetResourceReference(System.Windows.Controls.Border.BorderBrushProperty, "AccentBrush");
         TitleText.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "TextBrush");
-        foreach (var dim in new[] { SubTitle, PeakText, TipText })
+        foreach (var dim in new[] { SubTitle, PeakText, TipText, LegendText })
             dim.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "DimBrush");
 
         Graph.View = _view;
@@ -48,7 +48,11 @@ public partial class FightTimelineWindow : Window
         {
             Left = _settings.TimelineLeft; Top = _settings.TimelineTop;
             if (_settings.TimelineWidth >= MinWidth) Width = _settings.TimelineWidth;
-            if (_settings.TimelineHeight >= MinHeight) Height = _settings.TimelineHeight;
+            if (_settings.TimelineHeight >= MinHeight)
+            {
+                Height = _settings.TimelineHeight;
+                _userSized = true;   // a saved height is a choice; fit-to-fight defers to it
+            }
         }
         else
         {
@@ -90,6 +94,7 @@ public partial class FightTimelineWindow : Window
         _signature = signature;
 
         _view.Timeline = TimelineBuilder.Build(events, fight.Start, fight.DurationSeconds, pet);
+        FitWindowToFight(_view.Timeline.Lanes.Count);
         TitleText.Text = fight.Name;
         SubTitle.Text = $"{Clock(fight.DurationSeconds)} · {_view.Timeline.EventCount:N0} events"
             + (fight.InProgress ? " · live" : "");
@@ -154,8 +159,23 @@ public partial class FightTimelineWindow : Window
 
     private void OnGripDrag(object sender, DragDeltaEventArgs e)
     {
+        _userSized = true;   // their size wins from here; content keeps adapting to it
         Width = Math.Max(MinWidth, Width + e.HorizontalChange);
         Height = Math.Max(MinHeight, Height + e.VerticalChange);
+    }
+
+    private bool _userSized;
+
+    /// <summary>Fit the window to the fight (David: "scale dynamically and fit, but
+    /// be able to be resized") — a 5-lane skirmish opens compact, a raid brawl opens
+    /// tall, and the first grip drag (or a saved size) ends the auto-fitting. Lanes
+    /// then stretch or scroll inside whatever the user chose.</summary>
+    private void FitWindowToFight(int laneCount)
+    {
+        if (_userSized) return;
+        const double chrome = 96 + 60 + 34;   // graph + header/legend rows + padding
+        var desired = chrome + laneCount * 42 + 18;
+        Height = Math.Clamp(desired, MinHeight, SystemParameters.WorkArea.Height * 0.85);
     }
 }
 
@@ -201,9 +221,38 @@ internal sealed class DpsGraphPanel : FrameworkElement
 
         var max = Math.Max(1, new[] { t.DpsSeries, t.PetDpsSeries, t.IncomingDpsSeries }
             .SelectMany(s => s).DefaultIfEmpty(1).Max());
+
+        // A scale, so the graph measures instead of gesturing (David's pass): dotted
+        // gridlines at half and full, labeled in dps, drawn under the series.
+        foreach (var frac in new[] { 0.5, 1.0 })
+        {
+            var gy = h - frac * (h - 4);
+            dc.DrawLine(new Pen(v.Dim, 0.5) { DashStyle = DashStyles.Dot },
+                new Point(0, gy), new Point(w, gy));
+            var label = Caption($"{max * frac:N0} dps", v.Dim);
+            dc.DrawText(label, new Point(w - label.Width - 2, gy - label.Height - 1));
+        }
+
         Draw(dc, t.IncomingDpsSeries, v, w, h, max, v.Bad, 1);
         Draw(dc, t.PetDpsSeries, v, w, h, max, v.Dim, 1);
         Draw(dc, t.DpsSeries, v, w, h, max, v.Accent, 1.6);
+
+        // Series legend, top-left of the plot — three unexplained line colors were
+        // the "what is being measured" half of the complaint.
+        var lx = 4.0;
+        foreach (var (text, brush, present) in new[]
+        {
+            ("you + pet", (Brush)v.Accent, true),
+            ("pet", v.Dim, t.PetDpsSeries.Any(p => p > 0)),
+            ("incoming", v.Bad, t.IncomingDpsSeries.Any(p => p > 0)),
+        })
+        {
+            if (!present) continue;
+            dc.DrawRectangle(brush, null, new Rect(lx, 6, 8, 3));
+            var key = Caption(text, v.Dim);
+            dc.DrawText(key, new Point(lx + 11, 0.5));
+            lx += 11 + key.Width + 10;
+        }
 
         var peakX = (t.PeakSec - v.OffsetSec) * v.PixelsPerSec;
         if (peakX >= 0 && peakX <= w && t.PeakDps > 0)
@@ -251,11 +300,17 @@ internal sealed class DpsGraphPanel : FrameworkElement
 internal sealed class LanesPanel : FrameworkElement
 {
     public const double LabelWidth = 138;
-    private const double LaneHeight = 24;
+    private const double MinLaneHeight = 24;
+    private const double MaxLaneHeight = 68;
     private const double AxisHeight = 16;
 
     internal TimelineViewport? View;
     internal event Action<TimelineMark?, TimelineLane?, Point>? HoverChanged;
+
+    /// <summary>This render's lane height: lanes STRETCH to fill the window (David's
+    /// pass on a 5-lane, 28-second fight: 24px lanes huddled at the top of a half-empty
+    /// window). A crowded fight falls back to the minimum and scrolls.</summary>
+    private double _laneHeight = MinLaneHeight;
 
     public LanesPanel()
     {
@@ -268,10 +323,14 @@ internal sealed class LanesPanel : FrameworkElement
     private double? _panFrom;
 
     /// <summary>Height claims the lanes' room so the ScrollViewer can scroll a tall
-    /// fight; call after the timeline changes.</summary>
+    /// fight; call after the timeline changes or the window resizes.</summary>
     public void Refit()
     {
-        Height = Math.Max(60, (View?.Timeline?.Lanes.Count ?? 0) * LaneHeight + AxisHeight + 2);
+        var lanes = Math.Max(1, View?.Timeline?.Lanes.Count ?? 0);
+        var available = Parent is System.Windows.Controls.ScrollViewer sv && sv.ViewportHeight > 0
+            ? sv.ViewportHeight : ActualHeight;
+        _laneHeight = Math.Clamp((available - AxisHeight - 2) / lanes, MinLaneHeight, MaxLaneHeight);
+        Height = Math.Max(60, lanes * _laneHeight + AxisHeight + 2);
         InvalidateVisual();
     }
 
@@ -287,22 +346,28 @@ internal sealed class LanesPanel : FrameworkElement
         var face = new Typeface("Segoe UI");
         var hairline = new Pen(v.Dim, 0.35);
 
+        // Type scales gently with the lane height — tall lanes on a short fight
+        // shouldn't whisper their own names.
+        var nameSize = Math.Clamp(11 + (_laneHeight - MinLaneHeight) / 14, 11, 13.5);
         for (var i = 0; i < t.Lanes.Count; i++)
         {
             var lane = t.Lanes[i];
-            var y = i * LaneHeight;
-            dc.DrawLine(hairline, new Point(0, y + LaneHeight), new Point(ActualWidth, y + LaneHeight));
+            var y = i * _laneHeight;
+            dc.DrawLine(hairline, new Point(0, y + _laneHeight), new Point(ActualWidth, y + _laneHeight));
 
             var name = new FormattedText(lane.Name, CultureInfo.CurrentUICulture,
-                FlowDirection.LeftToRight, face, 11,
+                FlowDirection.LeftToRight, face, nameSize,
                 lane.Kind == LaneKind.Incoming ? v.Bad : v.Text, dpi)
             { MaxTextWidth = LabelWidth - 44, MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis };
-            dc.DrawText(name, new Point(2, y + 4));
+            dc.DrawText(name, new Point(2, y + _laneHeight / 2 - name.Height / 2));
             if (lane.Total > 0)
             {
-                var total = new FormattedText(Short(lane.Total), CultureInfo.CurrentUICulture,
-                    FlowDirection.LeftToRight, face, 10, v.Dim, dpi);
-                dc.DrawText(total, new Point(LabelWidth - total.Width - 8, y + 5));
+                // Say what the number IS — "307" alone read as a mystery (David's pass).
+                var total = new FormattedText(
+                    Short(lane.Total) + (lane.Kind == LaneKind.Incoming ? " taken" : " dmg"),
+                    CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, face, 10, v.Dim, dpi);
+                dc.DrawText(total, new Point(LabelWidth - total.Width - 8,
+                    y + _laneHeight / 2 - total.Height / 2));
             }
 
             var laneMax = Math.Max(1, lane.Marks.Max(m => m.Amount));
@@ -312,24 +377,29 @@ internal sealed class LanesPanel : FrameworkElement
                 LaneKind.Incoming => v.Bad,
                 _ => v.Accent,
             };
-            var hollowPen = new Pen(lane.Kind == LaneKind.Incoming ? v.Bad : v.Warn, 1);
-            var markW = Math.Clamp(v.PixelsPerSec * 0.25, 2, 5);
+            // Hollow = a failed attempt. Neutral outline on purpose: it used to share
+            // the crit's warn color, and two meanings in one hue read as one meaning.
+            var hollowPen = new Pen(lane.Kind == LaneKind.Incoming ? v.Bad : v.Dim, 1.2);
+            var markW = Math.Clamp(v.PixelsPerSec * 0.25, 2, 3 + _laneHeight / 12);
+            var barRoom = _laneHeight - 6;
+            var hollowH = Math.Round(barRoom * 0.45);
             foreach (var m in lane.Marks)
             {
                 var x = LabelWidth + (m.Sec - v.OffsetSec) * v.PixelsPerSec;
                 if (x < LabelWidth - 4 || x > ActualWidth + 4) continue;
                 if (m.Hollow)
-                    dc.DrawRectangle(null, hollowPen, new Rect(x, y + 7, markW + 1, 9));
+                    dc.DrawRectangle(null, hollowPen,
+                        new Rect(x, y + (_laneHeight - hollowH) / 2, markW + 1, hollowH));
                 else
                 {
-                    var bar = 5 + 12 * Math.Sqrt((double)m.Amount / laneMax);
+                    var bar = barRoom * (0.25 + 0.75 * Math.Sqrt((double)m.Amount / laneMax));
                     dc.DrawRectangle(m.Crit ? v.Warn : solid, null,
-                        new Rect(x, y + LaneHeight - 3 - bar, markW, bar));
+                        new Rect(x, y + _laneHeight - 3 - bar, markW, bar));
                 }
             }
         }
 
-        DrawAxis(dc, v, t, plotW, t.Lanes.Count * LaneHeight, face, dpi);
+        DrawAxis(dc, v, t, plotW, t.Lanes.Count * _laneHeight, face, dpi);
     }
 
     private void DrawAxis(DrawingContext dc, TimelineViewport v, FightTimeline t,
@@ -361,7 +431,7 @@ internal sealed class LanesPanel : FrameworkElement
         if (View is not { Timeline: { } t } v || pos.X < LabelWidth)
         { HoverChanged?.Invoke(null, null, default); return; }
 
-        var laneIx = (int)(pos.Y / LaneHeight);
+        var laneIx = (int)(pos.Y / _laneHeight);
         if (laneIx < 0 || laneIx >= t.Lanes.Count)
         { HoverChanged?.Invoke(null, null, default); return; }
         var lane = t.Lanes[laneIx];

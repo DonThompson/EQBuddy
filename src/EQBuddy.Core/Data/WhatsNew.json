@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.68.2",
+  "date": "2026-08-12",
+  "highlights": [
+   "The fight timeline earns its space (David's pass on a real fight): the window now OPENS fitted to the fight — a five-skill skirmish opens compact, a raid brawl opens tall — and stays fully resizable; lanes stretch to fill whatever size you choose instead of huddling at the top. Lane totals say what they are (\"619 dmg\", \"217 taken\"), a legend line explains the marks, the DPS graph grew a scale and a series key, and miss/resist outlines went neutral gray — orange now means exactly one thing: critical."
+  ]
+ },
+ {
   "version": "1.68.1",
   "date": "2026-08-12",
   "highlights": [
