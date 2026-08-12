@@ -88,6 +88,7 @@ public partial class BreakoutWindow : Window
 
         Closed += (_, _) => SavePosition();
         WindowZoom.Attach(this, $"breakout:{kind}", settings);
+        if (_kind == BreakoutKind.Damage) CopyFight.Visibility = Visibility.Visible;
         if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
         if (_kind == BreakoutKind.Loot)
         {
@@ -330,6 +331,8 @@ public partial class BreakoutWindow : Window
         ApplyBackgroundOpacity();
         if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
         if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
+        _lastFight = s.LastFight;
+        _resists = MainWindow.SpellResistLookup(s);
         var f = s.LastFight;
         var (title, rows, secs, rateLabel) = _kind switch
         {
@@ -385,7 +388,33 @@ public partial class BreakoutWindow : Window
         var sig = $"{_fightScope}|{_sort}|{f?.Name}|{secs:0}|{string.Join(",", rows.Select(r => $"{r.Name}:{r.Total}"))}";
         if (sig == _signature) return;
         _signature = sig;
-        BreakdownRows.FillAbilityRowsSorted(this, Rows, rows, _sort, Math.Max(1, secs), rateLabel, max: 10);
+        // Resist % rides only the session-scope damage rows — the tallies are
+        // session-wide, and stamping them on a single fight would misstate it.
+        var resists = _kind == BreakoutKind.Damage && !_fightScope ? _resists : null;
+        BreakdownRows.FillAbilityRowsSorted(this, Rows, rows, _sort, Math.Max(1, secs), rateLabel,
+            max: 10, resists: resists);
+    }
+
+    private LastFightInfo? _lastFight;
+    private IReadOnlyDictionary<string, (int Casts, int Resists)>? _resists;
+
+    /// <summary>#102 (jeremycranfill): the Combat card's fight export without leaving
+    /// the minimized view — same Discord-ready text, same clipboard.</summary>
+    private void OnCopyFight(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        if (_lastFight is not { } f) return;
+        try
+        {
+            Clipboard.SetText(EQBuddy.UI.Shared.FightExport.ToText(
+                f, Main?.Identity.Character ?? "", $"v{UpdateChecker.CurrentVersion}"));
+            CopyFight.Text = "✓";
+            var t = new System.Windows.Threading.DispatcherTimer
+                { Interval = TimeSpan.FromSeconds(1.5) };
+            t.Tick += (_, _) => { CopyFight.Text = "⧉"; t.Stop(); };
+            t.Start();
+        }
+        catch (Exception ex) { App.LogError(ex); }
     }
 
     /// <summary>The Watch breakout: every 📌-pinned rule as a bar row — count, last match,

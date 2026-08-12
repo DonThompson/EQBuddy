@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.59.0",
+  "date": "2026-08-11",
+  "highlights": [
+   "The minimized DPS card learned two asks from discussion #102 (thanks jeremycranfill): a ⧉ button on its header copies the last fight as Discord-ready text without leaving the minimized view, and session-scope spell rows now show a resist % — \"do I need to switch to overchannel?\" answered where you're already looking. The % is your own casts vs. resists this session (hover for the raw counts); the main Combat card's session rows carry it too.",
+   "New ⚡ star in the Combat section header: an optional proc-rate chip (procs per combat-minute, same honest denominator as the Procs card) for the mini dashboard."
+  ]
+ }, {
   "version": "1.58.0",
   "date": "2026-08-11",
   "highlights": [

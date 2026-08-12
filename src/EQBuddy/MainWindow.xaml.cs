@@ -41,7 +41,7 @@ public partial class MainWindow : Window
     private long _lastRenderedVersion = -1;
     private DateTime _lastFullRender = DateTime.MinValue;
 
-    private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "loot", "motes", "money", "xp", "deaths"];
+    private static readonly string[] MiniStatOrder = ["kills", "dps", "hps", "pet", "procs", "loot", "motes", "money", "xp", "deaths"];
 
     // StatSort moved to BreakdownRows.cs (internal) when the breakout windows grew
     // their own sort bars — one enum, every surface.
@@ -1377,7 +1377,8 @@ public partial class MainWindow : Window
                     : s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             PaintCombatSpark(s);
-            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps");
+            FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps",
+                SpellResistLookup(s));
             // Shares the damage sort bar above it — it's the same rows, one level down.
             // Collapsed to one line by default (asked for in discussion #28 by a pet
             // class drowning in rows): the pet's overall damage is already a row in the
@@ -2434,6 +2435,7 @@ public partial class MainWindow : Window
         yield return ("dps", StarDps);
         yield return ("hps", StarHps);
         yield return ("pet", StarPet);
+        yield return ("procs", StarProcs);
         yield return ("kills", StarKills);
         yield return ("loot", StarLoot);
         yield return ("motes", StarMotes);
@@ -2569,6 +2571,9 @@ public partial class MainWindow : Window
                 "dps" => ("⚔", s.CurrentDps > 0 ? $"{s.CurrentDps:0} dps" : $"{s.SessionDps:0} dps"),
                 "hps" => ("✚", $"{s.Hps:0.#} hps"),
                 "pet" => ("🐾", $"{s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps"),
+                // Same denominator as the Procs card: combat minutes, so downtime
+                // doesn't flatter the weapon.
+                "procs" => ("⚡", $"{s.Procs.Sum(p => p.Count) / Math.Max(1.0 / 60, s.CombatSeconds / 60.0):0.#}/min"),
                 "loot" => ("\U0001F392", $"{s.LootTotal}"),
                 "motes" => ("\U0001F52E", Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
                     ? $"{mo.Total} · {mo.PerHour:0.#}/hr" : "0"),
@@ -2710,14 +2715,25 @@ public partial class MainWindow : Window
         });
     }
 
+    /// <summary>Per-spell resist tallies as a row-lookup dict (session-scoped; empty →
+    /// null so rows skip the lookup entirely).</summary>
+    internal static IReadOnlyDictionary<string, (int Casts, int Resists)>? SpellResistLookup(
+        StatsSnapshot s) =>
+        s.SpellResists.Count == 0
+            ? null
+            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists),
+                StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Details!-style breakdown: proportional bar behind each row with the full
     /// "total · ×hits · avg · rate (· crit%)" columns inline. The rate (dps/hps) uses the
     /// parser convention: ability damage ÷ total time in combat, so an ability's dps
     /// falls the longer you go without using it. The burst rate (total ÷ the ability's
     /// own active time) lives in the tooltip. The bar follows the sorted column.</summary>
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
-        StatSort sort, double combatSeconds, string rateLabel) =>
-        BreakdownRows.FillAbilityRowsSorted(this, list, stats, sort, combatSeconds, rateLabel);
+        StatSort sort, double combatSeconds, string rateLabel,
+        IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null) =>
+        BreakdownRows.FillAbilityRowsSorted(this, list, stats, sort, combatSeconds, rateLabel,
+            resists: resists);
 
     /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>
     private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)

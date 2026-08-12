@@ -121,7 +121,8 @@ internal static class BreakdownRows
     /// biggest is also drawn longest.</summary>
     public static void FillAbilityRowsSorted(FrameworkElement resources, ItemsControl list,
         IEnumerable<SourceDamage> stats, StatSort sort, double combatSeconds, string rateLabel,
-        int max = int.MaxValue)
+        int max = int.MaxValue,
+        IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null)
     {
         var secs = Math.Max(1, combatSeconds);
         double Rate(SourceDamage d) => d.Total / secs;
@@ -148,11 +149,22 @@ internal static class BreakdownRows
         foreach (var d in sorted.Take(max))
         {
             var critPart = d.Crits > 0 ? $" · {100.0 * d.Crits / Math.Max(1, d.Hits):0}% crit" : "";
-            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#} · {Rate(d):0.#} {rateLabel}{critPart}";
+            // Resist share on session spell rows (#102, jeremycranfill — "do I need to
+            // switch to overchannel?"). Capped at 100: one AoE cast can log several
+            // resist lines, so the raw counts live in the tooltip.
+            var resistPart = "";
+            var resistTip = "";
+            if (resists is not null
+                && resists.TryGetValue(SpellCatalog.BaseName(d.Name), out var rr) && rr.Resists > 0)
+            {
+                resistPart = $" · {Math.Min(100, 100.0 * rr.Resists / Math.Max(1, rr.Casts)):0}% resist";
+                resistTip = $" · {rr.Resists} resist{(rr.Resists == 1 ? "" : "s")} across {rr.Casts} casts this session";
+            }
+            var value = $"{d.Total:N0} · ×{d.Hits} · avg {Avg(d):0.#} · {Rate(d):0.#} {rateLabel}{critPart}{resistPart}";
             var tooltip = $"{100.0 * d.Total / grand:0.#}% of total · {rateLabel} = total ÷ {secs:0}s in combat" +
                 (d.ActiveSeconds > 0
                     ? $" · burst {d.Total / Math.Max(1, d.ActiveSeconds):0.#}/s over the ~{d.ActiveSeconds:0}s it was in use"
-                    : "");
+                    : "") + resistTip;
             list.Items.Add(Row(resources, d.Name, value, metric(d) / topMetric, barBrush, tooltip));
         }
     }

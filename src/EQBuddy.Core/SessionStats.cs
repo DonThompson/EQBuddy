@@ -290,6 +290,9 @@ public sealed class SessionStats
 
     private readonly Dictionary<string, (int Count, long Damage)> _procs = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _spellCastAt = new(StringComparer.OrdinalIgnoreCase);
+    // Per-spell casts vs resists (#102, jeremycranfill: "do I need to switch to
+    // overchannel?"). Keyed by base spell name; songs count too — they resist the same.
+    private readonly Dictionary<string, (int Casts, int Resists)> _spellOutcomes = new(StringComparer.OrdinalIgnoreCase);
     private (string Item, DateTime Time)? _lastItemProc;
     // A cast that preceded a blink or charmed line, held until a "Master" tell proves it
     // was a charm. Pet carries the creature the line named: the tell must name the SAME
@@ -565,6 +568,11 @@ public sealed class SessionStats
                     // cast-completion stats — twisting would swamp them.
                     if (!started.Song) _castsStarted++;
                     else _classEvidence["Bard"] = _classEvidence.GetValueOrDefault("Bard") + 1;
+                    {
+                        var outKey = SpellCatalog.BaseName(started.Spell);
+                        var so = _spellOutcomes.GetValueOrDefault(outKey);
+                        _spellOutcomes[outKey] = (so.Casts + 1, so.Resists);
+                    }
                     if (ClassSignals.TryGetValue(SpellCatalog.BaseName(started.Spell), out var castCls))
                         _classEvidence[castCls] = _classEvidence.GetValueOrDefault(castCls) + 1;
                     _pendingCast = (started.Spell, started.Time);
@@ -966,7 +974,14 @@ public sealed class SessionStats
                     }
                     break;
                 case FizzleEvent: _fizzles++; break;
-                case ResistEvent: _resists++; break;
+                case ResistEvent rz:
+                    _resists++;
+                    {
+                        var rzKey = SpellCatalog.BaseName(rz.Spell);
+                        var so = _spellOutcomes.GetValueOrDefault(rzKey);
+                        _spellOutcomes[rzKey] = (so.Casts, so.Resists + 1);
+                    }
+                    break;
                 case ItemProcEvent iproc: _lastItemProc = (iproc.Item, iproc.Time); break;
                 case SessionMarkerEvent mk:
                     _markers.Add((mk.Time, mk.Label));
@@ -1434,6 +1449,7 @@ public sealed class SessionStats
         _currentStance = null; _stanceAgg.Clear();
         _currentInvocation = null; _invocationAgg.Clear();
         _procs.Clear(); _spellCastAt.Clear(); _lastItemProc = null;
+        _spellOutcomes.Clear();
     }
 
     private static void Bump(Dictionary<string, int> d, string key) =>
@@ -1782,6 +1798,10 @@ public sealed class SessionStats
                 Procs = _procs
                     .Select(kv => (kv.Key, kv.Value.Count, kv.Value.Damage))
                     .OrderByDescending(x => x.Damage).ToList(),
+                SpellResists = _spellOutcomes
+                    .Where(kv => kv.Value.Resists > 0)
+                    .Select(kv => (kv.Key, kv.Value.Casts, kv.Value.Resists))
+                    .OrderByDescending(x => x.Resists).ToList(),
                 InferredClass = _classEvidence
                     .Where(kv => kv.Value >= ClassEvidenceFloor)
                     .OrderByDescending(kv => kv.Value)
@@ -1982,6 +2002,10 @@ public sealed class StatsSnapshot
     /// <summary>Spell damage whose spell was never cast (#85): weapon/poison/item procs,
     /// each with hit count and total damage. Rate display divides by combat minutes.</summary>
     public List<(string Name, int Count, long Damage)> Procs { get; init; } = [];
+    /// <summary>Per-spell resist tallies for spells resisted at least once (#102,
+    /// jeremycranfill): base spell name, casts started, resists seen — the
+    /// "switch to overchannel?" numbers. Session-scoped; your own casts only.</summary>
+    public List<(string Spell, int Casts, int Resists)> SpellResists { get; init; } = [];
     /// <summary>Most-evidenced class from class-unique signals — "" until enough
     /// sightings. ALWAYS present as "(inferred)": players swap classes.</summary>
     public string InferredClass { get; init; } = "";

@@ -53,6 +53,34 @@ public class SpellTrackingTests
         Assert.Equal("Denon's Disruptive Discord", Assert.IsType<ResistEvent>(
             LogParser.Parse(Ts + "A willowisp resisted your Denon's Disruptive Discord!")).Spell);
 
+    /// <summary>#102 (jeremycranfill): per-spell resist tallies — casts counted from
+    /// cast-start lines (songs too; they resist the same), resists from both resist
+    /// line shapes, keyed together so damage rows can show "N% resist". Spells never
+    /// resisted stay out of the list.</summary>
+    [Fact]
+    public void SpellResistTalliesPairCastsWithResists()
+    {
+        var stats = Replay(
+            At(1, 0, "You begin casting Poison Bolt."),
+            At(1, 5, "You begin casting Poison Bolt."),
+            At(1, 10, "You begin casting Poison Bolt."),
+            At(1, 12, "Your target resisted the Poison Bolt spell."),
+            At(1, 20, "You begin singing Denon's Disruptive Discord."),
+            At(1, 22, "A willowisp resisted your Denon's Disruptive Discord!"),
+            At(1, 30, "You begin casting Ice Comet."));
+        var s = stats.Snapshot();
+
+        var bolt = Assert.Single(s.SpellResists, r => r.Spell == "Poison Bolt");
+        Assert.Equal(3, bolt.Casts);
+        Assert.Equal(1, bolt.Resists);
+
+        var song = Assert.Single(s.SpellResists, r => r.Spell == "Denon's Disruptive Discord");
+        Assert.Equal(1, song.Casts);
+        Assert.Equal(1, song.Resists);
+
+        Assert.DoesNotContain(s.SpellResists, r => r.Spell == "Ice Comet");
+    }
+
     [Fact]
     public void DotTicksAreFlaggedOverTimeAndDirectHitsAreNot()
     {

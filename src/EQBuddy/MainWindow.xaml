@@ -187,6 +187,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="&#x2694;&#xFE0F; Combat" FontSize="13"/>
                         <TextBlock x:Name="CombatHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 dps"/>
@@ -201,6 +202,16 @@
                             <ToggleButton x:Name="StarPet" Style="{StaticResource StarToggle}"
                                           Tag="pet" Click="OnStarChanged"
                                           ToolTip="Show pet damage in mini dashboard"/>
+                        </StackPanel>
+                        <!-- Proc rate rides the same one-place rule (David, 2026-08-11):
+                             optional ⚡ chip for the minimized view, toggled where the
+                             other combat watches live. -->
+                        <StackPanel Grid.Column="4" Orientation="Horizontal">
+                            <TextBlock Text="⚡" FontSize="9" VerticalAlignment="Center"
+                                       Margin="2,0,0,0" Opacity="0.75"/>
+                            <ToggleButton x:Name="StarProcs" Style="{StaticResource StarToggle}"
+                                          Tag="procs" Click="OnStarChanged"
+                                          ToolTip="Show proc rate (procs per combat-minute) in mini dashboard"/>
                         </StackPanel>
                     </Grid>
                 </Expander.Header>
