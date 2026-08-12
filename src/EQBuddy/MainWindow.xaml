@@ -196,9 +196,14 @@
                         <!-- Pet damage has no card of its own (it's the fold-out below), but its
                              watch-toggle lives up here with the other stars per David: one place
                              to say what you watch when minimized. The 🐾 tells the two stars apart. -->
+                        <!-- The glyphs toggle their star too (David's live catch, 1.59.0:
+                             clicking ⚡ fell through to the expander and collapsed the
+                             section — a label beside a toggle reads as part of it). -->
                         <StackPanel Grid.Column="3" Orientation="Horizontal">
                             <TextBlock Text="🐾" FontSize="9" VerticalAlignment="Center"
-                                       Margin="2,0,0,0" Opacity="0.75"/>
+                                       Margin="2,0,0,0" Opacity="0.75" Cursor="Hand" Tag="pet"
+                                       MouseLeftButtonDown="OnStarGlyphClick"
+                                       ToolTip="Show pet damage in mini dashboard"/>
                             <ToggleButton x:Name="StarPet" Style="{StaticResource StarToggle}"
                                           Tag="pet" Click="OnStarChanged"
                                           ToolTip="Show pet damage in mini dashboard"/>
@@ -208,7 +213,9 @@
                              other combat watches live. -->
                         <StackPanel Grid.Column="4" Orientation="Horizontal">
                             <TextBlock Text="⚡" FontSize="9" VerticalAlignment="Center"
-                                       Margin="2,0,0,0" Opacity="0.75"/>
+                                       Margin="2,0,0,0" Opacity="0.75" Cursor="Hand" Tag="procs"
+                                       MouseLeftButtonDown="OnStarGlyphClick"
+                                       ToolTip="Show proc rate (procs per combat-minute) in mini dashboard"/>
                             <ToggleButton x:Name="StarProcs" Style="{StaticResource StarToggle}"
                                           Tag="procs" Click="OnStarChanged"
                                           ToolTip="Show proc rate (procs per combat-minute) in mini dashboard"/>

@@ -2444,6 +2444,21 @@ public partial class MainWindow : Window
         yield return ("deaths", StarDeaths);
     }
 
+    /// <summary>The 🐾/⚡ glyphs beside their stars: clicking the glyph must toggle the
+    /// star, not fall through to the section expander (David's live catch, 1.59.0).</summary>
+    private void OnStarGlyphClick(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        System.Windows.Controls.Primitives.ToggleButton? star =
+            (string)((FrameworkElement)sender).Tag switch
+            {
+                "pet" => StarPet, "procs" => StarProcs, _ => null,
+            };
+        if (star is null) return;
+        star.IsChecked = star.IsChecked != true;
+        OnStarChanged(star, new RoutedEventArgs());
+    }
+
     private void OnStarChanged(object sender, RoutedEventArgs e)
     {
         var btn = (System.Windows.Controls.Primitives.ToggleButton)sender;
