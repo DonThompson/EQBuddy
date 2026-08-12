@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.67.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "Options grew tabs — Look · Alerts & chips · Watch rules · Cards & windows · Behavior — instead of one long wall (David: “it needs serious reorganization”; he was right). Opens to the tab you last used.",
+   "Buff timers got smarter: your own casts now include your Spell Casting Reinforcement rank (+5/15/30/50%) straight from your AA ledger, and a new display mode (Alerts & chips tab) keeps the card quiet until a buff is within a warning window you choose — tell me when it matters.",
+   "The voice no longer arrives late to its own alert: the speech engine warms up at launch, so the first spoken alert of a session speaks on time."
+  ]
+ }, {
   "version": "1.66.3",
   "date": "2026-08-12",
   "highlights": [

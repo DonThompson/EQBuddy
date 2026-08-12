@@ -93,6 +93,14 @@ public sealed class BuffTracker
 
     public event Action? Changed;
 
+    /// <summary>The player's Spell Casting Reinforcement rank (0–4), from the AA
+    /// ledger: +5/15/30/50% duration on beneficial spells YOU cast. Applied to the
+    /// wiki-base estimate only — a learned duration already includes the character's
+    /// real extensions, and applying it twice would overshoot every countdown.</summary>
+    public Func<int>? ReinforcementRank { get; set; }
+
+    private static readonly double[] ReinforcementBonus = [0, 0.05, 0.15, 0.30, 0.50];
+
     public BuffTracker(BuffDurationCatalog? catalog = null) =>
         _catalog = catalog ?? BuffDurationCatalog.Default;
 
@@ -177,6 +185,11 @@ public sealed class BuffTracker
         var baseSeconds = resolved
             ? entry.Spells.First(s => s.Name.Equals(label, StringComparison.OrdinalIgnoreCase)).DurationSeconds
             : entry.Spells.Max(s => s.DurationSeconds);
+        // Your own cast gets your Spell Casting Reinforcement applied to the estimate;
+        // someone else's caster AAs are invisible to your log, so their base stands.
+        if (resolved && cast.Caster == "You"
+            && ReinforcementRank?.Invoke() is > 0 and <= 4 and var rank)
+            baseSeconds *= 1 + ReinforcementBonus[rank];
         var learned = resolved && _learned.TryGetValue(label, out var known) ? known : (double?)null;
         var estimated = !resolved || learned is null;
 

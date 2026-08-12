@@ -69,7 +69,11 @@ public partial class MainWindow : Window
         _watcher.Slow = _slowTracker;
         _slowTracker.Landed += OnSlowLanded;
         _buffTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "buff-durations.json"));
+        // Your Spell Casting Reinforcement rank stretches your own casts' estimates
+        // (+5/15/30/50%); learned durations already carry it and are never re-scaled.
+        _buffTracker.ReinforcementRank = () => _stats.AaRank("Spell Casting Reinforcement");
         _watcher.Buffs = _buffTracker;
+        EQBuddy.UI.Shared.SpokenAlerts.Warmup();   // first alert must not pay SAPI's init
         _raidLedger = new RaidKillLedger(AppPaths.File("raid-kills.json"))
         { CharacterKey = () => _stats.LedgerCharacterKey };
         _watcher.Raids = _raidLedger;
@@ -1011,7 +1015,24 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Expiring-only mode (David): the card stays quiet until a buff is inside the
+        // warning window — "tell me when it matters", with the rest counted honestly.
+        var quiet = 0;
+        if (_settings.BuffTimersExpiringOnly)
+        {
+            var warn = Math.Max(10, _settings.BuffWarnSeconds);
+            var urgent = buffs.Where(b => b.RemainingSeconds(DateTime.Now) is { } r && r <= warn).ToList();
+            quiet = buffs.Count - urgent.Count;
+            buffs = urgent;
+        }
+
         BuffsPanel.Children.Clear();
+        if (buffs.Count == 0)
+        {
+            BuffsPanel.Children.Add(EmptyCardLine(
+                $"{quiet} running quietly — timers appear at {Math.Max(10, _settings.BuffWarnSeconds):0}s left."));
+            return;
+        }
         foreach (var b in buffs)
         {
             var row = new Grid { Margin = new Thickness(0, 1, 0, 1) };

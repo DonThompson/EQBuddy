@@ -122,6 +122,26 @@ public class BuffTrackerTests
     }
 
     [Fact]
+    public void YourReinforcementRankStretchesYourOwnEstimates()
+    {
+        // SCR rank 3: +30% on beneficial spells YOU cast. Wiki base 3780 → 4914.
+        var t = new BuffTracker { ReinforcementRank = () => 3 };
+        t.Apply(Ev(0, "You begin casting Armor of Faith."));
+        t.Apply(Ev(2, "You feel the favor of the gods upon you."));
+
+        var own = Assert.Single(t.Snapshot(T0.AddSeconds(3)));
+        Assert.Equal(3780 * 1.30 - 1, own.RemainingSeconds(T0.AddSeconds(3))!.Value, 0);
+        Assert.True(own.Estimated);   // closer, but still the wiki's number scaled
+
+        // Someone else's cast: their AAs are invisible to your log — base stands.
+        var other = new BuffTracker { ReinforcementRank = () => 3 };
+        other.Apply(Ev(0, "Sanctari begins casting Armor of Faith."));
+        other.Apply(Ev(2, "You feel the favor of the gods upon you."));
+        Assert.Equal(3780 - 1, other.Snapshot(T0.AddSeconds(3))[0]
+            .RemainingSeconds(T0.AddSeconds(3))!.Value, 0);
+    }
+
+    [Fact]
     public void RebuffingRefreshesInsteadOfDuplicating()
     {
         var t = Replay(

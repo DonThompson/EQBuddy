@@ -1368,6 +1368,21 @@ public sealed class SessionStats
         return best.Length > 0 ? [best] : [];
     }
 
+    /// <summary>The highest rank of one AA the character is known to own (0 = none seen) —
+    /// the cheap single-name probe duration models use per event, where building the whole
+    /// snapshot ledger would be waste. Same union as <see cref="BuildAaLedgerLocked"/>.</summary>
+    public int AaRank(string ability)
+    {
+        lock (_lock)
+        {
+            var rank = _aaAbilities.TryGetValue(ability, out var seen) ? seen.Rank : 0;
+            if (AaStore is { } store && AaCharacterKey.Length > 0
+                && store.For(AaCharacterKey).TryGetValue(ability, out var stored) && stored.Rank > rank)
+                rank = stored.Rank;
+            return rank;
+        }
+    }
+
     /// <summary>The AA ledger a snapshot shows: union of this run's observations and the
     /// durable store, highest rank per ability — the store is what survives log truncation,
     /// the in-memory side is what a store-less test (or first run) sees.</summary>

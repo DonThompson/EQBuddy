@@ -60,6 +60,16 @@ public sealed class AppSettings
     /// chat drowns the combat lines). Off by default — a "WTS" watch is a real rule.</summary>
     public bool RecentLinesHideChat { get; set; }
 
+    /// <summary>Buff card display (David): false = every running buff with its full
+    /// countdown; true = quiet until a buff is within <see cref="BuffWarnSeconds"/> of
+    /// fading — the "tell me when it matters" mode.</summary>
+    public bool BuffTimersExpiringOnly { get; set; }
+    public double BuffWarnSeconds { get; set; } = 60;
+
+    /// <summary>The Options tab last used — iterating on watch rules shouldn't cost a
+    /// click per visit. "look" / "alerts" / "watch" / "cards" / "behavior".</summary>
+    public string OptionsTab { get; set; } = "look";
+
     /// <summary>Fight-timeline window placement; 0 width = never opened, defaults apply.</summary>
     public double TimelineLeft { get; set; }
     public double TimelineTop { get; set; }

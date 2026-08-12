@@ -14,13 +14,19 @@
          border, so width is driven by the drag handles on both edges below.
          SizeToContent stays on Height, but MaxHeight is clamped at runtime to the work
          area of whichever monitor the window is on — at high Windows scaling the content
-         is taller than the screen, so the body has to scroll. The title row stays outside
-         the scroll so ✕ is always reachable. -->
+         is taller than the screen, so the body has to scroll. The title row and the tab
+         bar stay outside the scroll so ✕ and navigation are always reachable. -->
+    <!-- Tabs since 1.67.0 (David: "a wall of options... needs serious reorganization").
+         Hand-rolled nav (text links + one visible panel) rather than a TabControl —
+         the custom chrome already fights native control templates, and the sort-link
+         idiom is the app's own. Every control kept its x:Name; the code-behind did
+         not have to know the furniture moved. -->
     <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid>
         <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
@@ -32,10 +38,25 @@
                     HorizontalAlignment="Right" Click="OnClose"/>
         </Grid>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
-        <StackPanel Margin="16,0,16,16">
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="16,0,16,8">
+            <TextBlock x:Name="TabLook" Text="Look" Tag="look" FontSize="12" Cursor="Hand"
+                       Padding="0,0,0,3" Margin="0,0,14,0" MouseLeftButtonDown="OnTabClick"/>
+            <TextBlock x:Name="TabAlerts" Text="Alerts &amp; chips" Tag="alerts" FontSize="12" Cursor="Hand"
+                       Padding="0,0,0,3" Margin="0,0,14,0" MouseLeftButtonDown="OnTabClick"/>
+            <TextBlock x:Name="TabWatch" Text="Watch rules" Tag="watch" FontSize="12" Cursor="Hand"
+                       Padding="0,0,0,3" Margin="0,0,14,0" MouseLeftButtonDown="OnTabClick"/>
+            <TextBlock x:Name="TabCards" Text="Cards &amp; windows" Tag="cards" FontSize="12" Cursor="Hand"
+                       Padding="0,0,0,3" Margin="0,0,14,0" MouseLeftButtonDown="OnTabClick"/>
+            <TextBlock x:Name="TabBehavior" Text="Behavior" Tag="behavior" FontSize="12" Cursor="Hand"
+                       Padding="0,0,0,3" MouseLeftButtonDown="OnTabClick"/>
+        </StackPanel>
 
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
+        <Grid Margin="16,0,16,16">
+
+        <!-- ============================ LOOK ============================ -->
+        <StackPanel x:Name="TabLookPanel">
             <Grid>
                 <TextBlock Text="Theme" FontSize="12"/>
                 <ComboBox x:Name="ThemeCombo" HorizontalAlignment="Right" Width="130" FontSize="12"
@@ -85,27 +106,6 @@
                     IsSnapToTickEnabled="True" Margin="0,4,0,4"
                     ValueChanged="OnOpacityChanged"/>
 
-            <CheckBox x:Name="TruncateCheck" Margin="0,12,0,0"
-                      Checked="OnTruncateChanged" Unchecked="OnTruncateChanged">
-                <TextBlock Text="Auto-empty finished-session logs" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="Turn off if you use GINA/GamParse or upload your log files elsewhere — they will grow forever, so clean them up yourself occasionally. (Cleanup already stands down whenever the game, GINA, or GamParse is running.)"
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
-            <CheckBox x:Name="ArchiveCheck" Margin="20,6,0,0"
-                      Checked="OnArchiveChanged" Unchecked="OnArchiveChanged">
-                <TextBlock Text="Keep a timestamped copy before emptying (Logs\archive)" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="Each finished session is saved as eqlog_name_server_YYYYMMDDHHMMSS.txt — the stamp is when the session ended. Archives are yours to keep or clean up; EQBuddy never deletes them."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="40,2,0,0"/>
-
-            <CheckBox x:Name="TutorialCheck" Margin="0,10,0,0"
-                      Checked="OnTutorialToggled" Unchecked="OnTutorialToggled">
-                <TextBlock Text="Show quick tutorial at launch" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-
             <CheckBox x:Name="GridOverlayCheck" Margin="0,10,0,0"
                       Checked="OnGridOverlayToggled" Unchecked="OnGridOverlayToggled">
                 <TextBlock Text="▦ Grid overlay for aligning your game UI" FontSize="12"
@@ -122,39 +122,35 @@
                     IsSnapToTickEnabled="True" Margin="20,4,0,4"
                     ValueChanged="OnGridSpacingChanged"/>
 
-            <CheckBox x:Name="TargetDropsCheck" Margin="0,10,0,0"
-                      Checked="OnTargetDropsToggled" Unchecked="OnTargetDropsToggled">
-                <TextBlock Text="🎯 Show target drops in the Loot card" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="While you fight, the Loot card lists what the creature can drop (eqlwiki) with your own observed counts this session. Hover an item for its stats; click for full info."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+            <TextBlock Text="Size also scales all text. Changes apply instantly and are saved. Drag either side edge to widen this window."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+        </StackPanel>
 
-            <CheckBox x:Name="HideUnfocusedCheck" Margin="0,10,0,0"
-                      Checked="OnHideUnfocusedToggled" Unchecked="OnHideUnfocusedToggled">
-                <TextBlock Text="Hide the widget while the game is running but not focused" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="Alt-tab to a browser and the widget (and its chips and breakout windows) gets out of the way; alt-tab back to the game and everything returns. The widget always shows when the game isn't running."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+        <!-- ======================= ALERTS &amp; CHIPS ======================= -->
+        <StackPanel x:Name="TabAlertsPanel" Visibility="Collapsed">
+            <Grid>
+                <TextBlock Text="Alert sound" FontSize="12" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ComboBox x:Name="SoundCombo" Width="120" FontSize="12"
+                              SelectionChanged="OnSoundChanged"/>
+                    <Button Content="&#x25B6;" Style="{StaticResource IconButton}" FontSize="11"
+                            ToolTip="Play the alert sound" Click="OnSoundTest" Margin="4,0,0,0"/>
+                </StackPanel>
+            </Grid>
+            <Grid Margin="0,6,0,0">
+                <TextBlock Text="Alert volume" FontSize="12"/>
+                <TextBlock x:Name="AlertVolumeLabel" Text="100%" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource AccentBrush}"/>
+            </Grid>
+            <Slider x:Name="AlertVolumeSlider" Minimum="0.1" Maximum="1.0" TickFrequency="0.05"
+                    IsSnapToTickEnabled="True" Margin="0,4,0,4"
+                    ValueChanged="OnAlertVolumeChanged"/>
+            <TextBlock x:Name="SoundFileNote" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                       Visibility="Collapsed"/>
+            <TextBlock Text="While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,4,0,0"/>
 
-            <CheckBox x:Name="KeepAboveCheck" Margin="0,10,0,0"
-                      Checked="OnKeepAboveToggled" Unchecked="OnKeepAboveToggled">
-                <TextBlock Text="Keep EQBuddy above fullscreen overlays (Lossless Scaling and kin)" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="Overlay apps created after EQBuddy land above it in Windows' always-on-top pile, hiding the widget; this quietly re-lifts every EQBuddy window every few seconds. Untick if your screen-capture setup shows the widget twice (a real copy plus the captured one)."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
-
-            <CheckBox x:Name="MezChipsCheck" Margin="0,10,0,0"
-                      Checked="OnMezChipsToggled" Unchecked="OnMezChipsToggled">
-                <TextBlock Text="Mez countdown chips (who's asleep, wake-up timers)" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="Untick if your class never mezzes — the stack stops appearing entirely."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
-
-            <CheckBox x:Name="SlowAlertCheck" Margin="0,10,0,0"
+            <CheckBox x:Name="SlowAlertCheck" Margin="0,12,0,0"
                       Checked="OnSlowAlertToggled" Unchecked="OnSlowAlertToggled">
                 <TextBlock Text="Slow alert (an attack-speed debuff lands on you)" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
@@ -174,6 +170,40 @@
             <TextBlock Text="Raids are detected from raid-channel chat — the log's only raid signal. A raid nobody has typed in for 10 minutes counts as over."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="40,2,0,0"/>
 
+            <CheckBox x:Name="BuffExpiringOnlyCheck" Margin="0,12,0,0"
+                      Checked="OnBuffDisplayChanged" Unchecked="OnBuffDisplayChanged">
+                <TextBlock Text="Buff timers: only show buffs about to fade" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <StackPanel Orientation="Horizontal" Margin="20,4,0,0">
+                <TextBlock Text="warn at" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrush}"/>
+                <TextBox x:Name="BuffWarnBox" Width="44" Margin="6,0,6,0" FontSize="12"
+                         TextAlignment="Right" LostFocus="OnBuffDisplayChanged"
+                         Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}"/>
+                <TextBlock Text="seconds left" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </StackPanel>
+            <TextBlock Text="Unticked, the Buffs card counts down everything that's running. Ticked, it stays quiet (with an honest count) until a buff is inside the warning window — tell me when it matters. Your own casts already include your Spell Casting Reinforcement rank; a buff's first natural fade teaches its exact duration either way."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <CheckBox x:Name="MezChipsCheck" Margin="0,12,0,0"
+                      Checked="OnMezChipsToggled" Unchecked="OnMezChipsToggled">
+                <TextBlock Text="Mez countdown chips (who's asleep, wake-up timers)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Untick if your class never mezzes — the stack stops appearing entirely."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <CheckBox x:Name="TrackSpawnsCheck" Margin="0,10,0,0"
+                      Checked="OnTrackSpawnsToggled" Unchecked="OnTrackSpawnsToggled">
+                <TextBlock Text="🕒 Track spawns (named respawn timers)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Kill a named — or its placeholder — and a small countdown chicklet appears (⏳ Asaka L`Rei 3:12). Chicklets stack, drag anywhere as one, show every timer you have running in any zone, and flip to DUE for a minute (click to dismiss sooner). Double-click one (or right-click → Spawn timers…) for the full zone list, which follows you zone to zone. We captured the respawn times we could from community sources — if you notice a discrepancy in game, type over the duration: your number wins and survives updates."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
             <CheckBox x:Name="SpawnGrowUpCheck" Margin="0,10,0,0"
                       Checked="OnChipGrowToggled" Unchecked="OnChipGrowToggled">
                 <TextBlock Text="Spawn chips grow upward" FontSize="12"
@@ -186,45 +216,11 @@
             </CheckBox>
             <TextBlock Text="A stack normally holds its top edge and grows downward as chips arrive. Grown-upward it holds its BOTTOM edge instead — park boss timers above mez timers and each grows away from the other."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+        </StackPanel>
 
-            <TextBlock Text="Global hotkeys" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
-                       Foreground="{DynamicResource TextBrush}"/>
-            <TextBlock Text="Nothing is bound until you bind it. A bound key is claimed system-wide while EQBuddy runs — it will stop reaching the game and every other app — so pick combos nothing else uses (Ctrl+Alt+… is usually safe). Click a box, press your keys; ✕ unbinds."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-            <StackPanel x:Name="HotkeysPanel" Margin="0,2,0,0"/>
-
-            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                <TextBlock Text="Regen heals about" FontSize="12" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextBrush}"/>
-                <TextBox x:Name="RegenPerTickBox" Width="48" Margin="6,0,6,0" FontSize="12"
-                         TextAlignment="Right" LostFocus="OnRegenPerTickChanged"
-                         Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}"
-                         BorderBrush="{DynamicResource BorderBrush}"/>
-                <TextBlock Text="hp per tick (blank = wiki base)" FontSize="12" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </StackPanel>
-            <TextBlock Text="Hymn of Restoration and similar regen ticks never log an amount, so their healing is estimated. The wiki knows the unamplified base (Hymn: 9), but instruments and ranks raise the real number — read yours off the heal text over your head and type it here. Your number wins."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
-
-            <CheckBox x:Name="TrackSpawnsCheck" Margin="0,10,0,0"
-                      Checked="OnTrackSpawnsToggled" Unchecked="OnTrackSpawnsToggled">
-                <TextBlock Text="🕒 Track spawns (named respawn timers)" FontSize="12"
-                           Foreground="{DynamicResource TextBrush}"/>
-            </CheckBox>
-            <TextBlock Text="Kill a named — or its placeholder — and a small countdown chicklet appears (⏳ Asaka L`Rei 3:12). Chicklets stack, drag anywhere as one, show every timer you have running in any zone, and flip to DUE for a minute (click to dismiss sooner). Double-click one (or right-click → Spawn timers…) for the full zone list, which follows you zone to zone. We captured the respawn times we could from community sources — if you notice a discrepancy in game, type over the duration: your number wins and survives updates."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
-
-            <Grid Margin="0,12,0,0">
-                <TextBlock Text="Recent-rate window" FontSize="12"/>
-                <ComboBox x:Name="WindowCombo" HorizontalAlignment="Right" Width="90" FontSize="12"
-                          SelectionChanged="OnWindowChanged"/>
-            </Grid>
-            <TextBlock Text='The "Last Xm" figures on Combat, Kills, Money, and Progress.'
-                       Style="{StaticResource Dim}" TextWrapping="Wrap"/>
-
-            <TextBlock Text="Watch rules" FontSize="12" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AccentBrush}" Margin="0,14,0,2"/>
-            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, your spells wearing off, or any text in the log. Match is a case-insensitive substring, e.g. 'mote'. Spell fade rules can pick a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun, HoT) instead of a named spell, needing no match text. Delay holds the alert back that many seconds so it lands as a cue. 🔔 shows a banner; the sound box picks this rule's own sound, so you can tell what happened by ear — 'Default' follows the shared choice below, 'Off' stays silent, 'Custom…' takes your own .wav/.mp3."
+        <!-- ========================= WATCH RULES ========================= -->
+        <StackPanel x:Name="TabWatchPanel" Visibility="Collapsed">
+            <TextBlock Text="Watch loot, kills, skill-ups, deaths, milestones, your spells wearing off, or any text in the log. Match is a case-insensitive substring, e.g. 'mote'. Spell fade rules can pick a whole class (Any crowd control, Charm, Mez, Root, Lull, Stun, HoT) instead of a named spell, needing no match text. Delay holds the alert back that many seconds so it lands as a cue. 🔔 shows a banner; the sound box picks this rule's own sound, so you can tell what happened by ear — 'Default' follows the shared choice on the Alerts tab, 'Off' stays silent, 'Custom…' takes your own .wav/.mp3."
                        Style="{StaticResource Dim}" TextWrapping="Wrap"/>
             <!-- Collapsed by default: the examples answer the questions people actually ask
                  (is "Mote" enough? why isn't my rule matching?) but they're a wall of text
@@ -282,31 +278,14 @@
                 <TextBlock Text="📌 Show watch chips in the mini dashboard" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
+        </StackPanel>
 
-            <Grid Margin="0,8,0,0">
-                <TextBlock Text="Alert sound" FontSize="12" VerticalAlignment="Center"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <ComboBox x:Name="SoundCombo" Width="120" FontSize="12"
-                              SelectionChanged="OnSoundChanged"/>
-                    <Button Content="&#x25B6;" Style="{StaticResource IconButton}" FontSize="11"
-                            ToolTip="Play the alert sound" Click="OnSoundTest" Margin="4,0,0,0"/>
-                </StackPanel>
-            </Grid>
-            <Grid Margin="0,6,0,0">
-                <TextBlock Text="Alert volume" FontSize="12"/>
-                <TextBlock x:Name="AlertVolumeLabel" Text="100%" FontSize="12" HorizontalAlignment="Right"
-                           Foreground="{DynamicResource AccentBrush}"/>
-            </Grid>
-            <Slider x:Name="AlertVolumeSlider" Minimum="0.1" Maximum="1.0" TickFrequency="0.05"
-                    IsSnapToTickEnabled="True" Margin="0,4,0,4"
-                    ValueChanged="OnAlertVolumeChanged"/>
-            <TextBlock x:Name="SoundFileNote" Style="{StaticResource Dim}" TextWrapping="Wrap"
-                       Visibility="Collapsed"/>
-            <TextBlock Text="While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,4,0,0"/>
-
+        <!-- ======================= CARDS &amp; WINDOWS ======================= -->
+        <StackPanel x:Name="TabCardsPanel" Visibility="Collapsed">
             <TextBlock Text="Overlay cards" FontSize="12" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AccentBrush}" Margin="0,14,0,2"/>
+                       Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,2"/>
+            <TextBlock Text="Every card you leave visible shows on the widget — one with nothing yet says so in a line and fills in as it happens."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,0,0,2"/>
             <StackPanel x:Name="CardsPanel"/>
 
             <TextBlock Text="Breakout windows" FontSize="12" FontWeight="SemiBold"
@@ -315,15 +294,89 @@
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,0,0,2"/>
             <WrapPanel x:Name="BreakoutsPanel"/>
 
-            <TextBlock Text="Size also scales all text. Changes apply instantly and are saved. Drag either side edge to widen this window."
-                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            <CheckBox x:Name="TargetDropsCheck" Margin="0,12,0,0"
+                      Checked="OnTargetDropsToggled" Unchecked="OnTargetDropsToggled">
+                <TextBlock Text="🎯 Show target drops in the Loot card" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="While you fight, the Loot card lists what the creature can drop (eqlwiki) with your own observed counts this session. Hover an item for its stats; click for full info."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <Grid Margin="0,12,0,0">
+                <TextBlock Text="Recent-rate window" FontSize="12"/>
+                <ComboBox x:Name="WindowCombo" HorizontalAlignment="Right" Width="90" FontSize="12"
+                          SelectionChanged="OnWindowChanged"/>
+            </Grid>
+            <TextBlock Text='The "Last Xm" figures on Combat, Kills, Money, and Progress.'
+                       Style="{StaticResource Dim}" TextWrapping="Wrap"/>
         </StackPanel>
+
+        <!-- ========================== BEHAVIOR ========================== -->
+        <StackPanel x:Name="TabBehaviorPanel" Visibility="Collapsed">
+            <CheckBox x:Name="HideUnfocusedCheck"
+                      Checked="OnHideUnfocusedToggled" Unchecked="OnHideUnfocusedToggled">
+                <TextBlock Text="Hide the widget while the game is running but not focused" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Alt-tab to a browser and the widget (and its chips and breakout windows) gets out of the way; alt-tab back to the game and everything returns. The widget always shows when the game isn't running."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <CheckBox x:Name="KeepAboveCheck" Margin="0,10,0,0"
+                      Checked="OnKeepAboveToggled" Unchecked="OnKeepAboveToggled">
+                <TextBlock Text="Keep EQBuddy above fullscreen overlays (Lossless Scaling and kin)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Overlay apps created after EQBuddy land above it in Windows' always-on-top pile, hiding the widget; this quietly re-lifts every EQBuddy window every few seconds. Untick if your screen-capture setup shows the widget twice (a real copy plus the captured one)."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <TextBlock Text="Global hotkeys" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
+                       Foreground="{DynamicResource TextBrush}"/>
+            <TextBlock Text="Nothing is bound until you bind it. A bound key is claimed system-wide while EQBuddy runs — it will stop reaching the game and every other app — so pick combos nothing else uses (Ctrl+Alt+… is usually safe). Click a box, press your keys; ✕ unbinds."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+            <StackPanel x:Name="HotkeysPanel" Margin="0,2,0,0"/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                <TextBlock Text="Regen heals about" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrush}"/>
+                <TextBox x:Name="RegenPerTickBox" Width="48" Margin="6,0,6,0" FontSize="12"
+                         TextAlignment="Right" LostFocus="OnRegenPerTickChanged"
+                         Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}"/>
+                <TextBlock Text="hp per tick (blank = wiki base)" FontSize="12" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </StackPanel>
+            <TextBlock Text="Hymn of Restoration and similar regen ticks never log an amount, so their healing is estimated. The wiki knows the unamplified base (Hymn: 9), but instruments and ranks raise the real number — read yours off the heal text over your head and type it here. Your number wins."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <CheckBox x:Name="TruncateCheck" Margin="0,12,0,0"
+                      Checked="OnTruncateChanged" Unchecked="OnTruncateChanged">
+                <TextBlock Text="Auto-empty finished-session logs" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Turn off if you use GINA/GamParse or upload your log files elsewhere — they will grow forever, so clean them up yourself occasionally. (Cleanup already stands down whenever the game, GINA, or GamParse is running.)"
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+            <CheckBox x:Name="ArchiveCheck" Margin="20,6,0,0"
+                      Checked="OnArchiveChanged" Unchecked="OnArchiveChanged">
+                <TextBlock Text="Keep a timestamped copy before emptying (Logs\archive)" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="Each finished session is saved as eqlog_name_server_YYYYMMDDHHMMSS.txt — the stamp is when the session ended. Archives are yours to keep or clean up; EQBuddy never deletes them."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="40,2,0,0"/>
+
+            <CheckBox x:Name="TutorialCheck" Margin="0,10,0,0"
+                      Checked="OnTutorialToggled" Unchecked="OnTutorialToggled">
+                <TextBlock Text="Show quick tutorial at launch" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+        </StackPanel>
+
+        </Grid>
         </ScrollViewer>
 
         <!-- Width handles on both edges. Transparent template so they read as bare edges;
              the cursor is the affordance. Dragging the left edge moves Left as well as
              Width so the right edge stays put. Width is persisted on release. -->
-        <Thumb x:Name="LeftGrip" Grid.RowSpan="2" Width="8"
+        <Thumb x:Name="LeftGrip" Grid.RowSpan="3" Width="8"
                HorizontalAlignment="Left" VerticalAlignment="Stretch"
                Cursor="SizeWE" ToolTip="Drag to resize"
                DragStarted="OnResizeStarted" DragDelta="OnResizeLeftDelta"
@@ -333,7 +386,7 @@
           </Thumb.Template>
         </Thumb>
 
-        <Thumb x:Name="RightGrip" Grid.RowSpan="2" Width="8"
+        <Thumb x:Name="RightGrip" Grid.RowSpan="3" Width="8"
                HorizontalAlignment="Right" VerticalAlignment="Stretch"
                Cursor="SizeWE" ToolTip="Drag to resize"
                DragStarted="OnResizeStarted" DragDelta="OnResizeRightDelta"

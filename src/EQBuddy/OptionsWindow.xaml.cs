@@ -55,6 +55,9 @@ public partial class OptionsWindow : Window
         SlowAlertCheck.IsChecked = _main.Settings.SlowAlertEnabled;
         SlowSpokenCheck.IsChecked = _main.Settings.SlowAlertSpoken;
         SlowRaidOnlyCheck.IsChecked = _main.Settings.SlowAlertRaidOnly;
+        BuffExpiringOnlyCheck.IsChecked = _main.Settings.BuffTimersExpiringOnly;
+        BuffWarnBox.Text = _main.Settings.BuffWarnSeconds.ToString("0");
+        SelectTab(_main.Settings.OptionsTab);
         BuildHotkeyRows();
         RegenPerTickBox.Text = _vm.RegenPerTickOverride > 0 ? _vm.RegenPerTickOverride.ToString() : "";
         TrackSpawnsCheck.IsChecked = _main.Settings.TrackSpawns;
@@ -186,6 +189,45 @@ public partial class OptionsWindow : Window
         _main.Settings.SlowAlertSpoken = SlowSpokenCheck.IsChecked == true;
         _main.Settings.SlowAlertRaidOnly = SlowRaidOnlyCheck.IsChecked == true;
         _main.Settings.Save();
+    }
+
+    private void OnBuffDisplayChanged(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _main.Settings.BuffTimersExpiringOnly = BuffExpiringOnlyCheck.IsChecked == true;
+        if (double.TryParse(BuffWarnBox.Text, out var seconds))
+            _main.Settings.BuffWarnSeconds = Math.Clamp(seconds, 10, 3600);
+        BuffWarnBox.Text = _main.Settings.BuffWarnSeconds.ToString("0");   // shows any clamp
+        _main.Settings.Save();
+    }
+
+    // ---- tabs (1.67.0, David: "a wall of options... needs serious reorganization") ----
+
+    private void OnTabClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBlock { Tag: string tab }) return;
+        SelectTab(tab);
+        if (_ready) { _main.Settings.OptionsTab = tab; _main.Settings.Save(); }
+    }
+
+    private void SelectTab(string tab)
+    {
+        var panels = new (string Key, System.Windows.Controls.TextBlock Link, UIElement Panel)[]
+        {
+            ("look", TabLook, TabLookPanel), ("alerts", TabAlerts, TabAlertsPanel),
+            ("watch", TabWatch, TabWatchPanel), ("cards", TabCards, TabCardsPanel),
+            ("behavior", TabBehavior, TabBehaviorPanel),
+        };
+        if (panels.All(p => p.Key != tab)) tab = "look";   // stale setting → home
+        foreach (var (key, link, panel) in panels)
+        {
+            var active = key == tab;
+            panel.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+            link.FontWeight = active ? FontWeights.SemiBold : FontWeights.Normal;
+            link.TextDecorations = active ? TextDecorations.Underline : null;
+            link.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty,
+                active ? "AccentBrush" : "DimBrush");
+        }
     }
 
     private void OnChipGrowToggled(object sender, RoutedEventArgs e)

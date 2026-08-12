@@ -20,6 +20,28 @@ public static partial class SpokenAlerts
 
     public static bool Speak(string text) => Speak(text, DateTime.Now);
 
+    /// <summary>Pre-creates the platform voice off the caller's thread. SAPI's first
+    /// SpVoice instantiation costs a noticeable beat (David's bench test: the slow
+    /// chip popped instantly, the voice arrived fashionably late) — paying it at
+    /// startup means the first real alert speaks on time. No-op on repeat calls.</summary>
+    public static void Warmup()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+        Task.Run(() =>
+        {
+            try
+            {
+                lock (Sync)
+                {
+                    if (_voice is not null) return;
+                    var voiceType = Type.GetTypeFromProgID("SAPI.SpVoice");
+                    if (voiceType is not null) _voice = Activator.CreateInstance(voiceType);
+                }
+            }
+            catch (Exception ex) { CoreLog.Error(ex); }
+        });
+    }
+
     /// <summary>Banner text carries the app's × counts ("Rusty Sword ×3"); the voice
     /// gets plain English ("Rusty Sword 3 times") instead of a multiplication sign.</summary>
     [GeneratedRegex(@"\s*×\s*(\d+)")]
