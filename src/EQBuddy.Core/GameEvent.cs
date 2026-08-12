@@ -22,7 +22,12 @@ public record DamageDealtEvent(DateTime Time, string Target, int Amount, DamageK
 /// a spell cast BEFORE a mez keep landing while the mob sleeps, so they must not be
 /// read as "the attacker is awake" (issue #32: chips vanishing mid-mez).</param>
 public record DamageTakenEvent(DateTime Time, string Attacker, int Amount, bool Melee, bool Self = false, string Ability = "", bool OverTime = false) : GameEvent(Time);
-public record MissEvent(DateTime Time, bool Outgoing) : GameEvent(Time);
+/// <summary>Ability is the attack skill the miss line names ("You try to crush …" →
+/// Crush), so the fight timeline can hollow-mark the right lane; Reason keeps the
+/// log's own words ("miss", "orc pawn dodges") for the tooltip. Both "" on lines
+/// parsed before these fields existed and on incoming misses (the mob's skill lane
+/// is not a thing we draw).</summary>
+public record MissEvent(DateTime Time, bool Outgoing, string Ability = "", string Reason = "") : GameEvent(Time);
 public record HealEvent(DateTime Time, string Target, int Amount, string Spell, bool Outgoing, string Healer = "", bool OverTime = false) : GameEvent(Time);
 /// <summary>"X tries to hit YOU, but YOUR magical skin absorbs the blow!" — an incoming
 /// melee attack fully absorbed by the player's own rune (not the generic dodge/parry

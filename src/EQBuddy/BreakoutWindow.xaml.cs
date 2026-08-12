@@ -88,7 +88,11 @@ public partial class BreakoutWindow : Window
 
         Closed += (_, _) => SavePosition();
         WindowZoom.Attach(this, $"breakout:{kind}", settings);
-        if (_kind == BreakoutKind.Damage) CopyFight.Visibility = Visibility.Visible;
+        if (_kind == BreakoutKind.Damage)
+        {
+            CopyFight.Visibility = Visibility.Visible;
+            OpenTimeline.Visibility = Visibility.Visible;
+        }
         if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
         if (_kind == BreakoutKind.Loot)
         {
@@ -400,6 +404,12 @@ public partial class BreakoutWindow : Window
 
     /// <summary>#102 (jeremycranfill): the Combat card's fight export without leaving
     /// the minimized view — same Discord-ready text, same clipboard.</summary>
+    private void OnOpenTimeline(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;   // not a window drag
+        Main?.OpenFightTimeline();
+    }
+
     private void OnCopyFight(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;

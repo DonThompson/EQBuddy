@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.62.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW: the fight timeline — click ⧗ on the Combat card (or the floating Damage window) and see the whole pull on one canvas: a lane per skill, every hit as a bar (taller = harder, orange = critical), every miss and resist as a hollow outline with the log's own words on hover (\"a gnoll pup ripostes\"), your pet and the incoming damage in their own lanes, and a DPS-over-time graph on top with the peak flagged. Scroll to zoom around your cursor, drag to pan, Fit snaps back to the whole fight — and a live fight keeps drawing itself onto the canvas as you play.",
+   "Miss lines now carry their attack skill through the parser, so the timeline (and everything after it) knows a missed backstab from a missed kick."
+  ]
+ }, {
   "version": "1.61.0",
   "date": "2026-08-12",
   "highlights": [

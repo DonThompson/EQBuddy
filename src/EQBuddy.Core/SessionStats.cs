@@ -1242,6 +1242,24 @@ public sealed class SessionStats
     /// grouping the History review uses, so the live card and the archive agree on what
     /// "the fight" was (per David, 2026-08-04).
     /// </summary>
+    /// <summary>
+    /// The combat journal's events inside a time window, for the fight timeline: your
+    /// hits/misses/resists, the pet's and the mob's, casts and rune blocks — every mark
+    /// the timeline draws. A snapshot copy under the lock; records are immutable, so
+    /// callers can walk it off-thread. Bounded by CombatJournalRetention (40 min): a
+    /// window older than that honestly comes back empty rather than partial.
+    /// </summary>
+    public List<GameEvent> JournalWindow(DateTime from, DateTime to)
+    {
+        lock (_lock)
+            return _journal.Where(e => e.Time >= from && e.Time <= to && e is
+                    DamageDealtEvent or MissEvent or ResistEvent or FizzleEvent
+                    or DamageTakenEvent or RuneBlockEvent or SpellCastEvent
+                    or ThirdMeleeEvent or ThirdDotEvent or ThirdSchoolEvent or KillEvent)
+                .OrderBy(e => e.Time)
+                .ToList();
+    }
+
     private LastFightInfo? BuildLastFight()
     {
         // Materialize open fights as in-progress encounters so they group with the
@@ -1271,7 +1289,7 @@ public sealed class SessionStats
         return new LastFightInfo(pull.Title, pull.DurationSeconds, pull.DamageOut,
             pull.DamageIn, pull.Healed, pull.Dps, pull.Healed / pull.DurationSeconds,
             outcome, inProgress, pull.ByAbility, pull.HealsBySpell, pull.ByIncoming)
-        { Fights = pull.Fights, PetAbilities = pull.PetAbilities };
+        { Fights = pull.Fights, PetAbilities = pull.PetAbilities, Start = pull.Start };
     }
 
     /// <summary>How long a finished fight's creature stays "the target" for the Loot

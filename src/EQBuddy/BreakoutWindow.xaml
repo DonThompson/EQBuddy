@@ -20,6 +20,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="TitleText" FontSize="12.5" FontWeight="SemiBold"
                            TextTrimming="CharacterEllipsis"/>
@@ -30,7 +31,12 @@
                            Visibility="Collapsed" MouseLeftButtonDown="OnCopyFight"
                            Foreground="{DynamicResource DimBrush}"
                            ToolTip="Copy the last fight as Discord-ready text (a monospace block — the official Discord blocks images, so the parse travels as text). Your numbers only, from your log."/>
-                <Border Grid.Column="2" x:Name="ScopeBorder" CornerRadius="6" BorderThickness="1"
+                <TextBlock Grid.Column="2" x:Name="OpenTimeline" Text="⧗" FontSize="11"
+                           VerticalAlignment="Center" Cursor="Hand" Padding="4,0"
+                           Visibility="Collapsed" MouseLeftButtonDown="OnOpenTimeline"
+                           Foreground="{DynamicResource DimBrush}"
+                           ToolTip="Fight timeline: the whole pull, a lane per skill — every hit, miss and resist, plus DPS over time."/>
+                <Border Grid.Column="3" x:Name="ScopeBorder" CornerRadius="6" BorderThickness="1"
                         Margin="6,0,6,0" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ScopeFight" Text="Fight" FontSize="10" Padding="7,1"
@@ -39,7 +45,7 @@
                                    Cursor="Hand" MouseLeftButtonDown="OnScopeSession"/>
                     </StackPanel>
                 </Border>
-                <TextBlock Grid.Column="3" Text="✕" FontSize="11" VerticalAlignment="Center"
+                <TextBlock Grid.Column="4" Text="✕" FontSize="11" VerticalAlignment="Center"
                            Cursor="Hand" Padding="2,0" MouseLeftButtonDown="OnDismiss"
                            ToolTip="Hide this window for good (its ⭐ chip stays; re-enable under ⚙ Options → Breakout windows)"/>
             </Grid>

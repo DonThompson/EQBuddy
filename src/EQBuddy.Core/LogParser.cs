@@ -504,7 +504,9 @@ public static partial class LogParser
                 r.Groups["spell"].Value, IsCritNote(r), OverTime: true);
 
         if ((r = MeleeMissRx().Match(msg)).Success)
-            return new MissEvent(ts, Outgoing: true);
+            return new MissEvent(ts, Outgoing: true,
+                Ability: VerbToSkill(r.Groups["verb"].Value),
+                Reason: r.Groups["reason"].Value.TrimEnd('!'));
 
         if ((r = RuneBlockInRx().Match(msg)).Success)
             return new RuneBlockEvent(ts, Normalize(r.Groups["attacker"].Value));

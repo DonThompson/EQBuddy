@@ -823,6 +823,30 @@ public partial class MainWindow : Window
         catch (Exception ex) { App.LogError(ex); }
     }
 
+    private FightTimelineWindow? _timelineWindow;
+
+    private void OnOpenTimeline(object sender, RoutedEventArgs e) => OpenFightTimeline();
+
+    /// <summary>The fight timeline (⧗): one window, re-fronted if already open —
+    /// reachable from the Combat card and the Damage breakout alike.</summary>
+    internal void OpenFightTimeline()
+    {
+        if (_timelineWindow is { IsLoaded: true } open) { open.Activate(); return; }
+        _timelineWindow = new FightTimelineWindow(_settings, TimelineSource);
+        _timelineWindow.Show();
+    }
+
+    /// <summary>The timeline's data pull, called on its 1 s tick: the current/last
+    /// pull plus the journal slice under it. A live fight's window extends a couple
+    /// of seconds so the newest events aren't clipped by the running duration.</summary>
+    private (LastFightInfo?, List<GameEvent>, string) TimelineSource()
+    {
+        var s = CurrentSnapshot();
+        if (s.LastFight is not { } f || f.Start == default) return (null, [], "");
+        var end = f.Start.AddSeconds(f.DurationSeconds + (f.InProgress ? 2 : 0));
+        return (f, _stats.JournalWindow(f.Start, end), s.PetName);
+    }
+
     private void OnAaAllToggled(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
@@ -1414,6 +1438,7 @@ public partial class MainWindow : Window
                 healing: false, _settings.ShowCombatFight);
             CombatFightCopy.Visibility = s.LastFight is not null
                 ? Visibility.Visible : Visibility.Collapsed;
+            CombatFightTimeline.Visibility = CombatFightCopy.Visibility;
             CombatSummary.Text =
                 $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
                 $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +

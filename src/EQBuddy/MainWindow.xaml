@@ -246,6 +246,10 @@
                                 Content="⧉" Margin="6,0,0,0" Visibility="Collapsed"
                                 Foreground="{DynamicResource DimBrush}" Click="OnCopyFight"
                                 ToolTip="Copy this fight as Discord-ready text (a monospace block — the official Discord blocks images, so the parse travels as text). Your numbers only, from your log."/>
+                        <Button x:Name="CombatFightTimeline" Style="{StaticResource IconButton}" FontSize="11"
+                                Content="⧗" Margin="4,0,0,0" Visibility="Collapsed"
+                                Foreground="{DynamicResource DimBrush}" Click="OnOpenTimeline"
+                                ToolTip="Fight timeline: the whole pull on one canvas — a lane per skill, every hit, miss and resist, with a DPS-over-time graph. Scroll to zoom, drag to pan."/>
                     </StackPanel>
                     <StackPanel x:Name="CombatFightBody" Visibility="Collapsed">
                         <TextBlock x:Name="CombatFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"

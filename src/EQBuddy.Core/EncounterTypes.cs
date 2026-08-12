@@ -35,6 +35,9 @@ public sealed record LastFightInfo(
     public IReadOnlyList<EncounterInfo> Fights { get; init; } = [];
     /// <summary>Pet damage in this pull/fight by pet ability (empty when no pet acted).</summary>
     public List<SourceDamage> PetAbilities { get; init; } = [];
+    /// <summary>When the pull began — the fight timeline's time origin. MinValue on
+    /// snapshots built before the field existed (the timeline just declines to open).</summary>
+    public DateTime Start { get; init; }
 }
 
 /// <summary>

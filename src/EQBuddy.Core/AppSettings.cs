@@ -51,6 +51,12 @@ public sealed class AppSettings
     /// <summary>Alert only while raiding (#94's toggle) — detected from raid-channel
     /// chat, the log's only raid signal. Off = alert everywhere.</summary>
     public bool SlowAlertRaidOnly { get; set; }
+
+    /// <summary>Fight-timeline window placement; 0 width = never opened, defaults apply.</summary>
+    public double TimelineLeft { get; set; }
+    public double TimelineTop { get; set; }
+    public double TimelineWidth { get; set; }
+    public double TimelineHeight { get; set; }
     /// <summary>The Progress card's full AA ledger, folded by default (same Reddit
     /// report): session-new AAs show always; the complete list is a click away.</summary>
     public bool ShowAllAAs { get; set; }
