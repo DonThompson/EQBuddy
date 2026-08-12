@@ -2033,16 +2033,11 @@ public partial class MainWindow : Window
     private bool AutoCheckSkyQuestLoot(StatsSnapshot s)
     {
         var changed = false;
-        // Quest item names repeat across classes (five classes need a Wind Rune
-        // Azia), so loot can't tick every tab blindly. The player's SELECTED classes
-        // (quest tracker's class filter — their actual multiclass set) all tick;
-        // with none selected, the active Sky tab keeps the old single-class rule
-        // (#98: "check off looted sky quest items for all classes, not just primary").
-        var cls = _settings.SkyQuestClass;
+        // The class-scoping rules live in Core (SkyLootAutoCheck) where they are
+        // tested: shared items tick your selected classes / active tab (#98),
+        // single-class items tick their class unconditionally (#106 — a Berserker
+        // staff looted on the Druid tab is still Berserker progress).
         var myClasses = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
-        bool ClassTicks(string className) => myClasses.Count > 0
-            ? myClasses.Any(c => c.Equals(className, StringComparison.OrdinalIgnoreCase))
-            : cls.Length == 0 || string.Equals(className, cls, StringComparison.Ordinal);
         var lootByName = s.Loot
             .GroupBy(l => l.Item, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.Sum(l => l.Count), StringComparer.OrdinalIgnoreCase);
@@ -2054,25 +2049,10 @@ public partial class MainWindow : Window
         foreach (var (name, count) in lootByName)
         {
             _skyQuestLootSeen.TryGetValue(name, out var seen);
-            if (count <= seen)
-            {
-                _skyQuestLootSeen[name] = count;
-                continue;
-            }
-
-            var newlyLooted = count - seen;
             _skyQuestLootSeen[name] = count;
-            // The loot budget applies PER CLASS: each class you play tracks its own
-            // turn-in plan, so one looted rune ticks one slot on each of your tabs.
-            foreach (var classGroup in _settings.SkyQuestChecklist
-                         .Where(i => !i.Acquired && ClassTicks(i.ClassName)
-                             && string.Equals(i.QuestItem, name, StringComparison.OrdinalIgnoreCase))
-                         .GroupBy(i => i.ClassName))
-                foreach (var item in classGroup.Take(newlyLooted))
-                {
-                    item.Acquired = true;
-                    changed = true;
-                }
+            if (count <= seen) continue;
+            changed |= SkyLootAutoCheck.Apply(_settings.SkyQuestChecklist, name,
+                count - seen, myClasses, _settings.SkyQuestClass);
         }
 
         return changed;

@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.68.1",
+  "date": "2026-08-12",
+  "highlights": [
+   "FIXED (discussion #106, thanks bjstrange — five days after his #98 shaped the original rule): a Sky item that only ONE class's tests want now checks off for that class no matter which tab or class filter is active — a Berserker-only staff looted on the Druid tab is still Berserker progress. Shared items (the runes several classes need) keep respecting your class filter, because one physical rune can't honestly tick five class plans."
+  ]
+ },
+ {
   "version": "1.68.0",
   "date": "2026-08-12",
   "highlights": [
