@@ -591,6 +591,10 @@ public static partial class LogParser
         if (SlowDebuffCatalog.Default.Find(msg) is not null)
             return new SlowLandedEvent(ts, msg);
 
+        // Buff landing lines — third exact-match catalog, same disjointness guarantee.
+        if (BuffDurationCatalog.Default.Find(msg) is not null)
+            return new BuffLandedEvent(ts, msg);
+
         // Raid chat proves raid membership (the log carries no other raid signal).
         // Both directions: "Xxx tells the raid, '…'" and your own "You tell your raid, '…'".
         if (msg.Contains(" tells the raid, '", StringComparison.Ordinal)

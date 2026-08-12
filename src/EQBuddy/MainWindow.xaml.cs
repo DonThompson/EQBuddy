@@ -68,6 +68,8 @@ public partial class MainWindow : Window
         _watcher.Mez = _mezTracker;
         _watcher.Slow = _slowTracker;
         _slowTracker.Landed += OnSlowLanded;
+        _buffTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "buff-durations.json"));
+        _watcher.Buffs = _buffTracker;
         // Spawn timers ride the watcher's event stream — wired before the first Select so
         // the startup replay re-derives countdowns from kills already in the log.
         var spawnCatalog = SpawnCatalog.LoadEmbedded();
@@ -312,6 +314,7 @@ public partial class MainWindow : Window
         ["combat"] = CombatSection, ["healing"] = HealingSection, ["kills"] = KillsSection,
         ["loot"] = LootSection, ["motes"] = MotesSection, ["sky"] = SkyQuestSection,
         ["tracked"] = TrackedSection,
+        ["buffs"] = BuffsSection,
         ["money"] = MoneySection,
         ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
     };
@@ -329,7 +332,7 @@ public partial class MainWindow : Window
         {
             var el = map[key];
             SectionsPanel.Children.Add(el);
-            if (key != "tracked")   // tracked manages its own visibility (no rules = hidden)
+            if (key is not ("tracked" or "buffs"))   // these manage their own visibility (empty = hidden)
                 ((FrameworkElement)el).Visibility = _settings.HiddenSections.Contains(key)
                     ? Visibility.Collapsed : Visibility.Visible;
         }
@@ -517,6 +520,7 @@ public partial class MainWindow : Window
     private MezChipsWindow? _mezWindow;
     private readonly MezTracker _mezTracker = new();
     private readonly SlowTracker _slowTracker = new();
+    private readonly BuffTracker _buffTracker = new();
 
     private readonly EqlWikiItemService _wikiItems =
         new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "items"));
@@ -890,6 +894,57 @@ public partial class MainWindow : Window
                     : null,
             };
         }).ToList();
+    }
+
+    /// <summary>
+    /// The Buffs card: every buff believed active on you, soonest-fading first, with
+    /// a countdown. "est" marks a wiki-base duration (ranks and AAs lengthen buffs;
+    /// a natural fade teaches the real number and the label drops). Unresolved
+    /// landings ("You feel different." with nobody seen casting) show the line
+    /// itself and the longest candidate duration — honest range, never a guess.
+    /// </summary>
+    private void RenderBuffs()
+    {
+        var hidden = _settings.HiddenSections.Contains("buffs");
+        var buffs = hidden ? [] : _buffTracker.Snapshot(DateTime.Now);
+        BuffsSection.Visibility = buffs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (buffs.Count == 0) return;
+        BuffsHeader.Text = buffs.Count.ToString();
+        if (!BuffsSection.IsExpanded) return;
+
+        BuffsPanel.Children.Clear();
+        foreach (var b in buffs)
+        {
+            var row = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var name = new TextBlock
+            {
+                Text = b.Label, FontSize = 12,
+                Foreground = (Brush)FindResource("TextBrush"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = (b.Candidates.Length > 1
+                              ? "One of: " + string.Join(", ", b.Candidates) + " · "
+                              : "")
+                          + (b.Caster.Length > 0 ? $"cast by {b.Caster} · " : "")
+                          + $"landed {b.LandedAt:h:mm:ss tt}"
+                          + (b.Estimated ? " · est = wiki base; a natural fade teaches your real duration" : ""),
+            };
+            row.Children.Add(name);
+            var remaining = b.RemainingSeconds(DateTime.Now);
+            var clock = new TextBlock
+            {
+                Text = remaining is { } r
+                    ? $"{(int)r / 60}:{(int)r % 60:00}{(b.Estimated ? " est" : "")}"
+                    : "?",
+                FontSize = 12,
+                Foreground = (Brush)FindResource(
+                    remaining is < 60 ? "WarnBrush" : "DimBrush"),
+            };
+            Grid.SetColumn(clock, 1);
+            row.Children.Add(clock);
+            BuffsPanel.Children.Add(row);
+        }
     }
 
     /// <summary>Everything the fight-side chip stack shows: mez chips and slow chips,
@@ -1670,6 +1725,7 @@ public partial class MainWindow : Window
         }   // end fullRender gate
 
         RenderTracked(s);   // per-tick: live ⏳ cue countdowns and "last: … ago" ages
+        RenderBuffs();      // per-tick: the countdowns ARE the content
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
         {

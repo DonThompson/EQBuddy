@@ -118,7 +118,7 @@ public static class OverlaySections
         ("sky", "Sky Quest"),
         // Key stays "tracked" — it's persisted in SectionOrder/HiddenSections. Only the
         // label follows the feature's rename from tracked loot to watch rules (#5).
-        ("tracked", "Watch"), ("money", "Money"), ("progress", "Progress"),
+        ("tracked", "Watch"), ("buffs", "Buffs"), ("money", "Money"), ("progress", "Progress"),
         ("faction", "Faction"), ("misc", "Travels & Deaths"),
     ];
 }

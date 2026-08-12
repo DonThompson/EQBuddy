@@ -83,6 +83,13 @@ public sealed class HistoryViewModel : INotifyPropertyChanged
             filter.Server == selectedServer && filter.Character == selectedCharacter) ?? Filters[0];
     }
 
+    /// <summary>Level/AA progress for the charts, scoped to the current filter.
+    /// Meaningful with a single character selected; "All characters" mixes ladders.</summary>
+    public List<SessionRepository.ProgressPoint> ProgressSeries() =>
+        _repository.ProgressSeries(SelectedFilter.Server, SelectedFilter.Character);
+
+    public bool FilterIsSingleCharacter => SelectedFilter.Character is not null;
+
     public void RefreshSessions()
     {
         var rows = _repository.Query(SelectedFilter.Server, SelectedFilter.Character, SearchText);

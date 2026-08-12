@@ -552,6 +552,20 @@
                 <StackPanel x:Name="TrackedPanel"/>
             </Expander>
 
+            <Expander x:Name="BuffsSection" Style="{StaticResource Section}" Visibility="Collapsed">
+                <Expander.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="&#x23F3; Buffs" FontSize="13"/>
+                        <TextBlock x:Name="BuffsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
+                    </Grid>
+                </Expander.Header>
+                <StackPanel x:Name="BuffsPanel"/>
+            </Expander>
+
             <Expander x:Name="MoneySection" Style="{StaticResource Section}">
                 <Expander.Header>
                     <Grid>

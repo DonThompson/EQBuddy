@@ -41,6 +41,7 @@ public partial class HistoryWindow : Window
         };
         CountText.Text = _vm.CountText;
         RenderDetail();
+        Loaded += (_, _) => RenderProgress();   // needs real canvas widths
     }
 
     /// <summary>Structured detail gets native bar rows; comparison/import/empty states
@@ -186,6 +187,65 @@ public partial class HistoryWindow : Window
         if (_graphTimeline is { } t && e.NewSize.Width > 0) RenderDpsGraph(t);
     }
 
+    /// <summary>
+    /// Character progress: level and cumulative AA as step charts across every stored
+    /// session of the filtered character (Companion-parity — theirs was the idea of
+    /// showing it, ours mines it from the history DB that already existed). Only for a
+    /// single-character filter; "All characters" would braid unrelated ladders. Levels
+    /// come from ding lines (exact times); AA totals from each session's last AA event,
+    /// so sessions that saw no AA hold the previous value — a hold, not a lie.
+    /// </summary>
+    private void RenderProgress()
+    {
+        var show = _vm.FilterIsSingleCharacter;
+        var points = show ? _vm.ProgressSeries() : [];
+        var dings = points.SelectMany(p => p.Dings)
+            .Select(d => (d.Time, (double)d.Level)).ToList();
+        var aa = points.Where(p => p.AaTotal > 0)
+            .Select(p => (p.EndLocal, (double)p.AaTotal)).ToList();
+
+        var width = LevelChartCanvas.ActualWidth > 0 ? LevelChartCanvas.ActualWidth : 300;
+        var levelGraph = HistoryPresentation.BuildStepGraph(dings, width, LevelChartCanvas.Height - 4);
+        var aaGraph = HistoryPresentation.BuildStepGraph(aa, width, AaChartCanvas.Height - 4);
+        var visible = show && (levelGraph is not null || aaGraph is not null)
+            ? Visibility.Visible : Visibility.Collapsed;
+        ProgressLabel.Visibility = ProgressBorder.Visibility = visible;
+        if (visible == Visibility.Collapsed) return;
+
+        ProgressLabel.Text = "Character progress — every stored session";
+        DrawStep(LevelChartCanvas, LevelChartCaption, levelGraph, "AccentBrush",
+            levelGraph is null ? "" :
+            $"Level {dings.Min(d => d.Item2):0} → {dings.Max(d => d.Item2):0} " +
+            $"({levelGraph.Start:MMM d}–{levelGraph.End:MMM d}, {dings.Count} dings)");
+        DrawStep(AaChartCanvas, AaChartCaption, aaGraph, "GoodBrush",
+            aaGraph is null ? "" :
+            $"AA earned, cumulative — {aa[^1].Item2:0} total ({aaGraph.Start:MMM d}–{aaGraph.End:MMM d})");
+    }
+
+    private void DrawStep(System.Windows.Controls.Canvas canvas,
+        System.Windows.Controls.TextBlock caption, HistoryGraph? graph, string brushKey, string text)
+    {
+        canvas.Children.Clear();
+        caption.Text = text;
+        caption.Visibility = canvas.Visibility =
+            graph is null ? Visibility.Collapsed : Visibility.Visible;
+        if (graph is null) return;
+        var line = new System.Windows.Shapes.Polyline
+        {
+            Stroke = (System.Windows.Media.Brush)FindResource(brushKey),
+            StrokeThickness = 1.5,
+            StrokeLineJoin = System.Windows.Media.PenLineJoin.Miter,
+        };
+        foreach (var (x, y) in graph.Points)
+            line.Points.Add(new System.Windows.Point(x, y + 2));
+        canvas.Children.Add(line);
+    }
+
+    private void OnProgressSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width > 0) RenderProgress();
+    }
+
     private void OnFilterChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_syncing || CharFilter.SelectedItem is not HistoryFilterOption filter) return;
@@ -193,6 +253,7 @@ public partial class HistoryWindow : Window
         _vm.SelectedFilter = filter;
         _vm.RefreshSessions();
         _syncing = false;
+        RenderProgress();
     }
 
     private void OnSearchChanged(object sender, TextChangedEventArgs e)

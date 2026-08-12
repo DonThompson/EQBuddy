@@ -216,6 +216,31 @@ public static class HistoryPresentation
         return new HistoryGraph(points, peak, start, timeline[^1].Time);
     }
 
+    /// <summary>A step chart for character progress (level dings, AA totals): values
+    /// HOLD until the next observation — a level is a fact until the next ding, so the
+    /// line is a staircase, never a slope. Null when fewer than two observations or the
+    /// value never changed (a flat line across three weeks says nothing worth a chart).</summary>
+    public static HistoryGraph? BuildStepGraph(
+        IReadOnlyList<(DateTime Time, double Value)> observations, double width, double height)
+    {
+        var obs = observations.Where(o => o.Value > 0).OrderBy(o => o.Time).ToList();
+        if (obs.Count < 2 || width <= 0 || height <= 0) return null;
+        var lo = obs.Min(o => o.Value);
+        var hi = obs.Max(o => o.Value);
+        if (hi <= lo) return null;
+        var start = obs[0].Time;
+        var span = Math.Max(1, (obs[^1].Time - start).TotalSeconds);
+        double X(DateTime t) => width * (t - start).TotalSeconds / span;
+        double Y(double v) => height - height * (v - lo) / (hi - lo);
+        var points = new List<(double X, double Y)>();
+        for (var i = 0; i < obs.Count; i++)
+        {
+            if (i > 0) points.Add((X(obs[i].Time), Y(obs[i - 1].Value)));   // hold, then step
+            points.Add((X(obs[i].Time), Y(obs[i].Value)));
+        }
+        return new HistoryGraph(points, hi, start, obs[^1].Time);
+    }
+
     /// <summary>The standard ability-row columns ("total · ×hits · avg · rate (· crit%)")
     /// with fractions relative to the top entry — mirrors the live widget's rows.</summary>
     public static IReadOnlyList<HistoryBreakdownRow> BuildBreakdownRows(

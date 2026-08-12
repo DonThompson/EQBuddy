@@ -53,6 +53,10 @@ public sealed class LogWatcher : IDisposable
     /// same replay-safe pipeline; replay proves old slows expired, live tail alerts.</summary>
     public SlowTracker? Slow { get; set; }
 
+    /// <summary>Optional fifth consumer: buff countdowns — replay re-derives the
+    /// timers still running from casts already in today's log.</summary>
+    public BuffTracker? Buffs { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -292,6 +296,7 @@ public sealed class LogWatcher : IDisposable
                             Spawns?.Apply(evt);
                             Mez?.Apply(evt);
                             Slow?.Apply(evt);
+                            Buffs?.Apply(evt);
                         }
                         // Every line, parsed or not: a Text watch rule matches the line's
                         // words, not whatever event we did or didn't make of it.

@@ -81,6 +81,10 @@ public record SlowLandedEvent(DateTime Time, string Message) : GameEvent(Time);
 /// <summary>A raid-channel chat line — the only signal in the log that you are in a
 /// raid, used by the slow alert's raid-only mode. Carries nothing: the content is chat.</summary>
 public record RaidChatterEvent(DateTime Time) : GameEvent(Time);
+/// <summary>A beneficial buff's cast-on-you line ("You feel the favor of the gods upon
+/// you.") mapped through <see cref="BuffDurationCatalog"/> — starts a buff countdown.
+/// Carries the message; <see cref="BuffTracker"/> resolves candidates and duration.</summary>
+public record BuffLandedEvent(DateTime Time, string Message) : GameEvent(Time);
 /// <summary>A /loc line. EQ prints "Y, X, Z" — the famous axis order — and the
 /// values here keep the log's naming so nothing downstream has to remember which
 /// was first. Map plotting goes through <see cref="ZoneMap.FromLoc"/>.</summary>

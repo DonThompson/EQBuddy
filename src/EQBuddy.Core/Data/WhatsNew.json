@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.65.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW: buff timers — a ⏳ Buffs card counts down every buff on you, soonest-fading first. Timers start from your own casts OR someone else's cast landing on you, run on wiki durations labeled \"est\", and LEARN your real durations from natural fades (ranks and AAs lengthen buffs — after one full cycle the est drops and the number is yours). Buffs survive zoning, clear on death, and the card hides itself when you have none. 263 buffs built in.",
+   "NEW: character progress charts in Session History — pick a character and see Level over time (every ding, exact times, a staircase not a slope) and AA earned over time (cumulative), mined from the sessions you already have."
+  ]
+ }, {
   "version": "1.64.0",
   "date": "2026-08-12",
   "highlights": [

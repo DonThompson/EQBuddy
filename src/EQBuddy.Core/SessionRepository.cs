@@ -197,6 +197,56 @@ public sealed class SessionRepository : IDisposable
         }
     }
 
+    /// <summary>One session's contribution to the character-progress charts: when it
+    /// ended, the AA running total the log last reported (0 = the session saw no AA
+    /// event — unknown, not zero), and every level ding it recorded with its time.</summary>
+    public sealed record ProgressPoint(DateTime EndLocal, int AaTotal, List<(DateTime Time, int Level)> Dings);
+
+    /// <summary>
+    /// The level/AA history for one character, oldest session first, mined from the
+    /// stored snapshots without materializing them (a JsonDocument probe per row —
+    /// the full snapshot is big and the charts need two fields of it).
+    /// </summary>
+    public List<ProgressPoint> ProgressSeries(string? server, string? character)
+    {
+        lock (_lock)
+        {
+            using var cmd = _db.CreateCommand();
+            cmd.CommandText = """
+                SELECT StartUtc, EndUtc, SnapshotJson FROM Sessions
+                WHERE ($server IS NULL OR Server = $server)
+                  AND ($char IS NULL OR Character = $char)
+                ORDER BY StartUtc ASC LIMIT 1000
+                """;
+            cmd.Parameters.AddWithValue("$server", (object?)server ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$char", (object?)character ?? DBNull.Value);
+            using var r = cmd.ExecuteReader();
+            var points = new List<ProgressPoint>();
+            while (r.Read())
+            {
+                var end = DateTime.Parse(r.IsDBNull(1) ? r.GetString(0) : r.GetString(1)).ToLocalTime();
+                try
+                {
+                    using var doc = JsonDocument.Parse(r.GetString(2));
+                    var aa = doc.RootElement.TryGetProperty("AaTotal", out var aaEl)
+                        ? aaEl.GetInt32() : 0;
+                    var dings = new List<(DateTime, int)>();
+                    if (doc.RootElement.TryGetProperty("Levels", out var lv) && lv.ValueKind == JsonValueKind.Array)
+                        foreach (var d in lv.EnumerateArray())
+                            if (d.TryGetProperty("Text", out var text)
+                                && text.GetString() is { } label
+                                && label.StartsWith("Level ", StringComparison.Ordinal)
+                                && int.TryParse(label["Level ".Length..], out var level)
+                                && d.TryGetProperty("Time", out var time))
+                                dings.Add((time.GetDateTime(), level));
+                    points.Add(new ProgressPoint(end, aa, dings));
+                }
+                catch { /* one unreadable snapshot must not kill the chart */ }
+            }
+            return points;
+        }
+    }
+
     public StatsSnapshot? LoadSnapshot(long id)
     {
         lock (_lock)
