@@ -1,8 +1,9 @@
 [
  {
-  "version": "1.66.1",
+  "version": "1.66.2",
   "date": "2026-08-12",
   "highlights": [
+   "The widget's bottom-edge grip now says what a drag can do right now — with every card already visible there is nothing more to reveal (cards marked · auto appear when they have content), and a control that silently no-ops reads as broken.",
    "Polish from the first field test (thanks, David): new cards now slot into the MIDDLE of your card order instead of hiding below the fold; self-hiding cards (Watch, Buffs, Raids) say \"· auto\" in Options with a tooltip explaining when they appear; the bottom-edge height grip is twice as grabbable and glows when you find it; the hotkey recorder now TELLS you a bare key needs Ctrl/Alt/Shift instead of silently ignoring it (and ✕ unbinds); and the recent-lines rule picker grew a \"hide chat\" filter for when General channel drowns your combat lines."
   ]
  }, {

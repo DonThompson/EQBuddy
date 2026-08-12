@@ -691,8 +691,7 @@
          job. The corner keeps its own 20px so the two grips never fight. -->
     <Thumb x:Name="HeightGrip" Height="12" Margin="12,0,20,0"
            HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
-           Cursor="SizeNS"
-           ToolTip="Drag to make the widget taller or shorter (text size stays put). Double-click: fit to screen."
+           Cursor="SizeNS" MouseEnter="OnHeightGripEnter"
            DragStarted="OnHeightGripStarted" DragDelta="OnHeightGripDelta"
            DragCompleted="OnHeightGripCompleted" MouseDoubleClick="OnHeightGripReset">
         <Thumb.Template>

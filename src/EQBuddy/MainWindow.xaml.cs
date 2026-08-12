@@ -757,6 +757,19 @@ public partial class MainWindow : Window
         _heightDragStart = SectionScroll.ActualHeight;
     }
 
+    /// <summary>The grip's tooltip states what a drag can actually do RIGHT NOW —
+    /// with every card already visible, dragging down is a no-op, and a control
+    /// that silently does nothing reads as broken (David's 1.66.1 retest). The
+    /// cards themselves aren't hidden height: Buffs/Raids appear with content.</summary>
+    private void OnHeightGripEnter(object sender, MouseEventArgs e)
+    {
+        var scrolling = SectionsPanel.ActualHeight > SectionScroll.ActualHeight + 1;
+        HeightGrip.ToolTip = scrolling
+            ? "Drag down to show more cards (the list is scrolling); drag up to shorten. Double-click: fit to screen."
+            : "Every card is already visible, so dragging down has nothing more to show — drag up to shorten the " +
+              "widget (the list scrolls). Cards marked · auto in Options appear when they have content.";
+    }
+
     private void OnHeightGripDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
     {
         // Cursor moves in screen units; the list lives under the scale transform.
