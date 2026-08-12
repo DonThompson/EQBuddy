@@ -763,6 +763,10 @@ public sealed class MainWindow : Window
     private ContextMenu BuildContextMenu()
     {
         var menu = new ContextMenu();
+        // A menu is a window of its own on macOS, and a raised main window outranks it —
+        // the gear menu opens behind the widget. Opened fires with the popup already
+        // realized, so correcting here beats waiting for the tick on something this brief.
+        menu.Opened += (_, _) => EnsureOverlayLevel();
         // Clickable since 1.48 (#76): downloads, guides, and a shareable link.
         var version = new MenuItem { Header = $"EQBuddy v{UpdateChecker.CurrentVersion}" };
         version.Click += (_, _) => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
@@ -900,6 +904,7 @@ public sealed class MainWindow : Window
 
     private void RefreshUi()
     {
+        EnsureOverlayLevel();
         if (_settings.TrackSpawns)
         {
             // Sound only: the chip changing to DUE is already the visual notification.
@@ -1468,6 +1473,10 @@ public sealed class MainWindow : Window
         _miniRoot.IsVisible = mini;
         _normalRoot.IsVisible = !mini;
         Topmost = true;
+        // Switching modes opens and closes the breakout windows, and a new window starts at
+        // whatever level Avalonia gave it — raise them now rather than leaving them behind
+        // the game until the next tick.
+        EnsureOverlayLevel();
         _settings.Save();
         if (!mini) _dismissedBreakouts.Clear();
         var snapshot = CurrentSnapshot();
@@ -1688,6 +1697,16 @@ public sealed class MainWindow : Window
         {
             _unlockChip?.Hide();
         }
+    }
+
+    /// <summary>
+    /// Keeps every EQBuddy window above a fullscreen CrossOver game on macOS. Topmost alone
+    /// is not enough — see <see cref="MacOverlayLevel"/> — and the raise is scoped to the
+    /// game being frontmost so EQBuddy does not sit over every other app's fullscreen.
+    /// </summary>
+    private static void EnsureOverlayLevel()
+    {
+        if (OperatingSystem.IsMacOS()) MacOverlayLevel.Update();
     }
 
     private void OnGear(object? sender, EventArgs e) => _root.ContextMenu?.Open(_root);
