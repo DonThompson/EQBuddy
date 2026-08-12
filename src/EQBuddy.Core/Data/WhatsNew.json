@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.69.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW: Sky Quest search (discussion #108, thanks bjstrange — his third shipped ask this week): type an item or reward name in the box next to the state filter and every class's matching rows appear at once, live checkboxes included — no more touring fourteen tabs to find who wants your drop. Search crosses all classes and ignores the state lens, same rule as the quest tracker: filters shape tabs, never search. Clear the box and the tabs return."
+  ]
+ },
+ {
   "version": "1.68.2",
   "date": "2026-08-12",
   "highlights": [

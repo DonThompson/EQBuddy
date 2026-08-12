@@ -2070,12 +2070,30 @@ public partial class MainWindow : Window
         _skyQuestDirty = true;
     }
 
+    private void OnSkySearchChanged(object sender, TextChangedEventArgs e)
+    {
+        _skyQuestDirty = true;
+        RenderSkyQuestChecklist();
+    }
+
     private void RenderSkyQuestChecklist()
     {
         if (SkyStateCombo.Items.Count == 0)
         {
             foreach (var s in new[] { "any state", "open", "ready", "done" }) SkyStateCombo.Items.Add(s);
             SkyStateCombo.SelectedIndex = 0;
+        }
+
+        // Search (#108, bjstrange): one box instead of a fourteen-tab tour. Crosses
+        // every class and ignores the state lens — filters shape tabs, never search
+        // (the tracker's rule since 1.57.4). Clearing the box restores the tabs.
+        var query = SkySearchBox.Text.Trim();
+        SkySearchScroll.Visibility = query.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        SkyQuestTabs.Visibility = query.Length > 0 ? Visibility.Collapsed : Visibility.Visible;
+        if (query.Length > 0)
+        {
+            RenderSkySearch(query);
+            return;
         }
         // Live selection wins; the persisted class restores the tab across restarts.
         var selectedClass = (SkyQuestTabs.SelectedItem as TabItem)?.Tag as string
@@ -2196,6 +2214,75 @@ public partial class MainWindow : Window
 
         if (SkyQuestTabs.SelectedIndex < 0 && SkyQuestTabs.Items.Count > 0)
             SkyQuestTabs.SelectedIndex = 0;
+    }
+
+    /// <summary>The search view: matching checklist rows across EVERY class, grouped
+    /// by item so "who wants this drop?" is answered in one glance — each class's row
+    /// keeps its live checkbox, with completed quests read-only exactly like the tabs.</summary>
+    private void RenderSkySearch(string query)
+    {
+        SkySearchScroll.MaxHeight = SkyQuestListMaxHeight();
+        SkySearchResults.Children.Clear();
+        var matches = _settings.SkyQuestChecklist
+            .Where(i => i.QuestItem.Contains(query, StringComparison.OrdinalIgnoreCase)
+                     || i.Reward.Contains(query, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (matches.Count == 0)
+        {
+            SkySearchResults.Children.Add(new TextBlock
+            {
+                Text = $"Nothing in Sky wants \"{query}\" — searched every class's tests.",
+                FontSize = 11, TextWrapping = TextWrapping.Wrap,
+                Foreground = (Brush)FindResource("DimBrush"),
+                Margin = new Thickness(0, 4, 0, 4),
+            });
+            return;
+        }
+
+        foreach (var itemGroup in matches.GroupBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
+                     .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            var first = itemGroup.First();
+            SkySearchResults.Children.Add(new TextBlock
+            {
+                Text = itemGroup.Key,
+                FontSize = 12, FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("AccentBrush"),
+                Margin = new Thickness(0, SkySearchResults.Children.Count == 0 ? 2 : 8, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+            if (first.Source.Length > 0)
+                SkySearchResults.Children.Add(new TextBlock
+                {
+                    Text = first.Source, FontSize = 10,
+                    Foreground = (Brush)FindResource("DimBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                });
+
+            foreach (var item in itemGroup.OrderBy(i => i.ClassName, StringComparer.OrdinalIgnoreCase))
+            {
+                var completed = IsSkyRewardCompleted(item.ClassName, item.Reward);
+                var check = new CheckBox
+                {
+                    IsChecked = item.Acquired,
+                    Margin = new Thickness(8, 1, 0, 1),
+                    ToolTip = $"{item.ClassName} — {item.Reward} ({item.Npc})",
+                    IsEnabled = !completed,
+                    Opacity = completed ? 0.55 : 1.0,
+                    Content = new TextBlock
+                    {
+                        Text = $"{ClassAbbrev(item.ClassName)} · {item.Reward}{(completed ? " ✔" : "")}",
+                        FontSize = 11.5,
+                        Foreground = (Brush)FindResource("TextBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                    },
+                };
+                var captured = item;
+                check.Checked += (_, _) => OnSkyQuestToggled(captured, true);
+                check.Unchecked += (_, _) => OnSkyQuestToggled(captured, false);
+                SkySearchResults.Children.Add(check);
+            }
+        }
     }
 
     private double SkyQuestListMaxHeight()

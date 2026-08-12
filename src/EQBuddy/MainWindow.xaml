@@ -479,11 +479,28 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
-                <!-- Same state lens as the quest tracker (David, 2026-08-11): ready
-                     means every piece collected and the turn-in still to make. -->
-                <ComboBox x:Name="SkyStateCombo" Width="86" FontSize="11" HorizontalAlignment="Left"
-                          Margin="0,2,0,2" SelectionChanged="OnSkyStateChanged"
-                          ToolTip="any · open (still missing items) · ready (every item collected — go turn it in) · done (turned in)"/>
+                <Grid Margin="0,2,0,2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Same state lens as the quest tracker (David, 2026-08-11): ready
+                         means every piece collected and the turn-in still to make. -->
+                    <ComboBox x:Name="SkyStateCombo" Width="86" FontSize="11" HorizontalAlignment="Left"
+                              SelectionChanged="OnSkyStateChanged"
+                              ToolTip="any · open (still missing items) · ready (every item collected — go turn it in) · done (turned in)"/>
+                    <!-- #108 (bjstrange): find a dropped item without touring 14 class
+                         tabs. Search crosses every class and ignores the state lens —
+                         the tracker's rule since 1.57.4: filters shape tabs, never search. -->
+                    <TextBox x:Name="SkySearchBox" Grid.Column="1" FontSize="11" Margin="6,0,0,0"
+                             Style="{StaticResource InputBox}" TextChanged="OnSkySearchChanged"
+                             ToolTip="Type an item (or reward) name — every class's matching rows appear at once, checkboxes included. Clear to go back to the tabs."/>
+                </Grid>
+                <ScrollViewer x:Name="SkySearchScroll" Visibility="Collapsed"
+                              VerticalScrollBarVisibility="Auto" PanningMode="VerticalOnly"
+                              HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0">
+                    <StackPanel x:Name="SkySearchResults"/>
+                </ScrollViewer>
                 <TabControl x:Name="SkyQuestTabs" Margin="0,2,0,0"
                             Background="{DynamicResource PanelBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
