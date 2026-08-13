@@ -193,9 +193,7 @@ public sealed class SpawnCatalog
     /// silently-suppressed real timer.
     /// </summary>
     public static bool IsInstancedZoneName(string zoneName) =>
-        System.Text.RegularExpressions.Regex.IsMatch(zoneName, @"\s-\s*(Solo|Group)\b",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase)
-        || System.Text.RegularExpressions.Regex.IsMatch(zoneName, @"\s\d+\s*\([^)]*\)\s*$");
+        InstanceTier.IsInstance(InstanceTier.FromZoneName(zoneName));
 
     /// <summary>Effective respawn seconds for an entry in a zone: the entry's own timer,
     /// else the zone default, else null (unknown — the player has to supply one).

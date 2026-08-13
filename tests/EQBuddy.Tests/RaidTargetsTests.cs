@@ -85,4 +85,58 @@ public class RaidTargetsTests
         Assert.Null(l.For("Lady Vox"));
         Assert.Equal(0, l.DefeatedCount());
     }
+
+    // ---- difficulty tiers, decoded from the zone-enter line (#109 data) ----
+
+    [Theory]
+    [InlineData("The Plane of Hate", InstanceTier.OpenWorld)]
+    [InlineData("The Plane of Hate - Solo", 0)]
+    [InlineData("Nagafen's Lair - Group 3 (Fused)", 3)]
+    [InlineData("Najena 4 (Refined)", 4)]
+    [InlineData("The Plane of Sky 1 (Awakened)", 1)]
+    [InlineData("Befallen 2 (Adaptive)", 2)]
+    [InlineData("Kaesora 7 (Mythic)", InstanceTier.UnknownAdjective)]  // unknown adjective ≠ D0
+    public void ZoneLinesDecodeToTiers(string zone, int tier) =>
+        Assert.Equal(tier, InstanceTier.FromZoneName(zone));
+
+    [Fact]
+    public void KillsRecordTheDifficultyTheyHappenedAt()
+    {
+        var l = Ledger();
+        l.Apply(Ev(0, "You have entered Nagafen's Lair - Group 3 (Fused)."));
+        l.Apply(Ev(10, "Lord Nagafen has been slain by Tankname!"));
+        l.Apply(Ev(500, "You have entered Nagafen's Lair - Solo."));
+        l.Apply(Ev(510, "Lord Nagafen has been slain by Tankname!"));
+        l.Apply(Ev(900, "You have entered Nagafen's Lair."));
+        l.Apply(Ev(910, "Lord Nagafen has been slain by Tankname!"));
+
+        var rec = l.For("Lord Nagafen")!;
+        Assert.Equal(3, rec.Kills);
+        Assert.Equal(1, rec.TierKills["d3"]);
+        Assert.Equal(1, rec.TierKills["d0"]);
+        Assert.Equal(1, rec.TierKills["open"]);
+        Assert.Equal(3, rec.HighestDifficulty());      // the badge: highest PROVEN
+    }
+
+    [Fact]
+    public void AKillBeforeAnyZoneLineIsHonestlyUnknown()
+    {
+        var l = Ledger();
+        l.Apply(Ev(0, "You have slain Lady Vox!"));
+        var rec = l.For("Lady Vox")!;
+        Assert.Equal(1, rec.TierKills["unknown"]);
+        Assert.Null(rec.HighestDifficulty());          // no badge from a guess
+    }
+
+    [Fact]
+    public void RecordsFromBeforeTierTrackingRoundTrip()
+    {
+        // A pre-1.72 store has no TierKills field at all: it must load, count as
+        // before, and simply carry no badge.
+        var rec = System.Text.Json.JsonSerializer.Deserialize<RaidBossRecord>(
+            """{"Kills":4,"FirstKill":"2026-07-19T20:00:00","LastKill":"2026-08-01T21:00:00","AchievementComplete":false}""")!;
+        Assert.Equal(4, rec.Kills);
+        Assert.Empty(rec.TierKills);
+        Assert.Null(rec.HighestDifficulty());
+    }
 }

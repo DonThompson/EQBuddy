@@ -66,6 +66,21 @@ public sealed class RaidBossRecord
     public DateTime? FirstKill { get; set; }
     public DateTime? LastKill { get; set; }
     public bool AchievementComplete { get; set; }
+    /// <summary>Witnessed kills by instance difficulty, keyed by
+    /// <see cref="InstanceTier.StoreKey"/> ("d0".."d4", "open", "instance",
+    /// "unknown"). Kills recorded before tiers existed aren't here at all — the
+    /// replay high-water skips them, and backfilling would be guessing. The badge
+    /// shows the highest difficulty PROVEN, never inferred.</summary>
+    public Dictionary<string, int> TierKills { get; set; } = new();
+
+    /// <summary>Highest difficulty (0–4) with a witnessed kill, or null when no
+    /// tiered kill has been recorded (old records, open-world kills, imports).</summary>
+    public int? HighestDifficulty()
+    {
+        for (var t = 4; t >= 0; t--)
+            if (TierKills.TryGetValue($"d{t}", out var n) && n > 0) return t;
+        return null;
+    }
 }
 
 /// <summary>
@@ -80,6 +95,10 @@ public sealed class RaidKillLedger
     private readonly string? _path;
     private Dictionary<string, RaidBossRecord> _records = new(StringComparer.OrdinalIgnoreCase);
     private DateTime _highWater = DateTime.MinValue;
+    /// <summary>Difficulty of the zone the log is currently inside, from the last
+    /// zone-enter line — <see cref="InstanceTier.Unknown"/> until one is seen.
+    /// Rebuilt by replay like everything else; only KILLS are high-water gated.</summary>
+    private int _currentTier = InstanceTier.Unknown;
     private readonly object _lock = new();
 
     public event Action? Changed;
@@ -120,6 +139,11 @@ public sealed class RaidKillLedger
 
     public void Apply(GameEvent evt)
     {
+        if (evt is ZoneEvent z)
+        {
+            lock (_lock) _currentTier = InstanceTier.FromZoneName(z.Zone);
+            return;
+        }
         if (evt is not KillEvent kill) return;
         if (!_catalog.IsRaidBoss(kill.Target)) return;
         var key = Key(kill.Target);
@@ -131,6 +155,8 @@ public sealed class RaidKillLedger
             rec.Kills++;
             rec.FirstKill ??= kill.Time;
             rec.LastKill = kill.Time;
+            var tierKey = InstanceTier.StoreKey(_currentTier);
+            rec.TierKills[tierKey] = rec.TierKills.GetValueOrDefault(tierKey) + 1;
             Save();
         }
         Changed?.Invoke();

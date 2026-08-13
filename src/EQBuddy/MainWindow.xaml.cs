@@ -1026,20 +1026,34 @@ public partial class MainWindow : Window
             foreach (var (boss, rec) in records)
             {
                 var cleared = rec is { } rr && (rr.Kills > 0 || rr.AchievementComplete);
+                // The badge is the highest difficulty PROVEN by a witnessed kill —
+                // instance tiers come off the zone-enter line (#109 data). Kills from
+                // before tiers existed carry no tier and earn no badge; honesty over
+                // flattery.
+                var badge = rec?.HighestDifficulty() is { } hd ? $"D{hd} · " : "";
                 var detail = rec switch
                 {
                     { Kills: > 0 } k =>
-                        $"{(k.Kills > 1 ? $"×{k.Kills} · " : "")}last {k.LastKill:MMM d}",
+                        $"{badge}{(k.Kills > 1 ? $"×{k.Kills} · " : "")}last {k.LastKill:MMM d}",
                     { AchievementComplete: true } => "cleared (from achievements)",
                     _ => "",
                 };
-                RaidsPanel.Children.Add(new TextBlock
+                var row = new TextBlock
                 {
                     Text = $"{(cleared ? "✓" : "·")} {boss}{(detail.Length > 0 ? $" — {detail}" : "")}",
                     FontSize = 11.5, Margin = new Thickness(6, 0, 0, 0),
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     Foreground = (Brush)FindResource(cleared ? "TextBrush" : "DimBrush"),
-                });
+                };
+                if (rec is { TierKills.Count: > 0 } tk)
+                    row.ToolTip = "Kills by difficulty: " + string.Join(" · ",
+                        new[] { "d4", "d3", "d2", "d1", "d0", "open", "instance", "unknown" }
+                            .Where(k => tk.TierKills.ContainsKey(k))
+                            .Select(k => $"{(k.StartsWith('d') ? k.ToUpperInvariant() : k)} ×{tk.TierKills[k]}"))
+                        + (tk.Kills > tk.TierKills.Values.Sum()
+                            ? $" · {tk.Kills - tk.TierKills.Values.Sum()} earlier kill(s) predate tier tracking"
+                            : "");
+                RaidsPanel.Children.Add(row);
             }
         }
         RaidsPanel.Children.Add(new TextBlock
