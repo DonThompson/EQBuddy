@@ -69,10 +69,10 @@ public class OptionsRenderTests : IDisposable
     }
 
     /// <summary>The window's body scroller. Every TextBox and open ComboBox brings its own
-    /// ScrollViewer, so it is picked out by what it holds: the one margined panel.</summary>
+    /// ScrollViewer, so it is picked out by what it holds: the one margined tab body.</summary>
     private static ScrollViewer ContentScroll(OptionsWindow options) =>
         options.GetVisualDescendants().OfType<ScrollViewer>()
-            .Single(s => s.Content is StackPanel { Margin.Left: 16 });
+            .Single(s => s.Content is Grid { Margin.Left: 16 });
 
     [AvaloniaFact]
     public void OptionsRendersAFrame()
@@ -131,7 +131,7 @@ public class OptionsRenderTests : IDisposable
     {
         var (main, options) = Open();
         var targetDrops = options.GetVisualDescendants().OfType<CheckBox>()
-            .Single(c => (c.Content as TextBlock)?.Text?.Contains("known drops") == true);
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("target drops") == true);
         Assert.True(targetDrops.IsChecked);
         targetDrops.IsChecked = false;
         Assert.False(main.Settings.ShowTargetDrops);
@@ -150,6 +150,8 @@ public class OptionsRenderTests : IDisposable
     {
         var main = new MainWindow();
         main.Show();
+        // The rules live on the Watch tab — it must be the open tab for its height to count.
+        main.Settings.OptionsTab = "watch";
         for (var i = 0; i < 30; i++)
             main.Settings.TrackedRules.Add(new TrackedRule
             {
@@ -386,6 +388,115 @@ public class OptionsRenderTests : IDisposable
         var right = options.Position.X + (int)Math.Round(options.Bounds.Width * options.RenderScaling);
         Assert.True(Math.Abs(right - startRight) <= 1,
             $"right edge moved from {startRight} to {right}");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The tabbed layout (WPF 1.67.0): all five panels exist, and the saved
+    /// OptionsTab decides which one is open — a stale key falls back to Look.</summary>
+    [AvaloniaTheory]
+    [InlineData("behavior", "behavior")]
+    [InlineData("cards", "cards")]
+    [InlineData("bogus-tab", "look")]
+    public void TheSavedTabIsTheOpenOne(string saved, string effective)
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsTab = saved;
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        var links = options.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.Text is "Look" or "Alerts & chips" or "Watch rules" or "Cards & windows" or "Behavior")
+            .ToList();
+        Assert.Equal(5, links.Count);
+        // Exactly one link is underlined-active, and it matches the effective tab.
+        var active = links.Single(l => l.TextDecorations is not null);
+        var expected = effective switch
+        {
+            "behavior" => "Behavior", "cards" => "Cards & windows", _ => "Look",
+        };
+        Assert.Equal(expected, active.Text);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Share-string import: paste → preview → confirm, nothing landing unseen.
+    /// The string comes from the same WatchRuleShare the ⤴ buttons use.</summary>
+    [AvaloniaFact]
+    public void ImportingAShareStringPreviewsThenAddsTheRule()
+    {
+        var (main, options) = Open();
+        var before = main.Settings.TrackedRules.Count;
+        var share = WatchRuleShare.Encode(
+            [new TrackedRule { Name = "guildie's rule", Pattern = "FTE", Kind = WatchKind.Text }]);
+
+        var importBox = options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => ToolTip.GetTip(t) is string tip && tip.Contains("EQB1"));
+        importBox.Text = share;
+        var importBtn = options.GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(b.Content, "Import…"));
+        importBtn.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        var confirm = options.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Content is string s && s.StartsWith("✔"));
+        Assert.True(confirm.IsVisible);
+        Assert.Equal(before, main.Settings.TrackedRules.Count);   // preview adds nothing
+
+        confirm.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(before + 1, main.Settings.TrackedRules.Count);
+        Assert.Equal("guildie's rule", main.Settings.TrackedRules[^1].Name);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>New shared settings reached the port: chip scale (Look), archive-before-
+    /// empty (Behavior), and the hide-while-game-not-running opt-in (#114).</summary>
+    [AvaloniaFact]
+    public void ChipScaleArchiveAndHideTogglesPersist()
+    {
+        var (main, options) = Open();
+
+        var chipScale = options.GetVisualDescendants().OfType<Slider>()
+            .Single(s => Math.Abs(s.Minimum - 0.8) < 0.001 && Math.Abs(s.Maximum - 2.0) < 0.001);
+        chipScale.Value = 1.4;
+        Assert.Equal(1.4, main.Settings.ChipScale, 3);
+
+        var archive = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("timestamped copy") == true);
+        Assert.False(archive.IsChecked);
+        archive.IsChecked = true;
+        Assert.True(main.Settings.ArchiveLogs);
+
+        var hideNotRunning = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("isn't running at all") == true);
+        hideNotRunning.IsChecked = true;
+        Assert.True(main.Settings.HideWhenGameNotRunning);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Hotkeys are opt-in (#100): every action shows an unbound recorder until
+    /// the player binds it, and a saved gesture is displayed on its button.</summary>
+    [AvaloniaFact]
+    public void HotkeyRowsShowUnboundRecordersAndSavedGestures()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.Hotkeys["toggleMap"] = "Ctrl+Alt+M";
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        var recorders = options.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.Content is string s
+                && (s == "not bound — click to set" || s == "Ctrl+Alt+M"))
+            .ToList();
+        Assert.Equal(6, recorders.Count);   // one per HotkeyManager action
+        Assert.Single(recorders, b => Equals(b.Content, "Ctrl+Alt+M"));
 
         options.Close();
         main.Close();
