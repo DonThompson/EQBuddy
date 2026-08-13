@@ -85,7 +85,7 @@ public sealed class FeedbackWindow : Window
         panel.Children.Add(actions);
         Content = new Border
         {
-            Background = AppTheme.BgBrush, BorderBrush = AppTheme.BorderBrush,
+            Background = AppTheme.BgBrush, BorderBrush = LocalTheme.HairlineBrush,
             BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
             Padding = new Thickness(14, 10, 14, 12), Child = panel,
         };

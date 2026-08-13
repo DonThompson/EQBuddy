@@ -109,7 +109,7 @@ public sealed class ItemInfoWindow : Window
         return new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = AppTheme.BorderBrush,
+            BorderBrush = LocalTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(12),
