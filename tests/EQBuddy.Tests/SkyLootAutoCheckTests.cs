@@ -65,4 +65,50 @@ public class SkyLootAutoCheckTests
 
         Assert.Equal(1, list.Count(i => i.Acquired));   // one staff, one tick
     }
+
+    // ---- #106 round two: an item exactly TWO classes want, neither in the lens ----
+
+    private static List<SkyQuestChecklistItem> TwoClassChecklist() =>
+    [
+        new() { ClassName = "Berserker", QuestItem = "Twisted Staff", Reward = "Test of Fury" },
+        new() { ClassName = "Necromancer", QuestItem = "Twisted Staff", Reward = "Test of Decay" },
+        new() { ClassName = "Druid", QuestItem = "Wind Rune Azia", Reward = "Test of Nature" },
+    ];
+
+    [Fact]
+    public void AMultiClassItemNobodyClaimsParksOneFlaggedTick()
+    {
+        // bjstrange's staff: wanted by Berserker AND Necromancer, looted on the Druid
+        // tab with no filter. Previously lost entirely; now the first owning class
+        // gets the tick, flagged for the player to move.
+        var list = TwoClassChecklist();
+        var changed = SkyLootAutoCheck.Apply(list, "Twisted Staff", 1, [], activeTab: "Druid");
+
+        Assert.True(changed);
+        var ticked = Assert.Single(list.Where(i => i.Acquired));
+        Assert.Equal("Berserker", ticked.ClassName);       // first owning class, deterministic
+        Assert.True(ticked.AcquiredUnassigned);            // wears the *
+    }
+
+    [Fact]
+    public void ALensMatchTicksNormallyWithoutTheFlag()
+    {
+        var list = TwoClassChecklist();
+        SkyLootAutoCheck.Apply(list, "Twisted Staff", 1, ["Necromancer"], activeTab: "Druid");
+
+        var ticked = Assert.Single(list.Where(i => i.Acquired));
+        Assert.Equal("Necromancer", ticked.ClassName);
+        Assert.False(ticked.AcquiredUnassigned);           // a real match is no guess
+    }
+
+    [Fact]
+    public void TheParkedTickRespectsTheLootBudget()
+    {
+        var list = TwoClassChecklist();
+        SkyLootAutoCheck.Apply(list, "Twisted Staff", 2, [], activeTab: "Druid");
+
+        // Two staffs looted: both open slots get one, both flagged.
+        Assert.Equal(2, list.Count(i => i.Acquired));
+        Assert.All(list.Where(i => i.Acquired), i => Assert.True(i.AcquiredUnassigned));
+    }
 }

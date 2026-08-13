@@ -449,6 +449,12 @@ public sealed class SkyQuestChecklistItem
     public string QuestItem { get; set; } = "";
     public string Source { get; set; } = "";
     public bool Acquired { get; set; }
+    /// <summary>True when the loot auto-tick PLACED this check itself because the
+    /// item is wanted by several classes and none of them passed the class lens
+    /// (#106, bjstrange's two-quest staff: "check one of them off, doesn't matter
+    /// which, and let me decide"). Shown as a * so the player can move the tick;
+    /// any manual toggle clears it — the player deciding IS the resolution.</summary>
+    public bool AcquiredUnassigned { get; set; }
 
     public SkyQuestChecklistItem Clone() => new()
     {
@@ -459,6 +465,7 @@ public sealed class SkyQuestChecklistItem
         QuestItem = QuestItem,
         Source = Source,
         Acquired = Acquired,
+        AcquiredUnassigned = AcquiredUnassigned,
     };
 }
 

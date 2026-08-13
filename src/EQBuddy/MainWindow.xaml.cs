@@ -2366,9 +2366,11 @@ public partial class MainWindow : Window
                 foreach (var item in rewardGroup.OrderBy(i => i.Acquired).ThenBy(i => i.QuestItem))
                 {
                     var text = new StackPanel();
+                    // * = the auto-tick parked a multi-class item here because no class
+                    // lens claimed it (#106) — the player decides where it belongs.
                     text.Children.Add(new TextBlock
                     {
-                        Text = item.QuestItem,
+                        Text = item.AcquiredUnassigned ? item.QuestItem + " *" : item.QuestItem,
                         FontSize = 12,
                         Foreground = (Brush)FindResource("TextBrush"),
                         TextTrimming = TextTrimming.CharacterEllipsis,
@@ -2381,12 +2383,24 @@ public partial class MainWindow : Window
                         TextTrimming = TextTrimming.CharacterEllipsis,
                     });
 
+                    var tip = $"{item.Reward}: {item.QuestItem} ({item.Source})";
+                    if (item.AcquiredUnassigned)
+                    {
+                        var others = _settings.SkyQuestChecklist
+                            .Where(i => i.QuestItem.Equals(item.QuestItem, StringComparison.OrdinalIgnoreCase)
+                                     && !i.ClassName.Equals(item.ClassName, StringComparison.OrdinalIgnoreCase))
+                            .Select(i => i.ClassName).Distinct().ToList();
+                        tip += "\n* Auto-ticked here, but this item is also wanted by: "
+                            + string.Join(", ", others)
+                            + ". Untick it and tick the right class if this guess is wrong.";
+                    }
+
                     var check = new CheckBox
                     {
                         IsChecked = item.Acquired,
                         Content = text,
                         Margin = new Thickness(0, 1, 0, 1),
-                        ToolTip = $"{item.Reward}: {item.QuestItem} ({item.Source})",
+                        ToolTip = tip,
                         // A completed quest's items are history, not a to-do list.
                         IsEnabled = !completed,
                         Opacity = completed ? 0.55 : 1.0,
@@ -2660,6 +2674,9 @@ public partial class MainWindow : Window
     private void OnSkyQuestToggled(SkyQuestChecklistItem item, bool acquired)
     {
         item.Acquired = acquired;
+        // The player deciding IS the resolution of an auto-parked tick (#106) —
+        // whichever way they toggled, the * has served its purpose.
+        item.AcquiredUnassigned = false;
         _settings.Save();
         UpdateSkyQuestHeaderOnly();
         UpdateSkyQuestTabHeader(item.ClassName);

@@ -12,6 +12,12 @@ namespace EQBuddy.Core;
 ///    that class no matter what tab or filter is active (#106, bjstrange again: a
 ///    Berserker-only staff looted on the Druid tab can't be for anyone else's test).
 ///    Same philosophy as the tracker's "loot outranks the class lens".
+/// 3. MULTI-CLASS items where NO owning class passes the lens (#106 round two, the
+///    staff both Berserker and Necromancer tests want): the item was physically
+///    looted, so losing it to tracking is worse than guessing — the FIRST owning
+///    class gets the tick, flagged AcquiredUnassigned so the row wears a * and the
+///    player can move it ("check one of them off, doesn't matter which, and let me
+///    decide if it's the right one" — his words, his rule).
 /// </summary>
 public static class SkyLootAutoCheck
 {
@@ -39,6 +45,17 @@ public static class SkyLootAutoCheck
             foreach (var item in classGroup.Take(newlyLooted))
             {
                 item.Acquired = true;
+                item.AcquiredUnassigned = false;
+                changed = true;
+            }
+
+        // Rule 3: nothing ticked, several classes want it — park the tick on the
+        // first owning class's open slot, flagged for the player to move.
+        if (!changed && owningClasses.Count > 1)
+            foreach (var item in slots.Where(i => !i.Acquired).Take(newlyLooted))
+            {
+                item.Acquired = true;
+                item.AcquiredUnassigned = true;
                 changed = true;
             }
         return changed;
