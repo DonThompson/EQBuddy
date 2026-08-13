@@ -144,6 +144,63 @@ public class SpawnPointLedgerTests
         finally { try { Directory.Delete(dir, recursive: true); } catch { } }
     }
 
+    [Fact]
+    public void SameSecondKillsBothLand()
+    {
+        // Log stamps have 1-second resolution; an AoE finishing two mobs in one
+        // second must not lose the second (review 2026-08-13 — the high-water mark
+        // was firing on live data).
+        var l = Ledger();
+        l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+        l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+        l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+        l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok scryer", "You"));   // same second
+        Assert.Equal(2, l.Snapshot("Lower Guk").Points.Single().TotalKills());
+    }
+
+    [Fact]
+    public void SameSecondKillsReplayIdempotently()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eqbuddy-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            void ReplayAll(SpawnPointLedger l)
+            {
+                l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+                l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+                l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+                l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok scryer", "You"));
+            }
+            var l1 = Ledger(dir);
+            ReplayAll(l1);
+            l1.Flush();
+            var l2 = Ledger(dir);
+            ReplayAll(l2);   // restart replays the same history
+            Assert.Equal(2, l2.Snapshot("Lower Guk").Points.Single().TotalKills());
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { } }
+    }
+
+    [Fact]
+    public void KillsAttachToTheNearestPointNotTheFirst()
+    {
+        // Two camps 50 units apart; a kill 8 units from the newer camp must refine
+        // THAT one even though the older camp (28 units away) is also in radius.
+        var l = Ledger();
+        l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+        l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+        l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+        l.Apply(new LocationEvent(T0.AddMinutes(3), -550, 120, 3));
+        l.Apply(new KillEvent(T0.AddMinutes(4), "a froglok scryer", "You"));
+        l.Apply(new LocationEvent(T0.AddMinutes(5), -528, 120, 3));   // 28 from A, 22 from B — both in radius, B nearer
+        l.Apply(new KillEvent(T0.AddMinutes(6), "a froglok scryer", "You"));
+
+        var archive = l.Snapshot("Lower Guk");
+        Assert.Equal(2, archive.Points.Count);
+        var b = archive.Points.Single(p => p.Mobs.ContainsKey("froglok scryer") && p.TotalKills() == 2);
+        Assert.True(b.LocY < -530);   // refined around the -550 camp, not dragged to -500's
+    }
+
     // ---- named + projection ----
 
     [Fact]
@@ -292,6 +349,65 @@ public class ZoneShareTests
     }
 
     [Fact]
+    public void DecodeDropsMoblessPointsAndFoldsPetNames()
+    {
+        // A mob-less point would crash LastKilled() on the map tick; a sharer on an
+        // older build may still carry "X pet" entries. Both sanitize at decode.
+        var a = Archive((-100, 50, "an elf skeleton", 2));
+        a.Points.Add(new SpawnPointLedger.SpawnPoint { LocY = -300, LocX = 90 });   // no mobs
+        a.Points[0].Mobs["an elf skeleton pet"] =
+            new SpawnPointLedger.MobSeen { Kills = 3, LastKill = T0.AddMinutes(1) };
+        var s = ZoneShare.Export(a, Befallen(), new SpawnOverrides());
+
+        var payload = ZoneShare.TryDecode(s);
+        Assert.NotNull(payload);
+        var p = Assert.Single(payload!.Points);   // mob-less point dropped
+        var mob = Assert.Single(p.Mobs);          // pet folded into owner
+        Assert.Equal(5, mob.Value.Kills);
+        Assert.Equal(T0.AddMinutes(1), mob.Value.LastKill);
+    }
+
+    [Fact]
+    public void OversizedPayloadsAreRejected()
+    {
+        // A point-count flood is not a real zone archive (deflate-bomb guard's
+        // structural sibling; the byte cap is exercised by the same TryDecode path).
+        var big = new SpawnPointLedger.ZoneArchive { Zone = "Befallen" };
+        for (var i = 0; i < ZoneShare.MaxPoints + 1; i++)
+            big.Points.Add(new SpawnPointLedger.SpawnPoint
+            {
+                LocY = i * 100, LocX = 0,
+                Mobs = { ["mob " + i] = new SpawnPointLedger.MobSeen { Kills = 1, LastKill = T0 } },
+            });
+        var s = ZoneShare.Export(big, null, new SpawnOverrides());
+        Assert.Null(ZoneShare.TryDecode(s));
+    }
+
+    [Fact]
+    public void CustomNamedTimersTravelAndArriveCustom()
+    {
+        // David's own added named ("things I set can be shared") — not in the
+        // catalog, so without the Custom flag the importer's timers would never run.
+        var sharer = new SpawnOverrides();
+        var custom = sharer.GetOrAdd("Befallen", "Bonesnapper");
+        custom.RespawnSeconds = 275;
+        custom.Custom = true;
+        var s = ZoneShare.Export(Archive(), Befallen(), sharer);
+
+        var mine = new SpawnOverrides();
+        var local = new SpawnPointLedger.ZoneArchive { Zone = "Befallen" };
+        var preview = ZoneShare.PreviewImport(s, local, Befallen(), mine)!;
+        var diff = Assert.Single(preview.Timers);
+        Assert.Equal("Bonesnapper", diff.Name);
+        Assert.True(diff.Flagged);   // no baseline for an unknown named — flagged
+
+        ZoneShare.Apply(preview, local, Befallen(), mine, includeFlagged: true);
+        var applied = mine.Find("Befallen", "Bonesnapper");
+        Assert.Equal(275, applied?.RespawnSeconds);
+        Assert.True(applied?.Custom);   // it times like any player-added named
+    }
+
+    [Fact]
     public void DeviationGateFlagsTankedTimers()
     {
         // David's Befallen test: the zone clock says ~4:30 (270s). Someone shipping
@@ -326,10 +442,10 @@ public class ZoneShareTests
         var mine = new SpawnOverrides();
         var preview = ZoneShare.PreviewImport(s, local, Befallen(), mine)!;
 
-        ZoneShare.Apply(preview, local, mine, includeFlagged: false);
+        ZoneShare.Apply(preview, local, Befallen(), mine, includeFlagged: false);
         Assert.Null(mine.Find("Befallen", "Marnek the Sage"));
 
-        ZoneShare.Apply(preview, local, mine, includeFlagged: true);
+        ZoneShare.Apply(preview, local, Befallen(), mine, includeFlagged: true);
         var applied = mine.Find("Befallen", "Marnek the Sage");
         Assert.Equal(600, applied?.RespawnSeconds);
         Assert.True(applied?.Learned);
@@ -349,7 +465,7 @@ public class ZoneShareTests
         my.RespawnSeconds = 240;   // Learned=false: I typed this myself
         var local = new SpawnPointLedger.ZoneArchive { Zone = "Befallen" };
         var preview = ZoneShare.PreviewImport(s, local, Befallen(), mine)!;
-        ZoneShare.Apply(preview, local, mine, includeFlagged: true);
+        ZoneShare.Apply(preview, local, Befallen(), mine, includeFlagged: true);
 
         var kept = mine.Find("Befallen", "Marnek the Sage");
         Assert.Equal(240, kept?.RespawnSeconds);
@@ -368,12 +484,12 @@ public class ZoneShareTests
         Assert.Equal(1, preview.RefinedPoints);
         Assert.Equal(3, preview.NewObservations);   // 5 theirs − 2 mine
 
-        ZoneShare.Apply(preview, local, mine, includeFlagged: false);
+        ZoneShare.Apply(preview, local, Befallen(), mine, includeFlagged: false);
         Assert.Equal(5, local.Points.Single().TotalKills());   // max, not sum
 
         var again = ZoneShare.PreviewImport(incoming, local, Befallen(), mine)!;
         Assert.Equal(0, again.NewObservations);
-        ZoneShare.Apply(again, local, mine, includeFlagged: false);
+        ZoneShare.Apply(again, local, Befallen(), mine, includeFlagged: false);
         Assert.Equal(5, local.Points.Single().TotalKills());   // idempotent
     }
 }

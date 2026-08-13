@@ -626,6 +626,10 @@ which the history dedup makes safe.
   chips, and the item-info popup are WPF-only; the data lives in Core/UI.Shared,
   so each is a thin view to port (the Avalonia app already *applies* stored custom
   colors, and its Combat card does show the last-fight incoming breakdown).
+- The zone map — and with it the spawn-point circles and the Share zone knowledge
+  window — is WPF-only so far (the Avalonia app has no map yet). SpawnPointLedger
+  and ZoneShare live in Core, so the archives a Linux player's log builds are
+  already there the day the map view is ported.
 - Item info (click a loot row, or search in the popup): on-demand eqlwiki lookup —
   stats, vendor value, drops-from, sold-by, quests, recipes — with a 7-day cache
   and LIVE/CACHED/STALE source labels. One fetch per explicit request, nothing in

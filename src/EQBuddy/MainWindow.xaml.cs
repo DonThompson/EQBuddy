@@ -3933,6 +3933,7 @@ public partial class MainWindow : Window
     {
         _trayIcon?.Dispose();   // a ghost tray icon outliving its process reads as a crash
         _unlockChip?.Close();
+        _spawnPoints.Flush();   // debounced archives; anything missed replays from the log
         // Never let an unmoved fallback overwrite a real saved spot (#117).
         (_settings.WindowLeft, _settings.WindowTop) = WindowPlacement.PositionToPersist(
             _restoredSavedPosition, _placedLeft, _placedTop, Left, Top,

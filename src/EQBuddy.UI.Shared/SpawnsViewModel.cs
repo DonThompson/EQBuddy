@@ -126,7 +126,10 @@ public sealed class SpawnsViewModel
                   + "timer to count down. Type a respawn time here if you want your "
                   + "own reminder anyway."
                 : "",
-            o is { Learned: true } ? "timer learned from your own kills" : "",
+            // "Learned" covers both sources of automatic values: re-kill gaps from
+            // your own play AND an accepted zone-knowledge import — either way it
+            // may keep tightening, and your typed edit always outranks it.
+            o is { Learned: true } ? "timer learned automatically (your kills or an import)" : "",
             entry.Variance.Length > 0 ? $"variance {entry.Variance}" : "",
             entry.Note,
             entry.Source.Length > 0 ? $"source: {entry.Source}" : "",

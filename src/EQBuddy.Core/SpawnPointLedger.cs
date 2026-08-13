@@ -47,7 +47,31 @@ public sealed class SpawnPointLedger
     {
         public string Zone { get; set; } = "";
         public DateTime HighWater { get; set; }
+        /// <summary>How many kills are archived AT the HighWater second. Log stamps
+        /// have 1-second resolution, so an AoE finishing two mobs in one second must
+        /// not lose the second kill — replay skips exactly this many boundary kills
+        /// and live observation counts past them (review 2026-08-13).</summary>
+        public int HighWaterCount { get; set; }
         public List<SpawnPoint> Points { get; set; } = [];
+    }
+
+    /// <summary>The nearest archived point within <see cref="ClusterRadius"/>, or null.
+    /// NEAREST, not first-found: with camps 30–60 units apart, first-match attaches a
+    /// kill to whichever point happens to be older in the list and smears centroids
+    /// together. One shared helper so live clustering and share-string merges can
+    /// never diverge (both bugs from the 2026-08-13 review).</summary>
+    public static SpawnPoint? FindCluster(List<SpawnPoint> points, double locY, double locX)
+    {
+        SpawnPoint? best = null;
+        var bestDist = double.MaxValue;
+        foreach (var p in points)
+        {
+            var dy = p.LocY - locY;
+            var dx = p.LocX - locX;
+            var dist = Math.Sqrt(dy * dy + dx * dx);
+            if (dist <= ClusterRadius && dist < bestDist) { best = p; bestDist = dist; }
+        }
+        return best;
     }
 
     private readonly string? _dir;
@@ -56,6 +80,22 @@ public sealed class SpawnPointLedger
     private readonly object _lock = new();
     private string _currentZone = "";
     private LocationEvent? _lastLoc;
+    // Kills seen at the current HighWater second THIS process — compared against the
+    // archive's persisted HighWaterCount so replay skips exactly the boundary kills
+    // it already has (log replay is deterministic and ordered).
+    private readonly Dictionary<string, int> _seenAtHighWater = new(StringComparer.OrdinalIgnoreCase);
+    // Dirty archives + a wall-clock debounce: a full-log ingest observes thousands of
+    // kills in seconds, and a JSON rewrite per kill is O(archive²) disk traffic on the
+    // parser thread (review 2026-08-13). The log is the source of truth — anything an
+    // unflushed crash loses, the next replay re-derives via the high-water mark.
+    private readonly HashSet<string> _dirty = new(StringComparer.OrdinalIgnoreCase);
+    private DateTime _lastSaveWall = DateTime.MinValue;
+    private static readonly TimeSpan SaveDebounce = TimeSpan.FromSeconds(2);
+
+    /// <summary>Bumped on every archive mutation (observation or import). The map's
+    /// 1 Hz tick compares this integer instead of deep-cloning the archive to detect
+    /// change — Snapshot only runs when something actually happened.</summary>
+    public int Revision { get; private set; }
 
     /// <summary>Same freshness window as camp pins: you were standing at the fight.</summary>
     private static readonly TimeSpan LocWindow = TimeSpan.FromMinutes(3);
@@ -73,6 +113,7 @@ public sealed class SpawnPointLedger
             case ZoneEvent z:
                 lock (_lock)
                 {
+                    FlushLocked();   // leaving a zone is the natural save point
                     _currentZone = _catalog.FindZone(z.Zone)?.Zone
                         ?? SpawnCatalog.StripTierVariant(z.Zone);
                     _lastLoc = null;
@@ -93,11 +134,25 @@ public sealed class SpawnPointLedger
         if (_lastLoc is not { } loc || k.Time - loc.Time > LocWindow || k.Time < loc.Time) return;
 
         var zone = Load(_currentZone);
-        if (k.Time <= zone.HighWater) return;   // replayed history, already archived
-        zone.HighWater = k.Time;
+        if (k.Time < zone.HighWater) return;   // replayed history, already archived
+        if (k.Time == zone.HighWater)
+        {
+            // The boundary second: replay must skip exactly the kills already
+            // archived there, but a LIVE second kill in the same log second (AoE,
+            // two group kills) is new data and must land.
+            var seen = _seenAtHighWater.GetValueOrDefault(zone.Zone) + 1;
+            _seenAtHighWater[zone.Zone] = seen;
+            if (seen <= zone.HighWaterCount) return;
+            zone.HighWaterCount = seen;
+        }
+        else
+        {
+            zone.HighWater = k.Time;
+            zone.HighWaterCount = 1;
+            _seenAtHighWater[zone.Zone] = 1;
+        }
 
-        var point = zone.Points.FirstOrDefault(p =>
-            Math.Sqrt(Math.Pow(p.LocY - loc.LocY, 2) + Math.Pow(p.LocX - loc.LocX, 2)) <= ClusterRadius);
+        var point = FindCluster(zone.Points, loc.LocY, loc.LocX);
         if (point is null)
             zone.Points.Add(point = new SpawnPoint { LocY = loc.LocY, LocX = loc.LocX });
         else
@@ -110,10 +165,36 @@ public sealed class SpawnPointLedger
         }
 
         var name = FoldPetName(LogParser.Normalize(k.Target));
-        var seen = point.Mobs.TryGetValue(name, out var m) ? m : point.Mobs[name] = new MobSeen();
-        seen.Kills++;
-        seen.LastKill = k.Time;
-        Save(zone);
+        var mob = point.Mobs.TryGetValue(name, out var m) ? m : point.Mobs[name] = new MobSeen();
+        mob.Kills++;
+        mob.LastKill = k.Time;
+        Revision++;
+        MarkDirty(zone);
+    }
+
+    private void MarkDirty(ZoneArchive zone)
+    {
+        _dirty.Add(zone.Zone);
+        var now = DateTime.UtcNow;
+        if (now - _lastSaveWall < SaveDebounce) return;
+        _lastSaveWall = now;
+        FlushLocked();
+    }
+
+    /// <summary>Write every dirty archive to disk. Callers hold <see cref="_lock"/>.</summary>
+    private void FlushLocked()
+    {
+        foreach (var name in _dirty)
+            if (_zones.TryGetValue(name, out var zone))
+                Save(zone);
+        _dirty.Clear();
+    }
+
+    /// <summary>Flush pending archives — the app-shutdown hook. Anything lost to a
+    /// crash instead is re-derived from the log on the next replay.</summary>
+    public void Flush()
+    {
+        lock (_lock) FlushLocked();
     }
 
     /// <summary>"Royal guard pet" folds into "Royal guard" (David, 2026-08-13: pets
@@ -156,6 +237,7 @@ public sealed class SpawnPointLedger
             {
                 Zone = z.Zone,
                 HighWater = z.HighWater,
+                HighWaterCount = z.HighWaterCount,
                 Points = z.Points.Select(p => new SpawnPoint
                 {
                     LocY = p.LocY, LocX = p.LocX,
@@ -196,16 +278,21 @@ public sealed class SpawnPointLedger
     }
 
     /// <summary>Apply a previewed ZoneShare import into the LIVE archive (the
-    /// preview was computed against a snapshot clone) and persist. Merge semantics
-    /// live in <see cref="ZoneShare.Apply"/>; this is just the lock and the disk.</summary>
+    /// preview was computed against a snapshot clone) and persist. Points merge
+    /// under the ledger lock; the timer overrides apply OUTSIDE it — SpawnOverrides
+    /// guards itself, and holding this lock through its disk writes would stall the
+    /// log pipeline behind the import (review 2026-08-13).</summary>
     public void ApplyImport(ZoneShare.Preview preview, SpawnOverrides overrides, bool includeFlagged)
     {
         lock (_lock)
         {
             var zone = Load(preview.Payload.Zone);
-            ZoneShare.Apply(preview, zone, overrides, includeFlagged);
+            ZoneShare.ApplyPoints(preview, zone);
+            Revision++;
             Save(zone);
         }
+        ZoneShare.ApplyTimers(preview, _catalog.FindZone(preview.Payload.Zone),
+            overrides, includeFlagged);
     }
 
     private ZoneArchive Load(string zone)
@@ -220,6 +307,13 @@ public sealed class SpawnPointLedger
         }
         catch { /* a corrupt archive restarts that zone's learning, not the app */ }
         FoldPetEntries(archive);   // migrate pre-fold archives and older sharers' data
+        // Hygiene for archives written by older builds or hand-edited files: a
+        // mob-less point would crash LastKilled() on the map tick, and a legacy
+        // archive without HighWaterCount had exactly the <= semantics — one kill
+        // at the boundary second — so say so rather than re-ingesting it.
+        archive.Points.RemoveAll(p => p.Mobs is not { Count: > 0 });
+        if (archive.HighWaterCount == 0 && archive.HighWater != default)
+            archive.HighWaterCount = 1;
         return _zones[zone] = archive;
     }
 

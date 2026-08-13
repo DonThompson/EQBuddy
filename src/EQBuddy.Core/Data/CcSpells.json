@@ -3,8 +3,7 @@
  "spells": [
   {
    "name": "Air Elemental Attack",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Allure",
@@ -18,8 +17,7 @@
   },
   {
    "name": "Alluring Whispers",
-   "category": "Charm",
-   "castTimeSeconds": 0.0
+   "category": "Charm"
   },
   {
    "name": "Anarchy",
@@ -58,8 +56,7 @@
   },
   {
    "name": "Blinding Fear",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Boltran's Agacerie",
@@ -136,8 +133,7 @@
   },
   {
    "name": "Ceticious Cloud",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Chaos Flux",
@@ -246,8 +242,7 @@
   },
   {
    "name": "Dragon Charm",
-   "category": "Charm",
-   "castTimeSeconds": 0.0
+   "category": "Charm"
   },
   {
    "name": "Draught of Jiva",
@@ -256,13 +251,11 @@
   },
   {
    "name": "Earth Elemental Attack",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "EarthElementalAttack",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "Elnerick's Entombment of Ice",
@@ -301,8 +294,7 @@
   },
   {
    "name": "Entomb in Ice",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Entrance",
@@ -326,8 +318,7 @@
   },
   {
    "name": "Envenomed Heal",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Fascination",
@@ -341,18 +332,15 @@
   },
   {
    "name": "Fist of Air",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Fist of Mastry",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Fist of Sentience",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Force",
@@ -396,13 +384,11 @@
   },
   {
    "name": "GelatRot",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "Ghoul Root",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "Gift of Pure Thought",
@@ -421,8 +407,7 @@
   },
   {
    "name": "Grounding Strike",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "Harmony",
@@ -436,8 +421,7 @@
   },
   {
    "name": "Harpy Voice",
-   "category": "Mesmerize",
-   "castTimeSeconds": 0.0
+   "category": "Mesmerize"
   },
   {
    "name": "Harvest",
@@ -451,8 +435,7 @@
   },
   {
    "name": "Holy Shock",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Hungry Earth",
@@ -491,8 +474,7 @@
   },
   {
    "name": "Judgment of Ice",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Jyll`s Static Pulse",
@@ -560,13 +542,11 @@
   },
   {
    "name": "Mesmerizing Breath",
-   "category": "Mesmerize",
-   "castTimeSeconds": 0.0
+   "category": "Mesmerize"
   },
   {
    "name": "Monkey Stun",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Naki's Charm of Pernicity",
@@ -574,8 +554,7 @@
   },
   {
    "name": "Nature's Holy Wrath",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Numb the Dead",
@@ -664,8 +643,7 @@
   },
   {
    "name": "Sonic Scream",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Soothe",
@@ -684,8 +662,7 @@
   },
   {
    "name": "Stalwart Regeneration",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "Static",
@@ -693,23 +670,19 @@
   },
   {
    "name": "Static Strike",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Stone Breath",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Stone Spider Stun",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Storm Strike",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Stun",
@@ -718,8 +691,7 @@
   },
   {
    "name": "Stun Breath",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Stun Command",
@@ -733,8 +705,7 @@
   },
   {
    "name": "Stunning Strike",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Stunning Venom",
@@ -801,8 +772,7 @@
   },
   {
    "name": "Tsunami",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "Tunare`s Request",
@@ -811,8 +781,7 @@
   },
   {
    "name": "Vampire Charm",
-   "category": "Charm",
-   "castTimeSeconds": 0.0
+   "category": "Charm"
   },
   {
    "name": "Vengeance of Al`Kabor",
@@ -821,8 +790,7 @@
   },
   {
    "name": "Vengeance of the Glades",
-   "category": "Root",
-   "castTimeSeconds": 0.0
+   "category": "Root"
   },
   {
    "name": "Verlekarnorm's Disaster",
@@ -836,8 +804,7 @@
   },
   {
    "name": "Wave of Flame",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   },
   {
    "name": "WhirlBolt",
@@ -861,8 +828,7 @@
   },
   {
    "name": "Ykesha",
-   "category": "Stun",
-   "castTimeSeconds": 0.0
+   "category": "Stun"
   }
  ]
 }

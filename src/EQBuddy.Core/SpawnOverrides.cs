@@ -58,30 +58,46 @@ public sealed class SpawnOverrides
     private readonly Dictionary<string, SpawnOverride> _byKey =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly string? _path;
+    // The dictionary is touched from the watcher thread (SpawnTimers learning on
+    // kill/sighting) AND the UI thread (Spawns editor, ZoneShare import) — callers
+    // hold different outer locks, so the store guards itself (review 2026-08-13).
+    private readonly object _sync = new();
 
     public SpawnOverrides(string? path = null) => _path = path;
 
     public static string Key(string zone, string name) => $"{zone}|{name}";
 
-    public SpawnOverride? Find(string zone, string name) =>
-        _byKey.TryGetValue(Key(zone, name), out var o) ? o : null;
+    public SpawnOverride? Find(string zone, string name)
+    {
+        lock (_sync) return _byKey.TryGetValue(Key(zone, name), out var o) ? o : null;
+    }
 
     public SpawnOverride GetOrAdd(string zone, string name)
     {
         var key = Key(zone, name);
-        if (!_byKey.TryGetValue(key, out var o)) _byKey[key] = o = new SpawnOverride();
-        return o;
+        lock (_sync)
+        {
+            if (!_byKey.TryGetValue(key, out var o)) _byKey[key] = o = new SpawnOverride();
+            return o;
+        }
     }
 
-    public void Remove(string zone, string name) => _byKey.Remove(Key(zone, name));
+    public void Remove(string zone, string name)
+    {
+        lock (_sync) _byKey.Remove(Key(zone, name));
+    }
 
-    /// <summary>Player-added named for a zone, as (name, override) pairs.</summary>
+    /// <summary>Player-added named for a zone, as (name, override) pairs. Snapshot
+    /// semantics — safe to enumerate while another thread edits.</summary>
     public IEnumerable<(string Name, SpawnOverride Override)> CustomFor(string zone)
     {
         var prefix = zone + "|";
-        foreach (var (key, o) in _byKey)
-            if (o.Custom && key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                yield return (key[prefix.Length..], o);
+        lock (_sync)
+            return _byKey
+                .Where(kv => kv.Value.Custom
+                    && kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .Select(kv => (kv.Key[prefix.Length..], kv.Value))
+                .ToList();
     }
 
     public static SpawnOverrides Load(string path)
@@ -109,8 +125,10 @@ public sealed class SpawnOverrides
         if (_path is null) return;
         try
         {
+            string json;
+            lock (_sync) json = JsonSerializer.Serialize(_byKey, JsonOpts);
             Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(_byKey, JsonOpts));
+            File.WriteAllText(_path, json);
         }
         catch
         {

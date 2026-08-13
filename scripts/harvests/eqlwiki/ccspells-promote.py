@@ -26,7 +26,10 @@ def main():
     for s in harvest:
         name = (s.get("name") or "").strip()
         ct = s.get("cast_time_seconds")
-        if name and isinstance(ct, (int, float)) and ct >= 0:
+        # Strictly positive only: the wiki writes 0 for instant-cast spells AND for
+        # unknown, and either way the app must fall back to its generic window - a
+        # 0 here would arm a charm for just the slack (review 2026-08-13).
+        if name and isinstance(ct, (int, float)) and ct > 0:
             times[name.lower()] = float(ct)
 
     matched = missing = 0

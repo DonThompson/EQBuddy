@@ -364,16 +364,19 @@ public class SpellTrackingTests
     }
 
     [Fact]
-    public void ABystanderCharmAfterOurCastCompletedClaimsNothing()
+    public void ABystanderCharmAfterOurCastCompletedIsNeverCertain()
     {
         // Beguile casts in 3.5s. A "has been charmed." line 20 seconds after our cast
-        // started means our cast finished long ago without landing — that charm is
-        // somebody else's, and its creature's damage must not become ours.
+        // started means our cast finished long ago without landing — that charm may
+        // be somebody else's, so the claim degrades to the visible "Pet?" state
+        // (resolved by the Master tell, which a bystander's pet never sends us)
+        // instead of the old window's confident steal.
         var s = Replay(
             At(0, 0, "You begin casting Beguile."),
             At(0, 20, "an orc legionnaire has been charmed."),
             At(0, 22, "An orc legionnaire hits orc pawn for 9 points of damage.")).Snapshot();
-        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name == "Pet (Orc legionnaire)");
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet? (Orc legionnaire)");
     }
 
     [Fact]
@@ -400,6 +403,36 @@ public class SpellTrackingTests
             At(0, 20, "a decaying zombie moans."),
             At(0, 22, "A decaying zombie hits orc pawn for 11 points of damage.")).Snapshot();
         Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    [Fact]
+    public void WholeSecondRoundingDoesNotRejectOurOwnCharm()
+    {
+        // Charm casts in 2.4s; a real 3.0s gap can LOG as 4 seconds under whole-
+        // second stamps. The window ceilings the cast time before adding slack
+        // (review 2026-08-13), so a logged delta of 4 still claims: ceil(2.4)+1.5.
+        var s = Replay(
+            At(0, 0, "You begin casting Charm."),
+            At(0, 4, "a greater skeleton has been charmed."),
+            At(0, 6, "A greater skeleton hits orc pawn for 7 points of damage.")).Snapshot();
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Greater skeleton)");
+    }
+
+    [Fact]
+    public void ALateCharmedLineDegradesToProvisionalNotNothing()
+    {
+        // Outside the arm window the certain claim is gone, but the landing plus a
+        // recent own charm cast still earns the "Pet?" state — the Master tell then
+        // confirms and MERGES the provisional damage (asymmetry fix, 2026-08-13).
+        var stats = Replay(
+            At(0, 0, "You begin casting Beguile."),
+            At(0, 20, "an orc legionnaire has been charmed."),
+            At(0, 22, "An orc legionnaire hits orc pawn for 9 points of damage."),
+            At(0, 25, "An orc legionnaire told you, 'Attacking orc pawn Master.'"),
+            At(0, 27, "An orc legionnaire hits orc pawn for 5 points of damage."));
+        var s = stats.Snapshot();
+        var pet = Assert.Single(s.DamageBySource, d => d.Name == "Pet (Orc legionnaire)");
+        Assert.Equal(14, pet.Total);   // provisional 9 merged + confirmed 5
     }
 
     [Fact]

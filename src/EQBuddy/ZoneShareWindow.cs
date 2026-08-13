@@ -21,7 +21,11 @@ public sealed class ZoneShareWindow : Window
 {
     private const string Repo = "https://github.com/DranakCorps-bot/EQBuddy";
 
-    private readonly MainWindow _main;
+    // Core collaborators only — no MainWindow reach-back, so an Avalonia port
+    // passes the same three objects (review 2026-08-13).
+    private readonly SpawnPointLedger _ledger;
+    private readonly SpawnCatalog _catalog;
+    private readonly SpawnOverrides _overrides;
     private readonly string _zone;
     private readonly TextBox _importBox = new()
     {
@@ -43,9 +47,12 @@ public sealed class ZoneShareWindow : Window
     };
     private ZoneShare.Preview? _preview;
 
-    public ZoneShareWindow(MainWindow main, string zone)
+    public ZoneShareWindow(SpawnPointLedger ledger, SpawnCatalog catalog,
+        SpawnOverrides overrides, string zone)
     {
-        _main = main;
+        _ledger = ledger;
+        _catalog = catalog;
+        _overrides = overrides;
         _zone = zone;
         Title = $"Zone knowledge — {zone}";
         Width = 470;
@@ -56,7 +63,7 @@ public sealed class ZoneShareWindow : Window
 
         var root = new StackPanel { Margin = new Thickness(14, 10, 14, 12) };
 
-        var archive = _main.SpawnPoints.Snapshot(zone);
+        var archive = _ledger.Snapshot(zone);
         var timers = TimerCount(zone);
         var intro = Dim(
             $"Your {zone} archive: {archive.Points.Count} spawn point{S(archive.Points.Count)}, " +
@@ -113,10 +120,11 @@ public sealed class ZoneShareWindow : Window
 
     private int TimerCount(string zone)
     {
-        var z = _main.SpawnCatalogData.FindZone(zone);
-        if (z is null) return 0;
-        return z.Named.Count(e =>
-            _main.SpawnOverridesStore.Find(zone, e.Name) is { RespawnSeconds: not null });
+        var z = _catalog.FindZone(zone);
+        var catalogTimers = z?.Named.Count(e =>
+            _overrides.Find(zone, e.Name) is { RespawnSeconds: not null }) ?? 0;
+        // Player-added named travel too — count them the way Export carries them.
+        return catalogTimers + _overrides.CustomFor(zone).Count(c => c.Override.RespawnSeconds is not null);
     }
 
     private Border Section(string title, string blurb, UIElement body)
@@ -150,9 +158,9 @@ public sealed class ZoneShareWindow : Window
     private static string S(int n) => n == 1 ? "" : "s";
 
     private string ExportString() => ZoneShare.Export(
-        _main.SpawnPoints.Snapshot(_zone),
-        _main.SpawnCatalogData.FindZone(_zone),
-        _main.SpawnOverridesStore);
+        _ledger.Snapshot(_zone),
+        _catalog.FindZone(_zone),
+        _overrides);
 
     private void Status(string text)
     {
@@ -172,22 +180,18 @@ public sealed class ZoneShareWindow : Window
 
     private void OnPreview()
     {
-        // The string names its own zone; peek with an empty archive first, then
-        // preview for real against that zone's local knowledge.
-        var peek = ZoneShare.PreviewImport(_importBox.Text,
-            new SpawnPointLedger.ZoneArchive(), null, new SpawnOverrides());
-        if (peek is null)
+        // Decode once (capped + validated), then diff against the zone the string
+        // itself names — pasting a Befallen string while the map shows Guk works.
+        var payload = ZoneShare.TryDecode(_importBox.Text);
+        if (payload is null)
         {
             _preview = null;
             _previewPanel.Visibility = Visibility.Collapsed;
-            Status("That doesn't look like an EQBZ share string — check the paste caught all of it.");
+            Status("That doesn't look like a healthy EQBZ share string — check the paste caught all of it.");
             return;
         }
-        var zone = peek.Payload.Zone;
-        _preview = ZoneShare.PreviewImport(_importBox.Text,
-            _main.SpawnPoints.Snapshot(zone), _main.SpawnCatalogData.FindZone(zone),
-            _main.SpawnOverridesStore);
-        if (_preview is null) return;   // parsed a moment ago; can't happen
+        var zone = payload.Zone;
+        _preview = ZoneShare.Preview_(payload, _ledger.Snapshot(zone), _catalog.FindZone(zone), _overrides);
 
         _previewPanel.Children.Clear();
         var head = new TextBlock
@@ -205,8 +209,10 @@ public sealed class ZoneShareWindow : Window
             var line = new TextBlock
             {
                 FontSize = 10.5, Margin = new Thickness(0, 2, 0, 0), TextWrapping = TextWrapping.Wrap,
+                // Text-presentation warning glyph, not the color emoji — emoji
+                // ignore Foreground and this line must tint BadBrush (house rule).
                 Text = t.Flagged
-                    ? $"⚠ {t.Name}: {cur} → {EQBuddy.UI.Shared.Countdown.Format(TimeSpan.FromSeconds(t.IncomingSeconds))} — " +
+                    ? $"⚠︎ {t.Name}: {cur} → {EQBuddy.UI.Shared.Countdown.Format(TimeSpan.FromSeconds(t.IncomingSeconds))} — " +
                       (t.CurrentSeconds is null ? "no local baseline to corroborate" : "big change from the known clock")
                     : $"{t.Name}: {cur} → {EQBuddy.UI.Shared.Countdown.Format(TimeSpan.FromSeconds(t.IncomingSeconds))}",
             };
@@ -228,7 +234,7 @@ public sealed class ZoneShareWindow : Window
     private void OnApply()
     {
         if (_preview is null) return;
-        _main.SpawnPoints.ApplyImport(_preview, _main.SpawnOverridesStore,
+        _ledger.ApplyImport(_preview, _overrides,
             includeFlagged: _includeFlagged.IsChecked == true);
         var skipped = _includeFlagged.IsChecked == true ? 0 : _preview.FlaggedTimers.Count;
         Status($"Applied to {_preview.Payload.Zone}" +

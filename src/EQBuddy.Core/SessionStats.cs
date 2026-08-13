@@ -356,11 +356,14 @@ public sealed class SessionStats
     /// <summary>Per-spell charm arm window (approved 2026-08-13): a landing line is
     /// ours only within the spell's own cast time + slack of the cast starting. The
     /// old fixed 30s meant a bystander's charm landing 20s after our failed Beguile
-    /// (3.5s cast) could steal the claim; now the window fits the spell. Unknown cast
-    /// time falls back to the generic window — never worse than before.</summary>
+    /// (3.5s cast) could steal the claim; now the window fits the spell.
+    /// Two honesty guards from the review: log stamps are WHOLE seconds (a real
+    /// 3.02s gap can log as 4), so the fractional cast time rounds UP before the
+    /// slack is added; and a zero/absent cast time means "instant or unknown" —
+    /// either way the generic window applies, never a 1.5s trap.</summary>
     private TimeSpan ArmWindow(string spell) =>
-        _spells.CastTimeSeconds(spell) is { } ct
-            ? TimeSpan.FromSeconds(ct + CharmArmSlackSeconds)
+        _spells.CastTimeSeconds(spell) is { } ct && ct > 0
+            ? TimeSpan.FromSeconds(Math.Ceiling(ct) + CharmArmSlackSeconds)
             : CastToBlink;
     /// <summary>How long after a blink a "Master" tell still confirms the same charm.
     /// Observed gap in real logs is ~5s; pets can be slow to announce.</summary>
@@ -534,12 +537,21 @@ public sealed class SessionStats
                         var chCategory = _spells.Classify(chCast.Spell);
                         // Known charm: claim only inside ITS arm window (cast time +
                         // slack) — past that our cast completed without this landing,
-                        // so the line is a bystander's charm.
+                        // so the line is probably a bystander's charm.
                         if (chCategory == SpellCategory.Charm
                             && ch.Time - chCast.Time <= ArmWindow(chCast.Spell))
                         {
                             _pendingCast = null;
                             ConfirmPet(LogParser.Normalize(ch.Name));
+                        }
+                        // Outside the window but our charm cast IS still recent:
+                        // degrade to the provisional "Pet?" state instead of nothing
+                        // (lag/rounding cases) — the "Master" tell resolves it and
+                        // merges the provisional damage, same as the blink path.
+                        else if (chCategory == SpellCategory.Charm && _petName is null)
+                        {
+                            _petName = LogParser.Normalize(ch.Name);
+                            _petConfirmed = false;
                         }
                         // Unknown cast + no pet of our own: record the cast as a charm
                         // candidate — NO claim, no damage credit (a bystander's charm
@@ -561,11 +573,23 @@ public sealed class SessionStats
                     // MezTracker consumes this event for mez songs; here, a pending
                     // charm-classified cast makes it a charm landing.
                     if (_pendingCast is { } glazeCast
-                        && glazed.Time - glazeCast.Time <= ArmWindow(glazeCast.Spell)
+                        && glazed.Time - glazeCast.Time <= CastToBlink
                         && _spells.Classify(glazeCast.Spell) == SpellCategory.Charm)
                     {
-                        _pendingCast = null;
-                        ConfirmPet(glazed.Target);
+                        // Inside the song's own arm window the claim is certain; a
+                        // glaze on a LATER pulse (bard songs pulse ~6s and only the
+                        // first "begin to sing" logs) degrades to provisional — the
+                        // attack-order tell confirms and merges, never loses.
+                        if (glazed.Time - glazeCast.Time <= ArmWindow(glazeCast.Spell))
+                        {
+                            _pendingCast = null;
+                            ConfirmPet(glazed.Target);
+                        }
+                        else if (_petName is null)
+                        {
+                            _petName = glazed.Target;
+                            _petConfirmed = false;
+                        }
                     }
                     break;
                 case PetClaimEvent pc:

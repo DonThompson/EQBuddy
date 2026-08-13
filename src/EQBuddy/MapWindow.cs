@@ -54,7 +54,7 @@ public sealed class MapWindow : Window
     // projection.
     private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _spawnCircles = [];
     private readonly List<SpawnCircle> _circleMeta = [];
-    private (string Zone, int Points, int Kills, int TimerHash) _circleStamp = ("\0", -1, -1, 0);
+    private (string Zone, int Revision, int TimerHash) _circleStamp = ("\0", -1, 0);
 
     /// <summary>"Imminent" = due within this many seconds (David, 2026-08-13).</summary>
     internal const double PulseWindowSeconds = 10;
@@ -67,9 +67,19 @@ public sealed class MapWindow : Window
         public required System.Windows.Shapes.Ellipse Ring;
         public required System.Windows.Shapes.Ellipse Halo;
         public required SpawnPointLedger.SpawnPoint Point;
-        public required bool Named;
+        /// <summary>Canonical catalog name when this is a named point — the SAME
+        /// basis the label suppression uses, so a named killed under an alias still
+        /// finds its timer and pulses (review 2026-08-13).</summary>
+        public required string? NamedName;
         public bool Pulsing;
     }
+
+    /// <summary>Timers live under the CATALOG zone ("Befallen"); the log names the
+    /// instance ("Befallen 4 (Refined)"). One resolver for the panel, the circles,
+    /// and the share window — they must never disagree about which zone "here" is.</summary>
+    private string ResolvedTimerZone() =>
+        _main.SpawnTimers.CurrentZone?.Zone
+            ?? SpawnCatalog.StripTierVariant(_main.CurrentZoneName);
 
     /// <summary>How often the trail re-renders just because time passed. Every
     /// shared tick: with a one-minute horizon the fade must read as continuous,
@@ -154,14 +164,14 @@ public sealed class MapWindow : Window
             "or submit yours to EQBuddy for everyone. Nothing is sent unless you click it.";
         share.Click += (_, _) =>
         {
-            var timerZone = _main.SpawnTimers.CurrentZone?.Zone
-                ?? SpawnCatalog.StripTierVariant(_main.CurrentZoneName);
+            var timerZone = ResolvedTimerZone();
             if (timerZone.Length == 0)
             {
                 _status.Text = "Share zone knowledge needs to know the zone — it unlocks once the log sees you zone in.";
                 return;
             }
-            new ZoneShareWindow(_main, timerZone) { Owner = this }.ShowDialog();
+            new ZoneShareWindow(_main.SpawnPoints, _main.SpawnCatalogData,
+                _main.SpawnOverridesStore, timerZone) { Owner = this }.ShowDialog();
         };
         var side = new DockPanel { Width = 190 };
         DockPanel.SetDock(share, Dock.Bottom);
@@ -249,41 +259,39 @@ public sealed class MapWindow : Window
     private void UpdateSpawnCircles()
     {
         var now = DateTime.Now;
-        var zone = _main.CurrentZoneName;
-        var timerZone = _main.SpawnTimers.CurrentZone?.Zone
-            ?? SpawnCatalog.StripTierVariant(zone);
+        var timerZone = ResolvedTimerZone();
         var showing = _map is not null && !_userPicked && timerZone.Length > 0;
-        var archive = showing ? _main.SpawnPoints.Snapshot(timerZone) : null;
+        // ONE timer snapshot per tick, shared by the rebuild check and the pulse —
+        // and change detection by the ledger's revision counter, not a per-tick
+        // deep clone of the archive (review 2026-08-13).
+        var timers = showing
+            ? _main.SpawnTimers.Snapshot(now)
+                .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList()
+            : [];
         // Running timers matter to the rebuild too: a named circle carries its own
         // name label ONLY while no timer pin is labeling that mob (David caught
         // Trainer/Taskmaster going nameless — named points must read as named even
         // with no countdown running).
-        var timerNames = archive is null ? []
-            : _main.SpawnTimers.Snapshot(now)
-                .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
-                .Select(t => t.Name)
-                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        var timerHash = timerNames.Aggregate(17,
-            (h, n) => h * 31 + StringComparer.OrdinalIgnoreCase.GetHashCode(n));
-        var stamp = archive is null
-            ? ("", 0, 0, 0)
-            : (timerZone, archive.Points.Count, archive.Points.Sum(p => p.TotalKills()), timerHash);
+        var timerHash = timers.Aggregate(17,
+            (h, t) => h * 31 + StringComparer.OrdinalIgnoreCase.GetHashCode(t.Name));
+        var stamp = showing ? (timerZone, _main.SpawnPoints.Revision, timerHash) : ("", 0, 0);
         if (stamp != _circleStamp)
         {
             _circleStamp = stamp;
             foreach (var (el, _, _, _, _) in _spawnCircles) _canvas.Children.Remove(el);
             _spawnCircles.Clear();
             _circleMeta.Clear();
-            if (archive is not null)
-                foreach (var p in archive.Points)
-                    BuildCircle(timerZone, p, timerNames);
+            if (showing)
+                foreach (var p in _main.SpawnPoints.Snapshot(timerZone).Points)
+                    BuildCircle(timerZone, p, timers);
             PlaceSpawnCircles();
         }
-        if (_circleMeta.Count > 0) UpdatePulse(now, timerZone);
+        if (_circleMeta.Count > 0) UpdatePulse(now, timerZone, timers);
     }
 
-    private void BuildCircle(string zone, SpawnPointLedger.SpawnPoint p, List<string> timerNames)
+    private void BuildCircle(string zone, SpawnPointLedger.SpawnPoint p, List<SpawnTimerState> timers)
     {
         var namedName = _main.SpawnPoints.NamedPointName(zone, p);
         var named = namedName is not null;
@@ -307,45 +315,55 @@ public sealed class MapWindow : Window
             named ? "AccentBrush" : "DimBrush");
         ToolTipService.SetInitialShowDelay(ring, 150);
         // Built fresh at open — the countdown must read the clock, not the rebuild.
-        ring.ToolTipOpening += (_, _) => ring.ToolTip = CircleTip(zone, p, named);
+        var meta = new SpawnCircle { Ring = ring, Halo = halo, Point = p, NamedName = namedName };
+        ring.ToolTipOpening += (_, _) => ring.ToolTip = CircleTip(zone, meta);
         _spawnCircles.Add((halo, mx, my, -(d + 8) / 2, -(d + 8) / 2));
         _spawnCircles.Add((ring, mx, my, -d / 2, -d / 2));
         _canvas.Children.Add(halo);
         _canvas.Children.Add(ring);
         // Named points carry their NAME beside the circle — unless a running timer's
         // camp pin is already labeling that mob with name + countdown right there.
+        // (NameMatches is symmetric fold-equality; one direction suffices.)
         if (namedName is not null
-            && !timerNames.Any(t => SpawnCatalog.NameMatches(t, namedName)
-                || SpawnCatalog.NameMatches(namedName, t)))
+            && !timers.Any(t => SpawnCatalog.NameMatches(t.Name, namedName)))
         {
             var label = new TextBlock { Text = namedName, FontSize = 9.5 };
             label.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
             _spawnCircles.Add((label, mx, my, d / 2 + 3, -7));
             _canvas.Children.Add(label);
         }
-        _circleMeta.Add(new SpawnCircle { Ring = ring, Halo = halo, Point = p, Named = named });
+        _circleMeta.Add(meta);
     }
 
-    private DateTime? CircleDue(string zone, SpawnPointLedger.SpawnPoint p, bool named, DateTime now)
+    /// <summary>Named circles match their timer on the CANONICAL name — the same
+    /// basis the label suppression uses — so a named killed under a catalog alias
+    /// still finds its timer and pulses. Callers pass the tick's shared, already
+    /// zone-filtered timer list.</summary>
+    private DateTime? CircleDue(string zone, SpawnCircle c, List<SpawnTimerState> timers)
     {
-        if (!named) return _main.SpawnPoints.ProjectedRespawn(zone, p);
-        return _main.SpawnTimers.Snapshot(now)
-            .FirstOrDefault(t => string.Equals(t.Zone, zone, StringComparison.OrdinalIgnoreCase)
-                && p.Mobs.Keys.Any(n => SpawnCatalog.NameMatches(t.Name, n)))?.DueAt;
+        if (c.NamedName is not { } namedName)
+            return _main.SpawnPoints.ProjectedRespawn(zone, c.Point);
+        return timers.FirstOrDefault(t => SpawnCatalog.NameMatches(t.Name, namedName))?.DueAt;
     }
 
-    private string CircleTip(string zone, SpawnPointLedger.SpawnPoint p, bool named)
+    private string CircleTip(string zone, SpawnCircle c)
     {
         var now = DateTime.Now;
+        var named = c.NamedName is not null;
         var lines = new List<string>();
-        foreach (var kv in p.Mobs.OrderByDescending(kv => kv.Value.Kills)
+        foreach (var kv in c.Point.Mobs.OrderByDescending(kv => kv.Value.Kills)
                      .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
             lines.Add($"{kv.Key} ×{kv.Value.Kills}");
-        var (lastName, lastSeen) = p.LastKilled();
+        var (lastName, lastSeen) = c.Point.LastKilled();
         lines.Add("");
         lines.Add($"Last kill: {lastName}, {EQBuddy.UI.Shared.Countdown.Format(now - lastSeen.LastKill)} ago");
         var label = named ? "Respawn" : "Projected respawn (~)";
-        if (CircleDue(zone, p, named, now) is { } due)
+        // Tooltips open rarely — a fresh timer snapshot here is fine.
+        var timers = named
+            ? _main.SpawnTimers.Snapshot(now)
+                .Where(t => string.Equals(t.Zone, zone, StringComparison.OrdinalIgnoreCase)).ToList()
+            : [];
+        if (CircleDue(zone, c, timers) is { } due)
             lines.Add(due <= now ? $"{label}: DUE" : $"{label}: {EQBuddy.UI.Shared.Countdown.Format(due - now)}");
         else
             lines.Add(named
@@ -356,11 +374,11 @@ public sealed class MapWindow : Window
 
     /// <summary>Start or stop the imminence pulse per circle. BeginAnimation(null)
     /// hands Opacity back to the local value each circle was built with.</summary>
-    private void UpdatePulse(DateTime now, string zone)
+    private void UpdatePulse(DateTime now, string zone, List<SpawnTimerState> timers)
     {
         foreach (var c in _circleMeta)
         {
-            var due = CircleDue(zone, c.Point, c.Named, now);
+            var due = CircleDue(zone, c, timers);
             var secs = due is { } d ? (d - now).TotalSeconds : double.MaxValue;
             var imminent = secs <= PulseWindowSeconds && secs >= -PulseLingerSeconds;
             if (imminent == c.Pulsing) continue;
@@ -452,12 +470,10 @@ public sealed class MapWindow : Window
         _namedPanel.Children.Add(header);
 
         var now = DateTime.Now;
-        // Timers live under the CATALOG zone ("Befallen"); the log names the
-        // instance ("Befallen 4 (Refined)"). Resolve before comparing — hopping
-        // to another instance of the same zone must not empty the panel (David's
-        // field test, 2026-08-10; countdowns already span instances by design).
-        var timerZone = _main.SpawnTimers.CurrentZone?.Zone
-            ?? SpawnCatalog.StripTierVariant(zone);
+        // Resolve before comparing — hopping to another instance of the same zone
+        // must not empty the panel (David's field test, 2026-08-10; countdowns
+        // already span instances by design).
+        var timerZone = ResolvedTimerZone();
         var timers = _main.SpawnTimers.Snapshot(now)
             .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
             .ToList();
