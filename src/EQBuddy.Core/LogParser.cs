@@ -134,9 +134,15 @@ public static partial class LogParser
     [GeneratedRegex(@"^(?<healer>.+?) healed you(?<hot> over time)? for (?<amount>\d+)(?: \((?<attempted>\d+)\))? hit points(?: by (?<spell>.+?))?\.$")]
     private static partial Regex HealInByRx();
 
-    // A willowisp resisted your Denon's Disruptive Discord!
-    [GeneratedRegex(@"^.+? resisted your (?<spell>.+?)!$")]
+    // A willowisp resisted your Denon's Disruptive Discord! The target is captured
+    // too: a resist proves an AWAKE creature of that name is standing there (#122).
+    [GeneratedRegex(@"^(?<target>.+?) resisted your (?<spell>.+?)!$")]
     private static partial Regex ResistAltRx();
+
+    // "An ashenbone drake has been awakened by Terrak." — the explicit mez-break
+    // line (bystander-visible, names the waker; Snagglefern's PoH log, #122).
+    [GeneratedRegex(@"^(?<target>.+?) has been awakened by (?<waker>.+?)\.$")]
+    private static partial Regex MezAwakenedRx();
 
     [GeneratedRegex(@"^Your wounds begin to heal\.$")]
     private static partial Regex RegenTickRx();
@@ -662,7 +668,8 @@ public static partial class LogParser
             return new ResistEvent(ts, r.Groups["spell"].Value);
 
         if ((r = ResistAltRx().Match(msg)).Success)
-            return new ResistEvent(ts, r.Groups["spell"].Value);
+            return new ResistEvent(ts, r.Groups["spell"].Value,
+                Normalize(r.Groups["target"].Value));
 
         if ((r = StanceRx().Match(msg)).Success)
             return new StanceEvent(ts, Normalize(r.Groups["stance"].Value));
@@ -685,6 +692,10 @@ public static partial class LogParser
 
         if ((r = MezzedRx().Match(msg)).Success)
             return new MezzedEvent(ts, Normalize(r.Groups["target"].Value));
+
+        if ((r = MezAwakenedRx().Match(msg)).Success)
+            return new MezAwakenedEvent(ts, Normalize(r.Groups["target"].Value),
+                Normalize(r.Groups["waker"].Value));
 
         if ((r = OtherCastRx().Match(msg)).Success)
             return new OtherCastEvent(ts, Normalize(r.Groups["caster"].Value), r.Groups["spell"].Value);

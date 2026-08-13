@@ -11,13 +11,20 @@ namespace EQBuddy;
 /// </summary>
 public static class ChipAnchor
 {
-    public static void Attach(Window w, Func<bool> growsUp)
+    /// <param name="restoredBottom">The bottom edge persisted at last close, when the
+    /// window restored a saved position in grow-up mode. A grow-up stack's TOP edge
+    /// depends on how many chips it held when it closed, so restoring Top makes the
+    /// stack walk upward across close/reopen cycles and fight the player's drags
+    /// (#122, Snagglefern) — the bottom edge is the one the player actually parked.</param>
+    public static void Attach(Window w, Func<bool> growsUp, double? restoredBottom = null)
     {
-        var bottom = double.NaN;
+        var bottom = restoredBottom ?? double.NaN;
+        var firstLayout = restoredBottom is not null;
         w.SizeChanged += (_, e) =>
         {
-            if (growsUp() && e.HeightChanged && !double.IsNaN(bottom))
+            if (growsUp() && !double.IsNaN(bottom) && (e.HeightChanged || firstLayout))
                 w.Top = bottom - w.ActualHeight;
+            firstLayout = false;
             bottom = w.Top + w.ActualHeight;
         };
         // Drags (and our own Top writes — same math, harmless) move the anchor.

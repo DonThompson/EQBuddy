@@ -92,6 +92,12 @@ public sealed class MezTracker
     // eating the still-mezzed siblings' chips. Kills decrement; inactivity expires it.
     private readonly Dictionary<string, (int Count, DateTime Last)> _awake =
         new(StringComparer.OrdinalIgnoreCase);
+    // Names that resisted a mez recently (#122). A resist and a landing from the
+    // SAME cast are necessarily different creatures — the cast cannot both fail and
+    // land on one mob — so a landing shortly after a resist must not settle the
+    // resister's awake entry the way a re-mez-after-break would.
+    private readonly Dictionary<string, DateTime> _recentMezResists =
+        new(StringComparer.OrdinalIgnoreCase);
     private string? _storePath;
     private readonly object _lock = new();
 
@@ -158,6 +164,21 @@ public sealed class MezTracker
                 case MezzedEvent mez:
                     changed = OnLanding(mez);
                     break;
+                case MezAwakenedEvent awakened:
+                    // The game's own break line (#122): drop exactly one chip of
+                    // this name and record the waker's victim as awake — no
+                    // inference needed, the log said it out loud.
+                    changed = OnAwakened(awakened);
+                    break;
+                case ResistEvent { Target.Length: > 0 } resist when IsMezSpell(resist.Spell):
+                    // A creature RESISTING a mez is awake right now. Pre-arming the
+                    // ledger keeps a never-mezzed twin's attacks from eating a mezzed
+                    // sibling's chip (Snagglefern's PoH fight: the drake that resisted
+                    // clawed away while its freshly-mezzed twin's chip vanished).
+                    // Touches no chips: a mezzed mob can also resist a re-application
+                    // while staying asleep, so this only ever ADDS awake knowledge.
+                    OnResistedMez(resist);
+                    break;
                 // Any damage wakes a mezzed creature — from anyone, visible to everyone.
                 case DamageDealtEvent dd:
                     changed = OnCreatureActivity(dd.Target, dd.Time);
@@ -191,6 +212,7 @@ public sealed class MezTracker
                     _recentCasts.Clear();
                     _lastCastOf.Clear();
                     _awake.Clear();
+                    _recentMezResists.Clear();
                     break;
             }
             Prune(evt.Time);
@@ -247,9 +269,13 @@ public sealed class MezTracker
 
         // An AWAKE creature of this name getting mezzed is the classic re-mez after a
         // break: settle its ledger entry and ADD a chip — the sleeping siblings keep
-        // theirs (issue #35).
+        // theirs (issue #35). EXCEPT when the name resisted within this same cast's
+        // window: that resist and this landing are different creatures, so the
+        // resister stays on the awake books and the landing takes the normal path.
         if (_awake.TryGetValue(entry.Target, out var awake) && awake.Count > 0
-            && mez.Time - awake.Last <= AwakeMemory)
+            && mez.Time - awake.Last <= AwakeMemory
+            && !(_recentMezResists.TryGetValue(entry.Target, out var rt)
+                && mez.Time - rt <= CastToLand))
         {
             if (awake.Count == 1) _awake.Remove(entry.Target);
             else _awake[entry.Target] = (awake.Count - 1, mez.Time);
@@ -324,6 +350,36 @@ public sealed class MezTracker
         : _catalog.TryGetValue(SpellCatalog.BaseName(spell), out var info) ? info.DurationSeconds
         : null;
 
+    /// <summary>The explicit break line: "X has been awakened by Y." Always drops
+    /// exactly one chip (earliest expiry — the likeliest-awake one) and records the
+    /// newly-awake creature, even when the ledger already knew an awake twin: the
+    /// line refers to a MEZZED one waking, not to the one already fighting.</summary>
+    private bool OnAwakened(MezAwakenedEvent awakened)
+    {
+        var name = LogParser.Normalize(awakened.Target);
+        _awake[name] = ((_awake.TryGetValue(name, out var prev) ? prev.Count : 0) + 1, awakened.Time);
+        var victim = _active
+            .Where(m => m.Target.Equals(name, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(m => m.ExpiresAt ?? DateTime.MaxValue)
+            .FirstOrDefault();
+        if (victim is null) return false;
+        _active.Remove(victim);
+        return true;
+    }
+
+    /// <summary>A mez resist proves an awake creature of the name exists. Only ever
+    /// ADDS awake knowledge (never drops a chip, never inflates an existing count —
+    /// a mezzed mob can resist a re-application while staying asleep, and one mob
+    /// resists many casts).</summary>
+    private void OnResistedMez(ResistEvent resist)
+    {
+        var name = LogParser.Normalize(resist.Target);
+        _recentMezResists[name] = resist.Time;
+        _awake[name] = _awake.TryGetValue(name, out var a) && a.Count > 0
+            ? (a.Count, resist.Time)
+            : (1, resist.Time);
+    }
+
     /// <summary>A damage/action line for this name. If a creature of the name is
     /// already believed awake (and recently active), the line is ITS fight — no chip
     /// is touched (issue #35: the woken twin's ongoing fight must not erase the
@@ -371,6 +427,10 @@ public sealed class MezTracker
     private void Prune(DateTime now)
     {
         _recentCasts.RemoveAll(c => now - c.Time > CastToLand);
+        foreach (var stale in _recentMezResists
+                     .Where(kv => now - kv.Value > CastToLand)
+                     .Select(kv => kv.Key).ToList())
+            _recentMezResists.Remove(stale);
         // Entries are RETAINED well past their visible expiry (Snapshot hides them
         // after ExpiryLinger): a rank-lengthened mez can fade long after the base
         // duration, and the natural-fade line must still find its entry to learn

@@ -35,7 +35,12 @@ public partial class MezChipsWindow : Window
         var restored = ScreenGuard.OnScreen(_settings.MezChipsLeft, _settings.MezChipsTop, Width, Height);
         if (restored) { Left = _settings.MezChipsLeft; Top = _settings.MezChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 120; }
-        ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp);
+        // Grow-up stacks restore their BOTTOM edge — the saved Top belongs to
+        // whatever chip count the stack had at close, and restoring it makes the
+        // stack walk upward across reopen cycles (#122, Snagglefern).
+        ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp,
+            restored && _settings.MezChipsGrowUp && !double.IsNaN(_settings.MezChipsBottom)
+                ? _settings.MezChipsBottom : null);
         Closed += (_, _) =>
         {
             // Never let an unmoved fallback overwrite a real saved spot (#117). The
@@ -44,6 +49,10 @@ public partial class MezChipsWindow : Window
             (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
                 restored, _userMoved, Left, Top,
                 _settings.MezChipsLeft, _settings.MezChipsTop);
+            // The bottom edge persists whenever the position we just kept is the
+            // live one; a rejected fallback keeps the old bottom too.
+            if (_settings.MezChipsTop == Top)
+                _settings.MezChipsBottom = Top + ActualHeight;
             _settings.Save();
         };
     }

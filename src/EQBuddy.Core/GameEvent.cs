@@ -151,7 +151,10 @@ public record ThirdDotEvent(DateTime Time, string Caster, string Target, int Amo
 public record ThirdSchoolEvent(DateTime Time, string Attacker, string Target, int Amount, string Spell, bool Critical = false) : GameEvent(Time);
 /// <summary>A missed attack between others (combat-clock signal only).</summary>
 public record ThirdMissEvent(DateTime Time, string Attacker) : GameEvent(Time);
-public record ResistEvent(DateTime Time, string Spell = "") : GameEvent(Time);
+/// <summary>A resist. Target is set for the outgoing form ("X resisted your Y!") —
+/// proof an AWAKE creature of that name exists, which the mez tracker uses to keep
+/// a never-mezzed twin's attacks from eating a mezzed sibling's chip (#122).</summary>
+public record ResistEvent(DateTime Time, string Spell = "", string Target = "") : GameEvent(Time);
 /// <summary>A user-dropped camp/segment marker (hotkey or menu), timestamped with wall clock.</summary>
 public record SessionMarkerEvent(DateTime Time, string Label) : GameEvent(Time);
 /// <summary>A raw log line (message only, no timestamp prefix) kept because it matched a
@@ -167,6 +170,12 @@ public record OtherCastEvent(DateTime Time, string Caster, string Spell) : GameE
 /// "has been charmed." (proven: NPC mezzes on other players appear in Hugzee's log).
 /// Names no caster and no spell; correlation with a recent mez cast supplies both.</summary>
 public record MezzedEvent(DateTime Time, string Target) : GameEvent(Time);
+/// <summary>"X has been awakened by Terrak." — the game's own explicit mez-break
+/// line, bystander-visible and naming the waker (Snagglefern's Plane of Hate log,
+/// #122 — fourteen of them in one fight, never parsed before). The authoritative
+/// break signal; damage inference stays as the fallback for breaks this line
+/// doesn't cover.</summary>
+public record MezAwakenedEvent(DateTime Time, string Target, string Waker) : GameEvent(Time);
 /// <summary>"You assume a defensive stance." — stance state change (EQL-specific).</summary>
 public record StanceEvent(DateTime Time, string Stance) : GameEvent(Time);
 /// <summary>"You begin reciting the unyielding invocation." — invocation change

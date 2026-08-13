@@ -69,6 +69,68 @@ public class MezTrackerTests
         Assert.Empty(t.Snapshot(T0.AddSeconds(6)));
     }
 
+    // ---- #122 (Snagglefern's Plane of Hate log): the explicit awakened line and
+    // the resist pre-arm — same-name adds must not eat mezzed siblings' chips. ----
+
+    [Fact]
+    public void TheAwakenedLineDropsExactlyOneChip()
+    {
+        // Two same-named drakes mezzed by one AE cast (same-second landings are
+        // distinct creatures); the game's own break line wakes ONE of them.
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization."),
+            Ev(2, "an ashenbone drake has been mesmerized."),
+            Ev(2, "an ashenbone drake has been mesmerized."),
+            Ev(8, "An ashenbone drake has been awakened by Terrak."));
+
+        Assert.Single(t.Snapshot(T0.AddSeconds(9)));   // the sibling sleeps on
+    }
+
+    [Fact]
+    public void AResistedTwinsAttacksDoNotEatTheMezzedSiblingsChip()
+    {
+        // Snagglefern's exact sequence: one drake resists the AE (it is awake and
+        // fighting), the other is mezzed. Without the resist pre-arm the awake
+        // drake's claws attributed to the shared name and dropped the sleeping
+        // sibling's chip within seconds.
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerization."),
+            Ev(2, "An ashenbone drake resisted your Mesmerization!"),
+            Ev(2, "an ashenbone drake has been mesmerized."),
+            Ev(5, "An ashenbone drake claws YOU for 75 points of damage."),
+            Ev(7, "An ashenbone drake claws YOU for 41 points of damage."));
+
+        Assert.Single(t.Snapshot(T0.AddSeconds(8)));   // the mezzed one keeps its chip
+    }
+
+    [Fact]
+    public void AResistNeverDropsAChipByItself()
+    {
+        // A mezzed mob can resist a re-application while staying asleep — the
+        // resist only ADDS awake knowledge, it never touches chips.
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize."),
+            Ev(2, "ice boned skeleton has been mesmerized."),
+            Ev(8, "You begin casting Mesmerize."),
+            Ev(10, "An ice boned skeleton resisted your Mesmerize!"));
+
+        Assert.Single(t.Snapshot(T0.AddSeconds(11)));
+    }
+
+    [Fact]
+    public void AwakenedThenRemezzedGetsAFreshChip()
+    {
+        var t = Replay(
+            Ev(0, "You begin casting Mesmerize."),
+            Ev(2, "ice boned skeleton has been mesmerized."),
+            Ev(10, "Ice boned skeleton has been awakened by Terrak."),
+            Ev(12, "You begin casting Mesmerize."),
+            Ev(14, "ice boned skeleton has been mesmerized."));
+
+        var m = Assert.Single(t.Snapshot(T0.AddSeconds(15)));
+        Assert.Equal(T0.AddSeconds(14), m.LandedAt);
+    }
+
     [Fact]
     public void AoeMezCoversEveryLandingFromOneCast()
     {

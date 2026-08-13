@@ -234,11 +234,17 @@ public sealed class AppSettings
     /// top-left, clear of the widget's home edge.</summary>
     public double SpawnChipsLeft { get; set; } = double.NaN;
     public double SpawnChipsTop { get; set; } = double.NaN;
+    /// <summary>Bottom edge of the spawn-chip stack at last close. Grow-up stacks
+    /// anchor their BOTTOM, and the top edge depends on chip count at close — so the
+    /// bottom is what restores when growing upward (#122). NaN = never saved.</summary>
+    public double SpawnChipsBottom { get; set; } = double.NaN;
 
     /// <summary>Position of the mez-chip stack — its own window, deliberately separate
     /// from the spawn chips (mez chips are combat-urgent, spawn chips are ambient).</summary>
     public double MezChipsLeft { get; set; } = double.NaN;
     public double MezChipsTop { get; set; } = double.NaN;
+    /// <summary>See <see cref="SpawnChipsBottom"/> — same rule, mez stack.</summary>
+    public double MezChipsBottom { get; set; } = double.NaN;
 
     /// <summary>Target-drops block in the Loot card (wiki drops for the creature being
     /// fought). Default on; the toggle exists for lean-card people.</summary>

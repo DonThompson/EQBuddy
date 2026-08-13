@@ -39,7 +39,10 @@ public partial class SpawnChipsWindow : Window
         var restored = ScreenGuard.OnScreen(_settings.SpawnChipsLeft, _settings.SpawnChipsTop, Width, Height);
         if (restored) { Left = _settings.SpawnChipsLeft; Top = _settings.SpawnChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 40; }
-        ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
+        // Grow-up stacks restore their BOTTOM edge (#122) — see MezChipsWindow.
+        ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp,
+            restored && _settings.SpawnChipsGrowUp && !double.IsNaN(_settings.SpawnChipsBottom)
+                ? _settings.SpawnChipsBottom : null);
         Closed += (_, _) =>
         {
             // Never let an unmoved fallback overwrite a real saved spot (#117). The
@@ -48,6 +51,8 @@ public partial class SpawnChipsWindow : Window
             (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
                 restored, _userMoved, Left, Top,
                 _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
+            if (_settings.SpawnChipsTop == Top)
+                _settings.SpawnChipsBottom = Top + ActualHeight;
             _settings.Save();
         };
     }
