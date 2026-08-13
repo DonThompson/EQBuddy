@@ -1,5 +1,15 @@
 [
  {
+  "version": "1.70.0",
+  "date": "2026-08-12",
+  "highlights": [
+   "NEW — Gear checklist (first outside code contribution to a card, thanks dandrews2930!): build a shopping list on eqlegendstools.com's character sheet, Export Shopping List, then Options → Cards & windows → \"Import gear list…\" — the 🛡 Gear card shows every slot's target item with sources and a checkbox. Manual ticks persist; re-importing replaces the list. Honest limit: socketed Exaltations aren't imported yet, just the fourteen gear slots.",
+   "FIXED (discussion #109, thanks Frankthetankk): raid-instance bosses no longer show made-up respawn countdowns. Maestro of Rancor at \"8:13:38\" was a classic open-world number for a boss that lives in instances now — the 21 bosses the game's own achievements name show \"instance\" in the Spawns window instead (the real clocks are in the game's Instance Maintenance screen), and any stale countdowns clear themselves on update. Type a respawn time on such a row and it still counts down — your edit outranks us, as always. Bonus: the dump's \"Cazic-Thule\" vs the log's \"Cazic Thule\" spelling no longer costs him his ledger entries.",
+   "NEW (discussion #114, thanks Frankthetankk): Options → Behavior → \"Hide the widget while the game isn't running at all\" — the overlay exists only while you play. Distinct from hide-when-unfocused (which keeps the widget up between sessions); they compose. Need it back without the game? Launch EQBuddy again — the running copy surfaces while you use it.",
+   "EQBuddy is a BETA and two of these three exist because somebody asked — if a number looks wrong or you wish it did something else, tell us in GitHub Discussions (⚙ → Help → Send feedback)."
+  ]
+ },
+ {
   "version": "1.69.2",
   "date": "2026-08-12",
   "highlights": [
