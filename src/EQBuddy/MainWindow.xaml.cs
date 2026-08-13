@@ -201,6 +201,11 @@ public partial class MainWindow : Window
         if (Environment.GetEnvironmentVariable("EQBUDDY_CCLOG") == "1")
             StartCrowdControlCapture();
 
+        // Tray icon: EQBuddy's always-there presence (#114 follow-up) — when a hide
+        // takes the widget AND its taskbar entry, this is how you know it's running
+        // and how you get it back.
+        _trayIcon = new TrayIcon(this);
+
         // Screenshot/debug hook, same family as EQBUDDY_OPTIONS: open the Quest Tracker
         // after the startup replay has fed the ledger. "1" opens the default view;
         // "zone"/"all" open that mode directly.
@@ -1304,6 +1309,9 @@ public partial class MainWindow : Window
         _optionsWindow.Show();
         AlertTile.EnterPlacement();
     }
+
+    /// <summary>Options via a non-event caller (the tray icon's menu).</summary>
+    internal void ShowOptions() => OnOptions(this, new RoutedEventArgs());
 
     private void OnGear(object sender, RoutedEventArgs e)
     {
@@ -3488,6 +3496,8 @@ public partial class MainWindow : Window
     private bool _restoredSavedPosition;
     private double _placedLeft, _placedTop;
 
+    private TrayIcon? _trayIcon;
+
     /// <summary>When enabled, the widget hides while the game runs WITHOUT being the
     /// foreground app — alt-tab to a browser and the corner it lives in is the browser's
     /// again. Never hides when the game isn't running (configuring the widget outside the
@@ -3810,6 +3820,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _trayIcon?.Dispose();   // a ghost tray icon outliving its process reads as a crash
         _unlockChip?.Close();
         // Never let an unmoved fallback overwrite a real saved spot (#117).
         (_settings.WindowLeft, _settings.WindowTop) = WindowPlacement.PositionToPersist(

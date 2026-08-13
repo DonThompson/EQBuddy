@@ -4,6 +4,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- WinForms rides along for exactly one thing: NotifyIcon, the tray icon
+         (#114 follow-up — a hidden widget must stay findable somewhere). -->
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>EQBuddy</AssemblyName>
@@ -23,6 +26,13 @@
 
   <ItemGroup>
     <Resource Include="Assets\tutorial\*.png" />
+  </ItemGroup>
+
+  <!-- WinForms' implicit global usings would make Application/Brush/Point ambiguous
+       across every WPF file; TrayIcon.cs fully qualifies instead. -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
   </ItemGroup>
 
 </Project>
