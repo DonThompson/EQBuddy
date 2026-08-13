@@ -472,7 +472,11 @@ public sealed class SkyQuestChecklistItem
 public sealed class GearChecklistItem
 {
     public string Slot { get; set; } = "";
+    /// <summary>True when this is a socketed exaltation rather than equipped gear.</summary>
+    public bool IsExaltation { get; set; }
     public string Item { get; set; } = "";
+    /// <summary>The effect granted by a socketed exaltation, when supplied by the export.</summary>
+    public string ExaltationEffect { get; set; } = "";
     public string Source { get; set; } = "";
     public string Url { get; set; } = "";
     public bool Acquired { get; set; }

@@ -2225,47 +2225,71 @@ public partial class MainWindow : Window
             ? $"{_settings.GearChecklistName} - {done}/{total}"
             : $"{done}/{total} imported gear pieces";
 
-        foreach (var item in _settings.GearChecklist)
+        foreach (var group in _settings.GearChecklist
+            .OrderBy(item => item.IsExaltation)
+            .GroupBy(item => item.IsExaltation))
         {
-            var text = new StackPanel();
-            text.Children.Add(new TextBlock
+            GearChecklistList.Items.Add(new TextBlock
             {
-                Text = item.Slot,
-                FontSize = 10,
-                Foreground = (Brush)FindResource("DimBrush"),
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                Text = group.Key ? "Exaltations" : "Gear",
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("AccentBrush"),
+                Margin = new Thickness(0, 8, 0, 2),
             });
-            text.Children.Add(new TextBlock
+            foreach (var item in group)
             {
-                Text = item.Item,
-                FontSize = 12,
-                Foreground = (Brush)FindResource("TextBrush"),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            if (item.Source.Length > 0)
-            {
+                var text = new StackPanel();
                 text.Children.Add(new TextBlock
                 {
-                    Text = item.Source,
+                    Text = item.Slot,
                     FontSize = 10,
                     Foreground = (Brush)FindResource("DimBrush"),
                     TextTrimming = TextTrimming.CharacterEllipsis,
                 });
-            }
+                var itemName = new TextBlock
+                {
+                    FontSize = 12,
+                    Foreground = (Brush)FindResource("TextBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                };
+                itemName.Inlines.Add(item.Item);
+                if (item.IsExaltation && item.ExaltationEffect.Length > 0)
+                {
+                    itemName.Inlines.Add(new System.Windows.Documents.Run($" ({item.ExaltationEffect})")
+                    {
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                    });
+                }
+                text.Children.Add(itemName);
+                if (item.Source.Length > 0)
+                {
+                    text.Children.Add(new TextBlock
+                    {
+                        Text = item.Source,
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                    });
+                }
 
-            var tip = $"{item.Slot}: {item.Item}";
-            if (item.Source.Length > 0) tip += "\n" + item.Source;
-            if (item.Url.Length > 0) tip += "\n" + item.Url;
-            var check = new CheckBox
-            {
-                IsChecked = item.Acquired,
-                Content = text,
-                Margin = new Thickness(0, 2, 0, 2),
-                ToolTip = tip,
-            };
-            check.Checked += (_, _) => OnGearToggled(item, true);
-            check.Unchecked += (_, _) => OnGearToggled(item, false);
-            GearChecklistList.Items.Add(check);
+                var tip = $"{item.Slot}: {item.Item}";
+                if (item.IsExaltation && item.ExaltationEffect.Length > 0)
+                    tip += $" ({item.ExaltationEffect})";
+                if (item.Source.Length > 0) tip += "\n" + item.Source;
+                if (item.Url.Length > 0) tip += "\n" + item.Url;
+                var check = new CheckBox
+                {
+                    IsChecked = item.Acquired,
+                    Content = text,
+                    Margin = new Thickness(0, 2, 0, 2),
+                    ToolTip = tip,
+                };
+                check.Checked += (_, _) => OnGearToggled(item, true);
+                check.Unchecked += (_, _) => OnGearToggled(item, false);
+                GearChecklistList.Items.Add(check);
+            }
         }
 
         UpdateGearHeaderOnly();
