@@ -17,6 +17,15 @@ public sealed class EpicQuestDefaultsTests
     }
 
     [Fact]
+    public void CarriesClassicAvailabilityFromWikiMetadata()
+    {
+        var bardItems = EpicQuestDefaults.Items().Where(i => i.ClassName == "Bard").ToList();
+
+        Assert.Contains(bardItems, i => i.QuestItem.Contains("Torch of Misty") && !i.AvailableInClassic);
+        Assert.Contains(bardItems, i => i.QuestItem.Contains("Konia Swiftfoot") && i.AvailableInClassic);
+    }
+
+    [Fact]
     public void PreservesWikiSections()
     {
         var bardItems = EpicQuestDefaults.Items().Where(i => i.ClassName == "Bard").ToList();

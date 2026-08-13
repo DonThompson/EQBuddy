@@ -27,6 +27,7 @@ public static class EpicQuestDefaults
                     QuestItem = row.Text,
                     Qty = 1,
                     Order = row.Order,
+                    AvailableInClassic = row.AvailableInClassic,
                 });
             }
         }

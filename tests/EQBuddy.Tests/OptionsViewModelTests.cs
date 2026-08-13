@@ -202,6 +202,7 @@ public sealed class OptionsViewModelTests
         settings.EpicQuestChecklist[0].Section = "old section";
         settings.EpicQuestChecklist[0].QuestItem = "old text";
         settings.EpicQuestChecklist[0].Order = 9999;
+        settings.EpicQuestChecklist[0].AvailableInClassic = !item.AvailableInClassic;
         settings.EpicQuestChecklist[0].Acquired = true;
 
         Assert.True(settings.ApplyDefaultEpicQuestChecklist());
@@ -211,5 +212,6 @@ public sealed class OptionsViewModelTests
         Assert.Equal(item.Section, refreshed.Section);
         Assert.Equal(item.QuestItem, refreshed.QuestItem);
         Assert.Equal(item.Order, refreshed.Order);
+        Assert.Equal(item.AvailableInClassic, refreshed.AvailableInClassic);
     }
 }

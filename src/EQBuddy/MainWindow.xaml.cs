@@ -54,6 +54,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        EpicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
         AttachSpellStore();
@@ -2307,17 +2308,18 @@ public partial class MainWindow : Window
 
         foreach (var className in QuestClassFilter.Classes)
         {
-            var classItems = _settings.EpicQuestChecklist
+            var allClassItems = _settings.EpicQuestChecklist
                 .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
                 .OrderBy(i => i.Order)
                 .ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            var classItems = FilterEpicQuestRows(allClassItems).ToList();
             var done = classItems.Count(i => i.Acquired);
             var total = classItems.Count;
             var quest = EpicQuestDefaults.FindQuest(QuestCatalog, className);
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
 
-            if (quest is null || total == 0)
+            if (quest is null || allClassItems.Count == 0)
             {
                 panel.Children.Add(new TextBlock
                 {
@@ -2356,6 +2358,18 @@ public partial class MainWindow : Window
                         Margin = new Thickness(0, 1, 0, 4),
                     });
 
+                if (classItems.Count == 0)
+                {
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "No classic-doable steps are tagged for this class yet.",
+                        FontSize = 11,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 8, 0, 4),
+                    });
+                }
+
                 var completed = IsEpicQuestCompleted(className);
                 var completeCheck = new CheckBox
                 {
@@ -2370,8 +2384,8 @@ public partial class MainWindow : Window
                         Foreground = (Brush)FindResource("AccentBrush"),
                     },
                 };
-                completeCheck.Checked += (_, _) => OnEpicQuestCompletedToggled(className, classItems, true);
-                completeCheck.Unchecked += (_, _) => OnEpicQuestCompletedToggled(className, classItems, false);
+                completeCheck.Checked += (_, _) => OnEpicQuestCompletedToggled(className, allClassItems, true);
+                completeCheck.Unchecked += (_, _) => OnEpicQuestCompletedToggled(className, allClassItems, false);
                 panel.Children.Add(completeCheck);
 
                 foreach (var sectionGroup in classItems.GroupBy(i => i.Section.Length > 0 ? i.Section : "Checklist"))
@@ -2442,6 +2456,29 @@ public partial class MainWindow : Window
     private bool IsEpicQuestCompleted(string className) =>
         _settings.EpicQuestCompleted.Contains(EpicQuestCompletedKey(className), StringComparer.OrdinalIgnoreCase);
 
+    private IEnumerable<EpicQuestChecklistItem> FilterEpicQuestRows(IEnumerable<EpicQuestChecklistItem> items) =>
+        _settings.EpicQuestClassicOnly ? items.Where(i => i.AvailableInClassic) : items;
+
+    private void OnEpicClassicOnlyToggled(object sender, RoutedEventArgs e)
+    {
+        var value = EpicClassicOnlyCheck.IsChecked == true;
+        if (_settings.EpicQuestClassicOnly == value)
+            return;
+
+        _settings.EpicQuestClassicOnly = value;
+        _settings.Save();
+        UpdateEpicQuestHeaderOnly();
+        if (EpicSection.IsExpanded)
+        {
+            RenderEpicQuestChecklist();
+            _epicQuestDirty = false;
+        }
+        else
+        {
+            _epicQuestDirty = true;
+        }
+    }
+
     private void OnEpicQuestCompletedToggled(string className, List<EpicQuestChecklistItem> items, bool done)
     {
         var key = EpicQuestCompletedKey(className);
@@ -2492,18 +2529,20 @@ public partial class MainWindow : Window
         foreach (var tab in EpicTabs.Items.OfType<TabItem>())
             if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
             {
-                var done = _settings.EpicQuestChecklist.Count(i =>
-                    string.Equals(i.ClassName, className, StringComparison.Ordinal) && i.Acquired);
-                var total = _settings.EpicQuestChecklist.Count(i =>
-                    string.Equals(i.ClassName, className, StringComparison.Ordinal));
+                var classItems = FilterEpicQuestRows(_settings.EpicQuestChecklist
+                    .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal)))
+                    .ToList();
+                var done = classItems.Count(i => i.Acquired);
+                var total = classItems.Count;
                 tab.Header = total > 0 ? $"{ClassAbbrev(className)} {done}/{total}" : $"{ClassAbbrev(className)} -";
             }
     }
 
     private void UpdateEpicQuestHeaderOnly()
     {
-        var total = _settings.EpicQuestChecklist.Count;
-        var acquired = _settings.EpicQuestChecklist.Count(i => i.Acquired);
+        var items = FilterEpicQuestRows(_settings.EpicQuestChecklist).ToList();
+        var total = items.Count;
+        var acquired = items.Count(i => i.Acquired);
         EpicHeader.Text = $"{acquired}/{total}";
     }
 

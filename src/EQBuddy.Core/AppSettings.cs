@@ -182,6 +182,7 @@ public sealed class AppSettings
     public List<EpicQuestChecklistItem> EpicQuestChecklist { get; set; } = [];
     public string EpicQuestClass { get; set; } = "";
     public List<string> EpicQuestCompleted { get; set; } = [];
+    public bool EpicQuestClassicOnly { get; set; }
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
@@ -466,7 +467,8 @@ public sealed class AppSettings
                     existing.QuestItem == item.QuestItem &&
                     existing.Qty == item.Qty &&
                     existing.Order == item.Order &&
-                    existing.Source == item.Source)
+                    existing.Source == item.Source &&
+                    existing.AvailableInClassic == item.AvailableInClassic)
                     continue;
 
                 existing.QuestName = item.QuestName;
@@ -476,6 +478,7 @@ public sealed class AppSettings
                 existing.Qty = item.Qty;
                 existing.Order = item.Order;
                 existing.Source = item.Source;
+                existing.AvailableInClassic = item.AvailableInClassic;
                 changed = true;
                 continue;
             }
@@ -550,6 +553,7 @@ public sealed class EpicQuestChecklistItem
     public int Qty { get; set; } = 1;
     public int Order { get; set; }
     public string Source { get; set; } = "";
+    public bool AvailableInClassic { get; set; } = true;
     public bool Acquired { get; set; }
 
     public EpicQuestChecklistItem Clone() => new()
@@ -563,6 +567,7 @@ public sealed class EpicQuestChecklistItem
         Qty = Qty,
         Order = Order,
         Source = Source,
+        AvailableInClassic = AvailableInClassic,
         Acquired = Acquired,
     };
 }

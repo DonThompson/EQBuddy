@@ -608,10 +608,18 @@
                         <TextBlock x:Name="EpicHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0/0"/>
                     </Grid>
                 </Expander.Header>
-                <TabControl x:Name="EpicTabs" Margin="0,2,0,0"
-                            Background="{DynamicResource PanelBrush}"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            Foreground="{DynamicResource TextBrush}">
+                <StackPanel>
+                    <CheckBox x:Name="EpicClassicOnlyCheck"
+                              Margin="0,2,0,4"
+                              Checked="OnEpicClassicOnlyToggled"
+                              Unchecked="OnEpicClassicOnlyToggled"
+                              Content="Classic-doable only"
+                              FontSize="10"
+                              Foreground="{DynamicResource DimBrush}"/>
+                    <TabControl x:Name="EpicTabs" Margin="0,2,0,0"
+                                Background="{DynamicResource PanelBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                Foreground="{DynamicResource TextBrush}">
                     <TabControl.Resources>
                         <Style TargetType="TabItem">
                             <Setter Property="Foreground" Value="{DynamicResource DimBrush}"/>
@@ -664,7 +672,8 @@
                             </Grid>
                         </ControlTemplate>
                     </TabControl.Template>
-                </TabControl>
+                    </TabControl>
+                </StackPanel>
             </Expander>
 
             <Expander x:Name="TrackedSection" Style="{StaticResource Section}" Visibility="Collapsed">
