@@ -2376,6 +2376,18 @@ public partial class MainWindow : Window
             var classTotal = classGroup.Count();
             var classDone = classGroup.Count(i => i.Acquired);
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+            var turnInNpc = classGroup.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0);
+            if (!string.IsNullOrWhiteSpace(turnInNpc))
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "Turn-in NPC: " + turnInNpc,
+                    FontSize = 10.5,
+                    Foreground = (Brush)FindResource("DimBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(0, 0, 0, 4),
+                    ToolTip = $"{classGroup.Key} Plane of Sky turn-in NPC: {turnInNpc}",
+                });
+            var visibleRewards = 0;
 
             // Unfinished quests float to the top (Reddit, 2026-08-11), and within
             // the unfinished, CLOSEST TO DONE leads (the 2026-08-13 pass — the
@@ -2397,6 +2409,7 @@ public partial class MainWindow : Window
                     _ => true,
                 };
                 if (!stateOk) continue;
+                visibleRewards++;
                 var rewardItems = rewardGroup.ToList();
                 // The header carries the quest's own score — "2/3" says how close
                 // without opening anything; "ready" says the running is over.
@@ -2473,7 +2486,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            if (panel.Children.Count == 0)
+            if (visibleRewards == 0)
                 panel.Children.Add(new TextBlock
                 {
                     Text = _skyState == "ready"
