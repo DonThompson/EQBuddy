@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.73.0",
+  "date": "2026-08-13",
+  "highlights": [
+   "FIXED (discussion #122, thanks Snagglefern - your Plane of Hate log was the whole diagnosis): mez chips in messy AE fights. The game writes an explicit \"X has been awakened by Y.\" line that EQBuddy never read - it does now, and it's the authoritative break signal. And when a same-named add RESISTS your AE mez, that resist now marks it awake, so its attacks stop eating the chip of the sibling you actually mezzed.",
+   "FIXED (same report): chip stacks set to grow upward no longer wander across fights or snap back to old spots - a grow-up stack now remembers the BOTTOM edge you parked it at, which is the edge that actually stays put.",
+   "EQBuddy is a BETA - if a chip still lies to you, tell us: ⚙ → Help → Send feedback, ideally with a log slice like the one that fixed this."
+  ]
+ },
+ {
   "version": "1.72.0",
   "date": "2026-08-13",
   "highlights": [
