@@ -61,6 +61,10 @@ public sealed class LogWatcher : IDisposable
     /// mark makes replay idempotent, so it just rides the pipeline.</summary>
     public RaidKillLedger? Raids { get; set; }
 
+    /// <summary>Optional seventh consumer: the per-zone spawn-point archive (the
+    /// map's circles) — per-zone high-water marks, same replay discipline.</summary>
+    public SpawnPointLedger? SpawnPoints { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -302,6 +306,7 @@ public sealed class LogWatcher : IDisposable
                             Slow?.Apply(evt);
                             Buffs?.Apply(evt);
                             Raids?.Apply(evt);
+                            SpawnPoints?.Apply(evt);
                         }
                         // Every line, parsed or not: a Text watch rule matches the line's
                         // words, not whatever event we did or didn't make of it.

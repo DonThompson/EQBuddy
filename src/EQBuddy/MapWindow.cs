@@ -43,6 +43,34 @@ public sealed class MapWindow : Window
     private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _campPins = [];
     private (int Count, long Bucket) _trailStamp = (-1, 0);
 
+    // ---- Spawn-point circles (David's map brief, 2026-08-13) ----------------
+    // Every archived spawn point in the shown zone, drawn as a circle: named
+    // points wear the theme ACCENT, ordinary points sit dim — visibly of the UI,
+    // never of the map pack. Theme-keyed via SetResourceReference throughout
+    // (David: "colors should align with our UI Theme", not hard-coded). Hover
+    // answers "what lives here": every mob seen at the point with kill counts,
+    // the last kill, and the projected respawn. Circles PULSE when a respawn is
+    // imminent — within PulseWindowSeconds of the named timer or the ordinary
+    // projection.
+    private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _spawnCircles = [];
+    private readonly List<SpawnCircle> _circleMeta = [];
+    private (string Zone, int Points, int Kills) _circleStamp = ("\0", -1, -1);
+
+    /// <summary>"Imminent" = due within this many seconds (David, 2026-08-13).</summary>
+    internal const double PulseWindowSeconds = 10;
+    /// <summary>Keep pulsing this long past due — the pop is happening about now —
+    /// then settle; the named panel's DUE state carries on from there.</summary>
+    internal const double PulseLingerSeconds = 30;
+
+    private sealed class SpawnCircle
+    {
+        public required System.Windows.Shapes.Ellipse Ring;
+        public required System.Windows.Shapes.Ellipse Halo;
+        public required SpawnPointLedger.SpawnPoint Point;
+        public required bool Named;
+        public bool Pulsing;
+    }
+
     /// <summary>How often the trail re-renders just because time passed. Every
     /// shared tick: with a one-minute horizon the fade must read as continuous,
     /// and a rebuild is ~80 frozen brushes — nothing.</summary>
@@ -110,12 +138,35 @@ public sealed class MapWindow : Window
         // 2026-08-10): current-zone named with their respawn countdowns, camps
         // pinned from YOUR /loc at kill time or the wiki's location field. All of
         // it from the log and public pages; nothing reads or touches the game.
-        var side = new ScrollViewer
+        var scroll = new ScrollViewer
         {
             Content = _namedPanel,
-            Width = 190,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
         };
+        // Zone knowledge sharing lives with the map because the map is where the
+        // knowledge shows (the spawn circles). Docked OUTSIDE the rebuilt panel so
+        // the button never churns.
+        var share = Theming.Button("Share zone knowledge…");
+        share.FontSize = 10.5;
+        share.Margin = new Thickness(8, 4, 8, 8);
+        share.ToolTip = "Export this zone's spawn points and learned timers as one paste-safe string,\n" +
+            "import a friend's (with a full preview first — big timer deviations arrive flagged),\n" +
+            "or submit yours to EQBuddy for everyone. Nothing is sent unless you click it.";
+        share.Click += (_, _) =>
+        {
+            var timerZone = _main.SpawnTimers.CurrentZone?.Zone
+                ?? SpawnCatalog.StripTierVariant(_main.CurrentZoneName);
+            if (timerZone.Length == 0)
+            {
+                _status.Text = "Share zone knowledge needs to know the zone — it unlocks once the log sees you zone in.";
+                return;
+            }
+            new ZoneShareWindow(_main, timerZone) { Owner = this }.ShowDialog();
+        };
+        var side = new DockPanel { Width = 190 };
+        DockPanel.SetDock(share, Dock.Bottom);
+        side.Children.Add(share);
+        side.Children.Add(scroll);
         side.SetResourceReference(BackgroundProperty, "PanelBrush");
 
         var root = new DockPanel();
@@ -187,7 +238,136 @@ public sealed class MapWindow : Window
         }
         UpdateMarker();
         UpdateTrail();
+        UpdateSpawnCircles();   // before the pins so pins stay on top
         UpdateNamedPanel();
+    }
+
+    /// <summary>Rebuild the circles only when the archive actually changed (zone,
+    /// point count, or kill total) — a rebuild every tick would restart the pulse
+    /// animations mid-beat. The pulse check itself runs every tick regardless,
+    /// because imminence is a property of the clock, not the archive.</summary>
+    private void UpdateSpawnCircles()
+    {
+        var now = DateTime.Now;
+        var zone = _main.CurrentZoneName;
+        var timerZone = _main.SpawnTimers.CurrentZone?.Zone
+            ?? SpawnCatalog.StripTierVariant(zone);
+        var showing = _map is not null && !_userPicked && timerZone.Length > 0;
+        var archive = showing ? _main.SpawnPoints.Snapshot(timerZone) : null;
+        var stamp = archive is null
+            ? ("", 0, 0)
+            : (timerZone, archive.Points.Count, archive.Points.Sum(p => p.TotalKills()));
+        if (stamp != _circleStamp)
+        {
+            _circleStamp = stamp;
+            foreach (var (el, _, _, _, _) in _spawnCircles) _canvas.Children.Remove(el);
+            _spawnCircles.Clear();
+            _circleMeta.Clear();
+            if (archive is not null)
+                foreach (var p in archive.Points)
+                    BuildCircle(timerZone, p);
+            PlaceSpawnCircles();
+        }
+        if (_circleMeta.Count > 0) UpdatePulse(now, timerZone);
+    }
+
+    private void BuildCircle(string zone, SpawnPointLedger.SpawnPoint p)
+    {
+        var named = _main.SpawnPoints.IsNamedPoint(zone, p);
+        var (mx, my) = ZoneMap.FromLoc(p.LocY, p.LocX);
+        var d = named ? 13.0 : 9.0;
+        var halo = new System.Windows.Shapes.Ellipse
+        {
+            Width = d + 8, Height = d + 8,
+            Opacity = named ? 0.30 : 0.16, IsHitTestVisible = false,
+        };
+        halo.SetResourceReference(System.Windows.Shapes.Shape.FillProperty,
+            named ? "AccentBrush" : "DimBrush");
+        var ring = new System.Windows.Shapes.Ellipse
+        {
+            Width = d, Height = d,
+            StrokeThickness = named ? 2.2 : 1.5,
+            Fill = Brushes.Transparent,   // hit-test the interior for the hover
+            ToolTip = "",
+        };
+        ring.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty,
+            named ? "AccentBrush" : "DimBrush");
+        ToolTipService.SetInitialShowDelay(ring, 150);
+        // Built fresh at open — the countdown must read the clock, not the rebuild.
+        ring.ToolTipOpening += (_, _) => ring.ToolTip = CircleTip(zone, p, named);
+        _spawnCircles.Add((halo, mx, my, -(d + 8) / 2, -(d + 8) / 2));
+        _spawnCircles.Add((ring, mx, my, -d / 2, -d / 2));
+        _canvas.Children.Add(halo);
+        _canvas.Children.Add(ring);
+        _circleMeta.Add(new SpawnCircle { Ring = ring, Halo = halo, Point = p, Named = named });
+    }
+
+    private DateTime? CircleDue(string zone, SpawnPointLedger.SpawnPoint p, bool named, DateTime now)
+    {
+        if (!named) return _main.SpawnPoints.ProjectedRespawn(zone, p);
+        return _main.SpawnTimers.Snapshot(now)
+            .FirstOrDefault(t => string.Equals(t.Zone, zone, StringComparison.OrdinalIgnoreCase)
+                && p.Mobs.Keys.Any(n => SpawnCatalog.NameMatches(t.Name, n)))?.DueAt;
+    }
+
+    private string CircleTip(string zone, SpawnPointLedger.SpawnPoint p, bool named)
+    {
+        var now = DateTime.Now;
+        var lines = new List<string>();
+        foreach (var kv in p.Mobs.OrderByDescending(kv => kv.Value.Kills)
+                     .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
+            lines.Add($"{kv.Key} ×{kv.Value.Kills}");
+        var (lastName, lastSeen) = p.LastKilled();
+        lines.Add("");
+        lines.Add($"Last kill: {lastName}, {EQBuddy.UI.Shared.Countdown.Format(now - lastSeen.LastKill)} ago");
+        var label = named ? "Respawn" : "Projected respawn (~)";
+        if (CircleDue(zone, p, named, now) is { } due)
+            lines.Add(due <= now ? $"{label}: DUE" : $"{label}: {EQBuddy.UI.Shared.Countdown.Format(due - now)}");
+        else
+            lines.Add(named
+                ? "Respawn: no running timer"
+                : "Projected respawn: unknown — this zone documents no clock");
+        return string.Join("\n", lines);
+    }
+
+    /// <summary>Start or stop the imminence pulse per circle. BeginAnimation(null)
+    /// hands Opacity back to the local value each circle was built with.</summary>
+    private void UpdatePulse(DateTime now, string zone)
+    {
+        foreach (var c in _circleMeta)
+        {
+            var due = CircleDue(zone, c.Point, c.Named, now);
+            var secs = due is { } d ? (d - now).TotalSeconds : double.MaxValue;
+            var imminent = secs <= PulseWindowSeconds && secs >= -PulseLingerSeconds;
+            if (imminent == c.Pulsing) continue;
+            c.Pulsing = imminent;
+            if (imminent)
+            {
+                var beat = new System.Windows.Media.Animation.DoubleAnimation(1.0, 0.25,
+                    TimeSpan.FromMilliseconds(550))
+                {
+                    AutoReverse = true,
+                    RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever,
+                };
+                c.Ring.BeginAnimation(OpacityProperty, beat);
+                c.Halo.BeginAnimation(OpacityProperty, beat);
+            }
+            else
+            {
+                c.Ring.BeginAnimation(OpacityProperty, null);
+                c.Halo.BeginAnimation(OpacityProperty, null);
+            }
+        }
+    }
+
+    private void PlaceSpawnCircles()
+    {
+        foreach (var (el, x, y, dx, dy) in _spawnCircles)
+        {
+            var s = _view.Matrix.Transform(new Point(x, y));
+            Canvas.SetLeft(el, s.X + dx);
+            Canvas.SetTop(el, s.Y + dy);
+        }
     }
 
     /// <summary>The breadcrumb trail: the last minute of your /locs in this zone,
@@ -384,6 +564,7 @@ public sealed class MapWindow : Window
             Canvas.SetLeft(el, s.X + dx);
             Canvas.SetTop(el, s.Y + dy);
         }
+        PlaceSpawnCircles();
     }
 
     private void ShowFile(string file)

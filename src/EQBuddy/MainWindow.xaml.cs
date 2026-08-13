@@ -85,6 +85,13 @@ public partial class MainWindow : Window
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
+        // The map's spawn-point circles: kills near a fresh /loc accrete into
+        // per-zone archives that only refine over time (David's map brief).
+        _spawnPoints = new SpawnPointLedger(
+            System.IO.Path.Combine(AppPaths.Dir, "zone-spawns"), spawnCatalog);
+        _watcher.SpawnPoints = _spawnPoints;
+        _spawnOverrides = spawnOverrides;
+        _spawnCatalog = spawnCatalog;
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
@@ -3589,6 +3596,13 @@ public partial class MainWindow : Window
     private double _placedLeft, _placedTop;
 
     private TrayIcon? _trayIcon;
+
+    private readonly SpawnPointLedger _spawnPoints;
+    private readonly SpawnOverrides _spawnOverrides;
+    private readonly SpawnCatalog _spawnCatalog;
+    internal SpawnPointLedger SpawnPoints => _spawnPoints;
+    internal SpawnOverrides SpawnOverridesStore => _spawnOverrides;
+    internal SpawnCatalog SpawnCatalogData => _spawnCatalog;
 
     /// <summary>When enabled, the widget hides while the game runs WITHOUT being the
     /// foreground app — alt-tab to a browser and the corner it lives in is the browser's

@@ -22,11 +22,16 @@ player's suggestion.** Rough edges, wild ideas, wrong numbers: [say so in
 Discussions](https://github.com/DranakCorps-bot/EQBuddy/discussions) and watch what
 happens.
 
-**Log-only, by principle.** EQBuddy never reads game memory, never uploads anything,
-and never measures other players — it knows only what your own log says. Windows
-first (WPF), with a cross-platform build ([Avalonia](#for-developers)) that tracks
-closely: **Linux** (built and maintained by Don Thompson) and **macOS** (click-through,
-spoken alerts, and Wine-prefix log detection contributed by quasarj).
+**Log-only, by principle. Zero telemetry, always contribution.** EQBuddy never reads
+game memory, never phones home, and never measures other players — it knows only what
+your own log says. When knowledge moves between players, it moves because a player
+chose to move it: zone spawn archives export as paste-safe strings you hand to a
+friend, imports show you every change before anything applies, and contributions to
+EQBuddy itself go through a public review on GitHub — streamlined collaboration from
+within the community, never a quiet upload. Windows first (WPF), with a cross-platform
+build ([Avalonia](#for-developers)) that tracks closely: **Linux** (built and
+maintained by Don Thompson) and **macOS** (click-through, spoken alerts, and
+Wine-prefix log detection contributed by quasarj).
 
 **Download:** grab `EQBuddySetup.exe` from the
 [latest release](https://github.com/DranakCorps-bot/EQBuddy/releases/latest).
@@ -58,7 +63,7 @@ page instead.
 | ![Options, tabbed](docs/screenshots/options-tabs.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | **Options, now in tabs** — Look · Alerts & chips · Watch rules · Cards & windows · Behavior. The alerts tab shown: the 🐌 slow alert (with its spoken voice and raid-only mode) and the buff-timer display controls | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
 | ![Zone map](docs/screenshots/map-window.png) | ![Travel route](docs/screenshots/travel-window.png) |
-| **Zone map** — classic map packs with your `/loc` marker and a comet-tail breadcrumb trail of your last minute of movement; every running spawn timer shows in the side panel **and** as a camp pin on the map with its countdown ticking beside it | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
+| **Zone map** — classic map packs with your `/loc` marker, a comet-tail breadcrumb trail, and **spawn-point circles** learned from your own kills (named in the theme accent, pulsing when a respawn is imminent; per-zone archives that improve forever, shareable as paste-safe strings); every running spawn timer shows in the side panel **and** as a camp pin with its countdown | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
 | **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
 
@@ -261,6 +266,22 @@ Maps & travel:
   it as you travel — each one adds to a **comet-tail breadcrumb trail** of your last
   minute of movement, each crumb fading continuously from the moment it lands, so the
   map shows where you just came from without ever cluttering into a route history.
+- **Spawn-point circles**: every kill that lands near a fresh `/loc` becomes a
+  spawn-point observation, and the map draws each point as a circle — named spawns
+  in your theme's accent, ordinary camps dim — clustered, refined, and saved to a
+  **per-zone archive that only gets better the more you play**. Hover a circle for
+  the mobs seen there (with kill counts), the last kill, and the projected respawn
+  from the zone's own clock; a circle **pulses when a respawn is due within ten
+  seconds**. Multi-spawn named (Crushbone royal guards, we see you) show every point
+  they've actually died at.
+- **Share zone knowledge** (map window, bottom of the named panel): export a zone's
+  spawn points and learned timers as one paste-safe `EQBZ` string for a friend, or
+  import theirs — with a **full preview first**: every new point and timer change is
+  listed, and a timer that strays far from the zone's established clock arrives
+  **flagged** and applies only if you explicitly say so. Want everyone to benefit?
+  **Submit to EQBuddy** opens a prefilled GitHub Discussion with your string — you
+  post it under your own account, it's reviewed in the open, and good data ships in
+  a future release with credit. Nothing is ever sent by the app itself.
 - **The forager's trick** makes `/loc` near-automatic without addons: create an
   in-game social with `/loc` on line 1 and `/doability 1` (Forage, Sense Heading,
   Kick — whatever you already spam) on line 2, and put it on that skill's hotbar
