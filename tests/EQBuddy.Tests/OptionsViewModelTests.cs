@@ -198,12 +198,14 @@ public sealed class OptionsViewModelTests
             ],
         };
         settings.EpicQuestChecklist[0].Source = "old source";
+        settings.EpicQuestChecklist[0].Order = 9999;
         settings.EpicQuestChecklist[0].Acquired = true;
 
         Assert.True(settings.ApplyDefaultEpicQuestChecklist());
 
         var refreshed = settings.EpicQuestChecklist.Single(i => i.Id == item.Id);
         Assert.True(refreshed.Acquired);
+        Assert.Equal(item.Order, refreshed.Order);
         Assert.Contains("Plane of Sky", refreshed.Source);
     }
 }

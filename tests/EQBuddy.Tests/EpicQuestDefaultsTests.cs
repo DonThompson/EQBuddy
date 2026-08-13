@@ -45,5 +45,23 @@ public sealed class EpicQuestDefaultsTests
         Assert.Contains(items, i => i.ClassName == "Shadow Knight" &&
                                     i.QuestItem == "Blade of Abrogation" &&
                                     i.Source.Contains("Plane of Sky"));
+        Assert.Contains(items, i => i.ClassName == "Shadow Knight" &&
+                                    i.QuestItem == "Cell Key" &&
+                                    i.Source.Contains("mimic/chest") &&
+                                    i.Source.Contains("The Hole"));
+    }
+
+    [Fact]
+    public void OrdersEpicItemsByQuestRoute()
+    {
+        var items = EpicQuestDefaults.Items()
+            .Where(i => i.ClassName == "Shadow Knight")
+            .OrderBy(i => i.Order)
+            .ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
+            .Select(i => i.QuestItem)
+            .ToList();
+
+        Assert.True(items.IndexOf("Darkforge Breastplate") < items.IndexOf("Cell Key"));
+        Assert.True(items.IndexOf("Cell Key") < items.IndexOf("Innoruuk's Curse"));
     }
 }

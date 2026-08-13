@@ -33,6 +33,7 @@ public static class EpicQuestDefaults
                     Reward = reward,
                     QuestItem = need.Name,
                     Qty = need.Qty,
+                    Order = OrderFor(className, need.Name, i),
                     Source = SourceFor(className, need.Name, quest),
                 });
             }
@@ -47,9 +48,24 @@ public static class EpicQuestDefaults
     public static string SourceFor(string className, string itemName, QuestEntry quest)
     {
         var baseName = QuestCatalog.BaseItemName(itemName);
+        if (ItemSources.TryGetValue($"{className}|{baseName}", out var source))
+            return source;
+
         var guide = GuideFor(className);
         var step = guide?.Steps.FirstOrDefault(s => s.Contains(baseName, StringComparison.OrdinalIgnoreCase));
         return step ?? SourceLine(quest);
+    }
+
+    public static int OrderFor(string className, string itemName, int fallback)
+    {
+        var baseName = QuestCatalog.BaseItemName(itemName);
+        var guide = GuideFor(className);
+        if (guide is not null)
+            for (var i = 0; i < guide.Steps.Length; i++)
+                if (guide.Steps[i].Contains(baseName, StringComparison.OrdinalIgnoreCase))
+                    return i * 100;
+
+        return 10_000 + fallback;
     }
 
     public static QuestEntry? FindQuest(QuestCatalog catalog, string className) =>
@@ -218,6 +234,33 @@ public static class EpicQuestDefaults
                 "Give Arantir's bag to Solomen for Staff of the Four."
             ]),
     ];
+
+    private static readonly Dictionary<string, string> ItemSources = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Shadow Knight|Darkforge Breastplate"] = "Reward from Darkforge armor quests; turn in with Darkforge Greaves, Darkforge Helm, and 900pp to Kurron Ni in Overthere.",
+        ["Shadow Knight|Darkforge Greaves"] = "Reward from Darkforge armor quests; turn in with Darkforge Breastplate, Darkforge Helm, and 900pp to Kurron Ni in Overthere.",
+        ["Shadow Knight|Darkforge Helm"] = "Reward from Darkforge armor quests; turn in with Darkforge Breastplate, Darkforge Greaves, and 900pp to Kurron Ni in Overthere.",
+        ["Shadow Knight|Cough Elixir"] = "Buy from Smaka in Neriak Foreign Quarter for 1000pp; give to Duriek Bloodpool in Paineel.",
+        ["Shadow Knight|Dusty Tome"] = "Drops from a ratman guard in The Hole; give to Duriek Bloodpool in Paineel.",
+        ["Shadow Knight|Ghoulbane"] = "Drops from the froglok shin lord in Upper Guk; one of the four Corrupted Ghoulbane turn-in pieces.",
+        ["Shadow Knight|Soul Leech, Dark Sword of Blood"] = "Drops from Cazic-Thule pre-revamp, or Fear golems Fright, Dread, and Terror post-revamp.",
+        ["Shadow Knight|Blade of Abrogation"] = "Drops from Plane of Sky monsters; one of the four Corrupted Ghoulbane turn-in pieces.",
+        ["Shadow Knight|Drake Spine"] = "Drops from Rharzar in Rathe Mountains; combine path for Decrepit Sheath.",
+        ["Shadow Knight|Decrepit Hide"] = "Drops from ashenbone drakes in Plane of Hate; combine path for Decrepit Sheath.",
+        ["Shadow Knight|Enchanted Platinum Bar"] = "Craft/enchant a Platinum Bar; turn in with Drake Spine and Decrepit Hide to Teydar for Decrepit Sheath.",
+        ["Shadow Knight|Decrepit Sheath"] = "Reward from Teydar after Drake Spine, Decrepit Hide, and Enchanted Platinum Bar turn-in.",
+        ["Shadow Knight|Corrupted Ghoulbane"] = "Reward from Duriek Bloodpool after Ghoulbane, Soul Leech, Blade of Abrogation, and Decrepit Sheath turn-in.",
+        ["Shadow Knight|Cell Key"] = "Drops from a mimic/chest in The Hole city section; give it to Caradon to spawn the Kyrenna fight.",
+        ["Shadow Knight|Blood of Kyrenna"] = "Drops from Kyrenna after the Caradon Cell Key turn-in in The Hole; give to Marl Kastane for Dark Shroud.",
+        ["Shadow Knight|Heart of Kyrenna"] = "Drops from Kyrenna after the Caradon Cell Key turn-in in The Hole; combine in Soulcase for Heart of the Innocent.",
+        ["Shadow Knight|Dark Shroud"] = "Reward from Marl Kastane after turning in Blood of Kyrenna; give to Ghost of Glohnor in The Hole.",
+        ["Shadow Knight|Head of Glohnor"] = "Drops from Mummy of Glohnor after Dark Shroud turn-in to Ghost of Glohnor in The Hole; give to Gerot Kastane.",
+        ["Shadow Knight|Glohnor wrappings"] = "Drops from Mummy of Glohnor after Dark Shroud turn-in to Ghost of Glohnor in The Hole; give to Marl Kastane.",
+        ["Shadow Knight|Head of the Valiant"] = "Reward from Gerot Kastane after Head of Glohnor turn-in; final Lhranc turn-in piece.",
+        ["Shadow Knight|Will of Innoruuk"] = "Reward from Marl Kastane after Glohnor wrappings turn-in; final Lhranc turn-in piece.",
+        ["Shadow Knight|Heart of the Innocent"] = "Combine Heart of Kyrenna in Soulcase; final Lhranc turn-in piece.",
+        ["Shadow Knight|Innoruuk's Curse"] = "Final epic reward: give Lhranc Corrupted Ghoulbane, Heart of the Innocent, Head of the Valiant, and Will of Innoruuk, then kill Lhranc.",
+    };
 
     private static string StableKey(string value)
     {

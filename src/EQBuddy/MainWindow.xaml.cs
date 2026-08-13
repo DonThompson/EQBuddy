@@ -2309,7 +2309,8 @@ public partial class MainWindow : Window
         {
             var classItems = _settings.EpicQuestChecklist
                 .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
-                .OrderBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(i => i.Order)
+                .ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var done = classItems.Count(i => i.Acquired);
             var total = classItems.Count;
