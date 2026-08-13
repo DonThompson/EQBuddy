@@ -48,6 +48,7 @@ public partial class OptionsWindow : Window
         GridSpacingLabel.Text = $"{GridSpacingSlider.Value:0} px";
         TargetDropsCheck.IsChecked = _vm.ShowTargetDrops;
         HideUnfocusedCheck.IsChecked = _vm.HideWhenGameUnfocused;
+        HideNotRunningCheck.IsChecked = _vm.HideWhenGameNotRunning;
         KeepAboveCheck.IsChecked = _vm.KeepAboveOverlays;
         SpawnGrowUpCheck.IsChecked = _vm.SpawnChipsGrowUp;
         MezGrowUpCheck.IsChecked = _vm.MezChipsGrowUp;
@@ -351,6 +352,11 @@ public partial class OptionsWindow : Window
     private void OnHideUnfocusedToggled(object sender, RoutedEventArgs e)
     {
         if (_ready) _vm.HideWhenGameUnfocused = HideUnfocusedCheck.IsChecked == true;
+    }
+
+    private void OnHideNotRunningToggled(object sender, RoutedEventArgs e)
+    {
+        if (_ready) _vm.HideWhenGameNotRunning = HideNotRunningCheck.IsChecked == true;
     }
 
     /// <summary>One checkbox per breakout kind — the re-enable path for a window that was

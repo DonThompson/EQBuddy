@@ -219,6 +219,11 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         get => _settings.HideWhenGameUnfocused;
         set { _settings.HideWhenGameUnfocused = value; PersistAnd(); }
     }
+    public bool HideWhenGameNotRunning
+    {
+        get => _settings.HideWhenGameNotRunning;
+        set { _settings.HideWhenGameNotRunning = value; PersistAnd(); }
+    }
     public bool KeepAboveOverlays
     {
         get => _settings.KeepAboveOverlays;

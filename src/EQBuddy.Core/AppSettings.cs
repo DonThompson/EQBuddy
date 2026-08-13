@@ -258,6 +258,11 @@ public sealed class AppSettings
     /// its buttons (sicliffe-cloud, discussion #41). Off by default; when the game isn't
     /// running at all the widget always shows (people configure it outside the game).</summary>
     public bool HideWhenGameUnfocused { get; set; }
+    /// <summary>Hide the widget (and every satellite) while EverQuest Legends isn't
+    /// RUNNING at all (#114) — the complement of <see cref="HideWhenGameUnfocused"/>,
+    /// which deliberately keeps the widget visible in that case. Both off by default;
+    /// they compose. EQBuddy's own windows having focus always overrides the hide.</summary>
+    public bool HideWhenGameNotRunning { get; set; }
 
     // Breakout stat windows (BREAKOUT-*): one position + Fight/Session scope per kind.
     // They open while the widget is minimized with the matching star set.

@@ -340,7 +340,15 @@
                 <TextBlock Text="Hide the widget while the game is running but not focused" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
-            <TextBlock Text="Alt-tab to a browser and the widget (and its chips and breakout windows) gets out of the way; alt-tab back to the game and everything returns. The widget always shows when the game isn't running."
+            <TextBlock Text="Alt-tab to a browser and the widget (and its chips and breakout windows) gets out of the way; alt-tab back to the game and everything returns. This one always shows the widget when the game isn't running — the next box covers that."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <CheckBox x:Name="HideNotRunningCheck" Margin="0,8,0,0"
+                      Checked="OnHideNotRunningToggled" Unchecked="OnHideNotRunningToggled">
+                <TextBlock Text="Hide the widget while the game isn't running at all" FontSize="12"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </CheckBox>
+            <TextBlock Text="The overlay exists only while you play: quit the game and everything disappears, launch it and everything returns (within a few seconds). Need it back without the game — say, to browse session history? Launch EQBuddy again from the Start menu: the running copy surfaces, and stays visible while any of its windows has focus."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
             <CheckBox x:Name="KeepAboveCheck" Margin="0,10,0,0"

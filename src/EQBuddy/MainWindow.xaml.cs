@@ -3496,7 +3496,10 @@ public partial class MainWindow : Window
 
     private bool ShouldHideForFocus()
     {
-        if (!_settings.HideWhenGameUnfocused) return false;
+        // Two opt-ins share this gate (#41 unfocused / #114 not running); the actual
+        // decision lives in UI.Shared.FocusHide where tests can reach it. Everything
+        // up to that call is probe plumbing and early-outs that skip process walks.
+        if (!_settings.HideWhenGameUnfocused && !_settings.HideWhenGameNotRunning) return false;
         var fg = Native.GetForegroundWindow();
         if (fg == IntPtr.Zero) return false;
         Native.GetWindowThreadProcessId(fg, out var fgPid);
@@ -3514,10 +3517,13 @@ public partial class MainWindow : Window
         }
         if (_lastFgProbe.IsGame) return false;
 
-        // Foreground is some third app: hide only if the game is actually running.
+        // Foreground is some third app: what happens next depends on whether the
+        // game is running and which of the two hides is on.
         if (DateTime.Now - _lastGameProbe.At > TimeSpan.FromSeconds(5))
             _lastGameProbe = (DateTime.Now, EqConfig.IsGameRunning());
-        return _lastGameProbe.Running;
+        return EQBuddy.UI.Shared.FocusHide.Decide(
+            _settings.HideWhenGameUnfocused, _settings.HideWhenGameNotRunning,
+            foregroundIsSelf: false, foregroundIsGame: false, _lastGameProbe.Running);
     }
 
     // ---- click-through (INPUT-*) ----
