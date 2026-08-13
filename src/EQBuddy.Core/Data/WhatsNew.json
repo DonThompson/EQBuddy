@@ -1,5 +1,18 @@
 [
  {
+  "version": "1.71.0",
+  "date": "2026-08-13",
+  "highlights": [
+   "FIXED (issue #116, thanks Fennec-Halas): bards no longer get a false 🐌 slow alert when Selo's Accelerando fades — \"You slow down.\" is both a real slow's landing line AND how Selo's haste wears off, and EQBuddy now reads the \"You forget…\" line to tell them apart. Honest tradeoff: a real slow landing within 45 seconds of dropping Selo's goes unannounced once.",
+   "FIXED (discussion #117, thanks Snagglefern): windows no longer teleport on multi-monitor rigs. If EQBuddy relaunched while a display was asleep, a parked window fell back to a default corner and the fallback OVERWROTE your saved spot — permanently. A fallback is never saved now; only your own drags are. Your windows wait where you left them.",
+   "FIXED (discussion #119, Snagglefern again): portable-zip users no longer \"revert\" after updating. The banner used to run the installer, which updated a DIFFERENT copy in Program Files while your portable folder stayed old. EQBuddy now knows it's running portable and sends you to the release page for the new portable zip instead. (Settings and history live in %AppData% — replacing the folder never touches them.)",
+   "NEW: a system tray icon, always present while EQBuddy runs (#114 follow-up, thanks Frankthetankk) — when the widget hides itself, the tray icon is how you see it's alive and click it back. Windows tucks new tray icons behind the ^ chevron; drag it out if you want it always visible.",
+   "NEW (discussion #94, Frankthetankk's field report): 🐌 chips now show counter type and count on their face — \"Slowed 40% · disease 12\" — and the chip stack can be parked BEFORE you're ever slowed: open Options and an empty stack shows a draggable \"drag me\" placeholder.",
+   "NEW (discussion #106, bjstrange's rule, built as spoken): a Sky item that several classes want but none of your filtered classes claim now ticks the first owning class with a * marker — hover it to see who else wants the item, and move the tick if the guess was wrong. Touching the checkbox clears the *.",
+   "EQBuddy is a BETA and every item above came from a player report filed within a day of the last release. Keep them coming: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.70.0",
   "date": "2026-08-12",
   "highlights": [
