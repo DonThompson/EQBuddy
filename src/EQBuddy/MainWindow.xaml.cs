@@ -235,6 +235,10 @@ public partial class MainWindow : Window
             Loaded += (_, _) => Dispatcher.BeginInvoke(() => OnInventoryWindow(this, new RoutedEventArgs()),
                 System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
+        if (Environment.GetEnvironmentVariable("EQBUDDY_GEARLOCKER") == "1")
+            Loaded += (_, _) => Dispatcher.BeginInvoke(() => OnGearLocker(this, new RoutedEventArgs()),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
         // Screenshot/debug hook, same family as EQBUDDY_QUESTS: open straight into
         // archive review of the given file (#74), skipping the file dialog.
         if (Environment.GetEnvironmentVariable("EQBUDDY_REVIEW") is { Length: > 0 } reviewPath)
@@ -555,7 +559,17 @@ public partial class MainWindow : Window
 
     private readonly EqlWikiItemService _wikiItems =
         new(System.IO.Path.Combine(Core.AppPaths.Dir, "wiki-cache", "items"));
+    internal EqlWikiItemService WikiItems => _wikiItems;
     private ItemInfoWindow? _itemWindow;
+    private GearLockerWindow? _gearLockerWindow;
+
+    private void OnGearLocker(object sender, RoutedEventArgs e)
+    {
+        if (_gearLockerWindow is { IsLoaded: true } open) { open.Activate(); return; }
+        _gearLockerWindow = new GearLockerWindow(this);
+        _gearLockerWindow.Closed += (_, _) => _gearLockerWindow = null;
+        _gearLockerWindow.Show();
+    }
 
     /// <summary>Loot rows and the search box route here: one shared popup, re-driven
     /// per lookup.</summary>
