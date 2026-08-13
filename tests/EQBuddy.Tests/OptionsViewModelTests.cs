@@ -53,6 +53,7 @@ public sealed class OptionsViewModelTests
         Assert.Equal(OverlaySections.Catalog.Length, s.SectionOrder.Count);
         Assert.DoesNotContain("bogus", s.SectionOrder);
         Assert.Contains(vm.Cards, c => c.Key == "sky" && c.Title == "Sky Quest");
+        Assert.Contains(vm.Cards, c => c.Key == "gear" && c.Title == "Gear");
 
         vm.MoveCard("kills", -1);                        // top can't move up
         Assert.Equal("kills", s.SectionOrder[0]);
@@ -134,5 +135,21 @@ public sealed class OptionsViewModelTests
         Assert.False(settings.ApplyDefaultSkyQuestChecklist());
         Assert.Equal(count, settings.SkyQuestChecklist.Count);
         Assert.True(settings.SkyQuestChecklist[0].Acquired);
+    }
+
+    [Fact]
+    public void GearSectionSlotsInAfterSky()
+    {
+        var settings = new AppSettings { SectionOrder = ["combat", "motes", "sky", "tracked"] };
+
+        Assert.True(settings.ApplyDefaultGearSection());
+        Assert.Equal(["combat", "motes", "sky", "gear", "tracked"], settings.SectionOrder);
+        Assert.False(settings.ApplyDefaultGearSection());
+
+        var noSky = new AppSettings { SectionOrder = ["combat", "motes", "tracked"] };
+        Assert.True(noSky.ApplyDefaultGearSection());
+        Assert.Equal(["combat", "motes", "gear", "tracked"], noSky.SectionOrder);
+
+        Assert.False(new AppSettings().ApplyDefaultGearSection());
     }
 }
