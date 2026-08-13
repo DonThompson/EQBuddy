@@ -17,24 +17,16 @@ internal enum StatSort { Total, Hits, Avg, Rate }
 /// the WPF file verbatim.</summary>
 internal static class BreakdownRows
 {
-    // Derived tones of the 2026-08-11 modernization (WPF composes these in
-    // ThemeManager as alpha variations of the accent). AppTheme doesn't carry them
-    // yet — composed here from the live accent at fill time; rows rebuild whenever
-    // their numbers move, so a theme switch reaches them within a tick. Flagged for
-    // AppTheme consolidation.
-    public static IBrush TrackBrush()
-    {
-        var accent = AppTheme.AccentBrush.Color;
-        return new SolidColorBrush(Color.FromArgb(0x1E, accent.R, accent.G, accent.B));
-    }
+    public static IBrush TrackBrush() => AppTheme.TrackBrush;
 
     /// <summary>The bar fill: accent gradient, deep→bright left to right — depth
-    /// without a second palette row (2026-08-11 modernization).</summary>
+    /// without a second palette row (2026-08-11 modernization). Rebuilt at fill time
+    /// (gradients can't live-mutate like the AppTheme singletons); rows rebuild
+    /// whenever their numbers move, so a theme switch reaches them within a tick.</summary>
     public static IBrush BarBrush()
     {
         var accent = AppTheme.AccentBrush.Color;
-        var deep = Color.FromArgb(accent.A,
-            (byte)(accent.R * 6 / 10), (byte)(accent.G * 6 / 10), (byte)(accent.B * 6 / 10));
+        var deep = AppTheme.AccentDeepBrush.Color;
         return new LinearGradientBrush
         {
             StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),

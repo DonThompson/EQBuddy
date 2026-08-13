@@ -168,7 +168,7 @@ public sealed class SpawnsWindow : Window
         return new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = LocalTheme.HairlineBrush,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
             Child = layout,

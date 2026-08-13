@@ -589,7 +589,7 @@ public sealed class MapWindow : Window
             var pill = new Border
             {
                 CornerRadius = new CornerRadius(4), Padding = new Thickness(7, 1, 7, 2),
-                Background = isDue ? AppTheme.BadBrush : ZoneTheming.TrackBrush,
+                Background = isDue ? AppTheme.BadBrush : AppTheme.TrackBrush,
             };
             var pillText = new TextBlock
             {
@@ -602,7 +602,7 @@ public sealed class MapWindow : Window
             {
                 var frac = isDue ? 1.0 : Math.Clamp(1 - (due.Value - now).TotalSeconds / dur, 0, 1);
                 var track = new Grid { Height = 3, Margin = new Thickness(7, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-                var trackBg = new Border { CornerRadius = new CornerRadius(1.5), Background = ZoneTheming.TrackBrush };
+                var trackBg = new Border { CornerRadius = new CornerRadius(1.5), Background = AppTheme.TrackBrush };
                 track.Children.Add(trackBg);
                 var fill = new Border
                 {
@@ -622,8 +622,8 @@ public sealed class MapWindow : Window
                 Child = body, CornerRadius = new CornerRadius(9),
                 Padding = new Thickness(9, 6, 9, 7), Margin = new Thickness(0, 0, 0, 6),
                 BorderThickness = new Thickness(1),
-                Background = ZoneTheming.RaisedBrush,
-                BorderBrush = isDue ? AppTheme.BadBrush : ZoneTheming.HairlineBrush,
+                Background = AppTheme.RaisedBrush,
+                BorderBrush = isDue ? AppTheme.BadBrush : AppTheme.HairlineBrush,
             };
             ToolTip.SetTip(row, camp is null
                 ? $"{t.Name} — no camp location yet: type /loc during the fight and the next kill pins it"

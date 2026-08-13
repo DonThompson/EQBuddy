@@ -244,12 +244,5 @@ public sealed class MezChipsWindow : Window
         }
     }
 
-    /// <summary>WPF derives this in ThemeManager (accent at 12% alpha); AppTheme has no
-    /// TrackBrush yet, so it's derived here per rebuild — flagged for consolidation.
-    /// Rebuilt each time so a theme switch repaints the track on the next chip change.</summary>
-    private static IBrush TrackBrush()
-    {
-        var accent = AppTheme.AccentBrush.Color;
-        return new SolidColorBrush(Color.FromArgb(0x1E, accent.R, accent.G, accent.B));
-    }
+    private static IBrush TrackBrush() => AppTheme.TrackBrush;
 }

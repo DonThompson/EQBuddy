@@ -148,8 +148,8 @@ public sealed class ZoneShareWindow : Window
             Child = stack, CornerRadius = new CornerRadius(9),
             Padding = new Thickness(11, 8, 11, 10), Margin = new Thickness(0, 0, 0, 8),
             BorderThickness = new Thickness(1),
-            Background = ZoneTheming.RaisedBrush,
-            BorderBrush = ZoneTheming.HairlineBrush,
+            Background = AppTheme.RaisedBrush,
+            BorderBrush = AppTheme.HairlineBrush,
         };
     }
 

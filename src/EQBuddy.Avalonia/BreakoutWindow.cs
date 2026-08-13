@@ -18,7 +18,6 @@ public sealed class BreakoutWindow : Window
     private readonly AppSettings _settings;
     private readonly BreakoutKind _kind;
     private readonly Border _chrome;
-    private readonly SolidColorBrush _hairline = new();
     private readonly TextBlock _title = new();
     private readonly TextBlock _subtitle = AppTheme.DimText("");
     private readonly TextBlock _empty = AppTheme.DimText("");
@@ -99,7 +98,7 @@ public sealed class BreakoutWindow : Window
         _chrome = new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = _hairline,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
             Padding = new Thickness(10, 7, 10, 9),
@@ -157,8 +156,6 @@ public sealed class BreakoutWindow : Window
     {
         var opacity = _settings.BackgroundOpacity;
         var tint = AppTheme.BgBrush.Color;
-        var accent = AppTheme.AccentBrush.Color;
-        _hairline.Color = Color.FromArgb(0x26, accent.R, accent.G, accent.B);
         if (_appliedBg == (opacity, tint)) return;
         _appliedBg = (opacity, tint);
         _chrome.Background = new SolidColorBrush(

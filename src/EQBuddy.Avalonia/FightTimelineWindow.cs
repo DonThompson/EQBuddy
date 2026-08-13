@@ -31,7 +31,6 @@ public sealed class FightTimelineWindow : Window
     private (double Left, double Top) _placed;
 
     private readonly Border _chrome;
-    private readonly SolidColorBrush _hairline = new();
     private readonly TextBlock _title = new();
     private readonly TextBlock _subtitle = new();
     private readonly TextBlock _peak = new();
@@ -163,7 +162,7 @@ public sealed class FightTimelineWindow : Window
         _chrome = new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = _hairline,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
             Padding = new Thickness(12, 8, 12, 10),
@@ -235,9 +234,6 @@ public sealed class FightTimelineWindow : Window
     private void Refresh()
     {
         ChartBrushes.Refresh(_settings);
-        var accent = AppTheme.AccentBrush.Color;
-        _hairline.Color = Color.FromArgb(0x26, accent.R, accent.G, accent.B);
-
         var version = SourceVersion?.Invoke() ?? -1;
         if (version >= 0 && version == _sourceVersion && _view.Timeline is not null) return;
         _sourceVersion = version;
