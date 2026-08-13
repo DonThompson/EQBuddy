@@ -8,6 +8,7 @@
    "POLISHED — every graph got the new chart treatment: the fight timeline's DPS graph and the Combat card sparkline now draw smooth curves (a shaping that mathematically cannot exaggerate — the curve never leaves the range of the real numbers), with a soft fill under your line, a ringed dot on the peak, labeled gridlines, and a proper legend. Chart colors are new too, and colorblind-checked: your damage is deep brass, your pet green, and damage you took moved from red to BLUE — red now always means something is actually wrong.",
    "NEW — stance and invocation changes appear on the fight timeline as thin dotted markers with labels — see exactly when you swapped modes mid-pull and what it did to the graph.",
    "NEW — Sky quest tabs sort by closest-to-done, and every quest header shows its score (\"· 2/3\", \"· ready\") — which quest is actually in reach, at a glance.",
+   "NEW — EQBuddy now ships with a built-in catalog of 10,955 items from eqlwiki (all of Category:Items, refreshed weekly): item stats on hover work instantly and OFFLINE, the Gear Locker fills in without fetching, and \"what is this item for\" (quests, recipes, drop zones) answers everywhere. A freshly-fetched wiki page still outranks the catalog, and the item window says which one you're looking at.",
    "EQBuddy is a BETA — if a number looks wrong, a chart confuses you, or the Gear Locker flags the wrong dump candidate, tell us: ⚙ → Help → Send feedback."
   ]
  },
