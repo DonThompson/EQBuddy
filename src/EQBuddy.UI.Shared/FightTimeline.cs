@@ -16,10 +16,17 @@ public sealed record TimelineLane(string Name, LaneKind Kind, long Total, List<T
 /// <summary>Everything the fight-timeline window draws, precomputed off the UI thread.
 /// Durations and positions are seconds from the pull's start — the view multiplies by
 /// pixels-per-second and never touches wall-clock time.</summary>
+/// <summary>A moment the fight changed shape: a stance switch or an invocation
+/// recital. Drawn as a thin marker line across the lanes, not a lane of its own —
+/// a mode has no amounts, only a boundary.</summary>
+public sealed record PhaseMark(double Sec, string Label);
+
 public sealed class FightTimeline
 {
     public double DurationSeconds { get; init; }
     public List<TimelineLane> Lanes { get; init; } = [];
+    /// <summary>Stance / invocation changes inside the fight window, in time order.</summary>
+    public List<PhaseMark> Phases { get; init; } = [];
     /// <summary>Rolling DPS per whole second of the fight (you + pet together —
     /// the number the meter headlines), plus the pet's own share and what the
     /// mobs did to you, for the three-line graph.</summary>
@@ -58,6 +65,7 @@ public static class TimelineBuilder
         var pet = new long[seconds];
         var incoming = new long[seconds];
         var lanes = new Dictionary<(LaneKind Kind, string Name), List<TimelineMark>>();
+        var phases = new List<PhaseMark>();
         var count = 0;
 
         foreach (var e in events)
@@ -127,6 +135,16 @@ public static class TimelineBuilder
                         new TimelineMark(sec, 0, false, Hollow: true, $"{rb.Attacker} · absorbed by rune"));
                     break;
 
+                // Mode changes mark a boundary, not an amount (Companion's timeline
+                // shows these as lanes; a marker line says the same thing in no rows).
+                case StanceEvent st:
+                    phases.Add(new PhaseMark(sec, $"{st.Stance} stance"));
+                    continue;   // a boundary is not an event-count event
+
+                case InvocationEvent inv:
+                    phases.Add(new PhaseMark(sec, $"{inv.Invocation} invocation"));
+                    continue;
+
                 default:
                     continue;   // casts/kills ride the window for future lanes, not this one
             }
@@ -139,6 +157,7 @@ public static class TimelineBuilder
         return new FightTimeline
         {
             DurationSeconds = duration,
+            Phases = phases,
             Lanes = OrderAndCap(lanes),
             DpsSeries = youSeries,
             PetDpsSeries = petSeries,

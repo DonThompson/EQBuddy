@@ -2362,11 +2362,13 @@ public partial class MainWindow : Window
             var classDone = classGroup.Count(i => i.Acquired);
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
 
-            // Unfinished quests float to the top (Reddit, 2026-08-11: "I've only got
-            // 1-2 left for each class and I keep forgetting which items I need") —
-            // the ✔ rows are trophies now and read fine from the bottom of the list.
+            // Unfinished quests float to the top (Reddit, 2026-08-11), and within
+            // the unfinished, CLOSEST TO DONE leads (the 2026-08-13 pass — the
+            // question a tab answers is "which quest is actually in reach"). The ✔
+            // rows are trophies and read fine from the bottom of the list.
             foreach (var rewardGroup in classGroup.GroupBy(i => i.Reward)
                          .OrderBy(g => IsSkyRewardCompleted(classGroup.Key, g.Key))
+                         .ThenByDescending(g => (double)g.Count(i => i.Acquired) / g.Count())
                          .ThenBy(g => g.Key))
             {
                 // The reward line is itself a checkbox: "I turned this in" (#73).
@@ -2381,6 +2383,11 @@ public partial class MainWindow : Window
                 };
                 if (!stateOk) continue;
                 var rewardItems = rewardGroup.ToList();
+                // The header carries the quest's own score — "2/3" says how close
+                // without opening anything; "ready" says the running is over.
+                var have = rewardItems.Count(i => i.Acquired);
+                var progress = completed ? "" : have == rewardItems.Count
+                    ? " · ready" : $" · {have}/{rewardItems.Count}";
                 var rewardCheck = new CheckBox
                 {
                     IsChecked = completed,
@@ -2389,7 +2396,7 @@ public partial class MainWindow : Window
                               "Check when you've turned everything in — quest complete.",
                     Content = new TextBlock
                     {
-                        Text = completed ? $"✔ {rewardGroup.Key}" : rewardGroup.Key,
+                        Text = (completed ? $"✔ {rewardGroup.Key}" : rewardGroup.Key) + progress,
                         FontSize = 11,
                         FontWeight = FontWeights.SemiBold,
                         Foreground = (Brush)FindResource("AccentBrush"),

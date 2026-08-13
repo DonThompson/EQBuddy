@@ -494,6 +494,21 @@ internal sealed class LanesPanel : FrameworkElement
             }
         }
 
+        // Phase markers: stance/invocation changes as thin dotted boundaries across
+        // the lanes with a small label at the top — a mode change has no amount, so
+        // it gets a line, not a lane.
+        foreach (var phase in t.Phases)
+        {
+            var px = LabelWidth + (phase.Sec - v.OffsetSec) * v.PixelsPerSec;
+            if (px < LabelWidth - 2 || px > ActualWidth + 2) continue;
+            dc.DrawLine(new Pen(v.Dim, 0.7) { DashStyle = DashStyles.Dot },
+                new Point(px, 0), new Point(px, t.Lanes.Count * _laneHeight));
+            var pl = new FormattedText($"→ {phase.Label}", CultureInfo.CurrentUICulture,
+                FlowDirection.LeftToRight, face, 9, v.Dim, dpi);
+            dc.DrawText(pl, new Point(
+                Math.Min(px + 3, ActualWidth - pl.Width - 2), 1));
+        }
+
         DrawAxis(dc, v, t, plotW, t.Lanes.Count * _laneHeight, face, dpi);
     }
 

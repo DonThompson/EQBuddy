@@ -41,6 +41,23 @@ public class FightTimelineTests
     }
 
     [Fact]
+    public void StanceAndInvocationChangesBecomePhaseMarks()
+    {
+        var t = Build(60, "",
+            Ev(2, "You slash a gnoll pup for 10 points of damage."),
+            Ev(10, "You assume a defensive stance."),
+            Ev(30, "You begin reciting the empowering invocation."),
+            Ev(40, "You slash a gnoll pup for 12 points of damage."));
+
+        Assert.Equal(2, t.Phases.Count);
+        Assert.Equal(10, t.Phases[0].Sec, 1);
+        Assert.Contains("defensive", t.Phases[0].Label, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("stance", t.Phases[0].Label);
+        Assert.Contains("invocation", t.Phases[1].Label);
+        Assert.Equal(2, t.EventCount);   // boundaries aren't events
+    }
+
+    [Fact]
     public void PetDamageGetsItsOwnLanesAndSeries()
     {
         var t = Build(20, pet: "Vexthar",
