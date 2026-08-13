@@ -3,6 +3,9 @@
   "version": "1.75.0",
   "date": "2026-08-13",
   "highlights": [
+   "NEW - EPIC 1.0 CHECKLIST (contributed by dandrews2930, hours after the idea landed in discussion #121 - thanks tvongaza for the ask): a per-class card of every epic quest step from the community wiki, 486 steps across all 14 classes, with manual checkboxes and a \"Classic-doable only\" toggle so you can pre-farm what already drops before the epics go live. A prototype by its author's own framing - auto-checking from your loot comes later.",
+   "IMPROVED - Sky Quest tabs (contributed by dandrews2930, from suggestions by Fedarov #125 and wizen #126): each class tab now shows its turn-in NPC up top, and tab headers count QUESTS by state - D done / R ready / P partial, color-coded - instead of raw item counts.",
+   "FIXED (discussion #124, thanks wizen): typing a decimal WITH a unit into a spawn timer (\"8.5m\") now works - it used to be silently rejected, the override cleared, and the catalog's own clock took over, which looked like 8.5m producing a 16.5-minute timer.",
    "NEW - right-click empty space on the zone map for a full RESET of that zone's spawn points: every archived point (confirmed ones included) clears after a are-you-sure that shows the real count, and the zone starts learning fresh from your next kills. The reset is durable - nothing already archived comes back on its own.",
    "EQBuddy is a BETA - if something looks wrong, tell us: ⚙ → Help → Send feedback."
   ]

@@ -689,6 +689,9 @@ public class SpawnTimerTests
     // ---- duration text ----
 
     [Theory]
+    [InlineData("8.5m", 510)]       // #124 (wizen): decimal + unit must not double
+    [InlineData("8.5", 510)]
+    [InlineData("1.5h", 5400)]
     [InlineData("22", 1320)]        // bare number = minutes, the wiki convention
     [InlineData("90s", 90)]
     [InlineData("8m", 480)]

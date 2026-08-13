@@ -2632,15 +2632,20 @@ public partial class MainWindow : Window
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
             var turnInNpc = classGroup.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0);
             if (!string.IsNullOrWhiteSpace(turnInNpc))
-                panel.Children.Add(new TextBlock
+            {
+                var npcRow = new TextBlock
                 {
                     Text = "Turn-in NPC: " + turnInNpc,
                     FontSize = 10.5,
-                    Foreground = (Brush)FindResource("DimBrush"),
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     Margin = new Thickness(0, 0, 0, 4),
                     ToolTip = $"{classGroup.Key} Plane of Sky turn-in NPC: {turnInNpc}",
-                });
+                };
+                // SetResourceReference so an in-place theme switch repaints rebuilt
+                // rows too (house rule; tiny post-merge polish on #127).
+                npcRow.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+                panel.Children.Add(npcRow);
+            }
             var visibleRewards = 0;
 
             // Unfinished quests float to the top (Reddit, 2026-08-11), and within

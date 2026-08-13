@@ -32,16 +32,26 @@ public static class SpawnDurationText
             return total > 0 ? total : null;
         }
 
-        // Compounds: walk number+unit pairs ("3d 12h", "1h30m", "6m40s").
-        double seconds = 0, number = 0;
-        bool haveNumber = false, sawUnit = false;
+        // Compounds: walk number+unit pairs ("3d 12h", "1h30m", "6m40s"). Decimals
+        // work WITH units too ("8.5m" = 8½ minutes) — #124 (wizen): rejecting the
+        // decimal silently cleared the override and the catalog's own clock took
+        // over, which read as "8.5m produced a 16.5 minute timer".
+        double seconds = 0, number = 0, scale = 1;
+        bool haveNumber = false, sawUnit = false, seenDot = false;
         foreach (var ch in text)
         {
-            if (char.IsDigit(ch) || ch == '.')
+            if (char.IsDigit(ch))
             {
-                if (!haveNumber) { number = 0; haveNumber = true; }
-                if (ch == '.') return ParseSimple(text); // decimals only in the simple form
-                number = number * 10 + (ch - '0');
+                if (!haveNumber) { number = 0; scale = 1; seenDot = false; haveNumber = true; }
+                if (seenDot) { scale /= 10; number += (ch - '0') * scale; }
+                else number = number * 10 + (ch - '0');
+            }
+            else if (ch == '.')
+            {
+                // ".5" (bare leading-dot minutes) or doubled dots: the simple
+                // parser decides — TryParse accepts the former, rejects the rest.
+                if (!haveNumber || seenDot) return ParseSimple(text);
+                seenDot = true;
             }
             else if (ch is 'd' or 'h' or 'm' or 's')
             {
