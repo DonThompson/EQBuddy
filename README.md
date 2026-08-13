@@ -63,7 +63,9 @@ page instead.
 | ![Options, tabbed](docs/screenshots/options-tabs.png) | ![See-through mode](docs/screenshots/widget-seethrough.png) |
 | **Options, now in tabs** — Look · Alerts & chips · Watch rules · Cards & windows · Behavior. The alerts tab shown: the 🐌 slow alert (with its spoken voice and raid-only mode) and the buff-timer display controls | **See-through mode** — the panel fades, the text stays sharp; with click-through on, the game gets every click |
 | ![Zone map](docs/screenshots/map-window.png) | ![Travel route](docs/screenshots/travel-window.png) |
-| **Zone map** — classic map packs with your `/loc` marker, a comet-tail breadcrumb trail, and **spawn-point circles** learned from your own kills (named in the theme accent, pulsing when a respawn is imminent; per-zone archives that improve forever, shareable as paste-safe strings); every running spawn timer shows in the side panel **and** as a camp pin with its countdown | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
+| **Zone map** — classic map packs with your `/loc` marker, a comet-tail breadcrumb trail, and **spawn-point circles** learned from your own kills; every running spawn timer shows in the side panel **and** as a camp pin with its countdown | **Travel route** — hop-by-hop directions from where you stand to any zone, from the same graph that sorts quests by distance |
+| ![Spawn-point circles with named labels](docs/screenshots/spawn-circles.png) | ![Share zone knowledge](docs/screenshots/zone-share.png) |
+| **Spawn-point circles, up close** — named spawns wear the theme accent *with their name beside them* (a running timer's camp pin takes over with a countdown, like Bloodgurgler here); trash camps sit dim; circles pulse when a respawn is due within ten seconds. All learned from your own kills near your own `/loc`s — this is real Crushbone data | **Share zone knowledge** — a zone's spawn points and timers as one paste-safe string; imports preview every change first, and a timer far off the zone's known clock arrives flagged |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
 | **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
 
@@ -239,6 +241,10 @@ Mez timers (crowd control you can trust):
   a stack. The log never states mez durations, so EQBuddy **learns them from your own
   fades**: the gap between landing and a clean wear-off becomes that spell's clock, and
   rank upgrades re-teach it on the next honest observation.
+- Breaks are read from the game's own mouth first: the **"X has been awakened by Y."**
+  line drops exactly one chip, and a same-named add that *resisted* your AE mez is
+  known to be awake — so its flailing never eats the chip of the sibling you actually
+  mezzed (built from a player's 2,800-line Plane of Hate log, discussion #122).
 - The built-in **"CC broke" rule** alerts the moment a mez, charm, root, or stun on
   *your* target ends early — with the mob's name, so you know who's loose.
 
