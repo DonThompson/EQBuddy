@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.69.2",
+  "date": "2026-08-12",
+  "highlights": [
+   "FIXED (issues #110, #111, #115 — thanks Frankthetankk and bjstrange, and Frankthetankk again for tying the duplicate reports together): the ⚙ menu's \"Data & imports\" and \"Help\" shelves wouldn't open since 1.67.1, which locked away Check for updates, the achievements import, log-folder tools, the tutorial, and Send feedback. The menu's styling predated the shelves and simply had no place to show a submenu — now it does, with a ▸ marker so shelves are visibly shelves. Verified by actually clicking every nested item this time, not by looking at a screenshot.",
+   "EQBuddy is a BETA — if something looks wrong or you wish it did something else, tell us in GitHub Discussions (⚙ → Help → Send feedback, reachable again as of this update)."
+  ]
+ },
+ {
   "version": "1.69.1",
   "date": "2026-08-12",
   "highlights": [

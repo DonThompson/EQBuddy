@@ -299,6 +299,48 @@
         </Setter>
     </Style>
 
+    <!-- Submenu headers ("Data & imports", "Help") need a template with a PART_Popup:
+         MenuItem's own hover/click logic drives IsSubmenuOpen, but the flat template
+         below gives it no popup to show, so nested items rendered yet never opened
+         (#110). The popup chrome mirrors the ContextMenu template above. -->
+    <ControlTemplate x:Key="SubmenuHeaderMenuItem" TargetType="MenuItem">
+        <Grid>
+            <Border x:Name="bd" Background="Transparent" CornerRadius="5" Padding="10,7">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ContentPresenter ContentSource="Header" VerticalAlignment="Center"
+                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    <TextBlock Grid.Column="1" Text="&#x25B8;" Margin="12,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource DimBrush}"/>
+                </Grid>
+            </Border>
+            <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="2" VerticalOffset="-6"
+                   AllowsTransparency="True" Focusable="False"
+                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                <Border Background="{DynamicResource PopupBrush}" CornerRadius="8"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                        Padding="4">
+                    <StackPanel IsItemsHost="True"/>
+                </Border>
+            </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PanelHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsSubmenuOpen" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PanelHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
     <Style TargetType="MenuItem">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="FontSize" Value="12"/>
@@ -320,6 +362,11 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="Role" Value="SubmenuHeader">
+                <Setter Property="Template" Value="{StaticResource SubmenuHeaderMenuItem}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type Separator}">
