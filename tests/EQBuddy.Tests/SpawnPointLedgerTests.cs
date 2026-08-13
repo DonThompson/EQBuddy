@@ -238,6 +238,55 @@ public class SpawnPointLedgerTests
         Assert.Null(l2.ProjectedRespawn("Permafrost Keep", p2));   // no zone clock
     }
 
+    // ---- right-click removal (David, 2026-08-13) ----
+
+    [Fact]
+    public void RemovePointDeletesTheNearestAndSurvivesReplay()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eqbuddy-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            void ReplayAll(SpawnPointLedger l)
+            {
+                l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+                l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+                l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+                l.Apply(new LocationEvent(T0.AddMinutes(3), -600, 300, 3));
+                l.Apply(new KillEvent(T0.AddMinutes(4), "a froglok scryer", "You"));
+            }
+            var l1 = Ledger(dir);
+            ReplayAll(l1);
+            var before = l1.Revision;
+            Assert.True(l1.RemovePoint("Lower Guk", -600, 300));
+            Assert.True(l1.Revision > before);   // the map's rebuild signal
+            var p = Assert.Single(l1.Snapshot("Lower Guk").Points);
+            Assert.Equal(-500, p.LocY);
+
+            // A restart replays the same history: the removed kills sit behind the
+            // high-water mark, so the point stays gone.
+            var l2 = Ledger(dir);
+            ReplayAll(l2);
+            Assert.Single(l2.Snapshot("Lower Guk").Points);
+
+            // But a FRESH kill near the spot honestly re-learns it.
+            l2.Apply(new LocationEvent(T0.AddMinutes(30), -600, 300, 3));
+            l2.Apply(new KillEvent(T0.AddMinutes(31), "a froglok scryer", "You"));
+            Assert.Equal(2, l2.Snapshot("Lower Guk").Points.Count);
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { } }
+    }
+
+    [Fact]
+    public void RemovePointMissesWhenNothingIsNear()
+    {
+        var l = Ledger();
+        l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+        l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+        l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+        Assert.False(l.RemovePoint("Lower Guk", 900, 900));   // nowhere near anything
+        Assert.Single(l.Snapshot("Lower Guk").Points);
+    }
+
     // ---- pet folding (David, 2026-08-13: pets roll into their owner names) ----
 
     [Fact]

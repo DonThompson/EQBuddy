@@ -287,7 +287,8 @@ Maps & travel:
   the mobs seen there (with kill counts), the last kill, and the projected respawn
   from the zone's own clock; a circle **pulses when a respawn is due within ten
   seconds**. Multi-spawn named (Crushbone royal guards, we see you) show every point
-  they've actually died at.
+  they've actually died at. Wrong dot? **Right-click a circle to remove it** — the
+  removal sticks across restarts, and new kills near the spot honestly re-learn it.
 - **Share zone knowledge** (map window, bottom of the named panel): export a zone's
   spawn points and timers — learned ones and ones you typed alike — as one
   paste-safe `EQBZ` string for a friend, or

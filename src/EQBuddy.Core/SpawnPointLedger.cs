@@ -197,6 +197,26 @@ public sealed class SpawnPointLedger
         lock (_lock) FlushLocked();
     }
 
+    /// <summary>Remove the archived point nearest (locY, locX) — the map's
+    /// right-click (David, 2026-08-13). Durable against replay: the removed kills
+    /// sit behind the high-water mark, so restarts don't resurrect the point.
+    /// Fresh kills near the spot legitimately re-learn it, which is the honest
+    /// semantic for "that dot is wrong" — the log always outranks an edit.</summary>
+    public bool RemovePoint(string zone, double locY, double locX)
+    {
+        lock (_lock)
+        {
+            var archive = Load(zone);
+            var point = FindCluster(archive.Points, locY, locX);
+            if (point is null) return false;
+            archive.Points.Remove(point);
+            Revision++;
+            Save(archive);   // a user edit saves immediately, not on the debounce
+            _dirty.Remove(archive.Zone);
+            return true;
+        }
+    }
+
     /// <summary>"Royal guard pet" folds into "Royal guard" (David, 2026-08-13: pets
     /// roll into their owner names — an NPC's summon dying at the camp is the camp's
     /// business, not a separate creature worth archiving).</summary>

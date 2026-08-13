@@ -317,6 +317,7 @@ public sealed class MapWindow : Window
         // Built fresh at open — the countdown must read the clock, not the rebuild.
         var meta = new SpawnCircle { Ring = ring, Halo = halo, Point = p, NamedName = namedName };
         ring.ToolTipOpening += (_, _) => ring.ToolTip = CircleTip(zone, meta);
+        ring.ContextMenu = CircleMenu(zone, meta);
         _spawnCircles.Add((halo, mx, my, -(d + 8) / 2, -(d + 8) / 2));
         _spawnCircles.Add((ring, mx, my, -d / 2, -d / 2));
         _canvas.Children.Add(halo);
@@ -333,6 +334,37 @@ public sealed class MapWindow : Window
             _canvas.Children.Add(label);
         }
         _circleMeta.Add(meta);
+    }
+
+    /// <summary>Right-click on a circle: remove the point from the zone's archive
+    /// (David, 2026-08-13). Honest about the semantics in the item itself — the
+    /// removal survives restarts, but fresh kills near the spot re-learn it,
+    /// because the log always outranks an edit.</summary>
+    private ContextMenu CircleMenu(string zone, SpawnCircle c)
+    {
+        var menu = new ContextMenu();
+        var what = c.NamedName
+            ?? c.Point.Mobs.Keys.OrderBy(n => n, StringComparer.OrdinalIgnoreCase).First();
+        var header = new MenuItem
+        {
+            Header = c.Point.Mobs.Count > 1 ? $"{what} +{c.Point.Mobs.Count - 1} more" : what,
+            IsEnabled = false, FontSize = 11,
+        };
+        var remove = new MenuItem
+        {
+            Header = "Remove this spawn point",
+            ToolTip = "Takes the circle off the map and out of this zone's archive.\n" +
+                "New kills near this spot will honestly re-learn it — the log always wins.",
+        };
+        remove.Click += (_, _) =>
+        {
+            if (_main.SpawnPoints.RemovePoint(zone, c.Point.LocY, c.Point.LocX))
+                _status.Text = $"Spawn point removed ({what}) — new kills near that spot will re-learn it.";
+        };
+        menu.Items.Add(header);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(remove);
+        return menu;
     }
 
     /// <summary>Named circles match their timer on the CANONICAL name — the same

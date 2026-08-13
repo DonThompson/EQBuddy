@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.74.0",
+  "date": "2026-08-13",
+  "highlights": [
+   "NEW - right-click a spawn-point circle on the zone map to REMOVE it. The removal sticks across restarts (replayed history can't resurrect it), but new kills near that spot honestly re-learn the point - the log always outranks an edit. For the dot that's wrong, stale, or just in your way.",
+   "EQBuddy is a BETA - if something looks wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.73.0",
   "date": "2026-08-13",
   "highlights": [
