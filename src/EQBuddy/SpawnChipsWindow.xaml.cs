@@ -35,14 +35,17 @@ public partial class SpawnChipsWindow : Window
         _settings = main.Settings;
         ChipScale.Apply(this, _settings.ChipScale);
         WindowZoom.Route(this, () => _settings.ChipScale, main.SetChipScale);
-        if (ScreenGuard.OnScreen(_settings.SpawnChipsLeft, _settings.SpawnChipsTop, Width, Height))
-        { Left = _settings.SpawnChipsLeft; Top = _settings.SpawnChipsTop; }
+        var restored = ScreenGuard.OnScreen(_settings.SpawnChipsLeft, _settings.SpawnChipsTop, Width, Height);
+        if (restored) { Left = _settings.SpawnChipsLeft; Top = _settings.SpawnChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 40; }
+        var (placedLeft, placedTop) = (Left, Top);
         ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
         Closed += (_, _) =>
         {
-            _settings.SpawnChipsLeft = Left;
-            _settings.SpawnChipsTop = Top;
+            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
+                restored, placedLeft, placedTop, Left, Top,
+                _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
             _settings.Save();
         };
     }

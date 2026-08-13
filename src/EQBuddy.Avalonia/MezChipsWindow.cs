@@ -23,6 +23,11 @@ public sealed class MezChipsWindow : Window
     private string _signature = "";
     private PixelPoint _lastVisiblePosition;
     private bool _haveVisiblePosition;
+    // Fallback placements must never persist (#117): where the window was placed at
+    // open and whether that was the player's saved spot.
+    private PixelPoint _placed;
+    private bool _restoredSaved;
+    private bool _openedOnce;
 
     public MezChipsWindow(AppSettings settings,
         Func<IReadOnlyList<MezState>, DateTime, List<SpawnChip>>? source = null)
@@ -42,17 +47,22 @@ public sealed class MezChipsWindow : Window
 
         Opened += (_, _) =>
         {
-            if (ScreenGuard.OnScreen(this, _settings.MezChipsLeft, _settings.MezChipsTop,
-                    Width, Height))
+            _restoredSaved = ScreenGuard.OnScreen(this, _settings.MezChipsLeft,
+                _settings.MezChipsTop, Width, Height);
+            if (_restoredSaved)
                 Position = new PixelPoint((int)_settings.MezChipsLeft, (int)_settings.MezChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 120);
+            _placed = Position;
+            _openedOnce = true;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
         };
         PositionChanged += (_, _) =>
         {
-            if (!IsVisible) return;
+            // Programmatic placement is not a choice — only persist once the player
+            // has actually dragged the stack somewhere (#117).
+            if (!IsVisible || !_openedOnce || Position == _placed) return;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
             _settings.MezChipsLeft = Position.X;
@@ -60,9 +70,10 @@ public sealed class MezChipsWindow : Window
         };
         Closed += (_, _) =>
         {
-            var saved = _haveVisiblePosition ? _lastVisiblePosition : Position;
-            _settings.MezChipsLeft = saved.X;
-            _settings.MezChipsTop = saved.Y;
+            var current = _haveVisiblePosition ? _lastVisiblePosition : Position;
+            (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
+                _restoredSaved, _placed.X, _placed.Y, current.X, current.Y,
+                _settings.MezChipsLeft, _settings.MezChipsTop);
             _settings.Save();
         };
     }

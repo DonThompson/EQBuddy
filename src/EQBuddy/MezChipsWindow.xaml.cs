@@ -31,14 +31,17 @@ public partial class MezChipsWindow : Window
         ChipScale.Apply(this, _settings.ChipScale);
         if (setChipScale is not null)
             WindowZoom.Route(this, () => _settings.ChipScale, setChipScale);
-        if (ScreenGuard.OnScreen(_settings.MezChipsLeft, _settings.MezChipsTop, Width, Height))
-        { Left = _settings.MezChipsLeft; Top = _settings.MezChipsTop; }
+        var restored = ScreenGuard.OnScreen(_settings.MezChipsLeft, _settings.MezChipsTop, Width, Height);
+        if (restored) { Left = _settings.MezChipsLeft; Top = _settings.MezChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 120; }
+        var (placedLeft, placedTop) = (Left, Top);
         ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp);
         Closed += (_, _) =>
         {
-            _settings.MezChipsLeft = Left;
-            _settings.MezChipsTop = Top;
+            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
+                restored, placedLeft, placedTop, Left, Top,
+                _settings.MezChipsLeft, _settings.MezChipsTop);
             _settings.Save();
         };
     }

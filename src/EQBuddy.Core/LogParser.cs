@@ -591,6 +591,10 @@ public static partial class LogParser
         if (SlowDebuffCatalog.Default.Find(msg) is not null)
             return new SlowLandedEvent(ts, msg);
 
+        // "You forget <song>." — the SlowTracker's haste-vs-slow disambiguator (#116).
+        if (msg.StartsWith("You forget ", StringComparison.Ordinal) && msg.EndsWith('.'))
+            return new SongForgottenEvent(ts, msg["You forget ".Length..^1]);
+
         // Buff landing lines — third exact-match catalog, same disjointness guarantee.
         if (BuffDurationCatalog.Default.Find(msg) is not null)
             return new BuffLandedEvent(ts, msg);

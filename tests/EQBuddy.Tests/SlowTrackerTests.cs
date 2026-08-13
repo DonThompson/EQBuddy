@@ -185,6 +185,61 @@ public class SlowTrackerTests
         Assert.IsType<BuffFadeEvent>(Ev(0, "You feel less drowsy."));
     }
 
+    // ---- #116 (Fennec-Halas): "You slow down." is ALSO how Selo's haste fades ----
+
+    [Fact]
+    public void TheParserReadsForgetLines()
+    {
+        var forgot = Assert.IsType<SongForgottenEvent>(Ev(0, "You forget Selo's Accelerando."));
+        Assert.Equal("Selo's Accelerando", forgot.Song);
+    }
+
+    [Fact]
+    public void SelosFadeDoesNotTriggerTheSlowAlert()
+    {
+        // Fennec-Halas's exact lines, 11 s apart: forget, then the wear-off.
+        var t = Replay(
+            Ev(0, "You forget Selo's Accelerando."),
+            Ev(11, "You slow down."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(12)));
+
+        // The log's backtick spelling folds to the wiki's apostrophe.
+        var t2 = Replay(
+            Ev(0, "You forget Selo`s Accelerating Chorus."),
+            Ev(11, "You slow down."));
+        Assert.Empty(t2.Snapshot(T0.AddSeconds(12)));
+    }
+
+    [Fact]
+    public void ARealDeedsSlowStillAlertsWithoutARecentForget()
+    {
+        // No forget line: "You slow down." is a genuine Deeds-line slow.
+        var s = Assert.Single(Replay(Ev(0, "You slow down.")).Snapshot(T0.AddSeconds(1)));
+        Assert.Contains("Languid Pace", s.Spells);
+
+        // A forget long outside the window doesn't suppress either.
+        var t = Replay(
+            Ev(0, "You forget Selo's Accelerando."),
+            Ev(120, "You slow down."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(121)));
+
+        // And forgetting some unrelated song never suppresses.
+        var t2 = Replay(
+            Ev(0, "You forget Chant of Battle."),
+            Ev(11, "You slow down."));
+        Assert.Single(t2.Snapshot(T0.AddSeconds(12)));
+    }
+
+    [Fact]
+    public void TheCatalogCarriesTheFadeCollisionData()
+    {
+        var entry = SlowDebuffCatalog.Default.Find("You slow down.")!;
+        Assert.Contains("Selo's Accelerando", entry.FadeOf);
+        Assert.Contains("Selo's Accelerating Chorus", entry.FadeOf);
+        // Unambiguous lines stay unencumbered.
+        Assert.Empty(SlowDebuffCatalog.Default.Find("You feel lethargic.")!.FadeOf);
+    }
+
     private static IEnumerable<SlowDebuffCatalog.Entry> AllEntries()
     {
         // The catalog exposes lookups, not enumeration — walk it via the harvest's

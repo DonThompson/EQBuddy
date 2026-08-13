@@ -331,6 +331,10 @@
   {
    "message": "You slow down.",
    "label": "Slow",
+   "fadeOf": [
+    "Selo's Accelerando",
+    "Selo's Accelerating Chorus"
+   ],
    "spells": [
     {
      "name": "Forlorn Deeds",

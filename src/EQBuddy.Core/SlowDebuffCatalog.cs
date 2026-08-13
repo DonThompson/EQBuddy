@@ -33,6 +33,12 @@ public sealed class SlowDebuffCatalog
         public string Message { get; set; } = "";
         public string Label { get; set; } = "";
         public SlowSpell[] Spells { get; set; } = [];
+        /// <summary>Haste spells whose WEAR-OFF line is this same message (#116,
+        /// Fennec-Halas: "You slow down." is both the Deeds-line landing AND how
+        /// Selo's haste songs fade). When one of these was recently forgotten
+        /// ("You forget Selo's Accelerando."), the line is the haste ending, not
+        /// a slow landing — the tracker suppresses. Empty for unambiguous lines.</summary>
+        public string[] FadeOf { get; set; } = [];
 
         public int PctMin => Spells.Min(s => s.PctMin);
         public int PctMax => Spells.Max(s => s.PctMax);

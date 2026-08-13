@@ -38,19 +38,22 @@ public partial class QuestsWindow : Window
         StateCombo.SelectedIndex = 0;
         ApplyModeVisual();
         ChipScale.Apply(this, 1.0);   // quests read at widget size, not chip size
-        if (ScreenGuard.OnScreen(_settings.QuestsLeft, _settings.QuestsTop, Width, 200))
-        { Left = _settings.QuestsLeft; Top = _settings.QuestsTop; }
+        var restored = ScreenGuard.OnScreen(_settings.QuestsLeft, _settings.QuestsTop, Width, 200);
+        if (restored) { Left = _settings.QuestsLeft; Top = _settings.QuestsTop; }
         else
         {
             var wa = SystemParameters.WorkArea;
             Left = wa.Left + (wa.Width - Width) / 2;
             Top = wa.Top + 80;
         }
+        var (placedLeft, placedTop) = (Left, Top);
         MaxHeight = SystemParameters.WorkArea.Height * 0.85;
         Closed += (_, _) =>
         {
-            _settings.QuestsLeft = Left;
-            _settings.QuestsTop = Top;
+            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            (_settings.QuestsLeft, _settings.QuestsTop) = WindowPlacement.PositionToPersist(
+                restored, placedLeft, placedTop, Left, Top,
+                _settings.QuestsLeft, _settings.QuestsTop);
             _settings.Save();
         };
         Refresh(force: true);

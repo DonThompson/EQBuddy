@@ -132,9 +132,10 @@ public partial class MainWindow : Window
         _settings.LogFolder ??= LogWatcher.FindDefaultLogFolder();
         // A saved spot on a monitor that's gone (undocked, TV unplugged) would put the
         // widget in the void — and settings.json survives reinstalls, so it stays there.
-        if (ScreenGuard.OnScreen(_settings.WindowLeft, _settings.WindowTop, Width, Height))
-        { Left = _settings.WindowLeft; Top = _settings.WindowTop; }
+        _restoredSavedPosition = ScreenGuard.OnScreen(_settings.WindowLeft, _settings.WindowTop, Width, Height);
+        if (_restoredSavedPosition) { Left = _settings.WindowLeft; Top = _settings.WindowTop; }
         else { Left = SystemParameters.WorkArea.Right - 360; Top = 40; }
+        (_placedLeft, _placedTop) = (Left, Top);
         Opacity = _settings.Opacity;
         Topmost = true;
         ApplyUiScale(_settings.UiScale);
@@ -3474,6 +3475,11 @@ public partial class MainWindow : Window
 
     private bool _hiddenForFocus;
 
+    // Where the constructor placed the window and whether that was the SAVED spot —
+    // OnClosed's PositionToPersist call needs both (#117).
+    private bool _restoredSavedPosition;
+    private double _placedLeft, _placedTop;
+
     /// <summary>When enabled, the widget hides while the game runs WITHOUT being the
     /// foreground app — alt-tab to a browser and the corner it lives in is the browser's
     /// again. Never hides when the game isn't running (configuring the widget outside the
@@ -3797,8 +3803,10 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _unlockChip?.Close();
-        _settings.WindowLeft = Left;
-        _settings.WindowTop = Top;
+        // Never let an unmoved fallback overwrite a real saved spot (#117).
+        (_settings.WindowLeft, _settings.WindowTop) = WindowPlacement.PositionToPersist(
+            _restoredSavedPosition, _placedLeft, _placedTop, Left, Top,
+            _settings.WindowLeft, _settings.WindowTop);
         _settings.Save();
         foreach (var w in _breakouts.Values) w.Close();   // each persists its spot on Closed
         _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)

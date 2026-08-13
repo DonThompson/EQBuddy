@@ -78,6 +78,11 @@ public record BuffFadeEvent(DateTime Time, string Label, string[] Spells, string
 /// lines only print when the slow lands on YOU. Carries the message rather than the
 /// candidates; <see cref="SlowTracker"/> resolves it against its own catalog.</summary>
 public record SlowLandedEvent(DateTime Time, string Message) : GameEvent(Time);
+/// <summary>"You forget Selo's Accelerando." — a bard song leaving the twist. Parsed
+/// for one purpose (#116): a song's wear-off line can collide with a slow landing
+/// line ("You slow down."), and a recent forget of the named song is the signal that
+/// the line was the haste ending, not a slow arriving.</summary>
+public record SongForgottenEvent(DateTime Time, string Song) : GameEvent(Time);
 /// <summary>A raid-channel chat line — the only signal in the log that you are in a
 /// raid, used by the slow alert's raid-only mode. Carries nothing: the content is chat.</summary>
 public record RaidChatterEvent(DateTime Time) : GameEvent(Time);

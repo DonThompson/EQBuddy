@@ -23,6 +23,11 @@ public sealed class SpawnChipsWindow : Window
     private readonly List<TextBlock> _countdowns = [];
     private List<SpawnChip> _chips = [];
     private string _signature = "";
+    // Fallback placements must never persist (#117): where the window was placed at
+    // open and whether that was the player's saved spot.
+    private PixelPoint _placed;
+    private bool _restoredSaved;
+    private bool _openedOnce;
     private PixelPoint _lastVisiblePosition;
     private bool _haveVisiblePosition;
 
@@ -44,11 +49,14 @@ public sealed class SpawnChipsWindow : Window
 
         Opened += (_, _) =>
         {
-            if (ScreenGuard.OnScreen(this, _settings.SpawnChipsLeft, _settings.SpawnChipsTop,
-                    Width, Height))
+            _restoredSaved = ScreenGuard.OnScreen(this, _settings.SpawnChipsLeft,
+                _settings.SpawnChipsTop, Width, Height);
+            if (_restoredSaved)
                 Position = new PixelPoint((int)_settings.SpawnChipsLeft, (int)_settings.SpawnChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 40);
+            _placed = Position;
+            _openedOnce = true;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
         };
@@ -56,7 +64,9 @@ public sealed class SpawnChipsWindow : Window
         // moves only while it is visibly on screen, then persist that stable snapshot.
         PositionChanged += (_, _) =>
         {
-            if (!IsVisible) return;
+            // Programmatic placement is not a choice — only persist once the player
+            // has actually dragged the stack somewhere (#117).
+            if (!IsVisible || !_openedOnce || Position == _placed) return;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
             // Keep the live settings object current too, so a newly-created stack in the
@@ -66,9 +76,10 @@ public sealed class SpawnChipsWindow : Window
         };
         Closed += (_, _) =>
         {
-            var saved = _haveVisiblePosition ? _lastVisiblePosition : Position;
-            _settings.SpawnChipsLeft = saved.X;
-            _settings.SpawnChipsTop = saved.Y;
+            var current = _haveVisiblePosition ? _lastVisiblePosition : Position;
+            (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
+                _restoredSaved, _placed.X, _placed.Y, current.X, current.Y,
+                _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
             _settings.Save();
         };
     }

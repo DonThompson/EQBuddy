@@ -40,8 +40,17 @@ public sealed class SlowTracker
     /// only raid signal the log carries; it only exists while you're in one.</summary>
     public static readonly TimeSpan RaidChatterMemory = TimeSpan.FromMinutes(10);
 
+    /// <summary>How long after "You forget Selo's Accelerando." its wear-off line
+    /// ("You slow down.") is read as the haste ending rather than a slow landing
+    /// (#116). A dropped song's effect lingers ~12 s before fading (11 s in
+    /// Fennec-Halas's log); 45 s covers the linger with margin. The cost of the
+    /// window: a REAL Deeds-line slow landing within it goes unannounced once —
+    /// rare, and the next pulse or re-land alerts normally.</summary>
+    public static readonly TimeSpan HasteForgetWindow = TimeSpan.FromSeconds(45);
+
     private readonly SlowDebuffCatalog _catalog;
     private readonly Dictionary<string, SlowState> _active = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DateTime> _forgottenSongs = new(StringComparer.OrdinalIgnoreCase);
     private DateTime? _lastRaidChatter;
     private readonly object _lock = new();
 
@@ -66,6 +75,11 @@ public sealed class SlowTracker
             switch (evt)
             {
                 case SlowLandedEvent sl when _catalog.Find(sl.Message) is { } entry:
+                    // A shared line whose haste just left the twist is the haste
+                    // fading, not a slow arriving (#116) — no chip, no voice.
+                    if (entry.FadeOf.Any(song => _forgottenSongs.TryGetValue(Fold(song), out var at)
+                            && evt.Time >= at && evt.Time - at <= HasteForgetWindow))
+                        break;
                     var expires = entry.MaxDurationSeconds is { } d
                         ? evt.Time.AddSeconds(d) : (DateTime?)null;
                     isNew = !_active.TryGetValue(entry.Message, out var prior)
@@ -91,6 +105,10 @@ public sealed class SlowTracker
                         SpellCatalog.BaseName(worn.Spell), StringComparer.OrdinalIgnoreCase));
                     break;
 
+                case SongForgottenEvent forgot:
+                    _forgottenSongs[Fold(forgot.Song)] = evt.Time;
+                    break;
+
                 case RaidChatterEvent:
                     _lastRaidChatter = evt.Time;
                     break;
@@ -112,6 +130,10 @@ public sealed class SlowTracker
         if (changed) Changed?.Invoke();
         if (landed is not null) Landed?.Invoke(landed, isNew);
     }
+
+    /// <summary>The log writes "Selo`s" where the wiki writes "Selo's" — fold the
+    /// backtick so the forget line matches catalog names either way.</summary>
+    private static string Fold(string name) => name.Replace('`', '\'');
 
     private static bool Stale(SlowState s, DateTime now) =>
         s.ExpiresAt is { } e ? now - e > ExpiryLinger : now - s.LandedAt > UnknownDurationCap;

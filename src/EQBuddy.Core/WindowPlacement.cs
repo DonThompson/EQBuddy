@@ -32,4 +32,23 @@ public static class WindowPlacement
         var overlapH = Math.Min(top + height, screenTop + screenHeight) - Math.Max(top, screenTop);
         return overlapW >= Margin && overlapH >= Margin;
     }
+
+    /// <summary>
+    /// What a window's Closed handler should persist (#117, Snagglefern's 4-screen
+    /// rig). A window placed at its FALLBACK — the saved position was rejected,
+    /// which happens under a TRANSIENT monitor topology (sleeping displays, an RDP
+    /// hop, an update relaunching the app with a screen off) — and never moved by
+    /// the user must keep the ORIGINAL saved values: the monitors come back, and
+    /// persisting the fallback would permanently teleport a window the player had
+    /// parked with care. User movement always wins, as does a genuine restore.
+    /// </summary>
+    public static (double Left, double Top) PositionToPersist(
+        bool restoredFromSaved, double placedLeft, double placedTop,
+        double currentLeft, double currentTop, double savedLeft, double savedTop)
+    {
+        var moved = currentLeft != placedLeft || currentTop != placedTop;
+        return restoredFromSaved || moved || double.IsNaN(savedLeft) || double.IsNaN(savedTop)
+            ? (currentLeft, currentTop)
+            : (savedLeft, savedTop);
+    }
 }

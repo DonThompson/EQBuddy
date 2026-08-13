@@ -48,9 +48,10 @@ public partial class SpawnsWindow : Window
         SourceInitialized += (_, _) => UpdateHeightCaps();
         LocationChanged += (_, _) => UpdateHeightCaps();
 
-        if (ScreenGuard.OnScreen(_settings.SpawnLeft, _settings.SpawnTop, Width, Height))
-        { Left = _settings.SpawnLeft; Top = _settings.SpawnTop; }
+        var restored = ScreenGuard.OnScreen(_settings.SpawnLeft, _settings.SpawnTop, Width, Height);
+        if (restored) { Left = _settings.SpawnLeft; Top = _settings.SpawnTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = 80; }
+        var (placedLeft, placedTop) = (Left, Top);
 
         _vm.RefreshZoneList();
         foreach (var z in _vm.ZoneNames) ZoneCombo.Items.Add(z);
@@ -69,8 +70,10 @@ public partial class SpawnsWindow : Window
         Closed += (_, _) =>
         {
             _tick.Stop();
-            _settings.SpawnLeft = Left;
-            _settings.SpawnTop = Top;
+            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            (_settings.SpawnLeft, _settings.SpawnTop) = WindowPlacement.PositionToPersist(
+                restored, placedLeft, placedTop, Left, Top,
+                _settings.SpawnLeft, _settings.SpawnTop);
             _settings.Save();
         };
     }

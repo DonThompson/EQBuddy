@@ -66,4 +66,48 @@ public class WindowPlacementTests
         // below the drag-rescuable minimum.
         Assert.False(OnSingle(40, 1075, width: 100, height: 10));
     }
+
+    // ---- #117 (Snagglefern): a fallback placement must never persist ----
+
+    [Fact]
+    public void AnUnmovedFallbackKeepsTheOriginalSavedSpot()
+    {
+        // Saved spot (2500, 300) was on a sleeping monitor; the window fell back to
+        // (40, 120) and the player never touched it. Closing must keep (2500, 300).
+        var (l, t) = WindowPlacement.PositionToPersist(
+            restoredFromSaved: false, placedLeft: 40, placedTop: 120,
+            currentLeft: 40, currentTop: 120, savedLeft: 2500, savedTop: 300);
+        Assert.Equal((2500.0, 300.0), (l, t));
+    }
+
+    [Fact]
+    public void MovingTheFallbackAdoptsTheNewSpot()
+    {
+        // The player dragged the fallen-back window somewhere: that IS a choice.
+        var (l, t) = WindowPlacement.PositionToPersist(
+            restoredFromSaved: false, placedLeft: 40, placedTop: 120,
+            currentLeft: 800, currentTop: 450, savedLeft: 2500, savedTop: 300);
+        Assert.Equal((800.0, 450.0), (l, t));
+    }
+
+    [Fact]
+    public void AGenuineRestorePersistsNormally()
+    {
+        // Restored from the saved spot and later moved (or not): current wins.
+        var (l, t) = WindowPlacement.PositionToPersist(
+            restoredFromSaved: true, placedLeft: 2500, placedTop: 300,
+            currentLeft: 2600, currentTop: 350, savedLeft: 2500, savedTop: 300);
+        Assert.Equal((2600.0, 350.0), (l, t));
+    }
+
+    [Fact]
+    public void FirstLaunchFallbackEstablishesAPosition()
+    {
+        // Nothing saved yet (NaN): persisting the fallback is fine — there is no
+        // player-chosen spot to protect.
+        var (l, t) = WindowPlacement.PositionToPersist(
+            restoredFromSaved: false, placedLeft: 40, placedTop: 120,
+            currentLeft: 40, currentTop: 120, savedLeft: double.NaN, savedTop: double.NaN);
+        Assert.Equal((40.0, 120.0), (l, t));
+    }
 }

@@ -22,6 +22,14 @@ Exclusions (each listed in slows-report.md):
   - any landing line that is ALSO a fade line in FadeMessages.json or the
     regen tick line: exact-match catalogs must not fight over a message.
 
+Ambiguity that can't be excluded (#116, Fennec-Halas): a landing line may also
+be some OTHER spell's wear-off line — "You slow down." lands the Deeds slows
+AND fades Selo's haste songs, and the fade catalog doesn't carry those songs so
+the exclusion above never sees the clash. Dropping the entry would blind the
+alert to real slows, so the entry instead carries "fadeOf": the haste spells
+that wear off with this message. The tracker suppresses a landing that follows
+"You forget <one of those>." — the haste ending, not a slow arriving.
+
 Cures: spells whose effects decrease poison/disease/curse counters, with
 counters-removed-per-cast, plus the activatable cure AAs (Purify Soul/Body)
 carried as notes — their numbers live in prose, not slot effects.
@@ -121,11 +129,24 @@ def main():
             rec["durationSeconds"] = rec["durationSeconds"] or old["durationSeconds"]
         group[name] = rec
 
+    # Spells (typically hastes) whose WEAR-OFF line collides with a slow landing
+    # line — see the fadeOf note in the module docstring.
+    wearoff_by_msg = {}
+    for s in spells:
+        w = (s.get("msg_wears_off") or "").strip()
+        if w:
+            wearoff_by_msg.setdefault(w.lower(), set()).add(canonical(s["name"]))
+
     messages = []
     for msg, group in sorted(by_message.items()):
         cands = sorted(group.values(), key=lambda r: r["name"])
         label = cands[0]["name"] if len(cands) == 1 else "Slow"
-        messages.append({"message": msg, "label": label, "spells": cands})
+        entry = {"message": msg, "label": label}
+        fade_of = sorted(wearoff_by_msg.get(msg.lower(), set()) - set(group))
+        if fade_of:
+            entry["fadeOf"] = fade_of
+        entry["spells"] = cands
+        messages.append(entry)
 
     # Cure spells: counter reducers, grouped by counter type, strongest first.
     # Target matters: pet mends (Renew Bones) also decrease counters — on the PET;

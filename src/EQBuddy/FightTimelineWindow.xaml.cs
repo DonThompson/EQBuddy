@@ -49,8 +49,9 @@ public partial class FightTimelineWindow : Window
         Lanes.View = _view;
         Lanes.HoverChanged += OnHover;
 
-        if (ScreenGuard.OnScreen(_settings.TimelineLeft, _settings.TimelineTop,
-                Math.Max(420, _settings.TimelineWidth), 200))
+        var restored = ScreenGuard.OnScreen(_settings.TimelineLeft, _settings.TimelineTop,
+            Math.Max(420, _settings.TimelineWidth), 200);
+        if (restored)
         {
             Left = _settings.TimelineLeft; Top = _settings.TimelineTop;
             if (_settings.TimelineWidth >= MinWidth) Width = _settings.TimelineWidth;
@@ -66,11 +67,15 @@ public partial class FightTimelineWindow : Window
             Left = area.Left + (area.Width - Width) / 2;
             Top = area.Top + (area.Height - Height) / 2;
         }
+        var (placedLeft, placedTop) = (Left, Top);
 
         Closed += (_, _) =>
         {
             _tick.Stop();
-            _settings.TimelineLeft = Left; _settings.TimelineTop = Top;
+            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            (_settings.TimelineLeft, _settings.TimelineTop) = WindowPlacement.PositionToPersist(
+                restored, placedLeft, placedTop, Left, Top,
+                _settings.TimelineLeft, _settings.TimelineTop);
             _settings.TimelineWidth = Width; _settings.TimelineHeight = Height;
             _settings.Save();
         };
