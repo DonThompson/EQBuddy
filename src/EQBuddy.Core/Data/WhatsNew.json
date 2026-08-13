@@ -1,5 +1,17 @@
 [
  {
+  "version": "1.72.0",
+  "date": "2026-08-13",
+  "highlights": [
+   "NEW — 🧰 Gear Locker (⚙ menu, discussion #104, thanks Techsteps): every wearable you OWN, grouped by the slot it goes in and compared against the rest of your bags — an item beaten on every stat by something else you hold gets flagged \"⬇ outclassed\", a dump candidate by arithmetic, not taste. Class-locked items never outclass gear for classes you don't play. Stats come from the wiki with an explicit, politely-paced fetch button; comparisons use base values (a +N raises stats in-game by an amount the wiki doesn't state, so upgrades are shown, never folded in). Never \"BiS\" — the Locker ranks your bags, not the game.",
+   "NEW — the 🐉 Raids card knows difficulty tiers: kills your log witnesses now record the instance tier they happened at (the zone-enter line is where the game says it), and each boss wears its highest PROVEN tier as a D0–D4 badge. Kills from before this update carry no tier and no badge — we don't guess. Achievements imports stay tierless for the same reason.",
+   "POLISHED — every graph got the new chart treatment: the fight timeline's DPS graph and the Combat card sparkline now draw smooth curves (a shaping that mathematically cannot exaggerate — the curve never leaves the range of the real numbers), with a soft fill under your line, a ringed dot on the peak, labeled gridlines, and a proper legend. Chart colors are new too, and colorblind-checked: your damage is deep brass, your pet green, and damage you took moved from red to BLUE — red now always means something is actually wrong.",
+   "NEW — stance and invocation changes appear on the fight timeline as thin dotted markers with labels — see exactly when you swapped modes mid-pull and what it did to the graph.",
+   "NEW — Sky quest tabs sort by closest-to-done, and every quest header shows its score (\"· 2/3\", \"· ready\") — which quest is actually in reach, at a glance.",
+   "EQBuddy is a BETA — if a number looks wrong, a chart confuses you, or the Gear Locker flags the wrong dump candidate, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.71.0",
   "date": "2026-08-13",
   "highlights": [
