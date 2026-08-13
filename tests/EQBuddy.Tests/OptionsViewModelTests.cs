@@ -54,6 +54,7 @@ public sealed class OptionsViewModelTests
         Assert.DoesNotContain("bogus", s.SectionOrder);
         Assert.Contains(vm.Cards, c => c.Key == "sky" && c.Title == "Sky Quest");
         Assert.Contains(vm.Cards, c => c.Key == "gear" && c.Title == "Gear");
+        Assert.Contains(vm.Cards, c => c.Key == "epic" && c.Title == "Epics");
 
         vm.MoveCard("kills", -1);                        // top can't move up
         Assert.Equal("kills", s.SectionOrder[0]);
@@ -154,5 +155,66 @@ public sealed class OptionsViewModelTests
         Assert.Equal(["combat", "motes", "gear", "tracked"], noSky.SectionOrder);
 
         Assert.False(new AppSettings().ApplyDefaultGearSection());
+    }
+
+    [Fact]
+    public void EpicQuestSectionSlotsInAfterSky()
+    {
+        var settings = new AppSettings { SectionOrder = ["combat", "motes", "sky", "gear", "tracked"] };
+
+        Assert.True(settings.ApplyDefaultEpicQuestSection());
+        Assert.Equal(["combat", "motes", "sky", "gear", "epic", "tracked"], settings.SectionOrder);
+        Assert.False(settings.ApplyDefaultEpicQuestSection());
+
+        var noSky = new AppSettings { SectionOrder = ["combat", "motes", "tracked"] };
+        Assert.True(noSky.ApplyDefaultEpicQuestSection());
+        Assert.Equal(["combat", "motes", "epic", "tracked"], noSky.SectionOrder);
+
+        Assert.False(new AppSettings().ApplyDefaultEpicQuestSection());
+    }
+
+    [Fact]
+    public void EpicQuestDefaultsMergeOnce()
+    {
+        var settings = new AppSettings();
+
+        Assert.True(settings.ApplyDefaultEpicQuestChecklist());
+        Assert.Contains(settings.EpicQuestChecklist, i => i.ClassName == "Monk" && i.Reward.Contains("Celestial Fists"));
+        var count = settings.EpicQuestChecklist.Count;
+
+        settings.EpicQuestChecklist[0].Acquired = true;
+        Assert.False(settings.ApplyDefaultEpicQuestChecklist());
+        Assert.Equal(count, settings.EpicQuestChecklist.Count);
+        Assert.True(settings.EpicQuestChecklist[0].Acquired);
+    }
+
+    [Fact]
+    public void EpicQuestDefaultsRefreshExistingChecklistRows()
+    {
+        var item = EpicQuestDefaults.Items().Single(i =>
+            i.ClassName == "Shadow Knight" &&
+            i.QuestItem.Contains("Cell Key") &&
+            i.QuestItem.Contains("Caradon"));
+        var settings = new AppSettings
+        {
+            EpicQuestChecklist =
+            [
+                item.Clone()
+            ],
+        };
+        settings.EpicQuestChecklist[0].Section = "old section";
+        settings.EpicQuestChecklist[0].QuestItem = "old text";
+        settings.EpicQuestChecklist[0].Order = 9999;
+        settings.EpicQuestChecklist[0].AvailableInClassic = !item.AvailableInClassic;
+        settings.EpicQuestChecklist[0].Acquired = true;
+
+        Assert.True(settings.ApplyDefaultEpicQuestChecklist());
+
+        var refreshed = settings.EpicQuestChecklist.Single(i => i.Id == item.Id);
+        Assert.True(refreshed.Acquired);
+        Assert.Equal(item.Section, refreshed.Section);
+        Assert.Equal(item.QuestItem, refreshed.QuestItem);
+        Assert.Equal(item.Order, refreshed.Order);
+        Assert.Equal(item.AvailableInClassic, refreshed.AvailableInClassic);
     }
 }
