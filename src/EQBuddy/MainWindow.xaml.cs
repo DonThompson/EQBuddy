@@ -37,6 +37,7 @@ public partial class MainWindow : Window
     // does elsewhere — the checklist re-renders only when a box actually changed.
     private bool _skyQuestDirty = true;
     private bool _gearChecklistDirty = true;
+    private bool _epicQuestDirty = true;
     // Perf audit #1: the version last painted into the expanded sections, and the
     // last time a full paint happened (10 s heartbeat keeps time-derived rates live).
     private long _lastRenderedVersion = -1;
@@ -186,7 +187,7 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
-                         MotesSection, SkyQuestSection, GearSection, TrackedSection, MoneySection,
+                         MotesSection, SkyQuestSection, GearSection, EpicSection, TrackedSection, MoneySection,
                          ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
@@ -322,6 +323,7 @@ public partial class MainWindow : Window
         }
 
         SkyQuestTabs.SelectionChanged += OnSkyQuestTabChanged;
+        EpicTabs.SelectionChanged += OnEpicQuestTabChanged;
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
@@ -362,7 +364,7 @@ public partial class MainWindow : Window
     {
         ["combat"] = CombatSection, ["healing"] = HealingSection, ["kills"] = KillsSection,
         ["loot"] = LootSection, ["motes"] = MotesSection, ["sky"] = SkyQuestSection,
-        ["gear"] = GearSection, ["tracked"] = TrackedSection,
+        ["gear"] = GearSection, ["epic"] = EpicSection, ["tracked"] = TrackedSection,
         ["buffs"] = BuffsSection, ["raids"] = RaidsSection,
         ["money"] = MoneySection,
         ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
@@ -1731,6 +1733,7 @@ public partial class MainWindow : Window
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         UpdateSkyQuestChecklist(s);
         UpdateGearHeaderOnly();
+        UpdateEpicQuestHeaderOnly();
         MoneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         ProgressHeader.Text = $"{s.XpPercent:0.0}% xp"
             + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "")
@@ -1927,6 +1930,12 @@ public partial class MainWindow : Window
         {
             RenderGearChecklist();
             _gearChecklistDirty = false;
+        }
+
+        if (EpicSection.IsExpanded && _epicQuestDirty)
+        {
+            RenderEpicQuestChecklist();
+            _epicQuestDirty = false;
         }
 
         if (MoneySection.IsExpanded)
@@ -2288,6 +2297,201 @@ public partial class MainWindow : Window
         var total = _settings.GearChecklist.Count;
         var acquired = _settings.GearChecklist.Count(i => i.Acquired);
         GearHeader.Text = $"{acquired}/{total}";
+    }
+
+    private void RenderEpicQuestChecklist()
+    {
+        var selectedClass = (EpicTabs.SelectedItem as TabItem)?.Tag as string
+            ?? (_settings.EpicQuestClass.Length > 0 ? _settings.EpicQuestClass : null);
+        EpicTabs.Items.Clear();
+
+        foreach (var className in QuestClassFilter.Classes)
+        {
+            var classItems = _settings.EpicQuestChecklist
+                .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
+                .OrderBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var done = classItems.Count(i => i.Acquired);
+            var total = classItems.Count;
+            var quest = EpicQuestDefaults.FindQuest(QuestCatalog, className);
+            var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+
+            if (quest is null || total == 0)
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "No Epic 1.0 quest found in the catalog for this class yet.",
+                    FontSize = 11,
+                    Foreground = (Brush)FindResource("DimBrush"),
+                    TextWrapping = TextWrapping.Wrap,
+                });
+            }
+            else
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = quest.Name,
+                    FontSize = 11,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = (Brush)FindResource("AccentBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                });
+                if (classItems[0].Reward.Length > 0)
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "Reward: " + classItems[0].Reward,
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                        TextWrapping = TextWrapping.Wrap,
+                    });
+                var source = EpicQuestDefaults.SourceLine(quest);
+                if (source.Length > 0)
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = source,
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 1, 0, 4),
+                    });
+
+                var completed = IsEpicQuestCompleted(className);
+                var completeCheck = new CheckBox
+                {
+                    IsChecked = completed,
+                    Margin = new Thickness(0, 4, 0, 4),
+                    ToolTip = "Check when the final epic turn-in is finished.",
+                    Content = new TextBlock
+                    {
+                        Text = completed ? "Complete" : "Epic complete",
+                        FontSize = 11,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = (Brush)FindResource("AccentBrush"),
+                    },
+                };
+                completeCheck.Checked += (_, _) => OnEpicQuestCompletedToggled(className, classItems, true);
+                completeCheck.Unchecked += (_, _) => OnEpicQuestCompletedToggled(className, classItems, false);
+                panel.Children.Add(completeCheck);
+
+                foreach (var item in classItems)
+                {
+                    var text = new StackPanel();
+                    text.Children.Add(new TextBlock
+                    {
+                        Text = item.Qty > 1 ? $"{item.QuestItem} x{item.Qty}" : item.QuestItem,
+                        FontSize = 12,
+                        Foreground = (Brush)FindResource("TextBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                    });
+
+                    var check = new CheckBox
+                    {
+                        IsChecked = item.Acquired,
+                        Content = text,
+                        Margin = new Thickness(0, 1, 0, 1),
+                        IsEnabled = !completed,
+                        Opacity = completed ? 0.55 : 1.0,
+                        ToolTip = $"{item.QuestName}: {item.QuestItem}" +
+                                  (item.Qty > 1 ? $" x{item.Qty}" : ""),
+                    };
+                    check.Checked += (_, _) => OnEpicQuestToggled(item, true);
+                    check.Unchecked += (_, _) => OnEpicQuestToggled(item, false);
+                    panel.Children.Add(check);
+                }
+            }
+
+            var tab = new TabItem
+            {
+                Header = total > 0 ? $"{ClassAbbrev(className)} {done}/{total}" : $"{ClassAbbrev(className)} -",
+                Tag = className,
+                Content = new ScrollViewer
+                {
+                    Content = panel,
+                    MaxHeight = SkyQuestListMaxHeight(),
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                    PanningMode = PanningMode.VerticalOnly,
+                    Padding = new Thickness(0, 0, 4, 0),
+                },
+                ToolTip = className,
+            };
+            EpicTabs.Items.Add(tab);
+            if (string.Equals(selectedClass, className, StringComparison.Ordinal))
+                EpicTabs.SelectedItem = tab;
+        }
+
+        if (EpicTabs.SelectedIndex < 0 && EpicTabs.Items.Count > 0)
+            EpicTabs.SelectedIndex = 0;
+    }
+
+    private static string EpicQuestCompletedKey(string className) => className;
+
+    private bool IsEpicQuestCompleted(string className) =>
+        _settings.EpicQuestCompleted.Contains(EpicQuestCompletedKey(className), StringComparer.OrdinalIgnoreCase);
+
+    private void OnEpicQuestCompletedToggled(string className, List<EpicQuestChecklistItem> items, bool done)
+    {
+        var key = EpicQuestCompletedKey(className);
+        if (done)
+        {
+            if (!_settings.EpicQuestCompleted.Contains(key, StringComparer.OrdinalIgnoreCase))
+                _settings.EpicQuestCompleted.Add(key);
+            foreach (var item in items) item.Acquired = true;
+        }
+        else
+        {
+            _settings.EpicQuestCompleted.RemoveAll(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        }
+
+        _settings.Save();
+        UpdateEpicQuestHeaderOnly();
+        if (EpicSection.IsExpanded)
+        {
+            RenderEpicQuestChecklist();
+            _epicQuestDirty = false;
+        }
+        else
+        {
+            _epicQuestDirty = true;
+        }
+    }
+
+    private void OnEpicQuestToggled(EpicQuestChecklistItem item, bool acquired)
+    {
+        item.Acquired = acquired;
+        _settings.Save();
+        UpdateEpicQuestHeaderOnly();
+        UpdateEpicQuestTabHeader(item.ClassName);
+    }
+
+    private void OnEpicQuestTabChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if ((EpicTabs.SelectedItem as TabItem)?.Tag is string cls &&
+            !string.Equals(_settings.EpicQuestClass, cls, StringComparison.Ordinal))
+        {
+            _settings.EpicQuestClass = cls;
+            _settings.Save();
+        }
+    }
+
+    private void UpdateEpicQuestTabHeader(string className)
+    {
+        foreach (var tab in EpicTabs.Items.OfType<TabItem>())
+            if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
+            {
+                var done = _settings.EpicQuestChecklist.Count(i =>
+                    string.Equals(i.ClassName, className, StringComparison.Ordinal) && i.Acquired);
+                var total = _settings.EpicQuestChecklist.Count(i =>
+                    string.Equals(i.ClassName, className, StringComparison.Ordinal));
+                tab.Header = total > 0 ? $"{ClassAbbrev(className)} {done}/{total}" : $"{ClassAbbrev(className)} -";
+            }
+    }
+
+    private void UpdateEpicQuestHeaderOnly()
+    {
+        var total = _settings.EpicQuestChecklist.Count;
+        var acquired = _settings.EpicQuestChecklist.Count(i => i.Acquired);
+        EpicHeader.Text = $"{acquired}/{total}";
     }
 
     private void UpdateSkyQuestChecklist(StatsSnapshot s)

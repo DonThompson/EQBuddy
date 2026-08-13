@@ -176,6 +176,12 @@ public sealed class AppSettings
     /// toggles persist until the next import or clear.</summary>
     public List<GearChecklistItem> GearChecklist { get; set; } = [];
     public string GearChecklistName { get; set; } = "";
+    /// <summary>Persistent Epic 1.0 checklist shown in the overlay. Seeded from the
+    /// shipped quest catalog; manual checkboxes for now, with room for log/inventory
+    /// auto-checking later.</summary>
+    public List<EpicQuestChecklistItem> EpicQuestChecklist { get; set; } = [];
+    public string EpicQuestClass { get; set; } = "";
+    public List<string> EpicQuestCompleted { get; set; } = [];
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
     public string Theme { get; set; } = "ParchmentBrass";
@@ -351,7 +357,9 @@ public sealed class AppSettings
         var changed = settings.ApplyDefaultRules();
         changed |= settings.ApplyDefaultSkyQuestSection();
         changed |= settings.ApplyDefaultGearSection();
+        changed |= settings.ApplyDefaultEpicQuestSection();
         changed |= settings.ApplyDefaultSkyQuestChecklist();
+        changed |= settings.ApplyDefaultEpicQuestChecklist();
         if (changed | settings.TrackedRules.Any(r => r.IdWasGenerated))
             settings.Save();
         return settings;
@@ -416,6 +424,17 @@ public sealed class AppSettings
         return true;
     }
 
+    public bool ApplyDefaultEpicQuestSection()
+    {
+        if (SectionOrder.Count == 0 || SectionOrder.Contains("epic")) return false;
+        var gear = SectionOrder.IndexOf("gear");
+        var sky = SectionOrder.IndexOf("sky");
+        var motes = SectionOrder.IndexOf("motes");
+        var anchor = gear >= 0 ? gear : sky >= 0 ? sky : motes;
+        SectionOrder.Insert(anchor < 0 ? SectionOrder.Count : anchor + 1, "epic");
+        return true;
+    }
+
     public bool ApplyDefaultSkyQuestChecklist()
     {
         SkyQuestChecklist ??= [];
@@ -426,6 +445,22 @@ public sealed class AppSettings
                 continue;
 
             SkyQuestChecklist.Add(item.Clone());
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    public bool ApplyDefaultEpicQuestChecklist()
+    {
+        EpicQuestChecklist ??= [];
+        var changed = false;
+        foreach (var item in EpicQuestDefaults.Items())
+        {
+            if (EpicQuestChecklist.Any(i => string.Equals(i.Id, item.Id, StringComparison.Ordinal)))
+                continue;
+
+            EpicQuestChecklist.Add(item.Clone());
             changed = true;
         }
 
@@ -482,4 +517,28 @@ public sealed class GearChecklistItem
     public string Source { get; set; } = "";
     public string Url { get; set; } = "";
     public bool Acquired { get; set; }
+}
+
+public sealed class EpicQuestChecklistItem
+{
+    public string Id { get; set; } = "";
+    public string ClassName { get; set; } = "";
+    public string QuestName { get; set; } = "";
+    public string Reward { get; set; } = "";
+    public string QuestItem { get; set; } = "";
+    public int Qty { get; set; } = 1;
+    public string Source { get; set; } = "";
+    public bool Acquired { get; set; }
+
+    public EpicQuestChecklistItem Clone() => new()
+    {
+        Id = Id,
+        ClassName = ClassName,
+        QuestName = QuestName,
+        Reward = Reward,
+        QuestItem = QuestItem,
+        Qty = Qty,
+        Source = Source,
+        Acquired = Acquired,
+    };
 }
