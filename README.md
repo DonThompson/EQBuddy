@@ -88,6 +88,14 @@ page instead.
 >
 > If Defender quarantines the file, restore it and add an exclusion only after the
 > hash check passes.
+>
+> **This is being fixed for real.** A publicly trusted signing certificate (Azure
+> Artifact Signing, ~$10/month) is set up and in identity validation now, funded
+> personally by EQBuddy's maintainer through his small business — so the publisher
+> on signed installers will read **"FlossworksCross-Stitch"** (that's David's
+> company, and yes, he also cross-stitches). Once validation completes, releases
+> ship fully signed and these warnings age out as Windows builds reputation for
+> the certificate.
 
 1. Run **EQBuddySetup.exe** and click through the installer (no admin needed).
 2. Launch **EQBuddy** from the Start Menu or desktop shortcut. A **quick tutorial**
