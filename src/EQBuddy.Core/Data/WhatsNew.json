@@ -4,6 +4,7 @@
   "date": "2026-08-13",
   "highlights": [
    "NEW - right-click a spawn-point circle on the zone map to REMOVE it. The removal sticks across restarts (replayed history can't resurrect it), but new kills near that spot honestly re-learn the point - the log always outranks an edit. For the dot that's wrong, stale, or just in your way.",
+   "NEW - right-click a circle to CONFIRM its location too: the dot stops drifting toward new kills and holds exactly where you attested it (kills and timers keep counting), it wears a small center dot so you can see it's vouched for, and confirmations travel in share strings like everything else you set.",
    "EQBuddy is a BETA - if something looks wrong, tell us: ⚙ → Help → Send feedback."
   ]
  },

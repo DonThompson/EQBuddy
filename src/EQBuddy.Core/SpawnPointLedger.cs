@@ -33,6 +33,11 @@ public sealed class SpawnPointLedger
     {
         public double LocY { get; set; }
         public double LocX { get; set; }
+        /// <summary>The player attested this location is right (map right-click,
+        /// David 2026-08-13). A confirmed centroid stops refining — kills still
+        /// count and timers still run, but the dot stays where it was put.
+        /// Travels in share strings like everything else the player set.</summary>
+        public bool Confirmed { get; set; }
         /// <summary>Every mob name killed at this point, with counts — the hover's
         /// "which mobs share this spawn" answer.</summary>
         public Dictionary<string, MobSeen> Mobs { get; set; } = new(StringComparer.OrdinalIgnoreCase);
@@ -155,10 +160,11 @@ public sealed class SpawnPointLedger
         var point = FindCluster(zone.Points, loc.LocY, loc.LocX);
         if (point is null)
             zone.Points.Add(point = new SpawnPoint { LocY = loc.LocY, LocX = loc.LocX });
-        else
+        else if (!point.Confirmed)
         {
             // Centroid refines toward the new observation, weighted by history —
-            // the archive's "only gets better over time" contract.
+            // the archive's "only gets better over time" contract. A CONFIRMED
+            // point is the exception: the player attested the spot, so it holds.
             var n = point.TotalKills();
             point.LocY = (point.LocY * n + loc.LocY) / (n + 1);
             point.LocX = (point.LocX * n + loc.LocX) / (n + 1);
@@ -217,6 +223,24 @@ public sealed class SpawnPointLedger
         }
     }
 
+    /// <summary>Set or clear the player's location attestation on the point nearest
+    /// (locY, locX) — the map's other right-click. Returns the new state, or null
+    /// when nothing was near.</summary>
+    public bool? ConfirmPoint(string zone, double locY, double locX, bool confirmed)
+    {
+        lock (_lock)
+        {
+            var archive = Load(zone);
+            var point = FindCluster(archive.Points, locY, locX);
+            if (point is null) return null;
+            point.Confirmed = confirmed;
+            Revision++;
+            Save(archive);
+            _dirty.Remove(archive.Zone);
+            return point.Confirmed;
+        }
+    }
+
     /// <summary>"Royal guard pet" folds into "Royal guard" (David, 2026-08-13: pets
     /// roll into their owner names — an NPC's summon dying at the camp is the camp's
     /// business, not a separate creature worth archiving).</summary>
@@ -260,7 +284,7 @@ public sealed class SpawnPointLedger
                 HighWaterCount = z.HighWaterCount,
                 Points = z.Points.Select(p => new SpawnPoint
                 {
-                    LocY = p.LocY, LocX = p.LocX,
+                    LocY = p.LocY, LocX = p.LocX, Confirmed = p.Confirmed,
                     Mobs = p.Mobs.ToDictionary(kv => kv.Key,
                         kv => new MobSeen { Kills = kv.Value.Kills, LastKill = kv.Value.LastKill },
                         StringComparer.OrdinalIgnoreCase),

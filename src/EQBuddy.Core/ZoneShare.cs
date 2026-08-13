@@ -193,6 +193,9 @@ public static class ZoneShare
                 ours.Kills = Math.Max(ours.Kills, seen.Kills);
                 if (seen.LastKill > ours.LastKill) ours.LastKill = seen.LastKill;
             }
+            // Add-only applies to attestations too: a confirmation from either
+            // side sticks; an import never un-confirms the importer's own.
+            mine.Confirmed |= incoming.Confirmed;
         }
     }
 

@@ -322,6 +322,19 @@ public sealed class MapWindow : Window
         _spawnCircles.Add((ring, mx, my, -d / 2, -d / 2));
         _canvas.Children.Add(halo);
         _canvas.Children.Add(ring);
+        if (p.Confirmed)
+        {
+            // A confirmed spot wears a small filled center dot — "this one is
+            // vouched for", visible without hovering.
+            var dot = new System.Windows.Shapes.Ellipse
+            {
+                Width = 3.5, Height = 3.5, IsHitTestVisible = false,
+            };
+            dot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty,
+                named ? "AccentBrush" : "DimBrush");
+            _spawnCircles.Add((dot, mx, my, -1.75, -1.75));
+            _canvas.Children.Add(dot);
+        }
         // Named points carry their NAME beside the circle — unless a running timer's
         // camp pin is already labeling that mob with name + countdown right there.
         // (NameMatches is symmetric fold-equality; one direction suffices.)
@@ -350,6 +363,22 @@ public sealed class MapWindow : Window
             Header = c.Point.Mobs.Count > 1 ? $"{what} +{c.Point.Mobs.Count - 1} more" : what,
             IsEnabled = false, FontSize = 11,
         };
+        var confirm = new MenuItem
+        {
+            Header = c.Point.Confirmed ? "Un-confirm location" : "Confirm location",
+            ToolTip = "Marks this spot as verified by you: the dot stops drifting toward\n" +
+                "new kills and holds exactly here. Kills and timers keep counting.\n" +
+                "Confirmations travel in share strings like everything else you set.",
+        };
+        confirm.Click += (_, _) =>
+        {
+            var now = _main.SpawnPoints.ConfirmPoint(zone, c.Point.LocY, c.Point.LocX,
+                !c.Point.Confirmed);
+            if (now is { } state)
+                _status.Text = state
+                    ? $"Location confirmed ({what}) — the dot holds this spot from now on."
+                    : $"Confirmation removed ({what}) — the dot refines with new kills again.";
+        };
         var remove = new MenuItem
         {
             Header = "Remove this spawn point",
@@ -363,6 +392,7 @@ public sealed class MapWindow : Window
         };
         menu.Items.Add(header);
         menu.Items.Add(new Separator());
+        menu.Items.Add(confirm);
         menu.Items.Add(remove);
         return menu;
     }
@@ -388,6 +418,7 @@ public sealed class MapWindow : Window
             lines.Add($"{kv.Key} ×{kv.Value.Kills}");
         var (lastName, lastSeen) = c.Point.LastKilled();
         lines.Add("");
+        if (c.Point.Confirmed) lines.Add("Location confirmed — this dot holds its spot");
         lines.Add($"Last kill: {lastName}, {EQBuddy.UI.Shared.Countdown.Format(now - lastSeen.LastKill)} ago");
         var label = named ? "Respawn" : "Projected respawn (~)";
         // Tooltips open rarely — a fresh timer snapshot here is fine.

@@ -277,6 +277,55 @@ public class SpawnPointLedgerTests
     }
 
     [Fact]
+    public void ConfirmedPointsHoldTheirSpotAndPersist()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eqbuddy-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var l = Ledger(dir);
+            l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+            l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+            l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+            Assert.True(l.ConfirmPoint("Lower Guk", -500, 120, confirmed: true));
+
+            // A confirmed centroid stops drifting; kills still count.
+            l.Apply(new LocationEvent(T0.AddMinutes(3), -520, 120, 3));
+            l.Apply(new KillEvent(T0.AddMinutes(4), "a froglok guard", "You"));
+            var p = Assert.Single(l.Snapshot("Lower Guk").Points);
+            Assert.Equal(-500, p.LocY);          // held, not the -510 average
+            Assert.Equal(2, p.TotalKills());     // but the kill landed
+            Assert.True(p.Confirmed);
+
+            // Survives a restart, and un-confirm resumes refinement.
+            var l2 = Ledger(dir);
+            Assert.True(l2.Snapshot("Lower Guk").Points.Single().Confirmed);
+            Assert.False(l2.ConfirmPoint("Lower Guk", -500, 120, confirmed: false));
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { } }
+    }
+
+    [Fact]
+    public void ConfirmationTravelsInShareStringsAddOnly()
+    {
+        var a = new SpawnPointLedger.ZoneArchive { Zone = "Befallen" };
+        a.Points.Add(new SpawnPointLedger.SpawnPoint
+        {
+            LocY = -100, LocX = 50, Confirmed = true,
+            Mobs = { ["an elf skeleton"] = new SpawnPointLedger.MobSeen { Kills = 2, LastKill = T0 } },
+        });
+        var s = ZoneShare.Export(a, null, new SpawnOverrides());
+        var local = new SpawnPointLedger.ZoneArchive { Zone = "Befallen" };
+        local.Points.Add(new SpawnPointLedger.SpawnPoint
+        {
+            LocY = -105, LocX = 52,   // same cluster, unconfirmed locally
+            Mobs = { ["an elf skeleton"] = new SpawnPointLedger.MobSeen { Kills = 1, LastKill = T0 } },
+        });
+        var preview = ZoneShare.PreviewImport(s, local, null, new SpawnOverrides())!;
+        ZoneShare.Apply(preview, local, null, new SpawnOverrides(), includeFlagged: false);
+        Assert.True(local.Points.Single().Confirmed);
+    }
+
+    [Fact]
     public void RemovePointMissesWhenNothingIsNear()
     {
         var l = Ledger();
