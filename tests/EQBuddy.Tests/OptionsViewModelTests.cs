@@ -184,4 +184,26 @@ public sealed class OptionsViewModelTests
         Assert.Equal(count, settings.EpicQuestChecklist.Count);
         Assert.True(settings.EpicQuestChecklist[0].Acquired);
     }
+
+    [Fact]
+    public void EpicQuestDefaultsRefreshExistingSourceHints()
+    {
+        var item = EpicQuestDefaults.Items().Single(i =>
+            i.ClassName == "Shadow Knight" && i.QuestItem == "Blade of Abrogation");
+        var settings = new AppSettings
+        {
+            EpicQuestChecklist =
+            [
+                item.Clone()
+            ],
+        };
+        settings.EpicQuestChecklist[0].Source = "old source";
+        settings.EpicQuestChecklist[0].Acquired = true;
+
+        Assert.True(settings.ApplyDefaultEpicQuestChecklist());
+
+        var refreshed = settings.EpicQuestChecklist.Single(i => i.Id == item.Id);
+        Assert.True(refreshed.Acquired);
+        Assert.Contains("Plane of Sky", refreshed.Source);
+    }
 }

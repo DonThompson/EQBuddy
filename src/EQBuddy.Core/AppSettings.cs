@@ -457,8 +457,24 @@ public sealed class AppSettings
         var changed = false;
         foreach (var item in EpicQuestDefaults.Items())
         {
-            if (EpicQuestChecklist.Any(i => string.Equals(i.Id, item.Id, StringComparison.Ordinal)))
+            var existing = EpicQuestChecklist.FirstOrDefault(i => string.Equals(i.Id, item.Id, StringComparison.Ordinal));
+            if (existing is not null)
+            {
+                if (existing.QuestName == item.QuestName &&
+                    existing.Reward == item.Reward &&
+                    existing.QuestItem == item.QuestItem &&
+                    existing.Qty == item.Qty &&
+                    existing.Source == item.Source)
+                    continue;
+
+                existing.QuestName = item.QuestName;
+                existing.Reward = item.Reward;
+                existing.QuestItem = item.QuestItem;
+                existing.Qty = item.Qty;
+                existing.Source = item.Source;
+                changed = true;
                 continue;
+            }
 
             EpicQuestChecklist.Add(item.Clone());
             changed = true;

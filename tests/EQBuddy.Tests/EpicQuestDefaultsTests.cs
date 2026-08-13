@@ -26,4 +26,24 @@ public sealed class EpicQuestDefaultsTests
 
         Assert.Equal(bardItems.Count, bardItems.Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
+
+    [Fact]
+    public void ProvidesGuideAndItemSourceHints()
+    {
+        var guide = Assert.IsType<EpicQuestGuide>(EpicQuestDefaults.GuideFor("Shadow Knight"));
+
+        Assert.Contains(guide.Steps, s => s.Contains("Corrupted Ghoulbane"));
+        Assert.Contains(guide.Steps, s => s.Contains("Lhranc"));
+
+        var items = EpicQuestDefaults.Items();
+        Assert.Contains(items, i => i.ClassName == "Monk" &&
+                                    i.QuestItem == "Demon Fangs" &&
+                                    i.Source.Contains("Xenevorash"));
+        Assert.Contains(items, i => i.ClassName == "Shaman" &&
+                                    i.QuestItem == "Child's Tear" &&
+                                    i.Source.Contains("Plane of Fear"));
+        Assert.Contains(items, i => i.ClassName == "Shadow Knight" &&
+                                    i.QuestItem == "Blade of Abrogation" &&
+                                    i.Source.Contains("Plane of Sky"));
+    }
 }

@@ -2355,11 +2355,41 @@ public partial class MainWindow : Window
                         Margin = new Thickness(0, 1, 0, 4),
                     });
 
+                var guide = EpicQuestDefaults.GuideFor(className);
+                if (guide is not null)
+                {
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = guide.Summary,
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("TextBrush"),
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 2, 0, 4),
+                    });
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "Route",
+                        FontSize = 10,
+                        FontWeight = FontWeights.SemiBold,
+                        Foreground = (Brush)FindResource("AccentBrush"),
+                        Margin = new Thickness(0, 2, 0, 2),
+                    });
+                    foreach (var step in guide.Steps)
+                        panel.Children.Add(new TextBlock
+                        {
+                            Text = "- " + step,
+                            FontSize = 10,
+                            Foreground = (Brush)FindResource("DimBrush"),
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(0, 0, 0, 2),
+                        });
+                }
+
                 var completed = IsEpicQuestCompleted(className);
                 var completeCheck = new CheckBox
                 {
                     IsChecked = completed,
-                    Margin = new Thickness(0, 4, 0, 4),
+                    Margin = new Thickness(0, 8, 0, 4),
                     ToolTip = "Check when the final epic turn-in is finished.",
                     Content = new TextBlock
                     {
@@ -2383,6 +2413,15 @@ public partial class MainWindow : Window
                         Foreground = (Brush)FindResource("TextBrush"),
                         TextTrimming = TextTrimming.CharacterEllipsis,
                     });
+                    if (item.Source.Length > 0)
+                        text.Children.Add(new TextBlock
+                        {
+                            Text = item.Source,
+                            FontSize = 10,
+                            Foreground = (Brush)FindResource("DimBrush"),
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(0, 1, 0, 0),
+                        });
 
                     var check = new CheckBox
                     {
@@ -2392,7 +2431,8 @@ public partial class MainWindow : Window
                         IsEnabled = !completed,
                         Opacity = completed ? 0.55 : 1.0,
                         ToolTip = $"{item.QuestName}: {item.QuestItem}" +
-                                  (item.Qty > 1 ? $" x{item.Qty}" : ""),
+                                  (item.Qty > 1 ? $" x{item.Qty}" : "") +
+                                  (item.Source.Length > 0 ? "\n" + item.Source : ""),
                     };
                     check.Checked += (_, _) => OnEpicQuestToggled(item, true);
                     check.Unchecked += (_, _) => OnEpicQuestToggled(item, false);
