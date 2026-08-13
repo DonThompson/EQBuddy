@@ -175,6 +175,8 @@ public class WidgetRenderTests : IDisposable
         Assert.DoesNotContain(chips.GetVisualDescendants().OfType<TextBlock>(),
             block => block.Text == "⏳ Asaka L`Rei");
 
+        // The drag flag, not a coordinate delta, is the persistence signal (#117).
+        chips.MarkUserMovedForTests();
         chips.Position = new global::Avalonia.PixelPoint(321, 222);
         chips.Close();
         Assert.Equal(321, main.Settings.SpawnChipsLeft);
@@ -206,6 +208,10 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("💤 an orc oracle", text);
         Assert.Contains("?", text);
 
+        // A USER drag persists; a merely programmatic Position write must not
+        // (#117 round two: the grow-up anchor moves the window itself, so the drag
+        // flag — not a coordinate delta — is the persistence signal).
+        chips.MarkUserMovedForTests();
         chips.Position = new global::Avalonia.PixelPoint(432, 234);
         chips.Close();
         Assert.Equal(432, settings.MezChipsLeft);

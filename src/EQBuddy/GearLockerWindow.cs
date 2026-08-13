@@ -63,6 +63,12 @@ public sealed class GearLockerWindow : Window
     }
 
     private List<string> _missing = [];
+    /// <summary>Items a fetch already tried and could not produce stats for (page
+    /// missing, or a knowledge-only page with no stats block): shown honestly, never
+    /// re-offered — the fetch button looping over the same unresolvable names while
+    /// appearing to work was a silent no-op (2026-08-13 review).</summary>
+    private readonly HashSet<string> _unresolvable = new(StringComparer.OrdinalIgnoreCase);
+    private readonly System.Threading.CancellationTokenSource _closed = new();
 
     private IReadOnlyList<string> MyClassCodes()
     {
@@ -84,13 +90,20 @@ public sealed class GearLockerWindow : Window
             return;
         }
 
+        // The embedded catalog answers first with the build tool's own STRUCTURED
+        // numbers — no text round-trip, and the catalog≡live-parse guarantee holds
+        // (2026-08-13 review). A genuinely fetched live page covers the rest.
         var groups = GearLocker.Build(snap.Entries,
-            name => _main.WikiItems.CachedInfo(name) is { StatsLines.Count: > 0 } info
-                ? ItemStatsBlock.Parse(info.StatsLines) : null,
+            name => ItemCatalog.Default.Find(name) is { } rec
+                    && (rec.Slots.Count > 0 || rec.StatsText.Length > 0)
+                ? rec.ToStatsBlock()
+                : _main.WikiItems.CachedInfo(name) is { StatsLines.Count: > 0 } info
+                    ? ItemStatsBlock.Parse(info.StatsLines) : null,
             MyClassCodes());
 
         _missing = groups.Where(g => g.Slot == "STATS NOT FETCHED YET")
-            .SelectMany(g => g.Rows).Select(r => r.BaseName).ToList();
+            .SelectMany(g => g.Rows).Select(r => r.BaseName)
+            .Where(n => !_unresolvable.Contains(n)).ToList();
         _fetch.Visibility = _missing.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (!_fetching)
             _fetch.Content = $"⇣ fetch stats for {_missing.Count} item{(_missing.Count == 1 ? "" : "s")}";
@@ -134,6 +147,8 @@ public sealed class GearLockerWindow : Window
                 if (row.StatLine.Length > 0) detailParts.Add(row.StatLine);
                 if (row.ClassNote.Length > 0) detailParts.Add(row.ClassNote);
                 if (row.OutclassedBy.Length > 0) detailParts.Add($"⬇ outclassed by {row.OutclassedBy}");
+                if (_unresolvable.Contains(row.BaseName))
+                    detailParts.Add("no stats on its wiki page — nothing to fetch");
                 var detail = new TextBlock
                 {
                     Text = string.Join("  ·  ", detailParts),
@@ -168,15 +183,29 @@ public sealed class GearLockerWindow : Window
             var total = _missing.Count;
             for (var i = 0; i < _missing.Count; i++)
             {
+                // A closed window must not keep fetching invisibly (2026-08-13
+                // review) — the loop dies with the window.
+                if (_closed.IsCancellationRequested) return;
+                var name = _missing[i];
                 _fetch.Content = $"⇣ fetching {i + 1}/{total}…";
-                await _main.WikiItems.LookupAsync(_missing[i]);
-                await Task.Delay(400);   // polite pacing; the cache makes this one-time
+                var result = await _main.WikiItems.LookupAsync(name);
+                // No stats after a real fetch = this page will never resolve here;
+                // remember that instead of offering the same fetch forever.
+                if (result.Item is not { StatsLines.Count: > 0 })
+                    _unresolvable.Add(name);
+                await Task.Delay(400, _closed.Token).ContinueWith(_ => { });   // polite pacing
             }
         }
         finally
         {
             _fetching = false;
-            Render();
+            if (!_closed.IsCancellationRequested && IsLoaded) Render();
         }
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _closed.Cancel();
+        base.OnClosed(e);
     }
 }

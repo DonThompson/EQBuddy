@@ -47,8 +47,17 @@ public static class WindowPlacement
         double currentLeft, double currentTop, double savedLeft, double savedTop)
     {
         var moved = currentLeft != placedLeft || currentTop != placedTop;
-        return restoredFromSaved || moved || double.IsNaN(savedLeft) || double.IsNaN(savedTop)
+        return PositionToPersist(restoredFromSaved, moved, currentLeft, currentTop, savedLeft, savedTop);
+    }
+
+    /// <summary>Overload for windows that MOVE THEMSELVES (the grow-up chip stacks,
+    /// whose anchor rewrites Top on every size change — 2026-08-13 review): a
+    /// coordinate delta can't tell a user drag from the anchor's own writes, so the
+    /// caller states user movement explicitly, set where the drag actually starts.</summary>
+    public static (double Left, double Top) PositionToPersist(
+        bool restoredFromSaved, bool userMoved,
+        double currentLeft, double currentTop, double savedLeft, double savedTop) =>
+        restoredFromSaved || userMoved || double.IsNaN(savedLeft) || double.IsNaN(savedTop)
             ? (currentLeft, currentTop)
             : (savedLeft, savedTop);
-    }
 }

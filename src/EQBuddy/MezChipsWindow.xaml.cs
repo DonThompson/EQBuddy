@@ -17,6 +17,7 @@ namespace EQBuddy;
 public partial class MezChipsWindow : Window
 {
     private readonly AppSettings _settings;
+    private bool _userMoved;
     private string _signature = "";
     private readonly List<TextBlock> _countdowns = [];
     private List<SpawnChip> _chips = [];
@@ -34,13 +35,14 @@ public partial class MezChipsWindow : Window
         var restored = ScreenGuard.OnScreen(_settings.MezChipsLeft, _settings.MezChipsTop, Width, Height);
         if (restored) { Left = _settings.MezChipsLeft; Top = _settings.MezChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 120; }
-        var (placedLeft, placedTop) = (Left, Top);
         ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp);
         Closed += (_, _) =>
         {
-            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            // Never let an unmoved fallback overwrite a real saved spot (#117). The
+            // stack moves ITSELF (grow-up anchor), so "moved" is the drag flag, not
+            // a coordinate delta (2026-08-13 review).
             (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
-                restored, placedLeft, placedTop, Left, Top,
+                restored, _userMoved, Left, Top,
                 _settings.MezChipsLeft, _settings.MezChipsTop);
             _settings.Save();
         };
@@ -141,7 +143,7 @@ public partial class MezChipsWindow : Window
             };
             border.SetResourceReference(Border.BackgroundProperty, "BgBrush");
             border.SetResourceReference(Border.BorderBrushProperty, chip.IsDue ? "WarnBrush" : "BorderBrush");
-            border.MouseLeftButtonDown += (_, _) => DragMove();
+            border.MouseLeftButtonDown += (_, _) => { _userMoved = true; DragMove(); };
             ChipsPanel.Children.Add(border);
         }
     }

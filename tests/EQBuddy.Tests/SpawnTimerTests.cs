@@ -1027,6 +1027,44 @@ public class SpawnTimerTests
     }
 
     [Fact]
+    public void DualUseDungeonsHousingARaidBossKeepTheirCampTimers()
+    {
+        // 2026-08-13 review: the first zone gate suppressed EVERY named in any
+        // instanced raid-catalog zone — but Kedge/Nagafen's Lair/Permafrost are
+        // leveling dungeons that merely house one raid boss. Only the Planes are
+        // pure raid zones; a camped named in tiered Permafrost must keep its clock.
+        var cat = new SpawnCatalog
+        {
+            Zones =
+            [
+                new SpawnZone
+                {
+                    Zone = "Permafrost Keep",
+                    NamedDefaultSeconds = 600,
+                    Named =
+                    [
+                        new SpawnEntry { Name = "Lady Vox", RespawnSeconds = 604800 },
+                        new SpawnEntry { Name = "the goblin king", RespawnSeconds = 900 },
+                    ],
+                },
+            ],
+        };
+        SpawnCatalog.MarkRaidInstanced(cat, new RaidTargetCatalog(
+            [new RaidTargetCatalog.ZoneEntry { Zone = "Permafrost Keep", Bosses = ["Lady Vox"] }]));
+
+        Assert.False(cat.Zones[0].RaidZone);                   // dual-use, not a Plane
+        Assert.True(cat.Zones[0].Named[0].RaidInstanced);      // Vox herself still gated
+
+        var t = new SpawnTimers(cat, new SpawnOverrides()) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "Permafrost Keep 2 (Adaptive)"));
+        t.Apply(new KillEvent(T0, "the goblin king", "You"));  // ordinary camp: timer runs
+        Assert.Equal("the goblin king", Assert.Single(t.Snapshot(T0.AddMinutes(1))).Name);
+
+        t.Apply(new KillEvent(T0.AddMinutes(2), "Lady Vox", "You"));  // the boss: still none
+        Assert.Single(t.Snapshot(T0.AddMinutes(3)));
+    }
+
+    [Fact]
     public void APlayerTypedDurationStillRunsInsideAnInstance()
     {
         var overrides = new SpawnOverrides();

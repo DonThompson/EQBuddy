@@ -49,9 +49,12 @@ public static class SkyLootAutoCheck
                 changed = true;
             }
 
-        // Rule 3: nothing ticked, several classes want it — park the tick on the
-        // first owning class's open slot, flagged for the player to move.
-        if (!changed && owningClasses.Count > 1)
+        // Rule 3: several classes want it and NONE of them passes the lens — park
+        // the tick on the first owning class's open slot, flagged for the player to
+        // move. The explicit no-lens-match test matters (2026-08-13 review): when a
+        // lens-passing class simply has its slots full, "nothing ticked" must mean
+        // nothing ticked — not a guessed tick on a class the player doesn't play.
+        if (!changed && owningClasses.Count > 1 && !owningClasses.Any(ClassTicks))
             foreach (var item in slots.Where(i => !i.Acquired).Take(newlyLooted))
             {
                 item.Acquired = true;

@@ -23,6 +23,7 @@ public partial class SpawnChipsWindow : Window
     private readonly MainWindow _main;
     private readonly SpawnsViewModel _vm;
     private readonly AppSettings _settings;
+    private bool _userMoved;
     private string _signature = "";
     private readonly List<TextBlock> _countdowns = [];
     private List<SpawnChip> _chips = [];
@@ -38,13 +39,14 @@ public partial class SpawnChipsWindow : Window
         var restored = ScreenGuard.OnScreen(_settings.SpawnChipsLeft, _settings.SpawnChipsTop, Width, Height);
         if (restored) { Left = _settings.SpawnChipsLeft; Top = _settings.SpawnChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 40; }
-        var (placedLeft, placedTop) = (Left, Top);
         ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
         Closed += (_, _) =>
         {
-            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            // Never let an unmoved fallback overwrite a real saved spot (#117). The
+            // stack moves ITSELF (grow-up anchor), so "moved" is the drag flag, not
+            // a coordinate delta (2026-08-13 review).
             (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
-                restored, placedLeft, placedTop, Left, Top,
+                restored, _userMoved, Left, Top,
                 _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
             _settings.Save();
         };
@@ -176,6 +178,7 @@ public partial class SpawnChipsWindow : Window
             e.Handled = true;
             return;
         }
+        _userMoved = true;
         DragMove();
     }
 }

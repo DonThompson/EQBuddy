@@ -65,11 +65,15 @@ public sealed class SpawnZone
     /// <summary>True when <see cref="NamedDefaultSeconds"/> is a MEASURED zone clock
     /// (see SpawnEntry.Trusted) — entries riding it don't re-kill-learn.</summary>
     public bool NamedDefaultTrusted { get; set; }
-    /// <summary>True for zones the raid-target catalog knows (#109): an INSTANCED
-    /// entry of such a zone runs on lockouts, so kills inside it start no automatic
-    /// countdowns — not just the dump-listed bosses, the minis too. Ordinary leveling
-    /// dungeons keep their timers even in tier instances: mobs demonstrably respawn
-    /// there (the Befallen/Crushbone clocks were MEASURED inside tier variants).</summary>
+    /// <summary>True for PURE raid zones — the Planes (#109, Frankthetankk's report:
+    /// "Plane of Fear / Plane of Hate and similar raid content", minis included).
+    /// Kills inside an INSTANCE of such a zone start no automatic countdowns.
+    /// Deliberately NOT set for dual-use dungeons that merely house a raid boss
+    /// (Kedge, Nagafen's Lair, Permafrost): their tier instances demonstrably
+    /// respawn — the Befallen/Crushbone clocks were MEASURED inside tier variants —
+    /// and a leveling group camping there must keep its timers (2026-08-13 review:
+    /// the first cut suppressed those too). Their dump-listed bosses stay covered
+    /// by the per-entry <see cref="SpawnEntry.RaidInstanced"/> flag.</summary>
     public bool RaidZone { get; set; }
     public List<SpawnEntry> Named { get; set; } = [];
 
@@ -139,7 +143,10 @@ public sealed class SpawnCatalog
     {
         foreach (var zone in catalog.Zones)
         {
-            zone.RaidZone = raidTargets.Zones.Any(rz => zone.MatchesZoneName(rz.Zone));
+            // Pure raid zones only: the Planes. A dual-use dungeon housing one raid
+            // boss must NOT have its whole zone gated — see the RaidZone doc.
+            zone.RaidZone = zone.Zone.StartsWith("Plane of ", StringComparison.OrdinalIgnoreCase)
+                && raidTargets.Zones.Any(rz => zone.MatchesZoneName(rz.Zone));
             foreach (var entry in zone.Named)
                 if (raidTargets.IsRaidBoss(entry.Name)
                     || entry.Aliases.Any(raidTargets.IsRaidBoss))

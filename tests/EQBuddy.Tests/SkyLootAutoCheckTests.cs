@@ -102,6 +102,21 @@ public class SkyLootAutoCheckTests
     }
 
     [Fact]
+    public void AFullLensClassParksNothingOnAnUnplayedClass()
+    {
+        // 2026-08-13 review: "!changed" was a proxy for "no lens match" and fired
+        // when the lens class's slots were simply full — guessing a tick onto a
+        // class the player doesn't play. A second copy now ticks nothing.
+        var list = TwoClassChecklist();
+        list.Single(i => i.ClassName == "Berserker" && i.QuestItem == "Twisted Staff").Acquired = true;
+
+        var changed = SkyLootAutoCheck.Apply(list, "Twisted Staff", 1, ["Berserker"], activeTab: "Druid");
+
+        Assert.False(changed);
+        Assert.False(list.Single(i => i.ClassName == "Necromancer").Acquired);
+    }
+
+    [Fact]
     public void TheParkedTickRespectsTheLootBudget()
     {
         var list = TwoClassChecklist();

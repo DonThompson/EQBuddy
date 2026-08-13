@@ -138,16 +138,30 @@ public sealed partial class EqlWikiItemService
             Quests = rec.Quests ?? [],
             Recipes = rec.Recipes ?? [],
             DropsFrom = (rec.DropZones ?? []).Select(z => (z, new List<string>())).ToList(),
+            // The build tool computed QuestFlagged from the page's stats AND its
+            // categories; carry the category half through so category-only quest
+            // items keep their 🗺 badge (2026-08-13 review: the flag was shipped
+            // in the gz but unreachable).
+            Categories = rec.QuestFlagged ? ["Quest Items"] : [],
             WikiUrl = "https://eqlwiki.com/" + Uri.EscapeDataString(rec.Name.Replace(' ', '_')),
         };
     }
+
+    // The catalog fallback made this branch always-taken for real items, so the
+    // join is memoized too (2026-08-13 review): loot rows call this per row per
+    // render second, and re-joining an unchanged stats block every tick was churn.
+    private readonly Dictionary<string, string?> _statsTextMemo = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Cache-only stats peek for hover tooltips: synchronous, accepts any age,
     /// never fetches. A hover must cost nothing — the click path does the real lookup.</summary>
     public string? CachedStatsText(string inGameName)
     {
+        lock (_memoLock)
+            if (_statsTextMemo.TryGetValue(inGameName, out var memo)) return memo;
         var info = CachedInfo(inGameName);
-        return info is { StatsLines.Count: > 0 } ? string.Join("\n", info.StatsLines) : null;
+        var text = info is { StatsLines.Count: > 0 } ? string.Join("\n", info.StatsLines) : null;
+        lock (_memoLock) _statsTextMemo[inGameName] = text;
+        return text;
     }
 
     private async Task<string?> FetchFromApi(string title)
@@ -192,7 +206,7 @@ public sealed partial class EqlWikiItemService
             Directory.CreateDirectory(_cacheDir);
             File.WriteAllText(CachePath(title),
                 JsonSerializer.Serialize(new CacheEntry(resolvedTitle, wikitext, DateTime.UtcNow)));
-            lock (_memoLock) _infoMemo.Clear();   // fresh page fetched — memo re-reads
+            lock (_memoLock) { _infoMemo.Clear(); _statsTextMemo.Clear(); }   // fresh page — memos re-read
         }
         catch { /* cache is a convenience; lookups still work without it */ }
     }

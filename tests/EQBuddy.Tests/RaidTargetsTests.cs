@@ -129,6 +129,24 @@ public class RaidTargetsTests
     }
 
     [Fact]
+    public void ForReturnsASnapshotNotTheLiveRecord()
+    {
+        // 2026-08-13 review: the live record's TierKills dictionary mutates on the
+        // watcher thread; handing the UI the same instance invited an
+        // enumerate-during-add crash. For() must clone.
+        var l = Ledger();
+        l.Apply(Ev(0, "You have entered Nagafen's Lair - Group 3 (Fused)."));
+        l.Apply(Ev(1, "Lord Nagafen has been slain by Tankname!"));
+
+        var snapshot = l.For("Lord Nagafen")!;
+        l.Apply(Ev(700, "Lord Nagafen has been slain by Tankname!"));
+
+        Assert.Equal(1, snapshot.Kills);                    // the snapshot froze
+        Assert.Equal(1, snapshot.TierKills["d3"]);
+        Assert.Equal(2, l.For("Lord Nagafen")!.Kills);      // a fresh read sees both
+    }
+
+    [Fact]
     public void RecordsFromBeforeTierTrackingRoundTrip()
     {
         // A pre-1.72 store has no TierKills field at all: it must load, count as

@@ -206,6 +206,12 @@ public partial class MainWindow : Window
         // and how you get it back.
         _trayIcon = new TrayIcon(this);
 
+        // Warm the embedded item catalog off-thread: its one-time gunzip+parse
+        // (~11k records) must never land on the UI thread mid-fight via the first
+        // loot-row tooltip (2026-08-13 review) — after this, first UI touch is a
+        // dictionary probe.
+        Task.Run(() => Core.ItemCatalog.Default);
+
         // Screenshot/debug hook, same family as EQBUDDY_OPTIONS: open the Quest Tracker
         // after the startup replay has fed the ledger. "1" opens the default view;
         // "zone"/"all" open that mode directly.
@@ -910,8 +916,10 @@ public partial class MainWindow : Window
         // Same monotone-cubic smoothing as the fight timeline (the approved chart
         // pass): curved, never overshooting — sampled densely into the Polyline so
         // the XAML stays a Polyline.
+        // 3 samples/segment: visually identical at sparkline size, half the points
+        // pushed through the Freezable collections each combat second.
         var line = new PointCollection();
-        foreach (var (px, py) in EQBuddy.UI.Shared.MonotoneCurve.Sample(xs, ys))
+        foreach (var (px, py) in EQBuddy.UI.Shared.MonotoneCurve.Sample(xs, ys, samplesPerSegment: 3))
             line.Add(new Point(px, py));
         CombatSpark.Points = line;
         var fill = new PointCollection(line) { new(w, h + 2), new(0, h + 2) };
@@ -3433,6 +3441,8 @@ public partial class MainWindow : Window
     /// the fold). Sorting still surfaces anything; breakouts and History stay uncapped.</summary>
     private const int CardRowCap = 30;
 
+    private static readonly FontFamily MonoFamily = new("Consolas");
+
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
         StatSort sort, double combatSeconds, string rateLabel,
         IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null) =>
@@ -3520,7 +3530,9 @@ public partial class MainWindow : Window
             {
                 var tipText = new TextBlock { Text = tip, TextWrapping = TextWrapping.Wrap, MaxWidth = 340 };
                 // Multi-line tips are stat blocks — monospace keeps their columns readable.
-                if (tip.Contains('\n')) tipText.FontFamily = new FontFamily("Consolas");
+                // (Static family: the item catalog made this branch always-taken, and a
+                // fresh FontFamily per row per render second was churn — 2026-08-13 review.)
+                if (tip.Contains('\n')) tipText.FontFamily = MonoFamily;
                 left.ToolTip = new System.Windows.Controls.ToolTip { Content = tipText };
             }
             if (onNameClick is not null)
@@ -3681,6 +3693,11 @@ public partial class MainWindow : Window
         {
             if (Visibility != Visibility.Visible) Show();
             if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            // Clear the hide state DIRECTLY — relying on Activate() winning foreground
+            // left a visible-but-frozen widget when Windows refused the focus switch
+            // (2026-08-13 review): RefreshUi gates on this flag, so a stale true froze
+            // stats and kept satellites hidden. An explicit show IS the user's choice.
+            _hiddenForFocus = false;
             Topmost = true;
             Activate();
         }

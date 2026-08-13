@@ -25,9 +25,11 @@ public sealed class MezChipsWindow : Window
     private bool _haveVisiblePosition;
     // Fallback placements must never persist (#117): where the window was placed at
     // open and whether that was the player's saved spot.
-    private PixelPoint _placed;
     private bool _restoredSaved;
     private bool _openedOnce;
+    private bool _userMoved;
+    /// <summary>Tests can't drag a headless window; this is the drag signal's test seam.</summary>
+    internal void MarkUserMovedForTests() => _userMoved = true;
 
     public MezChipsWindow(AppSettings settings,
         Func<IReadOnlyList<MezState>, DateTime, List<SpawnChip>>? source = null)
@@ -53,7 +55,6 @@ public sealed class MezChipsWindow : Window
                 Position = new PixelPoint((int)_settings.MezChipsLeft, (int)_settings.MezChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 120);
-            _placed = Position;
             _openedOnce = true;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
@@ -61,8 +62,9 @@ public sealed class MezChipsWindow : Window
         PositionChanged += (_, _) =>
         {
             // Programmatic placement is not a choice — only persist once the player
-            // has actually dragged the stack somewhere (#117).
-            if (!IsVisible || !_openedOnce || Position == _placed) return;
+            // has actually STARTED A DRAG (#117; coordinate deltas can't tell a drag
+            // from the WM's or anchor's own writes — 2026-08-13 review).
+            if (!IsVisible || !_openedOnce || !_userMoved) return;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
             _settings.MezChipsLeft = Position.X;
@@ -72,7 +74,7 @@ public sealed class MezChipsWindow : Window
         {
             var current = _haveVisiblePosition ? _lastVisiblePosition : Position;
             (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
-                _restoredSaved, _placed.X, _placed.Y, current.X, current.Y,
+                _restoredSaved, _userMoved, current.X, current.Y,
                 _settings.MezChipsLeft, _settings.MezChipsTop);
             _settings.Save();
         };
@@ -161,7 +163,10 @@ public sealed class MezChipsWindow : Window
             border.PointerPressed += (_, e) =>
             {
                 if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+                {
+                    _userMoved = true;   // a real drag — the one signal that persists
                     BeginMoveDrag(e);
+                }
             };
             _panel.Children.Add(border);
         }

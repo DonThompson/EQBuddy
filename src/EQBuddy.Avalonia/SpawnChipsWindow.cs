@@ -25,9 +25,11 @@ public sealed class SpawnChipsWindow : Window
     private string _signature = "";
     // Fallback placements must never persist (#117): where the window was placed at
     // open and whether that was the player's saved spot.
-    private PixelPoint _placed;
     private bool _restoredSaved;
     private bool _openedOnce;
+    private bool _userMoved;
+    /// <summary>Tests can't drag a headless window; this is the drag signal's test seam.</summary>
+    internal void MarkUserMovedForTests() => _userMoved = true;
     private PixelPoint _lastVisiblePosition;
     private bool _haveVisiblePosition;
 
@@ -55,7 +57,6 @@ public sealed class SpawnChipsWindow : Window
                 Position = new PixelPoint((int)_settings.SpawnChipsLeft, (int)_settings.SpawnChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 40);
-            _placed = Position;
             _openedOnce = true;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
@@ -65,8 +66,9 @@ public sealed class SpawnChipsWindow : Window
         PositionChanged += (_, _) =>
         {
             // Programmatic placement is not a choice — only persist once the player
-            // has actually dragged the stack somewhere (#117).
-            if (!IsVisible || !_openedOnce || Position == _placed) return;
+            // has actually STARTED A DRAG (#117; coordinate deltas can't tell a drag
+            // from the WM's or anchor's own writes — 2026-08-13 review).
+            if (!IsVisible || !_openedOnce || !_userMoved) return;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
             // Keep the live settings object current too, so a newly-created stack in the
@@ -78,7 +80,7 @@ public sealed class SpawnChipsWindow : Window
         {
             var current = _haveVisiblePosition ? _lastVisiblePosition : Position;
             (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
-                _restoredSaved, _placed.X, _placed.Y, current.X, current.Y,
+                _restoredSaved, _userMoved, current.X, current.Y,
                 _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
             _settings.Save();
         };
@@ -175,7 +177,10 @@ public sealed class SpawnChipsWindow : Window
             return;
         }
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            _userMoved = true;   // a real drag — the one signal that persists
             BeginMoveDrag(e);
+        }
     }
 
     internal void DismissChip(SpawnChip chip)

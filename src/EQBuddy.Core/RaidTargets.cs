@@ -187,10 +187,24 @@ public sealed class RaidKillLedger
         return marked;
     }
 
+    /// <summary>A SNAPSHOT of the boss's record, cloned under the lock — the live
+    /// record's TierKills dictionary mutates on the watcher thread, and handing it
+    /// to the UI invited a cross-thread enumerate-during-add crash (2026-08-13
+    /// review). Scalars alone were torn-read-safe; the dictionary is not.</summary>
     public RaidBossRecord? For(string boss)
     {
         lock (_lock)
-            return _records.TryGetValue(Key(boss), out var r) ? r : null;
+        {
+            if (!_records.TryGetValue(Key(boss), out var r)) return null;
+            return new RaidBossRecord
+            {
+                Kills = r.Kills,
+                FirstKill = r.FirstKill,
+                LastKill = r.LastKill,
+                AchievementComplete = r.AchievementComplete,
+                TierKills = new Dictionary<string, int>(r.TierKills),
+            };
+        }
     }
 
     /// <summary>Defeated = the log saw it die or the achievement says so —

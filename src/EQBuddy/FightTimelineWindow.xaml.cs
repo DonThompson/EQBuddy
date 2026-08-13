@@ -307,10 +307,14 @@ internal sealed class DpsGraphPanel : FrameworkElement
     {
         if (series.Length < 2) return;
         // Visible slice with a sample of margin each side so the curve enters and
-        // leaves the viewport smoothly. Display stride keeps sampled points ≥4px
-        // apart: zoomed out, per-second samples sit sub-pixel and the "curve" reads
-        // as the old jaggedness — every drawn point is still a real sample, the
-        // stride only chooses which ones carry the curve at this zoom.
+        // leaves the viewport smoothly. Display buckets keep drawn points ≥4px
+        // apart (zoomed out, per-second samples sit sub-pixel and the "curve" reads
+        // as the old jaggedness) — and each bucket contributes its MAXIMUM sample at
+        // that sample's true position, so a one-second burst can never vanish
+        // between drawn points and the peak dot always sits ON the curve
+        // (2026-08-13 review: a plain stride skipped spikes and left the dot
+        // floating). The cost is honest and stated: between-bucket minima smooth
+        // away at low zoom; maxima never do.
         var stride = Math.Max(1, (int)Math.Ceiling(4 / v.PixelsPerSec));
         var first = Math.Max(0, ((int)Math.Floor(v.OffsetSec) / stride - 1) * stride);
         var lastVisible = Math.Min(series.Length - 1,
@@ -321,9 +325,12 @@ internal sealed class DpsGraphPanel : FrameworkElement
         var ys = new double[count];
         for (var k = 0; k < count; k++)
         {
-            var i = Math.Min(series.Length - 1, first + k * stride);
-            xs[k] = (i - v.OffsetSec) * v.PixelsPerSec;
-            ys[k] = yOf(series[i]);
+            var bucketStart = first + k * stride;
+            var best = Math.Min(series.Length - 1, bucketStart);
+            for (var i = bucketStart + 1; i < bucketStart + stride && i <= lastVisible && i < series.Length; i++)
+                if (series[i] > series[best]) best = i;
+            xs[k] = (best - v.OffsetSec) * v.PixelsPerSec;
+            ys[k] = yOf(series[best]);
         }
         var tangents = EQBuddy.UI.Shared.MonotoneCurve.Tangents(xs, ys);
 
@@ -338,16 +345,26 @@ internal sealed class DpsGraphPanel : FrameworkElement
             using (var ctx = area.Open())
                 AppendCurve(ctx, xs, ys, tangents, close: true, baseline);
             area.Freeze();
-            var c = brush is SolidColorBrush s ? s.Color : Colors.Gray;
-            var grad = new LinearGradientBrush(
-                Color.FromArgb(56, c.R, c.G, c.B), Color.FromArgb(0, c.R, c.G, c.B),
-                new Point(0, 0), new Point(0, 1));
-            grad.Freeze();
-            dc.DrawGeometry(grad, null, area);
+            dc.DrawGeometry(GradientFor(brush), null, area);
         }
         dc.DrawGeometry(null, new Pen(brush, thickness)
         { LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round },
             stroke);
+    }
+
+    // Gradient per series color, cached — rebuilt-per-render brushes were churn at
+    // pan-mousemove rate (2026-08-13 review). Bounded by theme colors ever seen.
+    private static readonly Dictionary<Color, LinearGradientBrush> GradientCache = [];
+
+    private static LinearGradientBrush GradientFor(Brush stroke)
+    {
+        var c = stroke is SolidColorBrush s ? s.Color : Colors.Gray;
+        if (GradientCache.TryGetValue(c, out var cached)) return cached;
+        var grad = new LinearGradientBrush(
+            Color.FromArgb(56, c.R, c.G, c.B), Color.FromArgb(0, c.R, c.G, c.B),
+            new Point(0, 0), new Point(0, 1));
+        grad.Freeze();
+        return GradientCache[c] = grad;
     }
 
     private static void AppendCurve(StreamGeometryContext ctx, double[] xs, double[] ys,
@@ -435,6 +452,13 @@ internal sealed class LanesPanel : FrameworkElement
         // Type scales gently with the lane height — tall lanes on a short fight
         // shouldn't whisper their own names.
         var nameSize = Math.Clamp(11 + (_laneHeight - MinLaneHeight) / 14, 11, 13.5);
+        // Hoisted out of the lane loop (2026-08-13 review): OnRender runs at
+        // pan-mousemove rate, and these depend only on theme brushes.
+        var critGlow = v.ChartCrit is SolidColorBrush glowSrc
+            ? new SolidColorBrush(Color.FromArgb(64, glowSrc.Color.R, glowSrc.Color.G, glowSrc.Color.B))
+            : null;
+        critGlow?.Freeze();
+        var phasePen = new Pen(v.Dim, 0.7) { DashStyle = DashStyles.Dot };
         for (var i = 0; i < t.Lanes.Count; i++)
         {
             var lane = t.Lanes[i];
@@ -471,10 +495,6 @@ internal sealed class LanesPanel : FrameworkElement
             var markW = Math.Clamp(v.PixelsPerSec * 0.25, 3, 3 + _laneHeight / 12);
             var barRoom = _laneHeight - 6;
             var hollowH = Math.Round(barRoom * 0.45);
-            var critGlow = v.ChartCrit is SolidColorBrush cb
-                ? new SolidColorBrush(Color.FromArgb(64, cb.Color.R, cb.Color.G, cb.Color.B))
-                : null;
-            critGlow?.Freeze();
             foreach (var m in lane.Marks)
             {
                 var x = LabelWidth + (m.Sec - v.OffsetSec) * v.PixelsPerSec;
@@ -501,7 +521,7 @@ internal sealed class LanesPanel : FrameworkElement
         {
             var px = LabelWidth + (phase.Sec - v.OffsetSec) * v.PixelsPerSec;
             if (px < LabelWidth - 2 || px > ActualWidth + 2) continue;
-            dc.DrawLine(new Pen(v.Dim, 0.7) { DashStyle = DashStyles.Dot },
+            dc.DrawLine(phasePen,
                 new Point(px, 0), new Point(px, t.Lanes.Count * _laneHeight));
             var pl = new FormattedText($"→ {phase.Label}", CultureInfo.CurrentUICulture,
                 FlowDirection.LeftToRight, face, 9, v.Dim, dpi);
