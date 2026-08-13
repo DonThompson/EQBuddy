@@ -70,6 +70,13 @@ public static class CustomTheme
         // Fixed like the status trio: incoming damage keeps its cool hue so it reads
         // the same in every custom palette.
         yield return ("IncomingBrush", "#FF6FA8B8");
+        // Chart-series steps stay fixed too (the validated ParchmentBrass set): a
+        // user-picked accent can be anything, and deriving series colors from it
+        // would undo the colorblind-separation work the fixed set encodes.
+        yield return ("ChartYouBrush", "#FFB4892C");
+        yield return ("ChartPetBrush", "#FF5CA352");
+        yield return ("ChartIncomingBrush", "#FF4796DB");
+        yield return ("ChartCritBrush", "#FFF0BC55");
     }
 
     /// <summary>Accepts #RRGGBB (or #AARRGGBB, alpha discarded — some users will paste

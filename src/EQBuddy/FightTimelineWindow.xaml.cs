@@ -205,13 +205,24 @@ internal sealed class TimelineViewport
     public bool Fit = true;
 
     public Brush Text = Brushes.White, Dim = Brushes.Gray, Accent = Brushes.CornflowerBlue,
-        Good = Brushes.SeaGreen, Bad = Brushes.IndianRed, Warn = Brushes.Orange;
+        Good = Brushes.SeaGreen, Bad = Brushes.IndianRed, Warn = Brushes.Orange,
+        Bg = Brushes.Black;
+    // Chart-series steps (the 2026-08-13 approved pass): deeper cuts than the ambient
+    // accents, colorblind-validated on the default theme. Fallbacks keep old custom
+    // palettes painting.
+    public Brush ChartYou = Brushes.DarkGoldenrod, ChartPet = Brushes.SeaGreen,
+        ChartIncoming = Brushes.SteelBlue, ChartCrit = Brushes.Orange;
 
     public void CaptureTheme(FrameworkElement from)
     {
         Text = Find(from, "TextBrush", Text); Dim = Find(from, "DimBrush", Dim);
         Accent = Find(from, "AccentBrush", Accent); Good = Find(from, "GoodBrush", Good);
         Bad = Find(from, "BadBrush", Bad); Warn = Find(from, "WarnBrush", Warn);
+        Bg = Find(from, "BgBrush", Bg);
+        ChartYou = Find(from, "ChartYouBrush", Accent);
+        ChartPet = Find(from, "ChartPetBrush", Good);
+        ChartIncoming = Find(from, "ChartIncomingBrush", Bad);
+        ChartCrit = Find(from, "ChartCritBrush", Warn);
     }
 
     private static Brush Find(FrameworkElement e, string key, Brush fallback) =>
@@ -229,81 +240,159 @@ internal sealed class DpsGraphPanel : FrameworkElement
         if (View is not { Timeline: { } t } v) return;
         v.CaptureTheme(this);
         var w = ActualWidth - LanesPanel.LabelWidth;
-        var h = ActualHeight - 14;   // room for the peak caption
-        if (w <= 10 || h <= 10) return;
-        dc.PushTransform(new TranslateTransform(LanesPanel.LabelWidth, 0));
+        var top = 14.0;   // legend row
+        var h = ActualHeight - 2;
+        if (w <= 10 || h - top <= 10) return;
 
         var max = Math.Max(1, new[] { t.DpsSeries, t.PetDpsSeries, t.IncomingDpsSeries }
             .SelectMany(s => s).DefaultIfEmpty(1).Max());
+        double YOf(double dps) => h - dps / max * (h - top - 4);
 
-        // A scale, so the graph measures instead of gesturing (David's pass): dotted
-        // gridlines at half and full, labeled in dps, drawn under the series.
-        foreach (var frac in new[] { 0.5, 1.0 })
+        // Recessive grid: dotted quarter-lines, labels right-aligned INTO the label
+        // gutter so they never sit on data (the approved mockup's rule).
+        foreach (var frac in new[] { 0.25, 0.5, 0.75, 1.0 })
         {
-            var gy = h - frac * (h - 4);
-            dc.DrawLine(new Pen(v.Dim, 0.5) { DashStyle = DashStyles.Dot },
-                new Point(0, gy), new Point(w, gy));
-            var label = Caption($"{max * frac:N0} dps", v.Dim);
-            dc.DrawText(label, new Point(w - label.Width - 2, gy - label.Height - 1));
+            var gy = YOf(max * frac);
+            dc.DrawLine(new Pen(v.Dim, 0.4) { DashStyle = DashStyles.Dot },
+                new Point(LanesPanel.LabelWidth, gy), new Point(LanesPanel.LabelWidth + w, gy));
+            var label = Caption($"{max * frac:N0}", v.Dim, 9);
+            dc.DrawText(label, new Point(LanesPanel.LabelWidth - label.Width - 6, gy - label.Height / 2));
         }
 
-        Draw(dc, t.IncomingDpsSeries, v, w, h, max, v.Bad, 1);
-        Draw(dc, t.PetDpsSeries, v, w, h, max, v.Dim, 1);
-        Draw(dc, t.DpsSeries, v, w, h, max, v.Accent, 1.6);
+        dc.PushTransform(new TranslateTransform(LanesPanel.LabelWidth, 0));
 
-        // Series legend, top-left of the plot — three unexplained line colors were
-        // the "what is being measured" half of the complaint.
+        // Smooth series: monotone-cubic through every real sample — curved, but
+        // mathematically unable to overshoot a value that never happened. Your line
+        // is the headline and gets the gradient area; pet and incoming stay strokes.
+        DrawSmooth(dc, t.IncomingDpsSeries, v, w, max, YOf, v.ChartIncoming, 1.6, fill: false, h);
+        DrawSmooth(dc, t.PetDpsSeries, v, w, max, YOf, v.ChartPet, 1.6, fill: false, h);
+        DrawSmooth(dc, t.DpsSeries, v, w, max, YOf, v.ChartYou, 2.0, fill: true, h);
+
+        // Legend: uppercase micro-labels with rounded swatches, top-left.
         var lx = 4.0;
         foreach (var (text, brush, present) in new[]
         {
-            ("you + pet", (Brush)v.Accent, true),
-            ("pet", v.Dim, t.PetDpsSeries.Any(p => p > 0)),
-            ("incoming", v.Bad, t.IncomingDpsSeries.Any(p => p > 0)),
+            ("YOU + PET", v.ChartYou, true),
+            ("INCOMING", v.ChartIncoming, t.IncomingDpsSeries.Any(p => p > 0)),
+            ("PET", v.ChartPet, t.PetDpsSeries.Any(p => p > 0)),
         })
         {
             if (!present) continue;
-            dc.DrawRectangle(brush, null, new Rect(lx, 6, 8, 3));
-            var key = Caption(text, v.Dim);
-            dc.DrawText(key, new Point(lx + 11, 0.5));
-            lx += 11 + key.Width + 10;
+            dc.DrawRoundedRectangle(brush, null, new Rect(lx, 5.5, 10, 3), 1.5, 1.5);
+            var key = Caption(text, v.Dim, 8.5);
+            dc.DrawText(key, new Point(lx + 14, 1));
+            lx += 14 + key.Width + 12;
         }
 
+        // The peak is a marked POINT — an emphasized dot with a surface ring and a
+        // label that dodges the plot edges, not a dashed wall through the data.
         var peakX = (t.PeakSec - v.OffsetSec) * v.PixelsPerSec;
         if (peakX >= 0 && peakX <= w && t.PeakDps > 0)
         {
-            dc.DrawLine(new Pen(v.Dim, 0.6) { DashStyle = DashStyles.Dot },
-                new Point(peakX, 2), new Point(peakX, h));
-            var label = Caption($"{t.PeakDps:N0} peak", v.Dim);
-            dc.DrawText(label, new Point(
-                Math.Clamp(peakX - label.Width / 2, 0, Math.Max(0, w - label.Width)), h + 1));
+            var py = YOf(t.PeakDps);
+            dc.DrawEllipse(v.ChartYou, new Pen(v.Bg, 2), new Point(peakX, py), 4, 4);
+            var label = Caption($"{t.PeakDps:N0} peak", v.Text, 9.5, bold: true);
+            var labelX = peakX + 8 + label.Width <= w ? peakX + 8 : peakX - 8 - label.Width;
+            // A peak near the top would put its label in the legend row — drop it
+            // BELOW the dot there instead of on top of the series key.
+            var labelY = py - label.Height - 4 < top ? py + 6 : py - label.Height - 4;
+            dc.DrawText(label, new Point(labelX, labelY));
         }
         dc.Pop();
     }
 
-    private static void Draw(DrawingContext dc, double[] series, TimelineViewport v,
-        double w, double h, double max, Brush brush, double thickness)
+    private static void DrawSmooth(DrawingContext dc, double[] series, TimelineViewport v,
+        double w, double max, Func<double, double> yOf, Brush brush, double thickness,
+        bool fill, double baseline)
     {
         if (series.Length < 2) return;
-        var geo = new StreamGeometry();
-        using (var ctx = geo.Open())
+        // Visible slice with a sample of margin each side so the curve enters and
+        // leaves the viewport smoothly. Display stride keeps sampled points ≥4px
+        // apart: zoomed out, per-second samples sit sub-pixel and the "curve" reads
+        // as the old jaggedness — every drawn point is still a real sample, the
+        // stride only chooses which ones carry the curve at this zoom.
+        var stride = Math.Max(1, (int)Math.Ceiling(4 / v.PixelsPerSec));
+        var first = Math.Max(0, ((int)Math.Floor(v.OffsetSec) / stride - 1) * stride);
+        var lastVisible = Math.Min(series.Length - 1,
+            (int)Math.Ceiling(v.OffsetSec + w / v.PixelsPerSec) + stride);
+        var count = (lastVisible - first) / stride + 1;
+        if (count < 2) return;
+        var xs = new double[count];
+        var ys = new double[count];
+        for (var k = 0; k < count; k++)
         {
-            var started = false;
-            for (var i = 0; i < series.Length; i++)
-            {
-                var x = (i - v.OffsetSec) * v.PixelsPerSec;
-                if (x < -2 || x > w + 2) continue;
-                var p = new Point(x, h - series[i] / max * (h - 4));
-                if (!started) { ctx.BeginFigure(p, false, false); started = true; }
-                else ctx.LineTo(p, true, true);
-            }
+            var i = Math.Min(series.Length - 1, first + k * stride);
+            xs[k] = (i - v.OffsetSec) * v.PixelsPerSec;
+            ys[k] = yOf(series[i]);
         }
-        geo.Freeze();
-        dc.DrawGeometry(null, new Pen(brush, thickness) { LineJoin = PenLineJoin.Round }, geo);
+        var tangents = MonotoneTangents(xs, ys);
+
+        var stroke = new StreamGeometry();
+        using (var ctx = stroke.Open())
+            AppendCurve(ctx, xs, ys, tangents, close: false, baseline);
+        stroke.Freeze();
+
+        if (fill)
+        {
+            var area = new StreamGeometry();
+            using (var ctx = area.Open())
+                AppendCurve(ctx, xs, ys, tangents, close: true, baseline);
+            area.Freeze();
+            var c = brush is SolidColorBrush s ? s.Color : Colors.Gray;
+            var grad = new LinearGradientBrush(
+                Color.FromArgb(56, c.R, c.G, c.B), Color.FromArgb(0, c.R, c.G, c.B),
+                new Point(0, 0), new Point(0, 1));
+            grad.Freeze();
+            dc.DrawGeometry(grad, null, area);
+        }
+        dc.DrawGeometry(null, new Pen(brush, thickness)
+        { LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round },
+            stroke);
     }
 
-    private FormattedText Caption(string text, Brush brush) => new(text,
-        CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
-        new Typeface("Segoe UI"), 10, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+    /// <summary>Fritsch–Carlson monotone-cubic tangents: the standard way to smooth a
+    /// series without overshoot — between two equal samples the curve stays flat, and
+    /// no bend ever exceeds the data. The same algorithm as the approved mockup.</summary>
+    private static double[] MonotoneTangents(double[] xs, double[] ys)
+    {
+        var n = xs.Length;
+        var m = new double[n - 1];
+        for (var i = 0; i < n - 1; i++)
+            m[i] = (ys[i + 1] - ys[i]) / Math.Max(1e-9, xs[i + 1] - xs[i]);
+        var t = new double[n];
+        t[0] = m[0]; t[n - 1] = m[n - 2];
+        for (var i = 1; i < n - 1; i++)
+            t[i] = m[i - 1] * m[i] <= 0 ? 0
+                : 3 * (xs[i] - xs[i - 1] + xs[i + 1] - xs[i])
+                  / ((2 * (xs[i + 1] - xs[i]) + (xs[i] - xs[i - 1])) / m[i - 1]
+                     + ((xs[i + 1] - xs[i]) + 2 * (xs[i] - xs[i - 1])) / m[i]);
+        return t;
+    }
+
+    private static void AppendCurve(StreamGeometryContext ctx, double[] xs, double[] ys,
+        double[] t, bool close, double baseline)
+    {
+        ctx.BeginFigure(new Point(xs[0], ys[0]), close, close);
+        for (var i = 0; i < xs.Length - 1; i++)
+        {
+            var dx = xs[i + 1] - xs[i];
+            ctx.BezierTo(
+                new Point(xs[i] + dx / 3, ys[i] + t[i] * dx / 3),
+                new Point(xs[i + 1] - dx / 3, ys[i + 1] - t[i + 1] * dx / 3),
+                new Point(xs[i + 1], ys[i + 1]), true, false);
+        }
+        if (close)
+        {
+            ctx.LineTo(new Point(xs[^1], baseline), false, false);
+            ctx.LineTo(new Point(xs[0], baseline), false, false);
+        }
+    }
+
+    private FormattedText Caption(string text, Brush brush, double size = 10, bool bold = false) =>
+        new(text, CultureInfo.CurrentUICulture, FlowDirection.LeftToRight,
+            new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal,
+                bold ? FontWeights.SemiBold : FontWeights.Normal, FontStretches.Normal),
+            size, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
 }
 
 /// <summary>
@@ -313,7 +402,9 @@ internal sealed class DpsGraphPanel : FrameworkElement
 /// </summary>
 internal sealed class LanesPanel : FrameworkElement
 {
-    public const double LabelWidth = 138;
+    /// <summary>Name column + right-aligned totals column, the mockup's fixed-gutter
+    /// rule: a lane name can never sit on top of its own total again.</summary>
+    public const double LabelWidth = 176;
     private const double MinLaneHeight = 24;
     private const double MaxLaneHeight = 68;
     private const double AxisHeight = 16;
@@ -371,8 +462,8 @@ internal sealed class LanesPanel : FrameworkElement
 
             var name = new FormattedText(lane.Name, CultureInfo.CurrentUICulture,
                 FlowDirection.LeftToRight, face, nameSize,
-                lane.Kind == LaneKind.Incoming ? v.Bad : v.Text, dpi)
-            { MaxTextWidth = LabelWidth - 44, MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis };
+                lane.Kind == LaneKind.Incoming ? v.ChartIncoming : v.Text, dpi)
+            { MaxTextWidth = LabelWidth - 76, MaxLineCount = 1, Trimming = TextTrimming.CharacterEllipsis };
             dc.DrawText(name, new Point(2, y + _laneHeight / 2 - name.Height / 2));
             if (lane.Total > 0)
             {
@@ -380,35 +471,44 @@ internal sealed class LanesPanel : FrameworkElement
                 var total = new FormattedText(
                     Short(lane.Total) + (lane.Kind == LaneKind.Incoming ? " taken" : " dmg"),
                     CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, face, 10, v.Dim, dpi);
-                dc.DrawText(total, new Point(LabelWidth - total.Width - 8,
+                dc.DrawText(total, new Point(LabelWidth - total.Width - 12,
                     y + _laneHeight / 2 - total.Height / 2));
             }
 
             var laneMax = Math.Max(1, lane.Marks.Max(m => m.Amount));
+            // Chart-series steps, not ambient accents (2026-08-13 pass): incoming
+            // wears the cool chart blue — red stays reserved for genuine status.
             var solid = lane.Kind switch
             {
-                LaneKind.Pet => v.Good,
-                LaneKind.Incoming => v.Bad,
-                _ => v.Accent,
+                LaneKind.Pet => v.ChartPet,
+                LaneKind.Incoming => v.ChartIncoming,
+                _ => v.ChartYou,
             };
             // Hollow = a failed attempt. Neutral outline on purpose: it used to share
             // the crit's warn color, and two meanings in one hue read as one meaning.
-            var hollowPen = new Pen(lane.Kind == LaneKind.Incoming ? v.Bad : v.Dim, 1.2);
-            var markW = Math.Clamp(v.PixelsPerSec * 0.25, 2, 3 + _laneHeight / 12);
+            var hollowPen = new Pen(v.Dim, 1.1);
+            var markW = Math.Clamp(v.PixelsPerSec * 0.25, 3, 3 + _laneHeight / 12);
             var barRoom = _laneHeight - 6;
             var hollowH = Math.Round(barRoom * 0.45);
+            var critGlow = v.ChartCrit is SolidColorBrush cb
+                ? new SolidColorBrush(Color.FromArgb(64, cb.Color.R, cb.Color.G, cb.Color.B))
+                : null;
+            critGlow?.Freeze();
             foreach (var m in lane.Marks)
             {
                 var x = LabelWidth + (m.Sec - v.OffsetSec) * v.PixelsPerSec;
                 if (x < LabelWidth - 4 || x > ActualWidth + 4) continue;
                 if (m.Hollow)
-                    dc.DrawRectangle(null, hollowPen,
-                        new Rect(x, y + (_laneHeight - hollowH) / 2, markW + 1, hollowH));
+                    dc.DrawRoundedRectangle(null, hollowPen,
+                        new Rect(x, y + (_laneHeight - hollowH) / 2, markW + 1, hollowH), 1.5, 1.5);
                 else
                 {
                     var bar = barRoom * (0.25 + 0.75 * Math.Sqrt((double)m.Amount / laneMax));
-                    dc.DrawRectangle(m.Crit ? v.Warn : solid, null,
-                        new Rect(x, y + _laneHeight - 3 - bar, markW, bar));
+                    var rect = new Rect(x, y + _laneHeight - 3 - bar, markW, bar);
+                    if (m.Crit && critGlow is not null)   // the one bright accent, softly haloed
+                        dc.DrawRoundedRectangle(critGlow, null,
+                            new Rect(rect.X - 2, rect.Y - 2, rect.Width + 4, rect.Height + 4), 3, 3);
+                    dc.DrawRoundedRectangle(m.Crit ? v.ChartCrit : solid, null, rect, 1.5, 1.5);
                 }
             }
         }
