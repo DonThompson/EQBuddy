@@ -244,7 +244,11 @@ public sealed partial class EqlWikiItemService
             info.Name = name.Trim();
 
         if (fields.TryGetValue("statsblock", out var stats))
-            info.StatsLines = Regex.Split(stats, @"<br\s*/?>")
+            // Split on <br> AND raw newlines: some pages open the block with a bare
+            // flags line ("Attunable, Placeable") before the first <br>, and leaving
+            // it glued to "Slot: …" hid the slot from every anchored parser (found
+            // 2026-08-13 when Fine Steel Long Sword vanished from the Gear Locker).
+            info.StatsLines = Regex.Split(stats, @"<br\s*/?>|\n")
                 .Select(l => StripLinks(HtmlTagRx().Replace(l, "")).Trim())
                 .Where(l => l.Length > 0)
                 .ToList();

@@ -1303,7 +1303,11 @@ public sealed class SessionStats
             return _journal.Where(e => e.Time >= from && e.Time <= to && e is
                     DamageDealtEvent or MissEvent or ResistEvent or FizzleEvent
                     or DamageTakenEvent or RuneBlockEvent or SpellCastEvent
-                    or ThirdMeleeEvent or ThirdDotEvent or ThirdSchoolEvent or KillEvent)
+                    or ThirdMeleeEvent or ThirdDotEvent or ThirdSchoolEvent or KillEvent
+                    // Mode boundaries for the timeline's phase markers — the whitelist
+                    // silently starved them at first (found via fixture capture: the
+                    // unit test fed the builder directly and never crossed this layer).
+                    or StanceEvent or InvocationEvent)
                 .OrderBy(e => e.Time)
                 .ToList();
     }

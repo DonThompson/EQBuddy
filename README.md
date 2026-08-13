@@ -2,14 +2,20 @@
 
 An always-on-top widget that reads your EverQuest Legends `/log` file live and turns
 it into everything worth knowing about your session: kills and DPS, a **fight
-timeline** that draws every swing on one canvas, loot with personal drop rates,
-money, XP, spawn timers that learn from your kills, mez countdowns, **buff timers
-that learn your character's real durations**, **raid-target tracking**, a **slow
-alert with the cure attached**, a quest tracker that flags what you're ready to turn
-in, and alerts you write yourself (substring or regex, per-rule sounds and colors, a
-spoken voice — or just click a recent log line and it becomes a rule). Click any
-card to drill into details; every session lands in a local searchable history with
-level and AA progress charts.
+timeline** that draws every swing on one canvas with smooth, honest DPS curves,
+loot with personal drop rates, money, XP, spawn timers that learn from your kills
+(and know the difference between an open-world camp and a raid instance), mez
+countdowns, **buff timers that learn your character's real durations**,
+**raid-target tracking with D0–D4 difficulty badges**, a **slow alert with the cure
+attached**, a **Gear Locker** that compares every wearable you own per slot and
+flags arithmetic dump candidates, a **built-in catalog of 10,955 items** (stats,
+quests, recipes, drop zones — instant and offline, refreshed weekly from the
+community wiki), a quest tracker that flags what you're ready to turn in, and
+alerts you write yourself (substring or regex, per-rule sounds and colors, a spoken
+voice — or just click a recent log line and it becomes a rule). Click any card to
+drill into details; every session lands in a local searchable history with level
+and AA progress charts. A tray icon keeps EQBuddy one click away even when the
+widget hides itself with the game.
 
 **EQBuddy is a beta, improving weekly — and most features on this page started as a
 player's suggestion.** Rough edges, wild ideas, wrong numbers: [say so in
@@ -38,7 +44,9 @@ page instead.
 | ![Compact view](docs/screenshots/widget-compact.png) | ![Expanded details](docs/screenshots/widget-expanded.png) |
 | **The widget at a glance** — one line per card: Combat, Kills, Loot, Motes, Sky Quest, Watch, Buffs, Raids, Money, Progress, Faction. Click any card to expand it. | **Full drill-down** — damage per skill with crit *and miss* rates inline, hit ranges on hover, last-fight breakdowns, and both session DPS models labeled: in-combat and wall-clock |
 | ![Fight timeline](docs/screenshots/fight-timeline.png) | ![Buffs, raids and watch cards](docs/screenshots/widget-cards.png) |
-| **Fight timeline** — the whole pull on one canvas: a lane per skill, solid bars for hits (taller = harder, orange = critical), hollow outlines for misses and resists with the log's own words on hover, plus DPS-over-time with the peak flagged. Scroll zooms, drag pans, and a live fight keeps drawing | **Buff timers & raid targets** — buffs count down with honest `est` labels until a natural fade teaches your character's *real* duration (your Spell Casting Reinforcement rank included); the Raids card remembers every raid target your log saw die, with dates |
+| **Fight timeline** — the whole pull on one canvas: a lane per skill, solid bars for hits (taller = harder, bright = critical), hollow outlines for misses and resists with the log's own words on hover, dotted markers where you swapped stance or invocation, and a smoothed DPS-over-time graph whose curves mathematically can't exaggerate — colors are colorblind-validated, and damage you took wears blue so red always means trouble | **Buff timers & raid targets** — buffs count down with honest `est` labels until a natural fade teaches your character's *real* duration; the Raids card remembers every raid target your log saw die, now with **D0–D4 difficulty badges** for the highest tier a witnessed kill proves |
+| ![Gear Locker](docs/screenshots/gear-locker.png) | ![Behavior options](docs/screenshots/options-behavior.png) |
+| **Gear Locker** — every wearable you own, grouped by slot and compared against the rest of your bags: an item beaten on every stat by something else you hold gets flagged **⬇ outclassed**, a dump candidate by arithmetic, not taste. Stats come from the built-in 10,955-item catalog, instantly — never "BiS", it ranks *your* bags | **It gets out of your way** — hide the widget when the game loses focus, or whenever the game isn't running at all; a tray icon stays put so EQBuddy is always one click from coming back |
 | ![Drops by Creature](docs/screenshots/drops-window.png) | ![Quest Tracker](docs/screenshots/quest-tracker.png) |
 | **Drops by Creature** — your personal drop rates per mob, with ✦ marking drops the [community wiki](https://eqlwiki.com) doesn't know yet and **✦ Copy for wiki** building a paste-ready contribution | **Quest Tracker** — 900+ wiki quests; loot something a quest wants and it flips to **✓ ready**, sorted by how close the quest is to where you're standing |
 | ![Sky Quest checklist](docs/screenshots/sky-quest.png) | ![Spawn timers](docs/screenshots/spawns-window.png) |

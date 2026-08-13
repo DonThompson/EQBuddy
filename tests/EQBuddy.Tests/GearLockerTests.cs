@@ -62,6 +62,23 @@ public class GearLockerTests
     }
 
     [Fact]
+    public void AFlagsLineWithoutABreakDoesNotHideTheSlotLine()
+    {
+        // Real wiki shape (Fine Steel Long Sword): the block opens with a bare
+        // "Attunable, Placeable" line separated only by a newline, not <br>. The
+        // item-page parser must still yield "Slot: …" as its own line.
+        var info = EqlWikiItemService.Parse(
+            "<onlyinclude>{{Itempage\n|itemname = Fine Steel Long Sword\n|statsblock  = \n"
+            + "Attunable, Placeable\nSlot: PRIMARY SECONDARY<br>\n"
+            + "Skill: 1H Slashing  Atk Delay: 28<br>\nDMG: 6 <br>\n}}</onlyinclude>",
+            "Fine Steel Long Sword");
+        var stats = ItemStatsBlock.Parse(info.StatsLines);
+        Assert.Equal(["PRIMARY", "SECONDARY"], stats.Slots);
+        Assert.Equal(6, stats.Dmg);
+        Assert.True(stats.Wearable);
+    }
+
+    [Fact]
     public void ASlotlessItemIsNotWearable()
     {
         var s = ItemStatsBlock.Parse(["QUEST ITEM", "WT: 0.1 Size: SMALL"]);
