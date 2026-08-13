@@ -462,6 +462,7 @@ public sealed class AppSettings
             {
                 if (existing.QuestName == item.QuestName &&
                     existing.Reward == item.Reward &&
+                    existing.Section == item.Section &&
                     existing.QuestItem == item.QuestItem &&
                     existing.Qty == item.Qty &&
                     existing.Order == item.Order &&
@@ -470,6 +471,7 @@ public sealed class AppSettings
 
                 existing.QuestName = item.QuestName;
                 existing.Reward = item.Reward;
+                existing.Section = item.Section;
                 existing.QuestItem = item.QuestItem;
                 existing.Qty = item.Qty;
                 existing.Order = item.Order;
@@ -543,6 +545,7 @@ public sealed class EpicQuestChecklistItem
     public string ClassName { get; set; } = "";
     public string QuestName { get; set; } = "";
     public string Reward { get; set; } = "";
+    public string Section { get; set; } = "";
     public string QuestItem { get; set; } = "";
     public int Qty { get; set; } = 1;
     public int Order { get; set; }
@@ -555,6 +558,7 @@ public sealed class EpicQuestChecklistItem
         ClassName = ClassName,
         QuestName = QuestName,
         Reward = Reward,
+        Section = Section,
         QuestItem = QuestItem,
         Qty = Qty,
         Order = Order,

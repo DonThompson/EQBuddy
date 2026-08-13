@@ -186,10 +186,12 @@ public sealed class OptionsViewModelTests
     }
 
     [Fact]
-    public void EpicQuestDefaultsRefreshExistingSourceHints()
+    public void EpicQuestDefaultsRefreshExistingChecklistRows()
     {
         var item = EpicQuestDefaults.Items().Single(i =>
-            i.ClassName == "Shadow Knight" && i.QuestItem == "Blade of Abrogation");
+            i.ClassName == "Shadow Knight" &&
+            i.QuestItem.Contains("Cell Key") &&
+            i.QuestItem.Contains("Caradon"));
         var settings = new AppSettings
         {
             EpicQuestChecklist =
@@ -197,7 +199,8 @@ public sealed class OptionsViewModelTests
                 item.Clone()
             ],
         };
-        settings.EpicQuestChecklist[0].Source = "old source";
+        settings.EpicQuestChecklist[0].Section = "old section";
+        settings.EpicQuestChecklist[0].QuestItem = "old text";
         settings.EpicQuestChecklist[0].Order = 9999;
         settings.EpicQuestChecklist[0].Acquired = true;
 
@@ -205,7 +208,8 @@ public sealed class OptionsViewModelTests
 
         var refreshed = settings.EpicQuestChecklist.Single(i => i.Id == item.Id);
         Assert.True(refreshed.Acquired);
+        Assert.Equal(item.Section, refreshed.Section);
+        Assert.Equal(item.QuestItem, refreshed.QuestItem);
         Assert.Equal(item.Order, refreshed.Order);
-        Assert.Contains("Plane of Sky", refreshed.Source);
     }
 }

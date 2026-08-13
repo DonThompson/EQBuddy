@@ -2356,36 +2356,6 @@ public partial class MainWindow : Window
                         Margin = new Thickness(0, 1, 0, 4),
                     });
 
-                var guide = EpicQuestDefaults.GuideFor(className);
-                if (guide is not null)
-                {
-                    panel.Children.Add(new TextBlock
-                    {
-                        Text = guide.Summary,
-                        FontSize = 10,
-                        Foreground = (Brush)FindResource("TextBrush"),
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(0, 2, 0, 4),
-                    });
-                    panel.Children.Add(new TextBlock
-                    {
-                        Text = "Route",
-                        FontSize = 10,
-                        FontWeight = FontWeights.SemiBold,
-                        Foreground = (Brush)FindResource("AccentBrush"),
-                        Margin = new Thickness(0, 2, 0, 2),
-                    });
-                    foreach (var step in guide.Steps)
-                        panel.Children.Add(new TextBlock
-                        {
-                            Text = "- " + step,
-                            FontSize = 10,
-                            Foreground = (Brush)FindResource("DimBrush"),
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(0, 0, 0, 2),
-                        });
-                }
-
                 var completed = IsEpicQuestCompleted(className);
                 var completeCheck = new CheckBox
                 {
@@ -2404,40 +2374,42 @@ public partial class MainWindow : Window
                 completeCheck.Unchecked += (_, _) => OnEpicQuestCompletedToggled(className, classItems, false);
                 panel.Children.Add(completeCheck);
 
-                foreach (var item in classItems)
+                foreach (var sectionGroup in classItems.GroupBy(i => i.Section.Length > 0 ? i.Section : "Checklist"))
                 {
-                    var text = new StackPanel();
-                    text.Children.Add(new TextBlock
-                    {
-                        Text = item.Qty > 1 ? $"{item.QuestItem} x{item.Qty}" : item.QuestItem,
-                        FontSize = 12,
-                        Foreground = (Brush)FindResource("TextBrush"),
-                        TextTrimming = TextTrimming.CharacterEllipsis,
-                    });
-                    if (item.Source.Length > 0)
-                        text.Children.Add(new TextBlock
+                    if (!sectionGroup.Key.Equals("Checklist", StringComparison.OrdinalIgnoreCase) || classItems.Select(i => i.Section).Distinct().Count() > 1)
+                        panel.Children.Add(new TextBlock
                         {
-                            Text = item.Source,
-                            FontSize = 10,
-                            Foreground = (Brush)FindResource("DimBrush"),
+                            Text = sectionGroup.Key,
+                            FontSize = 12,
+                            FontWeight = FontWeights.SemiBold,
+                            Foreground = (Brush)FindResource("AccentBrush"),
                             TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(0, 1, 0, 0),
+                            Margin = new Thickness(0, 8, 0, 2),
                         });
 
-                    var check = new CheckBox
+                    foreach (var item in sectionGroup)
                     {
-                        IsChecked = item.Acquired,
-                        Content = text,
-                        Margin = new Thickness(0, 1, 0, 1),
-                        IsEnabled = !completed,
-                        Opacity = completed ? 0.55 : 1.0,
-                        ToolTip = $"{item.QuestName}: {item.QuestItem}" +
-                                  (item.Qty > 1 ? $" x{item.Qty}" : "") +
-                                  (item.Source.Length > 0 ? "\n" + item.Source : ""),
-                    };
-                    check.Checked += (_, _) => OnEpicQuestToggled(item, true);
-                    check.Unchecked += (_, _) => OnEpicQuestToggled(item, false);
-                    panel.Children.Add(check);
+                        var text = new TextBlock
+                        {
+                            Text = item.QuestItem,
+                            FontSize = 11,
+                            Foreground = (Brush)FindResource("TextBrush"),
+                            TextWrapping = TextWrapping.Wrap,
+                        };
+
+                        var check = new CheckBox
+                        {
+                            IsChecked = item.Acquired,
+                            Content = text,
+                            Margin = new Thickness(0, 2, 0, 2),
+                            IsEnabled = !completed,
+                            Opacity = completed ? 0.55 : 1.0,
+                            ToolTip = $"{item.QuestName}: {item.QuestItem}",
+                        };
+                        check.Checked += (_, _) => OnEpicQuestToggled(item, true);
+                        check.Unchecked += (_, _) => OnEpicQuestToggled(item, false);
+                        panel.Children.Add(check);
+                    }
                 }
             }
 
