@@ -343,8 +343,25 @@ public sealed class SessionStats
     private readonly Dictionary<string, CastAgg> _castAgg = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>How long after a cast starts a blink can still belong to it. Charm casts
-    /// run a few seconds; observed gap in real logs is ~4s.</summary>
+    /// run a few seconds; observed gap in real logs is ~4s. This is the FALLBACK for
+    /// spells whose cast time the catalog doesn't know — known charms use the tighter
+    /// per-spell arm window below.</summary>
     private static readonly TimeSpan CastToBlink = TimeSpan.FromSeconds(30);
+
+    /// <summary>Slack past a spell's cast time in the arm window: log timestamps round
+    /// to the second and the server adds a beat, but a landing seconds after our cast
+    /// COMPLETED is somebody else's charm.</summary>
+    internal const double CharmArmSlackSeconds = 1.5;
+
+    /// <summary>Per-spell charm arm window (approved 2026-08-13): a landing line is
+    /// ours only within the spell's own cast time + slack of the cast starting. The
+    /// old fixed 30s meant a bystander's charm landing 20s after our failed Beguile
+    /// (3.5s cast) could steal the claim; now the window fits the spell. Unknown cast
+    /// time falls back to the generic window — never worse than before.</summary>
+    private TimeSpan ArmWindow(string spell) =>
+        _spells.CastTimeSeconds(spell) is { } ct
+            ? TimeSpan.FromSeconds(ct + CharmArmSlackSeconds)
+            : CastToBlink;
     /// <summary>How long after a blink a "Master" tell still confirms the same charm.
     /// Observed gap in real logs is ~5s; pets can be slow to announce.</summary>
     private static readonly TimeSpan BlinkToClaim = TimeSpan.FromSeconds(60);
@@ -515,7 +532,11 @@ public sealed class SessionStats
                     if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink)
                     {
                         var chCategory = _spells.Classify(chCast.Spell);
-                        if (chCategory == SpellCategory.Charm)
+                        // Known charm: claim only inside ITS arm window (cast time +
+                        // slack) — past that our cast completed without this landing,
+                        // so the line is a bystander's charm.
+                        if (chCategory == SpellCategory.Charm
+                            && ch.Time - chCast.Time <= ArmWindow(chCast.Spell))
                         {
                             _pendingCast = null;
                             ConfirmPet(LogParser.Normalize(ch.Name));
@@ -539,7 +560,8 @@ public sealed class SessionStats
                     // message). The parser can't tell them apart; the pending SONG can.
                     // MezTracker consumes this event for mez songs; here, a pending
                     // charm-classified cast makes it a charm landing.
-                    if (_pendingCast is { } glazeCast && glazed.Time - glazeCast.Time <= CastToBlink
+                    if (_pendingCast is { } glazeCast
+                        && glazed.Time - glazeCast.Time <= ArmWindow(glazeCast.Spell)
                         && _spells.Classify(glazeCast.Spell) == SpellCategory.Charm)
                     {
                         _pendingCast = null;
@@ -580,12 +602,21 @@ public sealed class SessionStats
                     if (_pendingCast is { } cast && pb.Time - cast.Time <= CastToBlink)
                     {
                         var category = _spells.Classify(cast.Spell);
-                        if (category == SpellCategory.Charm)
+                        // Certain only inside the spell's own arm window; a blink
+                        // seconds after our cast completed gets the provisional
+                        // treatment below instead of a confident claim.
+                        if (category == SpellCategory.Charm
+                            && pb.Time - cast.Time <= ArmWindow(cast.Spell))
                         {
                             ConfirmPet(blinked);
                             _pendingCast = null;
                             break;
                         }
+                        // A known charm whose arm window already closed: a weak line
+                        // (moan) is ambient flavor again — our cast completed without
+                        // it. Strong blinks fall through to the provisional state.
+                        if (category == SpellCategory.Charm && pb.Weak)
+                            break;
                         // Unrecognised spell: hold onto it so a following "Master" tell
                         // can teach us it was a charm.
                         if (category == SpellCategory.Unknown)

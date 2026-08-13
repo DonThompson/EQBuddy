@@ -215,6 +215,32 @@ public sealed partial class SpellCatalog
         return map;
     });
 
+    /// <summary>Wiki cast times for the CC catalog (joined into CcSpells.json by
+    /// ccspells-promote.py). Feeds the per-spell charm arm window — how long after
+    /// our own cast starts a landing line can still be OUR landing.</summary>
+    private static readonly Lazy<Dictionary<string, double>> CcCastTimes = new(() =>
+    {
+        var map = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            using var stream = System.Reflection.Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream("EQBuddy.Core.Data.CcSpells.json");
+            if (stream is null) return map;
+            using var doc = JsonDocument.Parse(stream);
+            foreach (var s in doc.RootElement.GetProperty("spells").EnumerateArray())
+                if (s.TryGetProperty("castTimeSeconds", out var ct)
+                    && s.GetProperty("name").GetString() is { Length: > 0 } name)
+                    map[name] = ct.GetDouble();
+        }
+        catch (Exception ex) { CoreLog.Error(ex); }
+        return map;
+    });
+
+    /// <summary>Cast time in seconds when the CC catalog knows it, else null (caller
+    /// falls back to a generic window). Rank suffixes fold like everywhere else.</summary>
+    public double? CastTimeSeconds(string spell) =>
+        CcCastTimes.Value.TryGetValue(BaseName(spell), out var ct) ? ct : null;
+
     private readonly Dictionary<string, SpellCategory> _learned =
         new(StringComparer.OrdinalIgnoreCase);
     private string? _storePath;

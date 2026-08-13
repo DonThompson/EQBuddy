@@ -350,6 +350,72 @@ public class SpellTrackingTests
         Assert.DoesNotContain(stats.Snapshot().DamageBySource, d => d.Name.StartsWith("Pet"));
     }
 
+    // ---- per-spell arm windows (approved 2026-08-13): a landing claims only within
+    // the spell's own cast time + slack, so a bystander's charm landing long after our
+    // cast completed can't steal the pet the way the old fixed 30s window allowed. ----
+
+    [Fact]
+    public void CastTimesComeFromTheCcCatalog()
+    {
+        var c = new SpellCatalog();
+        Assert.Equal(3.5, c.CastTimeSeconds("Beguile"));
+        Assert.Equal(3.5, c.CastTimeSeconds("Beguile III"));   // ranks fold as everywhere
+        Assert.Null(c.CastTimeSeconds("Tame Spirit"));
+    }
+
+    [Fact]
+    public void ABystanderCharmAfterOurCastCompletedClaimsNothing()
+    {
+        // Beguile casts in 3.5s. A "has been charmed." line 20 seconds after our cast
+        // started means our cast finished long ago without landing — that charm is
+        // somebody else's, and its creature's damage must not become ours.
+        var s = Replay(
+            At(0, 0, "You begin casting Beguile."),
+            At(0, 20, "an orc legionnaire has been charmed."),
+            At(0, 22, "An orc legionnaire hits orc pawn for 9 points of damage.")).Snapshot();
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    [Fact]
+    public void ALateBlinkIsProvisionalNotCertain()
+    {
+        // A blink outside Befriend Animal's arm window (4s cast + slack) loses the
+        // certain claim but keeps the original blink-only provisional guess — the
+        // "Master" tell still resolves it either way.
+        var s = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 20, "a puma blinks."),
+            At(0, 22, "A puma hits orc pawn for 9 points of damage.")).Snapshot();
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet? (Puma)");
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name == "Pet (Puma)");
+    }
+
+    [Fact]
+    public void ALateMoanIsAmbientFlavorAgain()
+    {
+        // The moan is the weak signal: inside Dominate Undead's window it's a landing,
+        // 20 seconds later it's a zombie doing zombie things.
+        var s = Replay(
+            At(0, 0, "You begin casting Dominate Undead."),
+            At(0, 20, "a decaying zombie moans."),
+            At(0, 22, "A decaying zombie hits orc pawn for 11 points of damage.")).Snapshot();
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    [Fact]
+    public void UnknownCastTimesKeepTheGenericWindow()
+    {
+        // "Tame Spirit" has no catalog cast time, so the 30s fallback still lets the
+        // blink → "Master" tell learning path work at any realistic distance — never
+        // worse than the previous behavior.
+        var stats = Replay(
+            At(0, 0, "You begin casting Tame Spirit."),
+            At(0, 20, "an asp blinks."),
+            At(0, 25, "An asp told you, 'Attacking orc pawn Master.'"),
+            At(0, 27, "An asp hits orc pawn for 5 points of damage."));
+        Assert.Single(stats.Snapshot().DamageBySource, d => d.Name == "Pet (Asp)");
+    }
+
     /// <summary>"X's eyes glaze over." lands bard CHARM songs and bard MEZ songs with
     /// the identical message (eqlwiki) — only the pending song disambiguates. A charm
     /// song claims the pet; a mez song must not.</summary>
