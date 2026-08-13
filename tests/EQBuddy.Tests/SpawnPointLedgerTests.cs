@@ -326,6 +326,37 @@ public class SpawnPointLedgerTests
     }
 
     [Fact]
+    public void ClearZoneResetsTheArchiveDurably()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eqbuddy-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            void ReplayAll(SpawnPointLedger l)
+            {
+                l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+                l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+                l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+                l.Apply(new LocationEvent(T0.AddMinutes(3), -600, 300, 3));
+                l.Apply(new KillEvent(T0.AddMinutes(4), "a froglok scryer", "You"));
+            }
+            var l1 = Ledger(dir);
+            ReplayAll(l1);
+            Assert.Equal(2, l1.ClearZone("Lower Guk"));
+            Assert.Empty(l1.Snapshot("Lower Guk").Points);
+            Assert.Equal(0, l1.ClearZone("Lower Guk"));   // idempotent, honest count
+
+            // Replay after restart resurrects nothing; a fresh kill starts over.
+            var l2 = Ledger(dir);
+            ReplayAll(l2);
+            Assert.Empty(l2.Snapshot("Lower Guk").Points);
+            l2.Apply(new LocationEvent(T0.AddMinutes(30), -500, 120, 3));
+            l2.Apply(new KillEvent(T0.AddMinutes(31), "a froglok guard", "You"));
+            Assert.Single(l2.Snapshot("Lower Guk").Points);
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { } }
+    }
+
+    [Fact]
     public void RemovePointMissesWhenNothingIsNear()
     {
         var l = Ledger();

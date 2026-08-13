@@ -189,6 +189,19 @@ public sealed class MapWindow : Window
         root.Children.Add(_canvas);
         Content = root;
 
+        // Right-click on open map space: zone-level actions. Circles carry their
+        // own menus, which take precedence when the click lands on one.
+        var mapMenu = new ContextMenu();
+        var reset = new MenuItem { Header = "Reset spawn points for this zone…" };
+        reset.Click += (_, _) => OnResetZonePoints();
+        mapMenu.Items.Add(reset);
+        _canvas.ContextMenu = mapMenu;
+        mapMenu.Opened += (_, _) =>
+        {
+            var z = ResolvedTimerZone();
+            reset.Header = z.Length > 0 ? $"Reset spawn points — {z}…" : "Reset spawn points…";
+        };
+
         _canvas.MouseWheel += OnWheel;
         _canvas.MouseLeftButtonDown += (_, e) => { _dragging = true; _dragStart = e.GetPosition(_canvas); _canvas.CaptureMouse(); };
         _canvas.MouseLeftButtonUp += (_, _) => { _dragging = false; _canvas.ReleaseMouseCapture(); };
@@ -347,6 +360,35 @@ public sealed class MapWindow : Window
             _canvas.Children.Add(label);
         }
         _circleMeta.Add(meta);
+    }
+
+    /// <summary>Reset (clear) the shown zone's whole spawn-point archive — the map's
+    /// empty-space right-click (David, 2026-08-13: "a reset"). Confirmed first with
+    /// the real count; the wipe is durable, and future kills rebuild honestly.</summary>
+    private void OnResetZonePoints()
+    {
+        var zone = ResolvedTimerZone();
+        if (zone.Length == 0)
+        {
+            _status.Text = "Reset needs to know the zone — it unlocks once the log sees you zone in.";
+            return;
+        }
+        var count = _main.SpawnPoints.Snapshot(zone).Points.Count;
+        if (count == 0)
+        {
+            _status.Text = $"Nothing to reset — {zone} has no archived spawn points yet.";
+            return;
+        }
+        var answer = MessageBox.Show(this,
+            $"Reset {zone}'s spawn-point archive?\n\n" +
+            $"All {count} archived point{(count == 1 ? "" : "s")} — including confirmed ones — " +
+            "will be removed. The zone starts learning fresh from your next kills; " +
+            "nothing already archived comes back on its own.",
+            "Reset spawn points", MessageBoxButton.YesNo, MessageBoxImage.Warning,
+            MessageBoxResult.No);
+        if (answer != MessageBoxResult.Yes) return;
+        var cleared = _main.SpawnPoints.ClearZone(zone);
+        _status.Text = $"Reset {zone} — {cleared} spawn point{(cleared == 1 ? "" : "s")} cleared; the zone learns fresh from here.";
     }
 
     /// <summary>Right-click on a circle: remove the point from the zone's archive

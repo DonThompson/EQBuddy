@@ -291,7 +291,9 @@ Maps & travel:
   removal sticks across restarts, and new kills near the spot honestly re-learn it.
   Right dot? **Right-click to confirm the location** — it stops drifting toward new
   kills, holds where you attested it (marked with a small center dot), and the
-  confirmation travels when you share the zone.
+  confirmation travels when you share the zone. Whole zone gone stale?
+  **Right-click empty map space → Reset** wipes the zone's archive (with an
+  are-you-sure showing the count) and it learns fresh from your next kills.
 - **Share zone knowledge** (map window, bottom of the named panel): export a zone's
   spawn points and timers — learned ones and ones you typed alike — as one
   paste-safe `EQBZ` string for a friend, or

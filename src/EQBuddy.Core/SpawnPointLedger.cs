@@ -223,6 +223,24 @@ public sealed class SpawnPointLedger
         }
     }
 
+    /// <summary>Wipe a zone's entire spawn-point archive (the map's clear-all,
+    /// David 2026-08-13). Returns how many points went. Same durability story as
+    /// RemovePoint: replay can't resurrect them, fresh kills rebuild honestly.</summary>
+    public int ClearZone(string zone)
+    {
+        lock (_lock)
+        {
+            var archive = Load(zone);
+            var count = archive.Points.Count;
+            if (count == 0) return 0;
+            archive.Points.Clear();
+            Revision++;
+            Save(archive);
+            _dirty.Remove(archive.Zone);
+            return count;
+        }
+    }
+
     /// <summary>Set or clear the player's location attestation on the point nearest
     /// (locY, locX) — the map's other right-click. Returns the new state, or null
     /// when nothing was near.</summary>

@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.75.0",
+  "date": "2026-08-13",
+  "highlights": [
+   "NEW - right-click empty space on the zone map for a full RESET of that zone's spawn points: every archived point (confirmed ones included) clears after a are-you-sure that shows the real count, and the zone starts learning fresh from your next kills. The reset is durable - nothing already archived comes back on its own.",
+   "EQBuddy is a BETA - if something looks wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.74.0",
   "date": "2026-08-13",
   "highlights": [
