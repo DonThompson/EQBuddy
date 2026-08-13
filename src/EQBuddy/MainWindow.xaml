@@ -245,10 +245,12 @@
                     <Grid x:Name="CombatSparkHost" Height="34" Margin="0,2,0,4" Visibility="Collapsed"
                           ToolTip="Damage per minute, last 30 minutes — the dot marks your hottest minute">
                         <Polygon x:Name="CombatSparkFill"/>
-                        <Polyline x:Name="CombatSpark" StrokeThickness="1.6"
-                                  StrokeLineJoin="Round" Stroke="{DynamicResource AccentBrush}"/>
-                        <Ellipse x:Name="CombatSparkPeak" Width="5" Height="5" Visibility="Collapsed"
-                                 Fill="{DynamicResource AccentBrush}"
+                        <Polyline x:Name="CombatSpark" StrokeThickness="1.8"
+                                  StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Stroke="{DynamicResource ChartYouBrush}"/>
+                        <Ellipse x:Name="CombatSparkPeak" Width="6" Height="6" Visibility="Collapsed"
+                                 Fill="{DynamicResource ChartYouBrush}"
+                                 Stroke="{DynamicResource BgBrush}" StrokeThickness="1.5"
                                  HorizontalAlignment="Left" VerticalAlignment="Top"/>
                     </Grid>
                     <!-- The fight in front of you, before the session aggregate: mid-fight

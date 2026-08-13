@@ -898,26 +898,34 @@ public partial class MainWindow : Window
         var w = CombatSparkHost.ActualWidth > 20 ? CombatSparkHost.ActualWidth : 300;
         const double h = 30;
         var max = Math.Max(1, series.Max());
-        var line = new PointCollection();
+        var xs = new double[series.Count];
+        var ys = new double[series.Count];
         var peakIdx = 0;
         for (var i = 0; i < series.Count; i++)
         {
-            line.Add(new Point(w * i / (series.Count - 1), h - h * series[i] / max));
+            xs[i] = w * i / (series.Count - 1);
+            ys[i] = h - h * series[i] / max;
             if (series[i] > series[peakIdx]) peakIdx = i;
         }
+        // Same monotone-cubic smoothing as the fight timeline (the approved chart
+        // pass): curved, never overshooting — sampled densely into the Polyline so
+        // the XAML stays a Polyline.
+        var line = new PointCollection();
+        foreach (var (px, py) in EQBuddy.UI.Shared.MonotoneCurve.Sample(xs, ys))
+            line.Add(new Point(px, py));
         CombatSpark.Points = line;
         var fill = new PointCollection(line) { new(w, h + 2), new(0, h + 2) };
         CombatSparkFill.Points = fill;
         if (CombatSparkFill.Fill is null)
         {
-            var accent = ((SolidColorBrush)FindResource("AccentBrush")).Color;
+            var you = ((SolidColorBrush)FindResource("ChartYouBrush")).Color;
             CombatSparkFill.Fill = new LinearGradientBrush(
-                Color.FromArgb(0x50, accent.R, accent.G, accent.B),
-                Color.FromArgb(0x00, accent.R, accent.G, accent.B), 90);
+                Color.FromArgb(0x40, you.R, you.G, you.B),
+                Color.FromArgb(0x00, you.R, you.G, you.B), 90);
         }
         CombatSparkPeak.Visibility = Visibility.Visible;
         CombatSparkPeak.Margin = new Thickness(
-            Math.Max(0, line[peakIdx].X - 2.5), Math.Max(0, line[peakIdx].Y - 2.5), 0, 0);
+            Math.Max(0, xs[peakIdx] - 3), Math.Max(0, ys[peakIdx] - 3), 0, 0);
         CombatSparkHost.ToolTip =
             $"Damage per minute, last 30 — hottest minute {max:N0} at {end.AddMinutes(peakIdx - 29):HH:mm}";
     }

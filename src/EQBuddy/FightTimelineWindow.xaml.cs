@@ -325,7 +325,7 @@ internal sealed class DpsGraphPanel : FrameworkElement
             xs[k] = (i - v.OffsetSec) * v.PixelsPerSec;
             ys[k] = yOf(series[i]);
         }
-        var tangents = MonotoneTangents(xs, ys);
+        var tangents = EQBuddy.UI.Shared.MonotoneCurve.Tangents(xs, ys);
 
         var stroke = new StreamGeometry();
         using (var ctx = stroke.Open())
@@ -348,25 +348,6 @@ internal sealed class DpsGraphPanel : FrameworkElement
         dc.DrawGeometry(null, new Pen(brush, thickness)
         { LineJoin = PenLineJoin.Round, StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round },
             stroke);
-    }
-
-    /// <summary>Fritsch–Carlson monotone-cubic tangents: the standard way to smooth a
-    /// series without overshoot — between two equal samples the curve stays flat, and
-    /// no bend ever exceeds the data. The same algorithm as the approved mockup.</summary>
-    private static double[] MonotoneTangents(double[] xs, double[] ys)
-    {
-        var n = xs.Length;
-        var m = new double[n - 1];
-        for (var i = 0; i < n - 1; i++)
-            m[i] = (ys[i + 1] - ys[i]) / Math.Max(1e-9, xs[i + 1] - xs[i]);
-        var t = new double[n];
-        t[0] = m[0]; t[n - 1] = m[n - 2];
-        for (var i = 1; i < n - 1; i++)
-            t[i] = m[i - 1] * m[i] <= 0 ? 0
-                : 3 * (xs[i] - xs[i - 1] + xs[i + 1] - xs[i])
-                  / ((2 * (xs[i + 1] - xs[i]) + (xs[i] - xs[i - 1])) / m[i - 1]
-                     + ((xs[i + 1] - xs[i]) + 2 * (xs[i] - xs[i - 1])) / m[i]);
-        return t;
     }
 
     private static void AppendCurve(StreamGeometryContext ctx, double[] xs, double[] ys,
