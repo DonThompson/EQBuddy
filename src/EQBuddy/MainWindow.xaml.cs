@@ -2373,9 +2373,19 @@ public partial class MainWindow : Window
 
         foreach (var classGroup in _settings.SkyQuestChecklist.GroupBy(i => i.ClassName).OrderBy(g => g.Key))
         {
-            var classTotal = classGroup.Count();
-            var classDone = classGroup.Count(i => i.Acquired);
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+            var turnInNpc = classGroup.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0);
+            if (!string.IsNullOrWhiteSpace(turnInNpc))
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "Turn-in NPC: " + turnInNpc,
+                    FontSize = 10.5,
+                    Foreground = (Brush)FindResource("DimBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(0, 0, 0, 4),
+                    ToolTip = $"{classGroup.Key} Plane of Sky turn-in NPC: {turnInNpc}",
+                });
+            var visibleRewards = 0;
 
             // Unfinished quests float to the top (Reddit, 2026-08-11), and within
             // the unfinished, CLOSEST TO DONE leads (the 2026-08-13 pass — the
@@ -2397,6 +2407,7 @@ public partial class MainWindow : Window
                     _ => true,
                 };
                 if (!stateOk) continue;
+                visibleRewards++;
                 var rewardItems = rewardGroup.ToList();
                 // The header carries the quest's own score — "2/3" says how close
                 // without opening anything; "ready" says the running is over.
@@ -2473,7 +2484,7 @@ public partial class MainWindow : Window
                 }
             }
 
-            if (panel.Children.Count == 0)
+            if (visibleRewards == 0)
                 panel.Children.Add(new TextBlock
                 {
                     Text = _skyState == "ready"
@@ -2486,7 +2497,7 @@ public partial class MainWindow : Window
 
             var tab = new TabItem
             {
-                Header = $"{ClassAbbrev(classGroup.Key)} {classDone}/{classTotal}",
+                Header = SkyQuestTabHeader(classGroup.Key),
                 Tag = classGroup.Key,
                 Content = new ScrollViewer
                 {
@@ -2497,7 +2508,7 @@ public partial class MainWindow : Window
                     PanningMode = PanningMode.VerticalOnly,
                     Padding = new Thickness(0, 0, 4, 0),
                 },
-                ToolTip = classGroup.Key,
+                ToolTip = SkyQuestTabToolTip(classGroup.Key),
             };
             SkyQuestTabs.Items.Add(tab);
             if (string.Equals(selectedClass, classGroup.Key, StringComparison.Ordinal))
@@ -2762,12 +2773,78 @@ public partial class MainWindow : Window
         foreach (var tab in SkyQuestTabs.Items.OfType<TabItem>())
             if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
             {
-                var done = _settings.SkyQuestChecklist.Count(i =>
-                    string.Equals(i.ClassName, className, StringComparison.Ordinal) && i.Acquired);
-                var total = _settings.SkyQuestChecklist.Count(i =>
-                    string.Equals(i.ClassName, className, StringComparison.Ordinal));
-                tab.Header = $"{ClassAbbrev(className)} {done}/{total}";
+                tab.Header = SkyQuestTabHeader(className);
+                tab.ToolTip = SkyQuestTabToolTip(className);
             }
+    }
+
+    private sealed record SkyQuestTabCounts(int Done, int Ready, int Partial, int Total);
+
+    private SkyQuestTabCounts SkyQuestTabCountsFor(string className)
+    {
+        var rewards = _settings.SkyQuestChecklist
+            .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
+            .GroupBy(i => i.Reward)
+            .ToList();
+        var done = 0;
+        var ready = 0;
+        var partial = 0;
+        foreach (var reward in rewards)
+        {
+            if (IsSkyRewardCompleted(className, reward.Key))
+                done++;
+            else if (reward.All(i => i.Acquired))
+                ready++;
+            else if (reward.Any(i => i.Acquired))
+                partial++;
+        }
+
+        return new SkyQuestTabCounts(done, ready, partial, rewards.Count);
+    }
+
+    private object SkyQuestTabHeader(string className)
+    {
+        var counts = SkyQuestTabCountsFor(className);
+        var header = new StackPanel { Orientation = Orientation.Horizontal };
+        var cls = new TextBlock
+        {
+            Text = ClassAbbrev(className) + " ",
+            FontSize = 10,
+            FontWeight = FontWeights.SemiBold,
+        };
+        cls.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+        header.Children.Add(cls);
+        AddSkyQuestTabMetric(header, "D", counts.Done, "GoodBrush");
+        AddSkyQuestTabMetric(header, "R", counts.Ready, "WarnBrush");
+        AddSkyQuestTabMetric(header, "P", counts.Partial, "IncomingBrush");
+        return header;
+    }
+
+    private void AddSkyQuestTabMetric(StackPanel header, string label, int count, string brushKey)
+    {
+        var name = new TextBlock
+        {
+            Text = label,
+            FontSize = 10,
+            Margin = new Thickness(header.Children.Count == 1 ? 0 : 3, 0, 0, 0),
+        };
+        name.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        var value = new TextBlock
+        {
+            Text = count.ToString(),
+            FontSize = 10,
+            FontWeight = FontWeights.SemiBold,
+        };
+        value.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+        header.Children.Add(name);
+        header.Children.Add(value);
+    }
+
+    private string SkyQuestTabToolTip(string className)
+    {
+        var counts = SkyQuestTabCountsFor(className);
+        return $"{className}: {counts.Done} turned in, {counts.Ready} ready to turn in, " +
+               $"{counts.Partial} partially complete, {counts.Total} total quests";
     }
 
     private void UpdateSkyQuestHeaderOnly()

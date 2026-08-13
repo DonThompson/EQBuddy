@@ -129,6 +129,9 @@ public sealed class OptionsViewModelTests
         Assert.Contains(settings.SkyQuestChecklist, i => i.ClassName == "Monk" && i.Reward == "Wu's Fist of Mastery");
         Assert.Contains(settings.SkyQuestChecklist, i => i.ClassName == "Shaman" && i.QuestItem == "Efreeti War Club");
         Assert.Contains(settings.SkyQuestChecklist, i => i.ClassName == "Shadow Knight" && i.Reward == "Pearlescent Pauldrons");
+        Assert.Contains(settings.SkyQuestChecklist, i => i.ClassName == "Shadow Knight" && i.Npc == "Sarkis Ebonblade");
+        Assert.All(settings.SkyQuestChecklist.GroupBy(i => i.ClassName),
+            classGroup => Assert.Contains(classGroup, i => i.Npc.Length > 0));
         var count = settings.SkyQuestChecklist.Count;
 
         settings.SkyQuestChecklist[0].Acquired = true;
