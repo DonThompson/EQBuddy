@@ -194,6 +194,13 @@ public sealed class SpawnTimers
                         && !MatchesAnyPlaceholder(placeholder, k.Target, fuzzy)
                         && !entry.Aliases.Any(a => Matches(a, k.Target, fuzzy))) continue;
 
+                    // Raid-instance bosses (#109): the kill is real — the Raids card
+                    // records it — but no open-world respawn clock exists to count
+                    // down, so no timer starts. A player-typed duration is the one
+                    // exception: their edit outranks the suppression like it outranks
+                    // everything else, and gives them a self-chosen reminder.
+                    if (entry.RaidInstanced && !IsManual(o)) return;
+
                     var trusted = IsTrusted(zone, entry);
                     // Self-heal: a LEARNED override sitting under a measured clock came
                     // from multi-spawn re-kill noise (two taskmasters at different camps
@@ -343,6 +350,22 @@ public sealed class SpawnTimers
 
     private static string Key(string server, string zone, string name) => $"{server}|{zone}|{name}";
 
+    /// <summary>A duration the player TYPED (not learned) — the one signal that
+    /// outranks raid-instance suppression, exactly as it outranks learning.</summary>
+    private static bool IsManual(SpawnOverride? o) =>
+        o?.RespawnSeconds is not null && !o.Learned;
+
+    /// <summary>True when a countdown for this zone/name shouldn't exist at all:
+    /// a raid-instance boss with no player-typed duration. Persisted timers from
+    /// before #109 heal through this at load.</summary>
+    private bool SuppressedRaidInstance(string zoneName, string name)
+    {
+        var zone = _catalog.FindZone(zoneName);
+        var entry = zone?.Named.FirstOrDefault(e =>
+            e.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        return entry is { RaidInstanced: true } && !IsManual(_overrides.Find(zoneName, name));
+    }
+
     private void Upsert(SpawnTimerState t)
     {
         var key = Key(t.Server, t.Zone, t.Name);
@@ -371,7 +394,13 @@ public sealed class SpawnTimers
                 File.ReadAllText(_persistPath), JsonOpts);
             if (list is null) return;
             foreach (var t in list)
+            {
+                // Countdowns persisted before raid-instance suppression (#109) —
+                // Frank's Maestro at "8:13:38" — drop here instead of running for
+                // days more. Manual-duration timers stay: the player asked for them.
+                if (SuppressedRaidInstance(t.Zone, t.Name)) continue;
                 _timers[Key(t.Server, t.Zone, t.Name)] = t;
+            }
         }
         catch { /* corrupt file loses timers, not the feature */ }
     }

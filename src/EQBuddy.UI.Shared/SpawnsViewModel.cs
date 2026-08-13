@@ -111,9 +111,21 @@ public sealed class SpawnsViewModel
             else
                 countdown = $"killed {SpawnDurationText.Format((now - timer.KilledAt).TotalSeconds)} ago";
         }
+        // Raid-instance bosses without a player-typed duration run no countdown
+        // (#109) — say why in place of one, instead of a blank that reads as broken.
+        var suppressedInstance = entry is { RaidInstanced: true }
+            && (o?.RespawnSeconds is null || o.Learned);
+        if (!hasTimer && suppressedInstance) countdown = "instance";
 
         var detail = entry is null ? "Added by you" : string.Join(" · ", new[]
         {
+            suppressedInstance
+                ? "Raid instance: a fresh instance brings its own copy (daily per "
+                  + "difficulty, weekly full reset — the game's Instance Maintenance "
+                  + "screen has the real clocks), so there is no kill-to-respawn camp "
+                  + "timer to count down. Type a respawn time here if you want your "
+                  + "own reminder anyway."
+                : "",
             o is { Learned: true } ? "timer learned from your own kills" : "",
             entry.Variance.Length > 0 ? $"variance {entry.Variance}" : "",
             entry.Note,

@@ -864,4 +864,135 @@ public class SpawnTimerTests
         Assert.Single(due);
         Assert.Equal("Chimes", vm.SoundFor("Lower Guk", "a froglok ghoul lord"));
     }
+
+    // ---- raid-instance bosses (#109, Frankthetankk): no fake countdowns ----
+
+    private static SpawnCatalog RaidCatalog()
+    {
+        var cat = new SpawnCatalog
+        {
+            Zones =
+            [
+                new SpawnZone
+                {
+                    Zone = "Plane of Hate",
+                    NamedDefaultSeconds = 43200,
+                    Named =
+                    [
+                        new SpawnEntry { Name = "Maestro of Rancor", RespawnSeconds = 259200 },
+                        new SpawnEntry { Name = "Hand of the Maestro", RespawnSeconds = 43200 },
+                        new SpawnEntry { Name = "the ghoul lord", Aliases = ["Hoptor Thaggelum"] },
+                    ],
+                },
+            ],
+        };
+        SpawnCatalog.MarkRaidInstanced(cat, new RaidTargetCatalog(
+        [
+            new RaidTargetCatalog.ZoneEntry
+                { Zone = "Plane of Hate", Bosses = ["Maestro of Rancor", "Hoptor Thaggelum"] },
+        ]));
+        return cat;
+    }
+
+    [Fact]
+    public void RaidTargetCrossReferenceMarksBossesByNameAndAlias()
+    {
+        var cat = RaidCatalog();
+        var zone = cat.Zones[0];
+        Assert.True(zone.Named[0].RaidInstanced);                      // by name
+        Assert.False(zone.Named[1].RaidInstanced);                     // mini-boss: not in the dump
+        Assert.True(zone.Named[2].RaidInstanced);                      // by alias
+        // Instanced entries have no effective respawn — not even the zone default.
+        Assert.Null(SpawnCatalog.EffectiveSeconds(zone, zone.Named[0]));
+        Assert.Equal(43200, SpawnCatalog.EffectiveSeconds(zone, zone.Named[1]));
+    }
+
+    [Fact]
+    public void EmbeddedCatalogMarksTheReportedBosses()
+    {
+        // The three from Frank's screenshot, resolved through the real shipped data.
+        var cat = SpawnCatalog.LoadEmbedded();
+        foreach (var (zone, boss) in new[]
+        {
+            ("Plane of Hate", "Maestro of Rancor"),
+            ("Nagafen's Lair", "Lord Nagafen"),
+            ("Plane of Sky", "Noble Dojorn"),
+            // The dump's "Cazic-Thule" must reach the catalog's space-form entry.
+            ("Plane of Fear", "Cazic Thule"),
+        })
+        {
+            var entry = cat.FindZone(zone)!.Named.Single(n => n.Name == boss);
+            Assert.True(entry.RaidInstanced, $"{boss} not marked");
+        }
+        // The Raids card's whole catalog cross-marks: every boss the achievements
+        // dump names that also sits in the spawn catalog is instanced there now.
+        Assert.True(cat.Zones.Sum(z => z.Named.Count(n => n.RaidInstanced)) >= 3);
+    }
+
+    [Fact]
+    public void KillingARaidBossStartsNoCountdown()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(RaidCatalog(), overrides) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "Plane of Hate"));
+        t.Apply(new KillEvent(T0, "Maestro of Rancor", "You"));
+        Assert.Empty(t.Snapshot(T0.AddMinutes(1)));
+
+        // The mini-boss the dump doesn't know keeps its normal clock.
+        t.Apply(new KillEvent(T0, "Hand of the Maestro", "You"));
+        Assert.Equal("Hand of the Maestro", Assert.Single(t.Snapshot(T0.AddMinutes(1))).Name);
+    }
+
+    [Fact]
+    public void PlayerTypedDurationOutranksTheSuppression()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(RaidCatalog(), overrides) { Server = "freeport" };
+        var vm = new SpawnsViewModel(RaidCatalog(), overrides, t);
+        vm.SetDuration("Plane of Hate", "Maestro of Rancor", "24h");   // their reminder, their call
+
+        t.Apply(new ZoneEvent(T0, "Plane of Hate"));
+        t.Apply(new KillEvent(T0, "Maestro of Rancor", "You"));
+        var timer = Assert.Single(t.Snapshot(T0.AddMinutes(1)));
+        Assert.Equal(T0.AddHours(24), timer.DueAt);
+    }
+
+    [Fact]
+    public void PersistedRaidBossCountdownsHealAtLoad()
+    {
+        // A countdown persisted before the suppression existed (Frank's Maestro at
+        // "8:13:38") must not keep running for days after the update.
+        var path = Path.Combine(Path.GetTempPath(), $"eqbuddy-test-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """
+                [{"Server":"freeport","Zone":"Plane of Hate","Name":"Maestro of Rancor",
+                  "KilledAt":"2026-07-18T15:00:00","DurationSeconds":259200},
+                 {"Server":"freeport","Zone":"Plane of Hate","Name":"Hand of the Maestro",
+                  "KilledAt":"2026-07-18T15:00:00","DurationSeconds":43200}]
+                """);
+            var t = new SpawnTimers(RaidCatalog(), new SpawnOverrides(), path) { Server = "freeport" };
+            Assert.Equal("Hand of the Maestro", Assert.Single(t.Snapshot(T0.AddMinutes(1))).Name);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public void RaidBossRowSaysInstanceInsteadOfABlank()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(RaidCatalog(), overrides) { Server = "freeport" };
+        var vm = new SpawnsViewModel(RaidCatalog(), overrides, t);
+
+        var row = vm.RowsFor("Plane of Hate", T0).Single(r => r.Name == "Maestro of Rancor");
+        Assert.Equal("instance", row.CountdownText);
+        Assert.Equal("", row.DurationText);                            // no fake default to edit
+        Assert.Contains("Instance Maintenance", row.Detail);
+        Assert.False(row.HasActiveTimer);
+
+        // The unmarked mini-boss row is untouched.
+        var hand = vm.RowsFor("Plane of Hate", T0).Single(r => r.Name == "Hand of the Maestro");
+        Assert.Equal("", hand.CountdownText);
+        Assert.Equal("12h", hand.DurationText);
+    }
 }

@@ -24,6 +24,9 @@ public class RaidTargetsTests
         Assert.True(c.BossCount >= 20, $"suspiciously small raid catalog: {c.BossCount}");
         Assert.True(c.IsRaidBoss("Lord Nagafen"));
         Assert.True(c.IsRaidBoss("Cazic-Thule"));
+        // The dump hyphenates, logs and the wiki don't — both forms must land
+        // (a kill line saying "Cazic Thule" was invisible to the ledger before).
+        Assert.True(c.IsRaidBoss("Cazic Thule"));
         Assert.False(c.IsRaidBoss("a gnoll pup"));
     }
 

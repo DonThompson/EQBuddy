@@ -29,14 +29,20 @@ public sealed class RaidTargetCatalog
     {
         Zones = zones.ToList();
         _bossNames = Zones.SelectMany(z => z.Bosses)
-            .Select(LogParser.Normalize)
+            .Select(Fold)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 
     public int BossCount => Zones.Sum(z => z.Bosses.Length);
 
     public bool IsRaidBoss(string creature) =>
-        _bossNames.Contains(LogParser.Normalize(creature));
+        _bossNames.Contains(Fold(creature));
+
+    /// <summary>The achievements dump hyphenates where logs and the wiki use spaces
+    /// ("Cazic-Thule" vs "Cazic Thule") — fold the difference so a witnessed kill and
+    /// the #109 spawn-catalog cross-mark both land regardless of which form arrives.</summary>
+    private static string Fold(string name) =>
+        LogParser.Normalize(name).Replace('-', ' ');
 
     public static RaidTargetCatalog LoadEmbedded()
     {

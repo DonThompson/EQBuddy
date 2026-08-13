@@ -39,6 +39,14 @@ public sealed class SpawnEntry
     public string Placeholder { get; set; } = "";
     public string Source { get; set; } = "";
     public string Note { get; set; } = "";
+    /// <summary>True for bosses that live in RAID INSTANCES (#109, Frankthetankk):
+    /// a fresh instance spawns its own copy — daily per difficulty tier, weekly full
+    /// reset — so "kill it, wait N, it respawns here" is a fiction for them. Marked at
+    /// load by cross-referencing <see cref="RaidTargetCatalog"/> (the game's own
+    /// achievements name the bosses; the harvested wiki numbers predate instancing).
+    /// Instanced entries start no countdown and show no respawn default — unless the
+    /// player types a duration themselves, which outranks this like everything else.</summary>
+    public bool RaidInstanced { get; set; }
 }
 
 /// <summary>A zone's named mobs plus its zone-wide default named-respawn.</summary>
@@ -109,7 +117,23 @@ public sealed class SpawnCatalog
             .GetManifestResourceStream("EQBuddy.Core.Data.SpawnCatalog.json")
             ?? throw new InvalidOperationException("SpawnCatalog.json missing from resources");
         var file = JsonSerializer.Deserialize<CatalogFile>(stream, JsonOpts);
-        return new SpawnCatalog { Zones = file?.Zones ?? [] };
+        var catalog = new SpawnCatalog { Zones = file?.Zones ?? [] };
+        MarkRaidInstanced(catalog, RaidTargetCatalog.Default);
+        return catalog;
+    }
+
+    /// <summary>Flags every catalog entry whose name (or alias) the raid-target
+    /// catalog knows as a raid-instance boss — the achievements dump is the
+    /// authority on who lives in an instance, the spawn catalog only inherited
+    /// classic open-world numbers from the wiki harvest. Separate from LoadEmbedded
+    /// so tests can exercise the cross-reference with hand-built catalogs.</summary>
+    public static void MarkRaidInstanced(SpawnCatalog catalog, RaidTargetCatalog raidTargets)
+    {
+        foreach (var zone in catalog.Zones)
+            foreach (var entry in zone.Named)
+                if (raidTargets.IsRaidBoss(entry.Name)
+                    || entry.Aliases.Any(raidTargets.IsRaidBoss))
+                    entry.RaidInstanced = true;
     }
 
     /// <summary>The catalog zone the given log zone name refers to, or null. EQ Legends
@@ -139,9 +163,13 @@ public sealed class SpawnCatalog
             .Replace(zoneName, @"\s+\d+(\s*\([^)]*\))?$", "").Trim();
 
     /// <summary>Effective respawn seconds for an entry in a zone: the entry's own timer,
-    /// else the zone default, else null (unknown — the player has to supply one).</summary>
+    /// else the zone default, else null (unknown — the player has to supply one).
+    /// Raid-instance bosses have NO effective respawn (#109): their wiki numbers
+    /// describe a world that predates instancing, and a countdown built on them is
+    /// misleading rather than helpful. A player-typed override still applies — it's
+    /// checked before this everywhere.</summary>
     public static double? EffectiveSeconds(SpawnZone zone, SpawnEntry entry) =>
-        entry.RespawnSeconds ?? zone.NamedDefaultSeconds;
+        entry.RaidInstanced ? null : entry.RespawnSeconds ?? zone.NamedDefaultSeconds;
 
     /// <summary>Case-insensitive name equality that shrugs off leading articles, a
     /// trailing plural, and name punctuation: catalog names are wiki titles
