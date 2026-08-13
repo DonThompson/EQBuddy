@@ -31,6 +31,14 @@ public static partial class GearChecklistImporter
             var body = slot.Groups["body"].Value;
             if (heading.Length == 0) continue;
 
+            // The export nests a "Socketed Exaltations" block inside the same slot
+            // card, and each socketed entry carries its own item-link and source
+            // lines. The equipped item's entry always precedes that block, so cut
+            // the body there — otherwise an exaltation's drop sources get joined
+            // into the gear piece's source text.
+            var socketed = body.IndexOf("socketed-block", StringComparison.OrdinalIgnoreCase);
+            if (socketed >= 0) body = body[..socketed];
+
             var itemMatch = ItemLinkRegex().Match(body);
             if (!itemMatch.Success) continue;
 

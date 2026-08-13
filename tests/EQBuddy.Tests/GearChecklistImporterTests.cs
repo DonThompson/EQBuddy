@@ -51,4 +51,43 @@ public sealed class GearChecklistImporterTests
                 Assert.Equal("Reward from Quest: Lynuga's Gem Collection", item.Source);
             });
     }
+
+    [Fact]
+    public void SocketedExaltationsDoNotBleedIntoTheGearItem()
+    {
+        // Real exports nest a socketed-block inside the slot card, whose entries have
+        // their own item-link and source-line divs (verified against the live
+        // eqlegendstools.com export template, 2026-08-12). The gear row must carry
+        // only the equipped item's name and sources.
+        const string html = """
+            <html>
+            <head><title>Test Shopping List - EQ Legends Tools</title></head>
+            <body>
+              <section class="slot-card">
+                <div class="slot-heading">CHEST</div>
+                <div class="entry shopping-entry">
+                  <div class="entry-meta">Equipped Item</div>
+                  <a class="item-link" href="https://eqlwiki.com/Breastplate">Fine Breastplate</a>
+                  <div class="source-lines">
+                    <div class="source-line">Drops From: Permafrost: an ice goblin</div>
+                  </div>
+                </div>
+                <div class="socketed-block">
+                  <div class="socketed-head">Socketed Exaltations</div>
+                  <div class="entry socketed-entry">
+                    <a class="item-link" href="https://eqlwiki.com/Gem">Glowing Gem</a>
+                    <div class="source-lines">
+                      <div class="source-line">Drops From: The Hole: a construct</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </body>
+            </html>
+            """;
+
+        var item = Assert.Single(GearChecklistImporter.ImportHtml(html).Items);
+        Assert.Equal("Fine Breastplate", item.Item);
+        Assert.Equal("Drops From: Permafrost: an ice goblin", item.Source);
+    }
 }
