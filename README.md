@@ -275,7 +275,8 @@ Maps & travel:
   seconds**. Multi-spawn named (Crushbone royal guards, we see you) show every point
   they've actually died at.
 - **Share zone knowledge** (map window, bottom of the named panel): export a zone's
-  spawn points and learned timers as one paste-safe `EQBZ` string for a friend, or
+  spawn points and timers — learned ones and ones you typed alike — as one
+  paste-safe `EQBZ` string for a friend, or
   import theirs — with a **full preview first**: every new point and timer change is
   listed, and a timer that strays far from the zone's established clock arrives
   **flagged** and applies only if you explicitly say so. Want everyone to benefit?

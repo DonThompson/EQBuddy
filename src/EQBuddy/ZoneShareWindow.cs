@@ -57,12 +57,13 @@ public sealed class ZoneShareWindow : Window
         var root = new StackPanel { Margin = new Thickness(14, 10, 14, 12) };
 
         var archive = _main.SpawnPoints.Snapshot(zone);
-        var learned = LearnedCount(zone);
+        var timers = TimerCount(zone);
         var intro = Dim(
             $"Your {zone} archive: {archive.Points.Count} spawn point{S(archive.Points.Count)}, " +
             $"{archive.Points.Sum(p => p.TotalKills())} kill{S(archive.Points.Sum(p => p.TotalKills()))} observed, " +
-            $"{learned} learned timer{S(learned)}. Everything below is explicit — nothing is sent " +
-            "or fetched unless you click it, and imports show you every change first.");
+            $"{timers} timer{S(timers)} (learned and yours both travel). Everything below is " +
+            "explicit — nothing is sent or fetched unless you click it, and imports show you " +
+            "every change first.");
         intro.Margin = new Thickness(0, 0, 0, 10);
         root.Children.Add(intro);
 
@@ -70,8 +71,8 @@ public sealed class ZoneShareWindow : Window
         var copy = Theming.Button("Copy share string");
         copy.Click += (_, _) => OnCopy();
         root.Children.Add(Section("Share with a friend",
-            "One string carries the points and learned timers above. Paste it in guild chat, " +
-            "Discord, anywhere — they import it below.", copy));
+            "One string carries the points and timers above — including timers you typed " +
+            "yourself. Paste it in guild chat, Discord, anywhere — they import it below.", copy));
 
         // ---- Import ----
         var preview = Theming.Button("Preview…");
@@ -110,12 +111,12 @@ public sealed class ZoneShareWindow : Window
         Content = root;
     }
 
-    private int LearnedCount(string zone)
+    private int TimerCount(string zone)
     {
         var z = _main.SpawnCatalogData.FindZone(zone);
         if (z is null) return 0;
         return z.Named.Count(e =>
-            _main.SpawnOverridesStore.Find(zone, e.Name) is { Learned: true, RespawnSeconds: not null });
+            _main.SpawnOverridesStore.Find(zone, e.Name) is { RespawnSeconds: not null });
     }
 
     private Border Section(string title, string blurb, UIElement body)

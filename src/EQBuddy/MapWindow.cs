@@ -54,7 +54,7 @@ public sealed class MapWindow : Window
     // projection.
     private readonly List<(FrameworkElement El, double X, double Y, double Dx, double Dy)> _spawnCircles = [];
     private readonly List<SpawnCircle> _circleMeta = [];
-    private (string Zone, int Points, int Kills) _circleStamp = ("\0", -1, -1);
+    private (string Zone, int Points, int Kills, int TimerHash) _circleStamp = ("\0", -1, -1, 0);
 
     /// <summary>"Imminent" = due within this many seconds (David, 2026-08-13).</summary>
     internal const double PulseWindowSeconds = 10;
@@ -254,9 +254,21 @@ public sealed class MapWindow : Window
             ?? SpawnCatalog.StripTierVariant(zone);
         var showing = _map is not null && !_userPicked && timerZone.Length > 0;
         var archive = showing ? _main.SpawnPoints.Snapshot(timerZone) : null;
+        // Running timers matter to the rebuild too: a named circle carries its own
+        // name label ONLY while no timer pin is labeling that mob (David caught
+        // Trainer/Taskmaster going nameless — named points must read as named even
+        // with no countdown running).
+        var timerNames = archive is null ? []
+            : _main.SpawnTimers.Snapshot(now)
+                .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
+                .Select(t => t.Name)
+                .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        var timerHash = timerNames.Aggregate(17,
+            (h, n) => h * 31 + StringComparer.OrdinalIgnoreCase.GetHashCode(n));
         var stamp = archive is null
-            ? ("", 0, 0)
-            : (timerZone, archive.Points.Count, archive.Points.Sum(p => p.TotalKills()));
+            ? ("", 0, 0, 0)
+            : (timerZone, archive.Points.Count, archive.Points.Sum(p => p.TotalKills()), timerHash);
         if (stamp != _circleStamp)
         {
             _circleStamp = stamp;
@@ -265,15 +277,16 @@ public sealed class MapWindow : Window
             _circleMeta.Clear();
             if (archive is not null)
                 foreach (var p in archive.Points)
-                    BuildCircle(timerZone, p);
+                    BuildCircle(timerZone, p, timerNames);
             PlaceSpawnCircles();
         }
         if (_circleMeta.Count > 0) UpdatePulse(now, timerZone);
     }
 
-    private void BuildCircle(string zone, SpawnPointLedger.SpawnPoint p)
+    private void BuildCircle(string zone, SpawnPointLedger.SpawnPoint p, List<string> timerNames)
     {
-        var named = _main.SpawnPoints.IsNamedPoint(zone, p);
+        var namedName = _main.SpawnPoints.NamedPointName(zone, p);
+        var named = namedName is not null;
         var (mx, my) = ZoneMap.FromLoc(p.LocY, p.LocX);
         var d = named ? 13.0 : 9.0;
         var halo = new System.Windows.Shapes.Ellipse
@@ -299,6 +312,17 @@ public sealed class MapWindow : Window
         _spawnCircles.Add((ring, mx, my, -d / 2, -d / 2));
         _canvas.Children.Add(halo);
         _canvas.Children.Add(ring);
+        // Named points carry their NAME beside the circle — unless a running timer's
+        // camp pin is already labeling that mob with name + countdown right there.
+        if (namedName is not null
+            && !timerNames.Any(t => SpawnCatalog.NameMatches(t, namedName)
+                || SpawnCatalog.NameMatches(namedName, t)))
+        {
+            var label = new TextBlock { Text = namedName, FontSize = 9.5 };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+            _spawnCircles.Add((label, mx, my, d / 2 + 3, -7));
+            _canvas.Children.Add(label);
+        }
         _circleMeta.Add(new SpawnCircle { Ring = ring, Halo = halo, Point = p, Named = named });
     }
 

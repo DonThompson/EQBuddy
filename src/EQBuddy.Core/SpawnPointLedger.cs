@@ -109,11 +109,40 @@ public sealed class SpawnPointLedger
             point.LocX = (point.LocX * n + loc.LocX) / (n + 1);
         }
 
-        var name = LogParser.Normalize(k.Target);
+        var name = FoldPetName(LogParser.Normalize(k.Target));
         var seen = point.Mobs.TryGetValue(name, out var m) ? m : point.Mobs[name] = new MobSeen();
         seen.Kills++;
         seen.LastKill = k.Time;
         Save(zone);
+    }
+
+    /// <summary>"Royal guard pet" folds into "Royal guard" (David, 2026-08-13: pets
+    /// roll into their owner names — an NPC's summon dying at the camp is the camp's
+    /// business, not a separate creature worth archiving).</summary>
+    internal static string FoldPetName(string name) =>
+        name.EndsWith(" pet", StringComparison.OrdinalIgnoreCase)
+            ? name[..^4].TrimEnd()
+            : name;
+
+    /// <summary>Merge any pet-named entries an archive accumulated before the fold
+    /// existed (or that arrive via an older sharer's string) into their owners.</summary>
+    private static void FoldPetEntries(ZoneArchive archive)
+    {
+        foreach (var point in archive.Points)
+        {
+            foreach (var petName in point.Mobs.Keys
+                         .Where(n => !string.Equals(FoldPetName(n), n, StringComparison.OrdinalIgnoreCase))
+                         .ToList())
+            {
+                var seen = point.Mobs[petName];
+                point.Mobs.Remove(petName);
+                var owner = FoldPetName(petName);
+                var into = point.Mobs.TryGetValue(owner, out var o) ? o
+                    : point.Mobs[owner] = new MobSeen();
+                into.Kills += seen.Kills;
+                if (seen.LastKill > into.LastKill) into.LastKill = seen.LastKill;
+            }
+        }
     }
 
     /// <summary>The archive for a zone (resolved name), loaded lazily. A snapshot
@@ -138,16 +167,23 @@ public sealed class SpawnPointLedger
         }
     }
 
-    /// <summary>True when any mob at the point is a catalog named for the zone —
-    /// the map's "wear the accent" test.</summary>
-    public bool IsNamedPoint(string zone, SpawnPoint p)
+    /// <summary>The catalog named this point belongs to, when any mob seen here
+    /// matches one — the map's "wear the accent" test AND its label text (David,
+    /// 2026-08-13: named points show their name even without a running timer).</summary>
+    public string? NamedPointName(string zone, SpawnPoint p)
     {
         var z = _catalog.FindZone(zone);
-        if (z is null) return false;
-        return p.Mobs.Keys.Any(name => z.Named.Any(e =>
-            SpawnCatalog.NameMatches(e.Name, name)
-            || e.Aliases.Any(a => SpawnCatalog.NameMatches(a, name))));
+        if (z is null) return null;
+        foreach (var name in p.Mobs.Keys)
+            foreach (var e in z.Named)
+                if (SpawnCatalog.NameMatches(e.Name, name)
+                    || e.Aliases.Any(a => SpawnCatalog.NameMatches(a, name)))
+                    return e.Name;
+        return null;
     }
+
+    /// <summary>True when any mob at the point is a catalog named for the zone.</summary>
+    public bool IsNamedPoint(string zone, SpawnPoint p) => NamedPointName(zone, p) is not null;
 
     /// <summary>Projected next respawn at an ORDINARY point: last kill + the zone's
     /// own clock. Null when the zone documents no clock — "unknown" beats a guess.
@@ -183,6 +219,7 @@ public sealed class SpawnPointLedger
                     ?? archive;
         }
         catch { /* a corrupt archive restarts that zone's learning, not the app */ }
+        FoldPetEntries(archive);   // migrate pre-fold archives and older sharers' data
         return _zones[zone] = archive;
     }
 

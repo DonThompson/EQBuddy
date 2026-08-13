@@ -29,8 +29,10 @@ public static class ZoneShare
     {
         public string Zone { get; set; } = "";
         public List<SpawnPointLedger.SpawnPoint> Points { get; set; } = [];
-        /// <summary>Learned respawn seconds by mob name — only LEARNED values travel;
-        /// a sharer's manual edits are their own taste, not evidence.</summary>
+        /// <summary>Respawn seconds by mob name — learned AND manually-set values both
+        /// travel (David, 2026-08-13: "things I set can be shared"); the importer's
+        /// protections are the deviation gate plus never overwriting their own manual
+        /// edits. Wire name kept from v1 for string compatibility.</summary>
         public Dictionary<string, double> LearnedTimers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -51,7 +53,7 @@ public static class ZoneShare
         var payload = new Payload { Zone = archive.Zone, Points = archive.Points };
         if (zone is not null)
             foreach (var entry in zone.Named)
-                if (overrides.Find(archive.Zone, entry.Name) is { Learned: true, RespawnSeconds: { } s })
+                if (overrides.Find(archive.Zone, entry.Name) is { RespawnSeconds: { } s })
                     payload.LearnedTimers[entry.Name] = s;
 
         var json = JsonSerializer.SerializeToUtf8Bytes(payload);

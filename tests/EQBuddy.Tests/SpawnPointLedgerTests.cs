@@ -181,6 +181,42 @@ public class SpawnPointLedgerTests
         Assert.Null(l2.ProjectedRespawn("Permafrost Keep", p2));   // no zone clock
     }
 
+    // ---- pet folding (David, 2026-08-13: pets roll into their owner names) ----
+
+    [Fact]
+    public void PetKillsFoldIntoTheOwnersName()
+    {
+        var l = Ledger();
+        l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+        l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+        l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard pet", "You"));
+        l.Apply(new KillEvent(T0.AddMinutes(3), "a froglok guard", "You"));
+
+        var p = Assert.Single(l.Snapshot("Lower Guk").Points);
+        var mob = Assert.Single(p.Mobs);
+        Assert.True(SpawnCatalog.NameMatches("froglok guard", mob.Key));
+        Assert.Equal(2, mob.Value.Kills);
+    }
+
+    [Fact]
+    public void PreFoldArchivesMigrateOnLoad()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "eqbuddy-test-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(dir);
+            // An archive written before the fold existed: pet and owner as separate mobs.
+            File.WriteAllText(Path.Combine(dir, "lower_guk.json"),
+                """{"Zone":"Lower Guk","HighWater":"2026-07-18T15:02:00","Points":[{"LocY":-500,"LocX":120,"Mobs":{"Froglok guard pet":{"Kills":2,"LastKill":"2026-07-18T15:02:00"},"Froglok guard":{"Kills":1,"LastKill":"2026-07-18T15:01:00"}}}]}""");
+            var l = Ledger(dir);
+            var p = Assert.Single(l.Snapshot("Lower Guk").Points);
+            var mob = Assert.Single(p.Mobs);
+            Assert.Equal(3, mob.Value.Kills);
+            Assert.Equal(new DateTime(2026, 7, 18, 15, 2, 0), mob.Value.LastKill);
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { } }
+    }
+
     [Fact]
     public void InstanceZoneNamesResolveToTheCatalogZone()
     {
@@ -216,14 +252,15 @@ public class ZoneShareTests
     }
 
     [Fact]
-    public void RoundTripCarriesPointsAndLearnedTimersOnly()
+    public void RoundTripCarriesPointsAndTimersLearnedAndManualAlike()
     {
+        // David (2026-08-13): "things I set can be shared" — manual edits travel too.
+        // The importer's protections are the deviation gate and never overwriting
+        // their OWN manual edits, not filtering what a sharer may offer.
         var overrides = new SpawnOverrides();
         var learned = overrides.GetOrAdd("Befallen", "Marnek the Sage");
         learned.RespawnSeconds = 275;
         learned.Learned = true;
-        var manual = overrides.GetOrAdd("Befallen", "an elf skeleton");
-        manual.RespawnSeconds = 999;   // Learned=false: the sharer's manual edit
 
         var s = ZoneShare.Export(Archive((-100, 50, "Marnek the Sage", 3)), Befallen(), overrides);
         Assert.StartsWith(ZoneShare.Prefix, s);
@@ -237,6 +274,13 @@ public class ZoneShareTests
         Assert.Equal("Marnek the Sage", diff.Name);
         Assert.Equal(275, diff.IncomingSeconds);
         Assert.False(diff.Flagged);   // 275 vs 270 is well inside the gate
+
+        // Flip the same timer to a MANUAL edit — it still travels.
+        learned.Learned = false;
+        var manualString = ZoneShare.Export(Archive(), Befallen(), overrides);
+        var manualPreview = ZoneShare.PreviewImport(manualString,
+            new SpawnPointLedger.ZoneArchive { Zone = "Befallen" }, Befallen(), new SpawnOverrides());
+        Assert.Equal(275, Assert.Single(manualPreview!.Timers).IncomingSeconds);
     }
 
     [Fact]
