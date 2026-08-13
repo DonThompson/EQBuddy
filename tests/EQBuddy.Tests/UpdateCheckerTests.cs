@@ -28,6 +28,18 @@ public class UpdateCheckerTests : IDisposable
     public void AStaleLocalFolderDoesNotHideANewerRelease() =>
         Assert.Equal(new Version(1, 15, 0), UpdateChecker.PickBest(Local(14), Web(15))!.Latest);
 
+    /// <summary>#119 (Snagglefern): a PORTABLE copy that runs the installer "updates"
+    /// into Program Files while the portable exe stays old — every relaunch looks like
+    /// a revert. Detection is Inno's uninstaller sitting beside the exe.</summary>
+    [Fact]
+    public void InstalledCopyIsDetectedByTheUninstallerBesideTheExe()
+    {
+        Assert.False(UpdateChecker.IsInstalledCopyAt(_dir));           // portable unzip
+        File.WriteAllBytes(Path.Combine(_dir, "unins000.exe"), [1]);
+        Assert.True(UpdateChecker.IsInstalledCopyAt(_dir));            // Inno install
+        Assert.False(UpdateChecker.IsInstalledCopyAt(""));             // no process path
+    }
+
     /// <summary>When the local folder has the newer build, install from disk — no reason to
     /// download 45 MB that's already sitting there.</summary>
     [Fact]

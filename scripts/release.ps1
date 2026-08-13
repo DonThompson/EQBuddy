@@ -58,6 +58,11 @@ Compress-Archive -Path "$repo\dist\publish\EQBuddy.exe", "$repo\README.md" `
 # staged installer that doesn't match (UPDATE-003).
 (Get-FileHash "$repo\dist\EQBuddySetup.exe" -Algorithm SHA256).Hash |
     Set-Content "$repo\dist\EQBuddySetup.exe.sha256" -NoNewline
+# The portable zip gets one too (#119): portable users update by replacing their
+# folder, and a future in-place portable updater will demand this hash the same
+# way the installer path does.
+(Get-FileHash "$repo\dist\EQBuddy-portable.zip" -Algorithm SHA256).Hash |
+    Set-Content "$repo\dist\EQBuddy-portable.zip.sha256" -NoNewline
 
 New-Item -ItemType Directory -Force $oneDrive | Out-Null
 Copy-Item "$repo\dist\EQBuddySetup.exe", "$repo\dist\EQBuddySetup.exe.sha256", "$repo\dist\EQBuddy-portable.zip" $oneDrive -Force
@@ -79,7 +84,7 @@ if ($Tag) {
     if ($tagProps -notmatch [regex]::Escape("<Version>$version</Version>")) {
         throw "Tag $Tag does not contain <Version>$version</Version> - refusing to release a mismatched build"
     }
-    gh release create $Tag "$repo\dist\EQBuddySetup.exe" "$repo\dist\EQBuddySetup.exe.sha256" "$repo\dist\EQBuddy-portable.zip" `
+    gh release create $Tag "$repo\dist\EQBuddySetup.exe" "$repo\dist\EQBuddySetup.exe.sha256" "$repo\dist\EQBuddy-portable.zip" "$repo\dist\EQBuddy-portable.zip.sha256" `
         --title "EQBuddy $Tag" --generate-notes
     if ($LASTEXITCODE -ne 0) { throw 'gh release failed' }
     Write-Host "GitHub release $Tag published"

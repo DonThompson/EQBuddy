@@ -104,6 +104,19 @@ public static class UpdateChecker
 
     public static bool IsNewer(UpdateInfo info) => info.Latest > CurrentVersion;
 
+    /// <summary>True when this process runs from an INSTALLED copy — Inno Setup always
+    /// leaves its uninstaller beside the exe; a portable unzip has none. For portable
+    /// copies the installer path is a trap (#119, Snagglefern): Setup.exe installs to
+    /// Program Files and relaunches THAT copy, while the next manual launch of the
+    /// portable exe is the old version again — "1.70.0 keeps reverting to 1.31". The
+    /// banner sends portable users to the release page for the new zip instead.</summary>
+    public static bool IsInstalledCopy =>
+        Environment.ProcessPath is { } exe && IsInstalledCopyAt(Path.GetDirectoryName(exe) ?? "");
+
+    /// <summary>Split out so the detection rule is testable with temp directories.</summary>
+    public static bool IsInstalledCopyAt(string exeDirectory) =>
+        exeDirectory.Length > 0 && File.Exists(Path.Combine(exeDirectory, "unins000.exe"));
+
     /// <summary>
     /// The best update available from either source: the shared folder when one is
     /// configured or discoverable, and the GitHub release feed.

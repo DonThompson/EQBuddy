@@ -3250,9 +3250,14 @@ public partial class MainWindow : Window
                 if (info is not null && UpdateChecker.IsNewer(info))
                 {
                     _pendingUpdate = info;
-                    UpdateText.Text = info.SetupPath is not null || info.DownloadUrl is not null
-                        ? $"Update v{info.Latest} is ready — click here to install."
-                        : $"Update v{info.Latest} is available — click to open the download page.";
+                    // Portable copies never get the silent-install path (#119): the
+                    // installer lands elsewhere and the portable exe stays old, which
+                    // reads as the update "reverting" on every relaunch.
+                    UpdateText.Text = !UpdateChecker.IsInstalledCopy
+                        ? $"Update v{info.Latest} is out. You're running the portable copy — click to open the download page, then replace this folder with the new EQBuddy-portable.zip."
+                        : info.SetupPath is not null || info.DownloadUrl is not null
+                            ? $"Update v{info.Latest} is ready — click here to install."
+                            : $"Update v{info.Latest} is available — click to open the download page.";
                     UpdateBanner.Visibility = Visibility.Visible;
                 }
                 else if (manual)
@@ -3273,16 +3278,19 @@ public partial class MainWindow : Window
         e.Handled = true;
         if (_pendingUpdate is not { } info || _installingUpdate) return;
 
-        if (info.SetupPath is null && info.DownloadUrl is null)
+        if ((info.SetupPath is null && info.DownloadUrl is null) || !UpdateChecker.IsInstalledCopy)
         {
-            // No installer to fetch (e.g. a release that shipped without one) — send the
-            // user to the GitHub release page instead.
+            // No installer to fetch (a release without one), or a PORTABLE copy (#119) —
+            // running Setup.exe from a portable copy installs elsewhere and the portable
+            // exe stays old. Send the user to the release page for the right asset.
             try
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
                     UpdateChecker.GitHubLatestPage) { UseShellExecute = true });
                 _pendingUpdate = null;
-                UpdateText.Text = "Download page opened — run the new EQBuddySetup.exe to update.";
+                UpdateText.Text = UpdateChecker.IsInstalledCopy
+                    ? "Download page opened — run the new EQBuddySetup.exe to update."
+                    : "Download page opened — grab EQBuddy-portable.zip, close EQBuddy, and replace this folder's files with the zip's.";
                 _upToDateNoticeUntil = DateTime.Now.AddSeconds(10);
             }
             catch (Exception ex)
