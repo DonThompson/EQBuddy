@@ -1147,6 +1147,17 @@ public partial class MainWindow : Window
     {
         var chips = _settings.MezChipsEnabled ? MezChips(now) : [];
         if (SlowChipsVisible(now)) chips.AddRange(SlowChips(now));
+        // Placement preview (#94 follow-up): the stack only exists while a mez or
+        // slow is live, so there was no way to park it BEFORE the first mid-fight
+        // debuff. While Options is open, an empty stack shows one draggable
+        // placeholder — same idea as the alert tile's placement mode.
+        if (chips.Count == 0 && _optionsWindow is { IsLoaded: true })
+            chips.Add(new SpawnChip(Zone: "", Name: "drag me — chips appear here",
+                CountdownText: "", IsDue: false,
+                Detail: "Placement preview: 💤 mez and 🐌 slow chips will stack at this "
+                    + "spot. Drag it where you'll notice them; it disappears when "
+                    + "Options closes.",
+                Icon: "🐌"));
         return chips;
     }
 
@@ -1169,7 +1180,7 @@ public partial class MainWindow : Window
                 $"landed {s.LandedAt:h:mm:ss tt}",
             }.Where(part => part.Length > 0));
             return new SpawnChip(
-                Zone: "", Name: $"Slowed {s.PctText}",
+                Zone: "", Name: EQBuddy.UI.Shared.SlowChipText.Label(s),
                 CountdownText: remaining is { } r ? $"{(int)r / 60}:{(int)r % 60:00}" : "?",
                 IsDue: false, Detail: detail, Icon: "🐌")
             {
@@ -1556,8 +1567,13 @@ public partial class MainWindow : Window
         // Emptiness is probed cheaply first (2026-08-12 tuning pass): building the
         // full chip list twice a second to learn it was empty was pure churn.
         var chipsNow = DateTime.Now;
+        // Options open = placement preview: the stack exists (with a placeholder if
+        // empty) so it can be parked before the first real debuff (#94 follow-up).
+        var chipPlacement = _optionsWindow is { IsLoaded: true }
+            && (_settings.MezChipsEnabled || _settings.SlowAlertEnabled);
         var haveFightChips = !_hiddenForFocus
-            && ((_settings.MezChipsEnabled && _mezTracker.Any(chipsNow))
+            && (chipPlacement
+                || (_settings.MezChipsEnabled && _mezTracker.Any(chipsNow))
                 || (SlowChipsVisible(chipsNow) && _slowTracker.Any(chipsNow)));
         if (haveFightChips)
         {

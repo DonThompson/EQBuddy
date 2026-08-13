@@ -230,6 +230,32 @@ public class SlowTrackerTests
         Assert.Single(t2.Snapshot(T0.AddSeconds(12)));
     }
 
+    // ---- #94 field report: type + count on the chip face, not just the tooltip ----
+
+    [Fact]
+    public void TheChipLabelCarriesCounterTypeAndCount()
+    {
+        var t = Replay(Ev(0, "You feel lethargic."));            // Sha's: disease 12
+        Assert.Equal("Slowed 40% · disease 12",
+            EQBuddy.UI.Shared.SlowChipText.Label(t.Snapshot(T0.AddSeconds(1)).Single()));
+
+        var shared = Replay(Ev(0, "You feel drowsy."));          // insect line: a range
+        var label = EQBuddy.UI.Shared.SlowChipText.Label(shared.Snapshot(T0.AddSeconds(1)).Single());
+        Assert.StartsWith("Slowed ", label);
+        Assert.Contains("disease", label);
+        Assert.Contains("–", label);
+    }
+
+    [Fact]
+    public void ACounterlessSlowChipStaysPlain()
+    {
+        // Bard-song slows carry no counters: no cure tag to show, and inventing one
+        // ("magic 0"?) would be noise.
+        var t = Replay(Ev(0, "Strands of solid music bind your body."));
+        var label = EQBuddy.UI.Shared.SlowChipText.Label(t.Snapshot(T0.AddSeconds(1)).Single());
+        Assert.DoesNotContain("·", label);
+    }
+
     [Fact]
     public void TheCatalogCarriesTheFadeCollisionData()
     {
