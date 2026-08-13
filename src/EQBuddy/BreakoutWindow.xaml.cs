@@ -346,7 +346,9 @@ public partial class BreakoutWindow : Window
             BreakoutKind.Healing => ("⚕ Your healing",
                 _fightScope ? f?.HealsBySpell ?? [] : s.HealsBySpell,
                 _fightScope ? f?.DurationSeconds ?? 0 : s.CombatSeconds, "hps"),
-            _ => (s.PetName.Length > 0 ? $"🐾 Pet damage — {s.PetName}" : "🐾 Pet damage",
+            _ => (s.PetName.Length > 0
+                    ? $"🐾 Pet damage — {s.PetName}" + EQBuddy.UI.Shared.CharmHoldText.Suffix(s.CharmedSince, DateTime.Now)
+                    : "🐾 Pet damage",
                 _fightScope ? f?.PetAbilities ?? [] : s.PetAbilities,
                 _fightScope ? f?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
         };

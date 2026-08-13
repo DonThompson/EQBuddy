@@ -102,7 +102,9 @@ public sealed class BreakoutWindow : Window
                 _fightScope ? fight?.DurationSeconds ?? 0 : snapshot.CombatSeconds, "dps"),
             BreakoutKind.Healing => ("⚕ Your healing", _fightScope ? fight?.HealsBySpell ?? [] : snapshot.HealsBySpell,
                 _fightScope ? fight?.DurationSeconds ?? 0 : snapshot.CombatSeconds, "hps"),
-            _ => (snapshot.PetName.Length > 0 ? $"🐾 Pet damage — {snapshot.PetName}" : "🐾 Pet damage",
+            _ => (snapshot.PetName.Length > 0
+                    ? $"🐾 Pet damage — {snapshot.PetName}" + EQBuddy.UI.Shared.CharmHoldText.Suffix(snapshot.CharmedSince, DateTime.Now)
+                    : "🐾 Pet damage",
                 _fightScope ? fight?.PetAbilities ?? [] : snapshot.PetAbilities,
                 _fightScope ? fight?.DurationSeconds ?? 0 : snapshot.CombatSeconds, "dps"),
         };

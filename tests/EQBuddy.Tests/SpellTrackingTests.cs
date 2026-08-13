@@ -1191,7 +1191,34 @@ public class SpellTrackingTests
             .Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
 
         Assert.Equal(1, tracked.TotalQuantity);
-        Assert.Equal("Befriend Animal (Puma)", tracked.LastItem);
+        // #130 (bjstrange): the break announcement carries how long the charm held —
+        // landed 0:04, broke 1:00.
+        Assert.Equal("Befriend Animal (Puma) — held 0:56", tracked.LastItem);
+    }
+
+    /// <summary>#130: the snapshot exposes the running hold while charmed, and
+    /// clears it the moment the charm breaks.</summary>
+    [Fact]
+    public void CharmedSinceRunsFromLandingToBreak()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."));
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 0, 4), stats.Snapshot().CharmedSince);
+
+        stats.Apply(LogParser.Parse(At(1, 0, "Your Befriend Animal spell has worn off of a puma."))!);
+        Assert.Null(stats.Snapshot().CharmedSince);
+    }
+
+    /// <summary>#130: a summoned pet claimed via the Master tell has no charm to
+    /// hold — the clock must stay off.</summary>
+    [Fact]
+    public void SummonedPetsCarryNoCharmClock()
+    {
+        var stats = Replay(
+            At(0, 0, "Jibekn told you, 'Attacking orc pawn Master.'"));
+        Assert.Equal("Jibekn", stats.Snapshot().PetName);
+        Assert.Null(stats.Snapshot().CharmedSince);
     }
 
     /// <summary>A class-filtered rule carries no match text, so the snapshot's

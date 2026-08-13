@@ -2626,6 +2626,7 @@ public partial class MainWindow : Window
         var selectedClass = (SkyQuestTabs.SelectedItem as TabItem)?.Tag as string
             ?? (_settings.SkyQuestClass.Length > 0 ? _settings.SkyQuestClass : null);
         SkyQuestTabs.Items.Clear();
+        AddSkyReadyAllTab(selectedClass);
 
         foreach (var classGroup in _settings.SkyQuestChecklist.GroupBy(i => i.ClassName).OrderBy(g => g.Key))
         {
@@ -3037,6 +3038,56 @@ public partial class MainWindow : Window
                 tab.Header = SkyQuestTabHeader(className);
                 tab.ToolTip = SkyQuestTabToolTip(className);
             }
+    }
+
+    /// <summary>#129 (bjstrange): the ready list spans ALL classes — a "★ Ready"
+    /// tab ahead of the class tabs, one line per turn-in doable right now, so a
+    /// multi-lens player sees every finished quest without touring fourteen tabs.
+    /// Only exists while something is actually ready.</summary>
+    private void AddSkyReadyAllTab(string? selectedClass)
+    {
+        var ready = _settings.SkyQuestChecklist
+            .GroupBy(i => (i.ClassName, i.Reward))
+            .Where(g => g.All(i => i.Acquired)
+                && !IsSkyRewardCompleted(g.Key.ClassName, g.Key.Reward))
+            .OrderBy(g => g.Key.ClassName).ThenBy(g => g.Key.Reward)
+            .ToList();
+        if (ready.Count == 0) return;
+
+        var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+        foreach (var quest in ready)
+        {
+            var npc = quest.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0) ?? "";
+            var row = new TextBlock
+            {
+                Text = $"{ClassAbbrev(quest.Key.ClassName)} — {quest.Key.Reward}"
+                    + (npc.Length > 0 ? $"  ({npc})" : ""),
+                FontSize = 11, Margin = new Thickness(0, 1, 0, 1),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = $"{quest.Key.ClassName}: all {quest.Count()} item{(quest.Count() == 1 ? "" : "s")} acquired"
+                    + (npc.Length > 0 ? $" — turn in to {npc}" : ""),
+            };
+            row.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+            panel.Children.Add(row);
+        }
+
+        var headerText = new TextBlock { Text = $"★ Ready {ready.Count}", FontSize = 10, FontWeight = FontWeights.SemiBold };
+        headerText.SetResourceReference(TextBlock.ForegroundProperty, "WarnBrush");
+        var tab = new TabItem
+        {
+            Header = headerText,
+            Tag = "★ready-all",
+            ToolTip = $"{ready.Count} quest{(ready.Count == 1 ? "" : "s")} ready to turn in, across all classes",
+            Content = new ScrollViewer
+            {
+                Content = panel,
+                MaxHeight = 300,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Padding = new Thickness(0, 0, 4, 0),
+            },
+        };
+        SkyQuestTabs.Items.Add(tab);
+        if (selectedClass == "★ready-all") tab.IsSelected = true;
     }
 
     private sealed record SkyQuestTabCounts(int Done, int Ready, int Partial, int Total);

@@ -312,6 +312,15 @@ public sealed class SessionStats
     // creature to teach, so a bystander's charm coinciding with our own unrelated cast
     // (Hugzee's Heroic Leap) can never mislabel that cast as a charm (issue #29).
     private (string Spell, DateTime Time, string Pet)? _charmCandidate;
+    // #130 (bjstrange): how long the current charm has HELD, and how long the last
+    // one held. Set only by charm-path claims — a summoned pet never "breaks".
+    private (string Pet, DateTime LandedAt)? _charmHold;
+    // Provisional charm claims (late landings, unknown spells) start the clock too;
+    // the Master tell that confirms them keeps the original landing time.
+    private (string Pet, DateTime LandedAt)? _charmProvisional;
+    // Break-time → held seconds, so the fade alert's label can say "held 4:32"
+    // (the journal scan rebuilds labels repeatedly; this is its lookaside).
+    private readonly Dictionary<DateTime, double> _charmHoldByBreak = new();
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
@@ -543,6 +552,7 @@ public sealed class SessionStats
                         {
                             _pendingCast = null;
                             ConfirmPet(LogParser.Normalize(ch.Name));
+                            _charmHold = (LogParser.Normalize(ch.Name), ch.Time);   // #130
                         }
                         // Outside the window but our charm cast IS still recent:
                         // degrade to the provisional "Pet?" state instead of nothing
@@ -552,6 +562,7 @@ public sealed class SessionStats
                         {
                             _petName = LogParser.Normalize(ch.Name);
                             _petConfirmed = false;
+                            _charmProvisional = (_petName, ch.Time);   // #130: clock starts at the landing
                         }
                         // Unknown cast + no pet of our own: record the cast as a charm
                         // candidate — NO claim, no damage credit (a bystander's charm
@@ -584,11 +595,13 @@ public sealed class SessionStats
                         {
                             _pendingCast = null;
                             ConfirmPet(glazed.Target);
+                            _charmHold = (glazed.Target, glazed.Time);   // #130
                         }
                         else if (_petName is null)
                         {
                             _petName = glazed.Target;
                             _petConfirmed = false;
+                            _charmProvisional = (glazed.Target, glazed.Time);
                         }
                     }
                     break;
@@ -612,7 +625,16 @@ public sealed class SessionStats
                         && string.Equals(cand.Pet, claimed, StringComparison.OrdinalIgnoreCase))
                     {
                         _spells.Learn(cand.Spell, SpellCategory.Charm);
+                        _charmHold ??= (claimed, cand.Time);   // #130: the blink was the landing
                         _charmCandidate = null;
+                    }
+                    // A provisional charm claim the tell just confirmed keeps its
+                    // original landing time — the clock started when the charm did.
+                    if (_charmProvisional is { } prov && pc.Time - prov.LandedAt <= BlinkToClaim
+                        && string.Equals(prov.Pet, claimed, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _charmHold ??= (claimed, prov.LandedAt);
+                        _charmProvisional = null;
                     }
                     ConfirmPet(claimed);
                     // Only the attack order proves a fight; the leader response would
@@ -634,6 +656,7 @@ public sealed class SessionStats
                         {
                             ConfirmPet(blinked);
                             _pendingCast = null;
+                            _charmHold = (blinked, pb.Time);   // #130
                             break;
                         }
                         // A known charm whose arm window already closed: a weak line
@@ -684,6 +707,7 @@ public sealed class SessionStats
                         && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
                     // Charm broke on our pet. Drop the claim now instead of waiting for the
                     // creature to turn around and hit us.
+                    RecordCharmBreak(wo.Time);
                     _petName = null;
                     _petConfirmed = false;
                     break;
@@ -693,6 +717,7 @@ public sealed class SessionStats
                     // Befriend Animal's break line names NO target — "Your charm spell
                     // has worn off." (eqlwiki; unique among the animal charms). Only one
                     // charm can be active, so a targetless charm fade is ours.
+                    RecordCharmBreak(woNoTarget.Time);
                     _petName = null;
                     _petConfirmed = false;
                     break;
@@ -843,7 +868,7 @@ public sealed class SessionStats
                     break;
                 case DamageTakenEvent dt:
                     // A "pet" attacking us means the charm broke — stop crediting it.
-                    if (IsPet(dt.Attacker)) _petName = null;
+                    if (IsPet(dt.Attacker)) { RecordCharmBreak(dt.Time); _petName = null; }
                     _damageTaken += dt.Amount;
                     if (dt.Melee) { _meleeHitsTaken++; _runeBlockStreak = 0; }
                     TouchFight(dt.Attacker, dt.Time, dmgIn: dt.Amount);
@@ -1098,6 +1123,40 @@ public sealed class SessionStats
             if (finalSnapshot is not null) SessionEnding?.Invoke(finalSnapshot);
             SessionRolledOver?.Invoke();
         }
+    }
+
+    /// <summary>#130 (bjstrange): close the charm-hold clock at a break and remember
+    /// how long it held, keyed by the break time so the fade alert's label can carry
+    /// it ("Charm (a gnoll) — held 4:32").</summary>
+    private void RecordCharmBreak(DateTime at)
+    {
+        var landed = _charmHold?.LandedAt ?? _charmProvisional?.LandedAt;
+        _charmHold = null;
+        _charmProvisional = null;
+        if (landed is not { } l) return;
+        var held = (at - l).TotalSeconds;
+        if (held <= 0) return;
+        _charmHoldByBreak[at] = held;
+        if (_charmHoldByBreak.Count > 64)
+            foreach (var old in _charmHoldByBreak.Keys.OrderBy(k => k)
+                         .Take(_charmHoldByBreak.Count - 64).ToList())
+                _charmHoldByBreak.Remove(old);
+    }
+
+    /// <summary>Journal label for a fade row/alert — a charm break gets its hold
+    /// duration appended (#130).</summary>
+    private string FadeLabel(SpellWornOffEvent wo)
+    {
+        var label = wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell;
+        if (_charmHoldByBreak.TryGetValue(wo.Time, out var held))
+        {
+            var t = TimeSpan.FromSeconds(held);
+            var text = t.TotalHours >= 1
+                ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}"
+                : $"{t.Minutes}:{t.Seconds:00}";
+            label += $" — held {text}";
+        }
+        return label;
     }
 
     /// <summary>The filters that mean "my crowd control of a MOB ended" — the ones a
@@ -1578,6 +1637,7 @@ public sealed class SessionStats
         _closedCombatSeconds = 0; _closedCombatDamage = 0;
         _combatStart = null; _combatLast = null; _combatDamage = 0;
         _lastOwnAction = null; _petName = null; _petConfirmed = false;
+        _charmHold = null; _charmProvisional = null; _charmHoldByBreak.Clear();
         _pendingCast = null; _charmCandidate = null;
         _castsStarted = 0; _castsInterrupted = 0;
         _dotDamage = 0; _directSpellDamage = 0;
@@ -1755,7 +1815,7 @@ public sealed class SessionStats
                             (WatchKind.Milestone, AaEvent) => ("AA point", 1),
                             (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
                                 when SpellFadeMatches(rule, wo.Spell)
-                                => (wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell, 1),
+                                => (FadeLabel(wo), 1),
                             // Buff/HoT fades carry candidate spells (the log named
                             // none); the rule fires if ANY candidate satisfies it, and
                             // the row shows the catalog label ("Haste") since we can't
@@ -1830,6 +1890,7 @@ public sealed class SessionStats
                 DamageBySource = Breakdown(_damageBySource),
                 PetAbilities = Breakdown(_petAbilities),
                 PetName = _petName ?? "",
+                CharmedSince = _charmHold?.LandedAt ?? _charmProvisional?.LandedAt,
                 SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 SessionDps = sessionDps,
@@ -2039,6 +2100,9 @@ public sealed class StatsSnapshot
     /// <summary>The current pet's name, or "" when none is claimed — window titles want the
     /// name without fishing it back out of a "Pet (Name)" row label.</summary>
     public string PetName { get; init; } = "";
+    /// <summary>When the current CHARM landed (#130) — null for summoned pets and
+    /// when nothing is charmed. The pet breakout shows the running hold from it.</summary>
+    public DateTime? CharmedSince { get; init; }
     /// <summary>The creatures being fought right now (every open fight — the log can't
     /// say which is targeted), or the one just killed / last considered, briefly. Feeds
     /// the target-drops surfaces. Empty between pulls.</summary>

@@ -3,6 +3,8 @@
   "version": "1.75.0",
   "date": "2026-08-13",
   "highlights": [
+   "NEW (discussion #130, thanks bjstrange): CHARM HOLD TIMER - the pet breakout header shows a running clock from the moment your charm lands (\"Pet damage - Gnoll · charmed 4:32\"), and when the charm breaks, the CC-broke alert announces how long it held (\"Befriend Animal (Puma) - held 0:56\"). Summoned pets stay clock-free - a summon doesn't break.",
+   "NEW (discussion #129, thanks bjstrange): the Sky Quest card grows a \"★ Ready\" tab ahead of the class tabs whenever ANY class has a quest ready to turn in - one line per finished quest across all fourteen classes, with its turn-in NPC, so you stop touring tabs to find what's done.",
    "NEW - EPIC 1.0 CHECKLIST (contributed by dandrews2930, hours after the idea landed in discussion #121 - thanks tvongaza for the ask): a per-class card of every epic quest step from the community wiki, 486 steps across all 14 classes, with manual checkboxes and a \"Classic-doable only\" toggle so you can pre-farm what already drops before the epics go live. A prototype by its author's own framing - auto-checking from your loot comes later.",
    "IMPROVED - Sky Quest tabs (contributed by dandrews2930, from suggestions by Fedarov #125 and wizen #126): each class tab now shows its turn-in NPC up top, and tab headers count QUESTS by state - D done / R ready / P partial, color-coded - instead of raw item counts.",
    "FIXED (discussion #124, thanks wizen): typing a decimal WITH a unit into a spawn timer (\"8.5m\") now works - it used to be silently rejected, the override cleared, and the catalog's own clock took over, which looked like 8.5m producing a 16.5-minute timer.",
