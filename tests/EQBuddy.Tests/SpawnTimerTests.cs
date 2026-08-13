@@ -977,6 +977,68 @@ public class SpawnTimerTests
         finally { File.Delete(path); }
     }
 
+    // ---- #109 round two: ANY kill inside an instanced zone starts no countdown ----
+    // The zone-enter line is the game's only statement of instance-ness (community
+    // 1.4M-line log survey, 2026-08-13); these are its real shapes.
+
+    [Theory]
+    [InlineData("The Plane of Hate - Solo")]                // base instance
+    [InlineData("The Plane of Hate - Solo 4 (Refined)")]    // tiered, Solo word
+    [InlineData("Nagafen's Lair - Group 3 (Fused)")]        // tiered, Group word
+    [InlineData("Najena 4 (Refined)")]                      // tiered, no Solo/Group word
+    [InlineData("Befallen 1 (Awakened)")]                   // difficulty-tier dungeon
+    public void InstancedZoneNamesAreRecognized(string zone) =>
+        Assert.True(SpawnCatalog.IsInstancedZoneName(zone));
+
+    [Theory]
+    [InlineData("The Plane of Hate")]
+    [InlineData("Innothule Swamp")]
+    [InlineData("Nagafen's Lair")]
+    [InlineData("North Solace")]                            // digits-free, paren-free
+    public void OpenWorldZoneNamesAreNot(string zone) =>
+        Assert.False(SpawnCatalog.IsInstancedZoneName(zone));
+
+    [Fact]
+    public void KillsInsideAnInstancedRaidZoneStartNoCountdownEvenForUnlistedNamed()
+    {
+        // Hand of the Maestro is NOT in the achievements dump — the entry-level
+        // suppression can't catch him, the zone gate must (Frank's minis case).
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(RaidCatalog(), overrides) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "The Plane of Hate - Solo 2 (Adaptive)"));
+        t.Apply(new KillEvent(T0, "Hand of the Maestro", "You"));
+        Assert.Empty(t.Snapshot(T0.AddMinutes(1)));
+
+        // The SAME kill in the open-world zone runs its normal clock.
+        t.Apply(new ZoneEvent(T0.AddMinutes(2), "The Plane of Hate"));
+        t.Apply(new KillEvent(T0.AddMinutes(2), "Hand of the Maestro", "You"));
+        Assert.Equal("Hand of the Maestro", Assert.Single(t.Snapshot(T0.AddMinutes(3))).Name);
+    }
+
+    [Fact]
+    public void OrdinaryDungeonInstancesKeepTheirTimers()
+    {
+        // Mobs respawn inside tier-variant leveling dungeons — our Befallen and
+        // Crushbone zone clocks were MEASURED there. Only raid zones suppress.
+        var t = Tracker();
+        t.Apply(new ZoneEvent(T0, "The Ruins of Old Guk 3 (Fused)"));
+        t.Apply(new KillEvent(T0, "a froglok ghoul lord", "You"));
+        Assert.Equal("a froglok ghoul lord", Assert.Single(t.Snapshot(T0.AddMinutes(1))).Name);
+    }
+
+    [Fact]
+    public void APlayerTypedDurationStillRunsInsideAnInstance()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(RaidCatalog(), overrides) { Server = "freeport" };
+        var vm = new SpawnsViewModel(RaidCatalog(), overrides, t);
+        vm.SetDuration("Plane of Hate", "Hand of the Maestro", "12h");
+
+        t.Apply(new ZoneEvent(T0, "The Plane of Hate - Solo 4 (Refined)"));
+        t.Apply(new KillEvent(T0, "Hand of the Maestro", "You"));
+        Assert.Equal(T0.AddHours(12), Assert.Single(t.Snapshot(T0.AddMinutes(1))).DueAt);
+    }
+
     [Fact]
     public void RaidBossRowSaysInstanceInsteadOfABlank()
     {

@@ -65,6 +65,12 @@ public sealed class SpawnZone
     /// <summary>True when <see cref="NamedDefaultSeconds"/> is a MEASURED zone clock
     /// (see SpawnEntry.Trusted) — entries riding it don't re-kill-learn.</summary>
     public bool NamedDefaultTrusted { get; set; }
+    /// <summary>True for zones the raid-target catalog knows (#109): an INSTANCED
+    /// entry of such a zone runs on lockouts, so kills inside it start no automatic
+    /// countdowns — not just the dump-listed bosses, the minis too. Ordinary leveling
+    /// dungeons keep their timers even in tier instances: mobs demonstrably respawn
+    /// there (the Befallen/Crushbone clocks were MEASURED inside tier variants).</summary>
+    public bool RaidZone { get; set; }
     public List<SpawnEntry> Named { get; set; } = [];
 
     public bool MatchesZoneName(string zoneName)
@@ -125,15 +131,20 @@ public sealed class SpawnCatalog
     /// <summary>Flags every catalog entry whose name (or alias) the raid-target
     /// catalog knows as a raid-instance boss — the achievements dump is the
     /// authority on who lives in an instance, the spawn catalog only inherited
-    /// classic open-world numbers from the wiki harvest. Separate from LoadEmbedded
-    /// so tests can exercise the cross-reference with hand-built catalogs.</summary>
+    /// classic open-world numbers from the wiki harvest — and every ZONE the raid
+    /// catalog names (see <see cref="SpawnZone.RaidZone"/>). Separate from
+    /// LoadEmbedded so tests can exercise the cross-reference with hand-built
+    /// catalogs.</summary>
     public static void MarkRaidInstanced(SpawnCatalog catalog, RaidTargetCatalog raidTargets)
     {
         foreach (var zone in catalog.Zones)
+        {
+            zone.RaidZone = raidTargets.Zones.Any(rz => zone.MatchesZoneName(rz.Zone));
             foreach (var entry in zone.Named)
                 if (raidTargets.IsRaidBoss(entry.Name)
                     || entry.Aliases.Any(raidTargets.IsRaidBoss))
                     entry.RaidInstanced = true;
+        }
     }
 
     /// <summary>The catalog zone the given log zone name refers to, or null. EQ Legends
@@ -161,6 +172,30 @@ public sealed class SpawnCatalog
     public static string StripTierVariant(string zoneName) =>
         System.Text.RegularExpressions.Regex
             .Replace(zoneName, @"\s+\d+(\s*\([^)]*\))?$", "").Trim();
+
+    /// <summary>
+    /// True when a "You have entered X." zone name is an INSTANCE rather than the open
+    /// world (#109, the Tranix/mini-boss cases). EQ Legends states instance-ness only in
+    /// the zone name — no kill, lockout, or creation line carries it (fact verified
+    /// against a community 1.4M-line log survey, 2026-08-13). The observed shapes:
+    ///
+    ///   "The Plane of Hate"                      → open world
+    ///   "The Plane of Hate - Solo"               → base instance
+    ///   "Nagafen's Lair - Group 3 (Fused)"       → tiered instance
+    ///   "Najena 4 (Refined)"                     → tiered instance, no Solo/Group word
+    ///
+    /// Instance-ness alone does NOT suppress timers — ordinary dungeons run as tier
+    /// instances and their mobs demonstrably respawn (our Befallen and Crushbone zone
+    /// clocks were measured inside "4 (Refined)"-style variants). The suppression is
+    /// instanced AND a raid zone (<see cref="SpawnZone.RaidZone"/>), where kills run on
+    /// lockouts and an open-world clock is fiction. Unrecognized shapes fall toward
+    /// "open world" — the failure mode there is today's behavior, not a
+    /// silently-suppressed real timer.
+    /// </summary>
+    public static bool IsInstancedZoneName(string zoneName) =>
+        System.Text.RegularExpressions.Regex.IsMatch(zoneName, @"\s-\s*(Solo|Group)\b",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+        || System.Text.RegularExpressions.Regex.IsMatch(zoneName, @"\s\d+\s*\([^)]*\)\s*$");
 
     /// <summary>Effective respawn seconds for an entry in a zone: the entry's own timer,
     /// else the zone default, else null (unknown — the player has to supply one).

@@ -45,6 +45,9 @@ public sealed class SpawnTimers
         new(StringComparer.OrdinalIgnoreCase);
 
     private SpawnZone? _currentZone;
+    /// <summary>The raw zone-enter name said this zone is an INSTANCE (#109) — kills
+    /// here start no automatic countdowns; see SpawnCatalog.IsInstancedZoneName.</summary>
+    private bool _currentZoneInstanced;
     private LocationEvent? _lastLoc;
 
     /// <summary>A /loc within this window of a kill counts as the camp's position —
@@ -81,7 +84,12 @@ public sealed class SpawnTimers
         switch (evt)
         {
             case ZoneEvent z:
-                lock (_lock) { _currentZone = _catalog.FindZone(z.Zone); _lastLoc = null; }
+                lock (_lock)
+                {
+                    _currentZone = _catalog.FindZone(z.Zone);
+                    _currentZoneInstanced = SpawnCatalog.IsInstancedZoneName(z.Zone);
+                    _lastLoc = null;
+                }
                 break;
             case LocationEvent loc:
                 // Kill-time /loc = the camp's location (map pins). Zoning clears it.
@@ -194,12 +202,16 @@ public sealed class SpawnTimers
                         && !MatchesAnyPlaceholder(placeholder, k.Target, fuzzy)
                         && !entry.Aliases.Any(a => Matches(a, k.Target, fuzzy))) continue;
 
-                    // Raid-instance bosses (#109): the kill is real — the Raids card
-                    // records it — but no open-world respawn clock exists to count
-                    // down, so no timer starts. A player-typed duration is the one
-                    // exception: their edit outranks the suppression like it outranks
-                    // everything else, and gives them a self-chosen reminder.
-                    if (entry.RaidInstanced && !IsManual(o)) return;
+                    // Raid-instance bosses, and ANY kill inside an INSTANCED RAID
+                    // zone (#109): the kill is real — the Raids card records it — but
+                    // it runs on the lockout, not a respawn clock, so no timer starts.
+                    // The zone gate catches what the achievements dump can't: minis
+                    // and named the dump never lists. Ordinary dungeon instances keep
+                    // their timers — mobs respawn there, measurably. A player-typed
+                    // duration is the one exception: their edit outranks the
+                    // suppression like it outranks everything else.
+                    if ((entry.RaidInstanced || (_currentZoneInstanced && zone.RaidZone))
+                        && !IsManual(o)) return;
 
                     var trusted = IsTrusted(zone, entry);
                     // Self-heal: a LEARNED override sitting under a measured clock came
