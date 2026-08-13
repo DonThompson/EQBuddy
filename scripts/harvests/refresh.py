@@ -61,12 +61,16 @@ PACE_SECONDS = 1.0
 TITLE_LISTS = ["quest-titles.json", "quest-items.json", "titles.json", "zone-titles.json"]
 
 # Harvest, then promote — order matters (promotions read harvester output).
-HARVESTERS = ["spells-harvest.py", "quests-harvest.py", "zones-harvest.py", "aas-harvest.py"]
+# items-harvest.py needs no cache eviction: it keys on revision ids itself and
+# only refetches pages whose revision moved.
+HARVESTERS = ["spells-harvest.py", "quests-harvest.py", "zones-harvest.py", "aas-harvest.py",
+              "items-harvest.py"]
 PROMOTIONS = [WIKI / "fades-harvest.py", WIKI / "quests-promote.py",
-              HERE / "eqltools" / "zones-merge.py"]
+              HERE / "eqltools" / "zones-merge.py",
+              WIKI / "items-promote.py"]
 
 # Written by promotions above; diffed for the report.
-PROMOTED = ["FadeMessages.json", "QuestCatalog.json", "ZoneGraph.json"]
+PROMOTED = ["FadeMessages.json", "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz"]
 # Human-curated; never auto-written, only flagged when their sources move.
 CURATED = ["SpawnCatalog.json", "AaCatalog.json", "MezSpells.json",
            "CcSpells.json", "RegenSpells.json"]

@@ -35,6 +35,8 @@
     <EmbeddedResource Include="Data\RaidTargets.json" />
     <EmbeddedResource Include="Data\QuestCatalog.json" />
     <EmbeddedResource Include="Data\ZoneGraph.json" />
+    <!-- ~11k items from Category:Items, gzipped (items-harvest.py + itemcatalog-build). -->
+    <EmbeddedResource Include="Data\ItemCatalog.json.gz" />
   </ItemGroup>
 
 </Project>

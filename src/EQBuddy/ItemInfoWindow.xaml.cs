@@ -55,6 +55,7 @@ public partial class ItemInfoWindow : Window
             ItemLookupState.Cached => $"CACHED {result.FetchedAt:M/d}",
             ItemLookupState.StaleCache => $"STALE {result.FetchedAt:M/d}",
             ItemLookupState.Offline => "OFFLINE",
+            ItemLookupState.Catalog => "CATALOG",   // the embedded weekly-refresh copy
             _ => "NOT FOUND",
         };
         if (result.Item is not { } item)

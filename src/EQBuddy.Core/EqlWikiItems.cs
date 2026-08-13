@@ -28,7 +28,7 @@ public sealed class ItemInfo
         || Categories.Any(c => c.Equals("Quest Items", StringComparison.OrdinalIgnoreCase));
 }
 
-public enum ItemLookupState { Live, Cached, StaleCache, Offline, NotFound }
+public enum ItemLookupState { Live, Cached, StaleCache, Offline, NotFound, Catalog }
 
 public sealed record ItemLookupResult(ItemInfo? Item, ItemLookupState State, DateTime? FetchedAt);
 
@@ -88,7 +88,11 @@ public sealed partial class EqlWikiItemService
             WriteCache(title, candidate, wikitext);
             return new ItemLookupResult(Parse(wikitext, candidate), ItemLookupState.Live, DateTime.UtcNow);
         }
-        return new ItemLookupResult(null, ItemLookupState.NotFound, null);
+        // Not on the live wiki (renamed page, offline miss): the embedded catalog
+        // still answers, honestly labeled — weekly-refresh data beats a shrug.
+        return FromCatalog(title) is { } fromCatalog
+            ? new ItemLookupResult(fromCatalog, ItemLookupState.Catalog, null)
+            : new ItemLookupResult(null, ItemLookupState.NotFound, null);
     }
 
     private static IEnumerable<string> Candidates(string title)
@@ -107,15 +111,35 @@ public sealed partial class EqlWikiItemService
     private readonly object _memoLock = new();
 
     /// <summary>Cache-only peek: synchronous, accepts any age, never fetches — for
-    /// surfaces that must cost nothing (row values, first-paint tooltips).</summary>
+    /// surfaces that must cost nothing (row values, first-paint tooltips). A fetched
+    /// page wins; the embedded catalog answers for everything never fetched — the
+    /// layer that makes the Gear Locker and hover stats instant and offline.</summary>
     public ItemInfo? CachedInfo(string inGameName)
     {
         lock (_memoLock)
             if (_infoMemo.TryGetValue(inGameName, out var memo)) return memo;
         var cached = ReadCache(NormalizeTitle(inGameName));
         var info = cached is null ? null : Parse(cached.Wikitext, cached.Title);
+        info ??= FromCatalog(NormalizeTitle(inGameName));
         lock (_memoLock) _infoMemo[inGameName] = info;
         return info;
+    }
+
+    /// <summary>An <see cref="ItemInfo"/> synthesized from the embedded catalog —
+    /// the same fields a live parse yields, minus the merchant/vendor details the
+    /// catalog deliberately doesn't carry.</summary>
+    private static ItemInfo? FromCatalog(string title)
+    {
+        if (ItemCatalog.Default.Find(title) is not { } rec) return null;
+        return new ItemInfo
+        {
+            Name = rec.Name,
+            StatsLines = rec.StatsText.Length > 0 ? [.. rec.StatsText.Split('\n')] : [],
+            Quests = rec.Quests ?? [],
+            Recipes = rec.Recipes ?? [],
+            DropsFrom = (rec.DropZones ?? []).Select(z => (z, new List<string>())).ToList(),
+            WikiUrl = "https://eqlwiki.com/" + Uri.EscapeDataString(rec.Name.Replace(' ', '_')),
+        };
     }
 
     /// <summary>Cache-only stats peek for hover tooltips: synchronous, accepts any age,

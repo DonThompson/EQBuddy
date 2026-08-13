@@ -4,3 +4,5 @@ dist/
 *.user
 .vs/
 .DS_Store
+
+scripts/harvests/eqlwiki/cache/items-wikitext.jsonl
