@@ -452,7 +452,9 @@ public class WidgetRenderTests : IDisposable
             .Select(t => t.Text ?? "").ToList();
         Assert.Contains("⚔ Your damage", text);
         Assert.Contains("Backstab", text);
-        Assert.Contains("100 · 10 dps", text);
+        // BreakdownRows layout: "100" is the semibold headline, the columns read dim beside it.
+        Assert.Contains("100", text);
+        Assert.Contains("×2 · avg 50 · 10 dps", text);
         window.Close();
     }
 

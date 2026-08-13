@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
 
@@ -15,17 +17,33 @@ public sealed class BreakoutWindow : Window
 {
     private readonly AppSettings _settings;
     private readonly BreakoutKind _kind;
+    private readonly Border _chrome;
+    private readonly SolidColorBrush _hairline = new();
     private readonly TextBlock _title = new();
     private readonly TextBlock _subtitle = AppTheme.DimText("");
     private readonly TextBlock _empty = AppTheme.DimText("");
     private readonly StackPanel _rows = new();
     private readonly Button _fight;
     private readonly Button _session;
+    private readonly Button? _copyFight;
     private bool _fightScope;
     private string _signature = "";
     private PixelPoint _savedPosition;
+    private LastFightInfo? _lastFight;
+    private IReadOnlyDictionary<string, (int Casts, int Resists)>? _resists;
+    private (double Opacity, Color Tint) _appliedBg = (-1, default);
 
+    /// <summary>Raised when the user ✕-dismisses the window — the owner disables this
+    /// kind persistently (re-enabled under Options → Breakout windows, discussion #45).</summary>
     public event Action<BreakoutKind>? Dismissed;
+
+    /// <summary>Damage kind only (#102): ⧗ opens the fight timeline. Set by the owner
+    /// (WPF reaches this through its MainWindow reference; here the hook is explicit).</summary>
+    public Action? OpenTimeline { get; set; }
+
+    /// <summary>Whose parse the ⧉ fight export is labeled with — the owner supplies the
+    /// current character name (WPF: Main.Identity.Character).</summary>
+    public Func<string>? CharacterName { get; set; }
 
     public BreakoutWindow(AppSettings settings, BreakoutKind kind)
     {
@@ -49,25 +67,45 @@ public sealed class BreakoutWindow : Window
         _session = ScopeButton("Session", false);
         var close = AppTheme.IconButton("x", "Hide until the next minimize");
         close.Click += (_, _) => { HideAndSave(); Dismissed?.Invoke(_kind); };
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto") };
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto") };
         header.Children.Add(_title);
-        Grid.SetColumn(_fight, 1); header.Children.Add(_fight);
-        Grid.SetColumn(_session, 2); header.Children.Add(_session);
-        Grid.SetColumn(close, 3); header.Children.Add(close);
+        if (_kind == BreakoutKind.Damage)
+        {
+            // #102 (jeremycranfill): the Combat card's fight export and timeline,
+            // reachable without leaving the minimized view.
+            _copyFight = AppTheme.IconButton("⧉",
+                "Copy the last fight as Discord-ready text (a monospace block — the official Discord " +
+                "blocks images, so the parse travels as text). Your numbers only, from your log.");
+            _copyFight.FontSize = 11;
+            _copyFight.Click += async (_, _) => await OnCopyFight();
+            Grid.SetColumn(_copyFight, 1); header.Children.Add(_copyFight);
+            var timeline = AppTheme.IconButton("⧗",
+                "Fight timeline: the whole pull, a lane per skill — every hit, miss and resist, " +
+                "plus DPS over time.");
+            timeline.FontSize = 11;
+            timeline.Click += (_, _) => OpenTimeline?.Invoke();
+            Grid.SetColumn(timeline, 2); header.Children.Add(timeline);
+        }
+        Grid.SetColumn(_fight, 3); header.Children.Add(_fight);
+        Grid.SetColumn(_session, 4); header.Children.Add(_session);
+        Grid.SetColumn(close, 5); header.Children.Add(close);
         var panel = new StackPanel();
         panel.Children.Add(header);
         panel.Children.Add(_subtitle);
         panel.Children.Add(_empty);
         panel.Children.Add(_rows);
-        Content = new Border
+        // Hairline chrome (2026-08-11 modernization): the accent at a whisper, same
+        // treatment as the main widget's cards.
+        _chrome = new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = AppTheme.BorderBrush,
+            BorderBrush = _hairline,
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(10),
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(10, 7, 10, 9),
             Child = panel,
         };
+        Content = _chrome;
         PointerPressed += (_, e) =>
         {
             if (e.Source is not Button && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
@@ -93,53 +131,112 @@ public sealed class BreakoutWindow : Window
         return button;
     }
 
-    public void Update(StatsSnapshot snapshot)
+    /// <summary>#102: the Combat card's fight export without leaving the minimized
+    /// view — same Discord-ready text, same clipboard.</summary>
+    private async Task OnCopyFight()
     {
-        var fight = snapshot.LastFight;
+        if (_lastFight is not { } f || _copyFight is null) return;
+        try
+        {
+            if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
+                await clipboard.SetTextAsync(FightExport.ToText(
+                    f, CharacterName?.Invoke() ?? "", $"v{UpdateChecker.CurrentVersion}"));
+            _copyFight.Content = "✓";
+            var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
+            t.Tick += (_, _) => { _copyFight.Content = "⧉"; t.Stop(); };
+            t.Start();
+        }
+        catch (Exception ex) { App.LogError(ex); }
+    }
+
+    // ---- background see-through (#96, badly-developed): breakouts follow the main
+    // widget's setting — only the panel fades, text stays sharp, same rule as the
+    // widget. Re-checked on the shared tick so Options changes and theme switches
+    // reach an already-open breakout without a rebuild.
+    private void ApplyBackgroundOpacity()
+    {
+        var opacity = _settings.BackgroundOpacity;
+        var tint = AppTheme.BgBrush.Color;
+        var accent = AppTheme.AccentBrush.Color;
+        _hairline.Color = Color.FromArgb(0x26, accent.R, accent.G, accent.B);
+        if (_appliedBg == (opacity, tint)) return;
+        _appliedBg = (opacity, tint);
+        _chrome.Background = new SolidColorBrush(
+            Color.FromArgb((byte)(opacity * 255), tint.R, tint.G, tint.B));
+    }
+
+    /// <summary>Refresh from the 1 s snapshot tick. Rebuilds rows only when the numbers
+    /// actually changed (same signature idiom as the chip windows).</summary>
+    public void Update(StatsSnapshot s)
+    {
+        ApplyBackgroundOpacity();
+        _lastFight = s.LastFight;
+        _resists = SpellResistLookup(s);
+        var fight = s.LastFight;
         var (title, stats, seconds, rateLabel) = _kind switch
         {
-            BreakoutKind.Damage => ("⚔ Your damage", _fightScope ? fight?.ByAbility ?? [] : snapshot.DamageBySource,
-                _fightScope ? fight?.DurationSeconds ?? 0 : snapshot.CombatSeconds, "dps"),
-            BreakoutKind.Healing => ("⚕ Your healing", _fightScope ? fight?.HealsBySpell ?? [] : snapshot.HealsBySpell,
-                _fightScope ? fight?.DurationSeconds ?? 0 : snapshot.CombatSeconds, "hps"),
-            _ => (snapshot.PetName.Length > 0
-                    ? $"🐾 Pet damage — {snapshot.PetName}" + EQBuddy.UI.Shared.CharmHoldText.Suffix(snapshot.CharmedSince, DateTime.Now)
+            BreakoutKind.Damage => ("⚔ Your damage", _fightScope ? fight?.ByAbility ?? [] : s.DamageBySource,
+                _fightScope ? fight?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
+            BreakoutKind.Healing => ("⚕ Your healing", _fightScope ? fight?.HealsBySpell ?? [] : s.HealsBySpell,
+                _fightScope ? fight?.DurationSeconds ?? 0 : s.CombatSeconds, "hps"),
+            _ => (s.PetName.Length > 0
+                    ? $"🐾 Pet damage — {s.PetName}" + EQBuddy.UI.Shared.CharmHoldText.Suffix(s.CharmedSince, DateTime.Now)
                     : "🐾 Pet damage",
-                _fightScope ? fight?.PetAbilities ?? [] : snapshot.PetAbilities,
-                _fightScope ? fight?.DurationSeconds ?? 0 : snapshot.CombatSeconds, "dps"),
+                _fightScope ? fight?.PetAbilities ?? [] : s.PetAbilities,
+                _fightScope ? fight?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
         };
         _title.Text = title;
         var rate = stats.Sum(row => row.Total) / Math.Max(1, seconds);
-        _subtitle.Text = _fightScope
-            ? fight is null ? "No fights yet" : $"{fight.Name} · {fight.DurationSeconds:0}s · {fight.Outcome} · {rate:0.#} {rateLabel}"
-            : $"Session · {snapshot.CombatSeconds / 60:0}m in combat · {rate:0.#} {rateLabel}";
-        _empty.IsVisible = stats.Count == 0;
-        _empty.Text = _kind switch
+        // Hymn/regen ticks carry no amounts in the log, so they can never join the HPS
+        // rows — but a bard mid-song staring at "no healing" reads it as broken (David,
+        // live test 2026-08-06). Count them where healing lives; estimate when attributed.
+        var regen = _kind == BreakoutKind.Healing && s.RegenTicks > 0
+            ? s.RegenEstimatedHealed > 0
+                ? $" · est. ~{s.RegenEstimatedHealed:N0} regen ({s.RegenTicks} ticks)"
+                : $" · {s.RegenTicks} regen ticks"
+            : "";
+        _subtitle.Text = (_fightScope
+            ? fight is null ? "No fights yet"
+                : $"{fight.Name} · {fight.DurationSeconds:0}s · {fight.Outcome} · {rate:0.#} {rateLabel}"
+            : $"Session · {s.CombatSeconds / 60:0}m in combat · {rate:0.#} {rateLabel}") + regen;
+        var empty = stats.Count == 0;
+        _empty.IsVisible = empty;
+        if (empty)
         {
-            BreakoutKind.Healing => "No healing seen yet.",
-            BreakoutKind.Pet => "No pet damage seen yet.",
-            _ => "No damage seen yet.",
-        };
+            _empty.Text = _kind switch
+            {
+                BreakoutKind.Healing when s.RegenEstimatedHealed > 0 =>
+                    $"{s.RegenSpell}: est. ~{s.RegenEstimatedHealed:N0} healed over {s.RegenTicks} ticks.\n" +
+                    "The game logs no amounts — this is ticks × your Options\nhp/tick (or the wiki base), so it stays labeled est.",
+                BreakoutKind.Healing when s.RegenTicks > 0 =>
+                    $"{s.RegenTicks} hymn/regen ticks — the game logs no amounts for these,\nso they count but can't join the HPS rows.",
+                BreakoutKind.Healing => "No healing seen yet.",
+                BreakoutKind.Pet => "No pet damage seen yet.",
+                _ => "No damage seen yet.",
+            };
+            _rows.Children.Clear();
+            _signature = "";
+            return;
+        }
         var signature = $"{_fightScope}|{fight?.Name}|{seconds:0}|{string.Join(',', stats.Select(row => $"{row.Name}:{row.Total}"))}";
         if (signature == _signature) return;
         _signature = signature;
-        RenderRows(stats, seconds, rateLabel);
+        // Resist % rides only the session-scope damage rows — the tallies are
+        // session-wide, and stamping them on a single fight would misstate it.
+        var resists = _kind == BreakoutKind.Damage && !_fightScope ? _resists : null;
+        BreakdownRows.FillAbilityRowsSorted(_rows, stats, StatSort.Total, Math.Max(1, seconds),
+            rateLabel, max: 10, resists: resists);
     }
 
-    private void RenderRows(IReadOnlyList<SourceDamage> stats, double seconds, string rateLabel)
-    {
-        _rows.Children.Clear();
-        var top = Math.Max(1, stats.Count > 0 ? stats.Max(row => row.Total) : 1);
-        foreach (var row in stats.Take(10))
-        {
-            var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(0, 1) };
-            grid.Children.Add(new Border { Background = AppTheme.PanelHoverBrush, Width = 190.0 * row.Total / top, HorizontalAlignment = HorizontalAlignment.Left, CornerRadius = new CornerRadius(2) });
-            grid.Children.Add(new TextBlock { Text = row.Name, FontSize = 11, Foreground = AppTheme.TextBrush, Margin = new Thickness(3, 1), TextTrimming = TextTrimming.CharacterEllipsis });
-            var value = new TextBlock { Text = $"{row.Total:N0} · {row.Total / Math.Max(1, seconds):0.#} {rateLabel}", FontSize = 11, Foreground = AppTheme.DimBrush, Margin = new Thickness(6, 1) };
-            Grid.SetColumn(value, 1); grid.Children.Add(value);
-            _rows.Children.Add(grid);
-        }
-    }
+    /// <summary>Session resist tallies keyed by base spell name (WPF: a MainWindow
+    /// static — duplicated here because the port's MainWindow is another owner's file;
+    /// flagged for consolidation).</summary>
+    private static IReadOnlyDictionary<string, (int Casts, int Resists)>? SpellResistLookup(
+        StatsSnapshot s) =>
+        s.SpellResists.Count == 0
+            ? null
+            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists),
+                StringComparer.OrdinalIgnoreCase);
 
     public void HideAndSave() { SavePosition(); Hide(); }
 

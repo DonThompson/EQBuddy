@@ -128,6 +128,22 @@
                   Background="{DynamicResource PanelBrush}" IsVisible="False">
             <Canvas x:Name="DpsGraphCanvas" Height="72" SizeChanged="OnGraphSizeChanged" />
           </Border>
+          <TextBlock x:Name="ProgressLabel" FontSize="12" FontWeight="SemiBold"
+                     Foreground="{DynamicResource AccentBrush}"
+                     Margin="0,8,0,2" IsVisible="False" />
+          <Border x:Name="ProgressBorder" BorderThickness="1" CornerRadius="3"
+                  BorderBrush="{DynamicResource BorderBrush}" Margin="0,0,8,0"
+                  IsVisible="False" ClipToBounds="True">
+            <StackPanel Background="{DynamicResource PanelBrush}">
+              <TextBlock x:Name="LevelChartCaption" FontSize="10.5" Margin="6,4,6,0"
+                         Foreground="{DynamicResource DimBrush}" />
+              <Canvas x:Name="LevelChartCanvas" Height="52" Margin="6,2,6,4"
+                      SizeChanged="OnProgressSizeChanged" />
+              <TextBlock x:Name="AaChartCaption" FontSize="10.5" Margin="6,2,6,0"
+                         Foreground="{DynamicResource DimBrush}" />
+              <Canvas x:Name="AaChartCanvas" Height="52" Margin="6,2,6,6" />
+            </StackPanel>
+          </Border>
           <TextBlock x:Name="DamageVisualLabel" Text="Top damage sources"
                      FontSize="12" FontWeight="SemiBold"
                      Foreground="{DynamicResource AccentBrush}"
