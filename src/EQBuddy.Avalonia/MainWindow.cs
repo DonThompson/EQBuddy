@@ -566,8 +566,11 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     public void ApplySectionLayout()
     {
         var order = _settings.SectionOrder.Where(_sections.ContainsKey).ToList();
+        // Same ContainsKey guard as the line above: the catalog is shared with WPF, so a
+        // card can land there before this UI builds it. Appending blind made that a
+        // startup crash (KeyNotFoundException) instead of a merely missing card.
         foreach (var (key, _) in SectionCatalog)
-            if (!order.Contains(key)) order.Add(key);
+            if (!order.Contains(key) && _sections.ContainsKey(key)) order.Add(key);
 
         // Options is the whole truth (David's 1.66.2 verdict): a card the user hasn't
         // hidden SHOWS, empty or not — self-hiding cards read as missing features. The
