@@ -517,6 +517,26 @@ public class SessionStatsTests
         Assert.Equal("Loot window sale", Assert.Single(s.SoldItems).Item);
     }
 
+    /// <summary>Crafted ("made") items feed the Loot breakout's per-item Made section
+    /// (#131, TropicMike): ordered biggest-count-first like the loot rows, totaled for
+    /// the "+N made" header — and never mixed into the looted count, because a merge
+    /// creates from held items rather than taking from a corpse.</summary>
+    [Fact]
+    public void MergesCountPerItemOrderedByCountAndStayOutOfLoot()
+    {
+        var s = Replay("Douglas",
+            At(0, 0, "You have successfully merged two items together to create a new item: Crushbone Belt +7"),
+            At(1, 0, "You have successfully merged two items together to create a new item: Polished Bone Ring"),
+            At(2, 0, "You have successfully merged two items together to create a new item: Crushbone Belt +7"),
+            At(3, 0, "--You have looted a Bone Chips from a decaying skeleton's corpse.--")).Snapshot();
+
+        Assert.Equal(3, s.CraftedTotal);
+        Assert.Equal(["Crushbone Belt +7", "Polished Bone Ring"],
+            s.Crafted.Select(c => c.Name));
+        Assert.Equal([2, 1], s.Crafted.Select(c => c.Count));
+        Assert.Equal(1, s.LootTotal);   // the merge results never inflate looted items
+    }
+
     [Fact]
     public void DamageShieldExcludedFromAccuracyButCounted()
     {
