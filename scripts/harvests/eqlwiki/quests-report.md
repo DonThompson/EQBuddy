@@ -1,11 +1,11 @@
 # Quest harvest report
 
-- Quest Items category members: 4003
-- Pages enumerated: 917
-- Parsed: 1167 (empty pages: 0)
-- With turn-in items: 845
-- Unique turn-in item names: 2263
-- Missing quest giver: 35
+- Quest Items category members: 4010
+- Pages enumerated: 922
+- Parsed: 1172 (empty pages: 0)
+- With turn-in items: 850
+- Unique turn-in item names: 2407
+- Missing quest giver: 25
 - Collection pages split: 57 (250 step quests)
 - Backoff events: 0
 
@@ -573,6 +573,7 @@
 - Orc Belt Quests
 - Orc Picks
 - Ortallius' Cutthroat Rings
+- Phosphorous Powder for Zok Zribb
 - Pirate Earrings
 - Plane of Mischief Faction Quest
 - Popular Quests by Level
@@ -588,7 +589,6 @@
 - Research Aid
 - Reserve Militia
 - Rogue Errands
-- Rogue Plane of Sky Tests
 - Runescale Cloak Quest
 - Rusted Black Boxes
 - Sad Klandicar
@@ -607,13 +607,13 @@
 - Sir Morgan's Armor
 - Snake Fang Necklace Quest
 - Soil of Underfoot
+- Soldier's Brooch Quest
 - Solusek's Flower
 - Something is Wrrrong
 - Steel Warrior Initiation
 - Strife to the Coldain
 - Supplies for the New Sebilisian Expedition
 - Talym Shoontar's Head
-- Tarton's Wheel
 - Taxes
 - Tayla Ironforge
 - Temple Blankets Quest
@@ -684,30 +684,20 @@
 - Burning Soul of the Pious
 - Burning Soul of the Virtuous
 - Class Race Quest List
-- Cleric Plane of Sky Tests
 - Cougarskin Boots Quest
 - Cougarskin Sleeves Quest
 - Dozekar Tear Quests
-- Druid Plane of Sky Tests
 - Enchanter Plane of Sky Tests
 - Faction Quests
 - Guild Summons
 - Hollow Skull Quest
-- Magician Plane of Sky Tests
 - Monk Plane of Sky Tests
 - Monk Quests
 - Muffin Quests
 - Necromancer Plane of Sky Tests
 - Orc Belt Quests
-- Paladin Plane of Sky Tests
-- Ranger Plane of Sky Tests
-- Rogue Plane of Sky Tests
 - Scroll of G'han
-- Shadow Knight Plane of Sky Tests
-- Shaman Plane of Sky Tests
 - The Bread Shipment
 - The Mighty Snowfang Hero
 - Velious Class Armor
 - Velious Class Armor Comparisons
-- Warrior Plane of Sky Tests
-- Wizard Plane of Sky Tests

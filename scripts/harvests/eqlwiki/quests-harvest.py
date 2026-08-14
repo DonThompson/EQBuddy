@@ -104,6 +104,77 @@ def fetch_wikitext(title):
     return text
 
 
+# --------------------------------------------------------- lsth transclusion
+# 2026-08-14: the wiki restructured the per-class "Plane of Sky Tests" pages
+# into {{#lsth:Plane of Sky|<Class> Tests}} shells transcluding the zone page,
+# which now owns the checklist tables. The API hands back raw wikitext, so the
+# shells parse as empty quests unless the transclusion is expanded here.
+# Expansion is deliberately narrow: shell pages only (nothing but files,
+# templates, headings, and categories), never index pages — a page with its
+# own prose keeps its own story.
+
+LSTH_RX = re.compile(r"\{\{\s*#lsth:\s*([^}|]+?)\s*(?:\|\s*([^}]*?)\s*)?\}\}")
+
+
+def fetch_lsth_source(title):
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", title)
+    path = CACHE / f"lsth-{safe}.wikitext"   # evicted by refresh.py's lsth scheme
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+    data = api_get({
+        "action": "query", "prop": "revisions", "rvprop": "content",
+        "redirects": "1", "titles": title,
+    })
+    page = next(iter(data["query"]["pages"].values()))
+    revs = page.get("revisions")
+    text = revs[0]["*"] if revs else ""
+    path.write_text(text, encoding="utf-8")
+    return text
+
+
+def _norm_heading(s):
+    s = re.sub(r"'''*", "", s)
+    s = re.sub(LINK, r"\1", s)
+    return " ".join(s.split()).lower()
+
+
+def extract_section(text, section):
+    """Wikitext of one section (or the lead when section is empty), matching
+    #lsth semantics closely enough: heading text compared markup-blind, body
+    runs to the next heading of the same or shallower level."""
+    heads = list(HEADING_RX.finditer(text))
+    if not section:
+        return text[:heads[0].start()] if heads else text
+    want = _norm_heading(section)
+    for i, m in enumerate(heads):
+        if _norm_heading(m.group(2)) != want:
+            continue
+        level = len(m.group(1))
+        end = next((m2.start() for m2 in heads[i + 1:] if len(m2.group(1)) <= level),
+                   len(text))
+        return text[m.end():end]
+    return ""
+
+
+SHELL_LINE_RX = re.compile(r"^(\[\[(File|Category):|\{\{|=+[^=]+=+\s*$)")
+
+
+def expand_lsth(title, wikitext):
+    """Returns (wikitext, expanded). Only expanded pages get the widened item
+    extraction below — the Sky tables mark requirements as {{:Item}} boxes on
+    <li> lines, but applying those rules to ordinary pages leaks rewards into
+    turn-in items (verified on Deck of Spontaneous Generation, Gleed's Bow)."""
+    if title in INDEX_PAGES or "#lsth:" not in wikitext:
+        return wikitext, False
+    if not all(SHELL_LINE_RX.match(ln.strip())
+               for ln in wikitext.splitlines() if ln.strip()):
+        return wikitext, False
+    def repl(m):
+        return extract_section(fetch_lsth_source(m.group(1).strip()),
+                               (m.group(2) or "").strip())
+    return LSTH_RX.sub(repl, wikitext), True
+
+
 # ------------------------------------------------------------------- parsing
 
 # Infobox rows arrive in several table syntaxes; match "Label ... value" leniently.
@@ -134,7 +205,7 @@ def parse_infobox_field(wikitext, label_pattern):
     return strip_links(m.group(1)) if m else ""
 
 
-def parse_turnin_items(wikitext, quest_giver, quest_item_set):
+def parse_turnin_items(wikitext, quest_giver, quest_item_set, widened=False):
     # Turn-in items: lines that hand something to an NPC, plus requirement BULLETS —
     # pages like The Falchion list what to collect as "* [[Blue Orc Head]] (from …)"
     # with no give-verb at all (David's Crushbone pass, 2026-08-07). Reward-section
@@ -147,9 +218,14 @@ def parse_turnin_items(wikitext, quest_giver, quest_item_set):
             section = heading.group(1).lower()
             continue
         # Bullets are requirement lists ("* [[Blue Orc Head]] (from the Orc Prophet)")
-        # EXCEPT inside the reward section, where they're prizes.
+        # EXCEPT inside the reward section, where they're prizes. On widened
+        # (lsth-expanded) pages HTML <li> lines count too — the Sky checklist
+        # tables mark their requirements that way.
         in_rewards = "reward" in section
-        is_bullet = line.lstrip().startswith("*") and not in_rewards
+        stripped = line.lstrip()
+        is_bullet = (stripped.startswith("*")
+                     or (widened and stripped.lower().startswith("<li"))) \
+            and not in_rewards
         # Verb shapes from the field (#79, Kobold Molars): "each [[X]] that is TURNED IN",
         # "has a chance to DROP a [[X]]", "COLLECT/BRING me [[X]]" — repeatable turn-in
         # loops phrase their one item this way and never say "give". Safe to widen: bare
@@ -174,10 +250,20 @@ def parse_turnin_items(wikitext, quest_giver, quest_item_set):
             if name not in quest_item_set:
                 continue
             items.setdefault(name, 1)
+        # {{:Item}} transclusions on requirement lines — the Sky checklist
+        # tables list their runes and boss drops as item boxes, not links.
+        # Widened pages only; category vouching gates like bare links above.
+        if widened:
+            for name in re.findall(r"\{\{:\s*([^}|]+?)\s*\}\}", line):
+                name = name.strip()
+                if name in items or name == quest_giver \
+                        or name not in quest_item_set:
+                    continue
+                items.setdefault(name, 1)
     return items
 
 
-def parse_quest(title, wikitext, quest_item_set):
+def parse_quest(title, wikitext, quest_item_set, widened=False):
     q = {"name": title,
          "url": "https://eqlwiki.com/" + urllib.parse.quote(title.replace(" ", "_"))}
     for key, pat in INFOBOX_FIELDS.items():
@@ -185,7 +271,7 @@ def parse_quest(title, wikitext, quest_item_set):
     lvl = re.search(r"\d+", q["minLevel"] or "")
     q["minLevel"] = int(lvl.group(0)) if lvl else 0
 
-    items = parse_turnin_items(wikitext, q["questGiver"], quest_item_set)
+    items = parse_turnin_items(wikitext, q["questGiver"], quest_item_set, widened)
     q["items"] = [{"name": n, "qty": c} for n, c in sorted(items.items())]
 
     # Rewards: {{:Item}} transclusions plus links on lines under a Reward heading,
@@ -401,7 +487,12 @@ def main():
         if not text.strip():
             empty.append(title)
             continue
-        q = parse_quest(title, text, quest_item_set)
+        text, widened = expand_lsth(title, text)
+        # {{CheckboxList}} is the wiki's own checklist marker (the not-yet-
+        # restructured Sky Tests pages carry it); those pages list requirements
+        # as <li>{{:Item}} rows exactly like the transcluded tables do.
+        widened = widened or "CheckboxList" in text
+        q = parse_quest(title, text, quest_item_set, widened)
         quests.append(q)
         if is_collection(title):
             steps, notes = split_collection(q, text, title_set, quest_item_set,

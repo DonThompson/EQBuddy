@@ -1468,7 +1468,6 @@
   "Acid Jet",
   "Phobocancel",
   "Translocate: Great Divide",
-  "WhirlBolt",
   "Fist of Air",
   "Ring of Surefall Glade",
   "Manticore Poison",
@@ -1961,7 +1960,8 @@
   "Minor Improved Damage I",
   "Oathbreaker's Curse",
   "Summoned Monster Attack",
-  "Divine Might Strike"
+  "Divine Might Strike",
+  "Whirl Bolt"
  ],
  "Template:Spellpagesmart": [
   "Anthem de Arms",
@@ -2559,6 +2559,7 @@
   "Kazumi's Note of Preservation",
   "Angstlich's Assonance",
   "Composition of Ervaj",
+  "Whirlwind",
   "Cantata of Replenishment",
   "Spell:Tears of Prexus",
   "Manifest Elements",
@@ -2987,6 +2988,7 @@
   "Gallenite's Minor Destruction",
   "Minor Improved Damage I",
   "Oathbreaker's Curse",
-  "Summoned Monster Attack"
+  "Summoned Monster Attack",
+  "Whirl Bolt"
  ]
 }

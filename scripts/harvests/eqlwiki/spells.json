@@ -9982,8 +9982,11 @@
   "recast_time_raw": "6.00",
   "duration_raw": "Permanent",
   "duration_seconds": null,
-  "resist_raw": "Magic?",
-  "resist": null,
+  "resist_raw": "Unresistable",
+  "resist": {
+   "type": "Unresistable",
+   "modifier": null
+  },
   "range_raw": null,
   "description": "Imparts your weapons with the power of sky, allowing them a chance to strike with the fury of the storm. Adds {{SpellHoverLink|Call of Sky Strike}} (melee proc).",
   "slot_effects": [
@@ -10004,11 +10007,11 @@
   "classes": [
    {
     "class": "Ranger",
-    "level": 39,
+    "level": 36,
     "note": null
    }
   ],
-  "classes_raw": "* [[Ranger]] - Level 39",
+  "classes_raw": "* [[Ranger]] - Level 36",
   "school": null,
   "school_raw": null,
   "target_type": "Single",
@@ -39925,7 +39928,7 @@
    "modifier": 0
   },
   "range_raw": "200",
-  "description": "Surrounds your target in an inferno, causing between 550 and 600 damage.",
+  "description": "Surrounds your target in an inferno, causing between 430 and 600 damage.",
   "slot_effects": [
    {
     "slot": 1,
@@ -86566,6 +86569,53 @@
   "cc_families": []
  },
  {
+  "name": "Whirl Bolt",
+  "page_title": "Whirl Bolt",
+  "template": "Spellpagesmart",
+  "classes": [],
+  "classes_raw": "This spell is cast by NPCs only.",
+  "school": null,
+  "school_raw": null,
+  "target_type": "Single",
+  "spell_type_raw": "Detrimental",
+  "beneficial": false,
+  "mana": 0.0,
+  "mana_raw": "0",
+  "cast_time_seconds": 0.5,
+  "casting_time_raw": "0.50",
+  "recast_seconds": 0.0,
+  "recast_time_raw": "0.00",
+  "duration_raw": "1 ticks @L1 to 2 ticks @L4",
+  "duration_seconds": null,
+  "resist_raw": "Unresistable",
+  "resist": {
+   "type": "Unresistable",
+   "modifier": null
+  },
+  "range_raw": "240",
+  "description": "Causes your target to get stuck in the air, and does 200 points of damage every 6 sconds for 12 seconds.",
+  "slot_effects": [
+   {
+    "slot": 1,
+    "effect": "Root"
+   },
+   {
+    "slot": 2,
+    "effect": "Decrease Hitpoints by 200 per tick"
+   },
+   {
+    "slot": 3,
+    "effect": "Levitate(1)"
+   }
+  ],
+  "msg_cast_on_you": "You are trapped within a whirling wind.",
+  "msg_cast_on_other": "Someone  is trapped within a whirling wind.",
+  "msg_wears_off": "The wind fades.",
+  "cc_families": [
+   "root"
+  ]
+ },
+ {
   "name": "Whirl Till You Hurl",
   "page_title": "Whirl Till You Hurl",
   "template": "Spellpage",
@@ -86607,53 +86657,6 @@
   "msg_cast_on_other": "Someone  begins to spin.",
   "msg_wears_off": "You feel dizzy.",
   "cc_families": []
- },
- {
-  "name": "WhirlBolt",
-  "page_title": "WhirlBolt",
-  "template": "Spellpage",
-  "classes": [],
-  "classes_raw": "This spell is cast by NPCs only.",
-  "school": null,
-  "school_raw": null,
-  "target_type": "Single",
-  "spell_type_raw": "Detrimental",
-  "beneficial": false,
-  "mana": 0.0,
-  "mana_raw": "0",
-  "cast_time_seconds": 0.5,
-  "casting_time_raw": "0.50",
-  "recast_seconds": 0.0,
-  "recast_time_raw": "0.00",
-  "duration_raw": "1 ticks @L1 to 2 ticks @L4",
-  "duration_seconds": null,
-  "resist_raw": "Unresistable",
-  "resist": {
-   "type": "Unresistable",
-   "modifier": null
-  },
-  "range_raw": "200",
-  "description": "Short duration, single target root casted by [[an azarack]].",
-  "slot_effects": [
-   {
-    "slot": 1,
-    "effect": "Root"
-   },
-   {
-    "slot": 2,
-    "effect": "Decrease Hitpoints by 200 per tick"
-   },
-   {
-    "slot": 3,
-    "effect": "Levitate(1)"
-   }
-  ],
-  "msg_cast_on_you": "You are trapped within a whirling wind.",
-  "msg_cast_on_other": "Someone  is trapped within a whirling wind.",
-  "msg_wears_off": "The wind fades.",
-  "cc_families": [
-   "root"
-  ]
  },
  {
   "name": "Whirlbolt",
@@ -86754,7 +86757,7 @@
  {
   "name": "Whirlwind",
   "page_title": "Whirlwind",
-  "template": "Spellpage",
+  "template": "Spellpagesmart",
   "classes": [],
   "classes_raw": "This spell is cast by NPCs only.",
   "school": null,

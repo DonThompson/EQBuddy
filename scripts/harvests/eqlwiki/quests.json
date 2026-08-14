@@ -1692,6 +1692,87 @@
   "repeatable": false
  },
  {
+  "name": "Bard Plane of Sky Tests",
+  "url": "https://eqlwiki.com/Bard_Plane_of_Sky_Tests",
+  "startZone": "",
+  "questGiver": "Cilin Spellsinger",
+  "minLevel": 0,
+  "classes": "",
+  "items": [
+   {
+    "name": "Amulet of Woven Hair",
+    "qty": 1
+   },
+   {
+    "name": "Crude Wooden Flute",
+    "qty": 1
+   },
+   {
+    "name": "Efreeti War Horn",
+    "qty": 1
+   },
+   {
+    "name": "Efreeti War Spear",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Light Woolen Mantle",
+    "qty": 1
+   },
+   {
+    "name": "Light Woolen Mask",
+    "qty": 1
+   },
+   {
+    "name": "Nebulous Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Caza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Fana",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Heda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Meda",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Denon's Horn of Disaster",
+   "Ervaj's Flute of Flight",
+   "Fae Amulet",
+   "Mantle of the Songweaver",
+   "Mask of Song",
+   "Spear of Harmony"
+  ],
+  "categories": [
+   "Bard Quests",
+   "Plane of Sky"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
   "name": "Bard Reports",
   "url": "https://eqlwiki.com/Bard_Reports",
   "startZone": "Qeynos",
@@ -2387,6 +2468,79 @@
   "repeatable": false
  },
  {
+  "name": "Beastlord Plane of Sky Tests",
+  "url": "https://eqlwiki.com/Beastlord_Plane_of_Sky_Tests",
+  "startZone": "",
+  "questGiver": "Animist Kratho",
+  "minLevel": 0,
+  "classes": "",
+  "items": [
+   {
+    "name": "Azarack Skin",
+    "qty": 1
+   },
+   {
+    "name": "Brass Knuckles",
+    "qty": 1
+   },
+   {
+    "name": "Leather Cord",
+    "qty": 1
+   },
+   {
+    "name": "Mithril Bands",
+    "qty": 1
+   },
+   {
+    "name": "Silken Wrap",
+    "qty": 1
+   },
+   {
+    "name": "Sphinx Claw",
+    "qty": 1
+   },
+   {
+    "name": "Spiroc Elder's Totem",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Beza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Geza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Heda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Azarack Skin Wristwraps",
+   "Diaphonous Waistband",
+   "Griffon-Hide Armguards",
+   "Spirit Render",
+   "Spiroc Beak Earcuff",
+   "Windhowl"
+  ],
+  "categories": [
+   "Beastlord Quests",
+   "Plane of Sky"
+  ],
+  "relatedZones": [],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
   "name": "Become PvP (Ak'Anon)",
   "url": "https://eqlwiki.com/Become_PvP_%28Ak%27Anon%29",
   "startZone": "Ak'Anon",
@@ -2676,6 +2830,83 @@
   "relatedZones": [
    "Freeport"
   ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Berserker Plane of Sky Tests",
+  "url": "https://eqlwiki.com/Berserker_Plane_of_Sky_Tests",
+  "startZone": "",
+  "questGiver": "Stragen The Hewer",
+  "minLevel": 0,
+  "classes": "",
+  "items": [
+   {
+    "name": "Djinni War Blade",
+    "qty": 1
+   },
+   {
+    "name": "Efreeti Great Staff",
+    "qty": 1
+   },
+   {
+    "name": "Efreeti Standard",
+    "qty": 1
+   },
+   {
+    "name": "Feathered Cape",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Raiment",
+    "qty": 1
+   },
+   {
+    "name": "Jester's Mask",
+    "qty": 1
+   },
+   {
+    "name": "Pulsating Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Jaka",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Lena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ozah",
+    "qty": 1
+   }
+  ],
+  "rewards": [
+   "Blood-Drawn Runes",
+   "Cudgel of the Fool",
+   "Molten Coil",
+   "Sash of Ferocity",
+   "Shroud of the Sky",
+   "Skycleaver"
+  ],
+  "categories": [
+   "Berserker Quests",
+   "Plane of Sky"
+  ],
+  "relatedZones": [],
   "era": "Classic",
   "repeatable": false
  },
@@ -4369,17 +4600,19 @@
   "url": "https://eqlwiki.com/Catfish_Tail",
   "startZone": "Erudin",
   "questGiver": "Vynon Estaliun",
-  "minLevel": 7,
-  "classes": "?",
+  "minLevel": 1,
+  "classes": "All",
   "items": [],
   "rewards": [
    "Brass Ring",
+   "Corroded Buckler",
    "Torch"
   ],
   "categories": [
    "Erudin"
   ],
   "relatedZones": [
+   "Kerra Island",
    "Toxxulia Forest"
   ],
   "era": "",
@@ -4402,6 +4635,7 @@
    "Faction"
   ],
   "categories": [
+   "Erudin",
    "The Warrens"
   ],
   "relatedZones": [
@@ -5097,10 +5331,14 @@
   "name": "Cleric Plane of Sky Tests",
   "url": "https://eqlwiki.com/Cleric_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Josin Faithbringer",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Djinni Aura",
+    "qty": 1
+   },
    {
     "name": "Efreeti Mace",
     "qty": 1
@@ -5108,36 +5346,66 @@
    {
     "name": "Efreeti Standard",
     "qty": 1
+   },
+   {
+    "name": "Mithril Bands",
+    "qty": 1
+   },
+   {
+    "name": "Shiny Pauldrons",
+    "qty": 1
+   },
+   {
+    "name": "Silver Hoop",
+    "qty": 1
+   },
+   {
+    "name": "Silvered Spiroc Necklace",
+    "qty": 1
+   },
+   {
+    "name": "Small Shield",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Caza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Lena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Meda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Neza",
+    "qty": 1
    }
   ],
   "rewards": [
    "Aegis of the Wind",
-   "Djinni Aura",
-   "Efreeti Mace",
-   "Efreeti Standard",
-   "Mithril Bands",
+   "Baton of the Sky",
    "Necklace of Resolution",
    "Pauldrons of Piety",
-   "Shiny Pauldrons",
-   "Silver Hoop",
-   "Silvered Spiroc Necklace",
-   "Small Shield",
    "Theurgist's Star",
-   "Truewind Earring",
-   "Truwian Baton",
-   "Wind Rune Caza",
-   "Wind Rune Ena",
-   "Wind Rune Kala",
-   "Wind Rune Lena",
-   "Wind Rune Meda",
-   "Wind Rune Neza"
+   "Truewind Earring"
   ],
   "categories": [
    "Cleric Quests",
    "Plane of Sky"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -5889,11 +6157,23 @@
     "qty": 1
    },
    {
+    "name": "Borannin's Seal",
+    "qty": 1
+   },
+   {
     "name": "Bottle of Milk",
     "qty": 1
    },
    {
+    "name": "Brita's Napkin",
+    "qty": 1
+   },
+   {
     "name": "Burin",
+    "qty": 1
+   },
+   {
+    "name": "Burlap Coldain Prayer Shawl",
     "qty": 1
    },
    {
@@ -5902,6 +6182,10 @@
    },
    {
     "name": "Ceramic Lining Sketch",
+    "qty": 1
+   },
+   {
+    "name": "Cloth Coldain Prayer Shawl",
     "qty": 1
    },
    {
@@ -5926,6 +6210,10 @@
    },
    {
     "name": "Cutlassfish Oil",
+    "qty": 1
+   },
+   {
+    "name": "Dirty Pot",
     "qty": 1
    },
    {
@@ -6010,6 +6298,10 @@
    },
    {
     "name": "Large Block of Clay",
+    "qty": 1
+   },
+   {
+    "name": "Leif's Napkin",
     "qty": 1
    },
    {
@@ -6117,6 +6409,10 @@
     "qty": 1
    },
    {
+    "name": "Seal of Thoridain",
+    "qty": 1
+   },
+   {
     "name": "Silk Coldain Prayer Shawl",
     "qty": 1
    },
@@ -6181,6 +6477,14 @@
     "qty": 1
    },
    {
+    "name": "Thoridain's Napkin",
+    "qty": 1
+   },
+   {
+    "name": "Trita's Napkin",
+    "qty": 1
+   },
+   {
     "name": "Tundra Kodiak Meat",
     "qty": 1
    },
@@ -6214,6 +6518,14 @@
    },
    {
     "name": "Unfired Velium Vial",
+    "qty": 1
+   },
+   {
+    "name": "Used Napkin",
+    "qty": 1
+   },
+   {
+    "name": "Used Pie Tin",
     "qty": 1
    },
    {
@@ -6878,7 +7190,15 @@
     "qty": 1
    },
    {
+    "name": "Berradin's head",
+    "qty": 1
+   },
+   {
     "name": "Bottle",
+    "qty": 1
+   },
+   {
+    "name": "Box of the Guilty",
     "qty": 1
    },
    {
@@ -6910,7 +7230,19 @@
     "qty": 1
    },
    {
+    "name": "Declaration of War",
+    "qty": 1
+   },
+   {
+    "name": "Dirk of the Dain",
+    "qty": 1
+   },
+   {
     "name": "Dirk of the Traitor",
+    "qty": 1
+   },
+   {
+    "name": "Doldigun's head",
     "qty": 1
    },
    {
@@ -6950,6 +7282,10 @@
     "qty": 1
    },
    {
+    "name": "Juliah's Head",
+    "qty": 1
+   },
+   {
     "name": "Letter to Doldigun",
     "qty": 1
    },
@@ -6970,11 +7306,27 @@
     "qty": 1
    },
    {
+    "name": "Murdrick's head",
+    "qty": 1
+   },
+   {
+    "name": "Narandi's head",
+    "qty": 1
+   },
+   {
+    "name": "Note from Corbin",
+    "qty": 1
+   },
+   {
     "name": "Note from Kromrif",
     "qty": 1
    },
    {
     "name": "Obsidian Coldain Insignia Ring",
+    "qty": 1
+   },
+   {
+    "name": "Orders of engagement",
     "qty": 1
    },
    {
@@ -6990,7 +7342,15 @@
     "qty": 1
    },
    {
+    "name": "Ring of Dain Frostreaver IV",
+    "qty": 1
+   },
+   {
     "name": "Ring of the Coldain Council",
+    "qty": 1
+   },
+   {
+    "name": "Rodrick's Head",
     "qty": 1
    },
    {
@@ -7011,6 +7371,18 @@
    },
    {
     "name": "Skinning Rock",
+    "qty": 1
+   },
+   {
+    "name": "Tainted Avalanche Ale",
+    "qty": 1
+   },
+   {
+    "name": "Traitor's Bane Box",
+    "qty": 1
+   },
+   {
+    "name": "Velium Coldain Insignia Ring",
     "qty": 1
    },
    {
@@ -10429,10 +10801,14 @@
   "name": "Druid Plane of Sky Tests",
   "url": "https://eqlwiki.com/Druid_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Strandar Pinemist",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Divine Honeycomb",
+    "qty": 1
+   },
    {
     "name": "Efreeti Scimitar",
     "qty": 1
@@ -10440,37 +10816,70 @@
    {
     "name": "Efreeti Statuette",
     "qty": 1
+   },
+   {
+    "name": "Ethereal Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Mantle of Woven Grass",
+    "qty": 1
+   },
+   {
+    "name": "Spiroc Battle Staff",
+    "qty": 1
+   },
+   {
+    "name": "Spiroc Elder's Totem",
+    "qty": 1
+   },
+   {
+    "name": "Storm Sky Opal",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Meda",
+    "qty": 1
+   },
+   {
+    "name": "Worn Leather Mask",
+    "qty": 1
    }
   ],
   "rewards": [
-   "Divine Honeycomb",
    "Drake-Hide Mask",
-   "Efreeti Scimitar",
-   "Efreeti Statuette",
    "Espri",
-   "Ethereal Ruby",
    "Honeycomb Belt",
-   "Mantle of Woven Grass",
    "Nature Walker's Mantle",
    "Shillelagh",
-   "Spiroc Banisher Focus",
-   "Spiroc Battle Staff",
-   "Spiroc Elder's Totem",
-   "Storm Sky Opal",
-   "Wind Rune Azia",
-   "Wind Rune Dena",
-   "Wind Rune Ena",
-   "Wind Rune Izah",
-   "Wind Rune Kala",
-   "Wind Rune Meda",
-   "Worn Leather Mask"
+   "Spiroc Banisher Focus"
   ],
   "categories": [
    "Druid Quests",
    "Plane of Sky"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -11502,7 +11911,79 @@
   "classes": "",
   "items": [
    {
+    "name": "Adamantium Earring",
+    "qty": 1
+   },
+   {
+    "name": "Earring of Displacement",
+    "qty": 1
+   },
+   {
     "name": "Efreeti Wind Staff",
+    "qty": 1
+   },
+   {
+    "name": "Finely Woven Cloth Cord",
+    "qty": 1
+   },
+   {
+    "name": "Glowing Necklace",
+    "qty": 1
+   },
+   {
+    "name": "Ivory Mask",
+    "qty": 1
+   },
+   {
+    "name": "Large Sky Sapphire (Enchanter)",
+    "qty": 1
+   },
+   {
+    "name": "Light Cloth Mantle",
+    "qty": 1
+   },
+   {
+    "name": "Necklace of Whispering Winds",
+    "qty": 1
+   },
+   {
+    "name": "Rod of the Protecting Winds",
+    "qty": 1
+   },
+   {
+    "name": "Silken Mask",
+    "qty": 1
+   },
+   {
+    "name": "Sphinx Hair Cord",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Beza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Caza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Fana",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Meda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ozah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Walker's Mantle",
     "qty": 1
    }
   ],
@@ -19766,47 +20247,94 @@
   "name": "Magician Plane of Sky Tests",
   "url": "https://eqlwiki.com/Magician_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Magus Frinon",
   "minLevel": 0,
   "classes": "",
   "items": [
    {
+    "name": "Ceramic Mask",
+    "qty": 1
+   },
+   {
+    "name": "Crown of Elemental Mastery",
+    "qty": 1
+   },
+   {
+    "name": "Djinni Stave",
+    "qty": 1
+   },
+   {
     "name": "Efreeti Magi Staff",
+    "qty": 1
+   },
+   {
+    "name": "Feathered Cape",
+    "qty": 1
+   },
+   {
+    "name": "Golden Coffer",
+    "qty": 1
+   },
+   {
+    "name": "Golden Efreeti Ring",
+    "qty": 1
+   },
+   {
+    "name": "Hazy Opal",
+    "qty": 1
+   },
+   {
+    "name": "Large Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Large Opal",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Heda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Jaka",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Lena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Neza",
     "qty": 1
    }
   ],
   "rewards": [
    "Bracelet of Clarification",
-   "Ceramic Mask",
-   "Crown of Elemental Mastery",
-   "Djinni Stave",
    "Drake-Hide Amice",
    "Duennan Shielding Ring",
-   "Efreeti Magi Staff",
-   "Feathered Cape",
    "Gold White Pendant",
-   "Golden Coffer",
-   "Golden Efreeti Ring",
-   "Hazy Opal",
-   "Large Diamond",
-   "Large Opal",
    "Mask of Empowerment",
    "Staff of Elemental Mastery: Air",
-   "Staff of The Magister",
-   "Wind Rune Azia",
-   "Wind Rune Dena",
-   "Wind Rune Ena",
-   "Wind Rune Heda",
-   "Wind Rune Jaka",
-   "Wind Rune Lena",
-   "Wind Rune Neza"
+   "Staff of The Magister"
   ],
   "categories": [
    "Magician Quests",
    "Plane of Sky"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -21429,7 +21957,51 @@
   "classes": "",
   "items": [
    {
+    "name": "Back Straps of Mastery",
+    "qty": 1
+   },
+   {
     "name": "Brass Knuckles",
+    "qty": 1
+   },
+   {
+    "name": "Cracked Leather Eyepatch",
+    "qty": 1
+   },
+   {
+    "name": "Dove Slippers",
+    "qty": 1
+   },
+   {
+    "name": "Golden Sash of Tranquility",
+    "qty": 1
+   },
+   {
+    "name": "Nebulous Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Sandals of Alacrity",
+    "qty": 1
+   },
+   {
+    "name": "Silken Strands",
+    "qty": 1
+   },
+   {
+    "name": "Silken Wrap",
+    "qty": 1
+   },
+   {
+    "name": "Tear of Quellious",
+    "qty": 1
+   },
+   {
+    "name": "Ton Po's Eye Patch",
+    "qty": 1
+   },
+   {
+    "name": "Ton Po's Shoulder Wraps",
     "qty": 1
    },
    {
@@ -21454,6 +22026,10 @@
    },
    {
     "name": "Wind Rune Neza",
+    "qty": 1
+   },
+   {
+    "name": "Wu's Fist of Mastery",
     "qty": 1
    }
   ],
@@ -22707,7 +23283,79 @@
   "classes": "",
   "items": [
    {
+    "name": "Band of Wailing Winds",
+    "qty": 1
+   },
+   {
+    "name": "Black Silk Cape",
+    "qty": 1
+   },
+   {
+    "name": "Bloodsoaked Raiment",
+    "qty": 1
+   },
+   {
+    "name": "Bloody Griffon-Hide Wrist Guard",
+    "qty": 1
+   },
+   {
+    "name": "Cloak of Spiroc Feathers",
+    "qty": 1
+   },
+   {
     "name": "Efreeti Great Staff",
+    "qty": 1
+   },
+   {
+    "name": "Fine Cloth Raiment",
+    "qty": 1
+   },
+   {
+    "name": "Gorgon Head",
+    "qty": 1
+   },
+   {
+    "name": "Gorgon Head Staff",
+    "qty": 1
+   },
+   {
+    "name": "Griffon's Beak",
+    "qty": 1
+   },
+   {
+    "name": "Pulsating Ruby",
+    "qty": 1
+   },
+   {
+    "name": "Ring of Veeshan",
+    "qty": 1
+   },
+   {
+    "name": "Sphinx Heart Amulet",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Caza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Fana",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Lena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Neza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ozah",
     "qty": 1
    }
   ],
@@ -24752,37 +25400,63 @@
   "name": "Paladin Plane of Sky Tests",
   "url": "https://eqlwiki.com/Paladin_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Dason Goldblade",
   "minLevel": 0,
   "classes": "",
   "items": [
    {
+    "name": "Bixie Sword Blade",
+    "qty": 1
+   },
+   {
     "name": "Efreeti Zweihander",
+    "qty": 1
+   },
+   {
+    "name": "Golden Hilt",
+    "qty": 1
+   },
+   {
+    "name": "Ivory Sky Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Large Sky Diamond",
+    "qty": 1
+   },
+   {
+    "name": "Sphinx Claw",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Geza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Lena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ozah",
     "qty": 1
    }
   ],
   "rewards": [
    "Aldryn, Blade of the Ocean",
-   "Bixie Sword Blade",
-   "Efreeti Zweihander",
    "Girdle of Faith",
-   "Golden Hilt",
-   "Ivory Sky Diamond",
-   "Large Sky Diamond",
-   "Sphinx Claw",
    "Thelvorn, Blade of Light",
-   "Truvinan",
-   "Wind Rune Geza",
-   "Wind Rune Izah",
-   "Wind Rune Lena",
-   "Wind Rune Ozah"
+   "Truvinan"
   ],
   "categories": [
    "Paladin Quests",
    "Plane of Sky"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25358,6 +26032,26 @@
   ],
   "era": "Classic",
   "repeatable": false
+ },
+ {
+  "name": "Phosphorous Powder for Zok Zribb",
+  "url": "https://eqlwiki.com/Phosphorous_Powder_for_Zok_Zribb",
+  "startZone": "Rathe Mountains",
+  "questGiver": "Zok Zribb",
+  "minLevel": 1,
+  "classes": "All",
+  "items": [],
+  "rewards": [],
+  "categories": [
+   "All Classes Quests",
+   "Rathe Mountains",
+   "Repeatable Turn-in Quests"
+  ],
+  "relatedZones": [
+   "Lower Guk"
+  ],
+  "era": "Classic",
+  "repeatable": true
  },
  {
   "name": "Pickled Frogloks",
@@ -27380,10 +28074,14 @@
   "name": "Ranger Plane of Sky Tests",
   "url": "https://eqlwiki.com/Ranger_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Ranger Spirit",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Circlet of Brambles",
+    "qty": 1
+   },
    {
     "name": "Efreeti Long Sword",
     "qty": 1
@@ -27391,28 +28089,54 @@
    {
     "name": "Efreeti War Bow",
     "qty": 1
+   },
+   {
+    "name": "Fine Velvet Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Griffon Talon",
+    "qty": 1
+   },
+   {
+    "name": "Shimmering Pearl",
+    "qty": 1
+   },
+   {
+    "name": "White Gold Earring",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Heda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Meda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Neza",
+    "qty": 1
    }
   ],
   "rewards": [
    "Arydryidriyorn",
-   "Circlet of Brambles",
    "Dark Cloak of the Sky",
    "Earthshaker's Mantle",
-   "Efreeti Long Sword",
-   "Efreeti War Bow",
-   "Fine Velvet Cloak",
-   "Griffon Talon",
    "Griffon Talon Necklace",
-   "Shimmering Pearl",
-   "Spiroc Earth Totem",
    "Thunderforged Earring",
-   "White Gold Earring",
-   "Wind Rune Azia",
-   "Wind Rune Ena",
-   "Wind Rune Heda",
-   "Wind Rune Kala",
-   "Wind Rune Meda",
-   "Wind Rune Neza",
    "Windstriker"
   ],
   "categories": [
@@ -27420,7 +28144,7 @@
    "Ranger Quests"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -28448,6 +29172,10 @@
     "qty": 1
    },
    {
+    "name": "Enchanted Velium Mask",
+    "qty": 1
+   },
+   {
     "name": "Girdle of Reflection",
     "qty": 1
    },
@@ -29194,29 +29922,65 @@
   "name": "Rogue Plane of Sky Tests",
   "url": "https://eqlwiki.com/Rogue_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Thalik Silenthand",
   "minLevel": 0,
   "classes": "",
-  "items": [],
+  "items": [
+   {
+    "name": "Bloodsky Sapphire",
+    "qty": 1
+   },
+   {
+    "name": "Fine Wool Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Inlaid Choker",
+    "qty": 1
+   },
+   {
+    "name": "Jester's Mask",
+    "qty": 1
+   },
+   {
+    "name": "Sphinxian Circlet",
+    "qty": 1
+   },
+   {
+    "name": "Spiroc Sky Totem",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Geza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Jaka",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ozah",
+    "qty": 1
+   }
+  ],
   "rewards": [
-   "Bixie Stinger",
-   "Bloodsky Sapphire",
    "Crystal Mask",
-   "Fine Wool Cloak",
    "Griffon Wing Spauldors",
-   "Inlaid Choker",
-   "Jester's Mask",
    "Renard's Belt of Quickness",
    "Scintillating Bracer of Protection",
-   "Sphinxian Circlet",
-   "Spiroc Sky Totem",
    "Thornstinger",
-   "Wind Rune Dena",
-   "Wind Rune Ena",
-   "Wind Rune Geza",
-   "Wind Rune Izah",
-   "Wind Rune Jaka",
-   "Wind Rune Ozah",
    "Wispy Choker of Vigor"
   ],
   "categories": [
@@ -29224,7 +29988,7 @@
    "Rogue Quests"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -31033,10 +31797,14 @@
   "name": "Shadow Knight Plane of Sky Tests",
   "url": "https://eqlwiki.com/Shadow_Knight_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Sarkis Ebonblade",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Blood Sky Ruby",
+    "qty": 1
+   },
    {
     "name": "Efreeti War Axe",
     "qty": 1
@@ -31044,39 +31812,75 @@
    {
     "name": "Efreeti War Shield",
     "qty": 1
+   },
+   {
+    "name": "Fae Pauldrons",
+    "qty": 1
+   },
+   {
+    "name": "Finely Crafted Amulet",
+    "qty": 1
+   },
+   {
+    "name": "Finely Woven Cloth Belt",
+    "qty": 1
+   },
+   {
+    "name": "Rusted Pauldrons",
+    "qty": 1
+   },
+   {
+    "name": "Silvery Ring",
+    "qty": 1
+   },
+   {
+    "name": "Sphinxian Ring",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Beza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Fana",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Heda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ozah",
+    "qty": 1
    }
   ],
   "rewards": [
    "Amulet of the Sphinx Eye",
    "Blood Sky Face Plate",
-   "Blood Sky Ruby",
    "Crimson Ring of the Djinni",
-   "Efreeti War Axe",
-   "Efreeti War Shield",
-   "Fae Pauldrons",
-   "Finely Crafted Amulet",
-   "Finely Woven Cloth Belt",
    "Khyldorn the Blood Drinker",
    "Obtenebrate Mithril Guard",
    "Pearlescent Pauldrons",
-   "Pegasus-Hide Belt",
-   "Rusted Pauldrons",
-   "Silvery Ring",
-   "Sphinxian Ring",
-   "Wind Rune Beza",
-   "Wind Rune Dena",
-   "Wind Rune Fana",
-   "Wind Rune Heda",
-   "Wind Rune Izah",
-   "Wind Rune Kala",
-   "Wind Rune Ozah"
+   "Pegasus-Hide Belt"
   ],
   "categories": [
    "Plane of Sky",
    "Shadow Knight Quests"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -32219,10 +33023,22 @@
   "name": "Shaman Plane of Sky Tests",
   "url": "https://eqlwiki.com/Shaman_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Medicine Man Veetra",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Bixie Essence",
+    "qty": 1
+   },
+   {
+    "name": "Ceremonial Belt",
+    "qty": 1
+   },
+   {
+    "name": "Corrosive Venom",
+    "qty": 1
+   },
    {
     "name": "Efreeti War Club",
     "qty": 1
@@ -32230,37 +33046,62 @@
    {
     "name": "Efreeti War Maul",
     "qty": 1
+   },
+   {
+    "name": "Leather Cord",
+    "qty": 1
+   },
+   {
+    "name": "Light Damask Mantle",
+    "qty": 1
+   },
+   {
+    "name": "Spiritualist`s Ring",
+    "qty": 1
+   },
+   {
+    "name": "Symbol of Veeshan",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Beza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Ena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Geza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Heda",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Kala",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Meda",
+    "qty": 1
    }
   ],
   "rewards": [
    "Amulet of the Fang",
-   "Bixie Essence",
    "Bracelet of the Spirits",
-   "Ceremonial Belt",
-   "Corrosive Venom",
-   "Efreeti War Club",
-   "Efreeti War Maul",
    "Fairy-Hide Mantle",
    "Garduk",
-   "Leather Cord",
-   "Light Damask Mantle",
-   "Spiritualist's Ring",
-   "Symbol of Veeshan",
    "Vermilion Sky Ring",
-   "Warhammer of the Wind",
-   "Wind Rune Beza",
-   "Wind Rune Ena",
-   "Wind Rune Geza",
-   "Wind Rune Heda",
-   "Wind Rune Kala",
-   "Wind Rune Meda"
+   "Warhammer of the Wind"
   ],
   "categories": [
    "Plane of Sky",
    "Shaman Quests"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -33210,6 +34051,10 @@
    {
     "name": "Box For Bones",
     "qty": 1
+   },
+   {
+    "name": "Box of Bones",
+    "qty": 1
    }
   ],
   "rewards": [
@@ -33237,7 +34082,7 @@
   "relatedZones": [
    "Toxxulia Forest"
   ],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -33499,6 +34344,31 @@
   "relatedZones": [
    "Greater Faydark",
    "Lesser Faydark"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
+  "name": "Soldier's Brooch Quest",
+  "url": "https://eqlwiki.com/Soldier%27s_Brooch_Quest",
+  "startZone": "Rathe Mountains",
+  "questGiver": "Gaz Commander Faltip",
+  "minLevel": 30,
+  "classes": "All",
+  "items": [],
+  "rewards": [
+   "Soldier's Brooch of the Arcane",
+   "Soldier's Brooch of the Corrupt",
+   "Soldier's Brooch of the Darkened",
+   "Soldier's Brooch of the Robust",
+   "Soldier's Brooch of the Spirited",
+   "Soldier's Brooch of the Stalwart",
+   "Soldier's Brooch of the Stealthy",
+   "Soldier's Brooch of the Virtuous"
+  ],
+  "categories": [],
+  "relatedZones": [
+   "Rathe Mountains"
   ],
   "era": "Classic",
   "repeatable": false
@@ -34151,7 +35021,16 @@
   "questGiver": "Sulgar",
   "minLevel": 35,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Staff of the Wheel",
+    "qty": 1
+   },
+   {
+    "name": "Star of Eyes",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Spell: Ice Comet",
    "Staff of the Wheel",
@@ -35462,6 +36341,10 @@
     "qty": 1
    },
    {
+    "name": "Fiery Avenger",
+    "qty": 1
+   },
+   {
     "name": "Fiery Defender",
     "qty": 1
    },
@@ -35913,6 +36796,18 @@
   "minLevel": 35,
   "classes": "WAR CLR PAL RNG SHD BRD ROG",
   "items": [
+   {
+    "name": "Chapter P",
+    "qty": 1
+   },
+   {
+    "name": "Ice Forged Shackles",
+    "qty": 1
+   },
+   {
+    "name": "Pirate Grammar Manual",
+    "qty": 1
+   },
    {
     "name": "Strong Raptor Gut",
     "qty": 1
@@ -37249,7 +38144,7 @@
    "Najena",
    "The Estate of Unrest"
   ],
-  "era": "Epics",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -40613,10 +41508,18 @@
   "name": "Warrior Plane of Sky Tests",
   "url": "https://eqlwiki.com/Warrior_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Torgon Blademaster",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Azure Ring",
+    "qty": 1
+   },
+   {
+    "name": "Djinni War Blade",
+    "qty": 1
+   },
    {
     "name": "Efreeti Battle Axe",
     "qty": 1
@@ -40624,37 +41527,66 @@
    {
     "name": "Efreeti Belt",
     "qty": 1
+   },
+   {
+    "name": "Ethereal Emerald",
+    "qty": 1
+   },
+   {
+    "name": "Gem of Invigoration",
+    "qty": 1
+   },
+   {
+    "name": "Spiroc Air Totem",
+    "qty": 1
+   },
+   {
+    "name": "Stone Amulet",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Azia",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Beza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Fana",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Jaka",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Neza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Tablet",
+    "qty": 1
    }
   ],
   "rewards": [
-   "Azure Ring",
    "Azure Ruby Ring",
    "Belt of the Four Winds",
    "Dagas",
-   "Djinni War Blade",
-   "Efreeti Battle Axe",
-   "Efreeti Belt",
-   "Ethereal Emerald",
    "Fangol",
-   "Gem of Invigoration",
    "Pauldrons of the Blue Sky",
-   "Runed Wind Amulet",
-   "Spiroc Air Totem",
-   "Stone Amulet",
-   "Wind Rune Azia",
-   "Wind Rune Beza",
-   "Wind Rune Dena",
-   "Wind Rune Fana",
-   "Wind Rune Jaka",
-   "Wind Rune Neza",
-   "Wind Tablet"
+   "Runed Wind Amulet"
   ],
   "categories": [
    "Plane of Sky",
    "Warrior Quests"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -41759,10 +42691,18 @@
   "name": "Wizard Plane of Sky Tests",
   "url": "https://eqlwiki.com/Wizard_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "",
+  "questGiver": "Wizard Schrock",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Amethyst Amulet",
+    "qty": 1
+   },
+   {
+    "name": "Box of Winds",
+    "qty": 1
+   },
    {
     "name": "Efreeti Statuette",
     "qty": 1
@@ -41770,36 +42710,58 @@
    {
     "name": "Efreeti War Staff",
     "qty": 1
+   },
+   {
+    "name": "Grey Damask Cloak",
+    "qty": 1
+   },
+   {
+    "name": "High Quality Raiment",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Caza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Dena",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Fana",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Geza",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Izah",
+    "qty": 1
+   },
+   {
+    "name": "Wind Rune Jaka",
+    "qty": 1
+   },
+   {
+    "name": "Woven Skull Cap",
+    "qty": 1
    }
   ],
   "rewards": [
    "Al`Kabor's Cap of Binding",
-   "Amethyst Amulet",
    "Amulet of the Void",
    "Augmentor's Mask",
-   "Box of Winds",
-   "Efreeti Statuette",
-   "Efreeti War Staff",
-   "Grey Damask Cloak",
-   "High Quality Raiment",
-   "Large Sky Lapis",
    "Nargon's Staff",
    "Raiment of Thunder",
-   "Solidate Mithril Ring",
-   "Wind Rune Caza",
-   "Wind Rune Dena",
-   "Wind Rune Fana",
-   "Wind Rune Geza",
-   "Wind Rune Izah",
-   "Wind Rune Jaka",
-   "Woven Skull Cap"
+   "Solidate Mithril Ring"
   ],
   "categories": [
    "Plane of Sky",
    "Wizard Quests"
   ],
   "relatedZones": [],
-  "era": "",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -42707,6 +43669,10 @@
    },
    {
     "name": "Snake Scales",
+    "qty": 1
+   },
+   {
+    "name": "SoulFire",
     "qty": 1
    },
    {
