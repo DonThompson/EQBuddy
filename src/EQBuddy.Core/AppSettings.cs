@@ -119,6 +119,21 @@ public sealed class AppSettings
     /// default is 0.5 and nothing ever set it, so alerts played at half loudness
     /// for everyone (Reddit report: "very quiet, needs a booster").</summary>
     public double AlertVolume { get; set; } = 1.0;
+    /// <summary>Spoken-alert voice: an installed SAPI voice's description ("Microsoft Zira
+    /// Desktop"), or "" for the system default — the only behavior before the picker
+    /// existed. A voice that's gone missing (settings copied between machines) falls back
+    /// to the default at speak time rather than silencing alerts. Windows-only effect;
+    /// macOS `say` and the Linux no-op ignore it.</summary>
+    public string SpeechVoice { get; set; } = "";
+    /// <summary>Spoken-alert rate in SAPI units. SAPI accepts -10..10 but the app clamps
+    /// to ±5 (UI.Shared SpokenAlerts.MinRate/MaxRate — past that speech stops being
+    /// speech); 0 = the voice's normal pace, the pre-slider behavior.</summary>
+    public int SpeechRate { get; set; }
+    /// <summary>Spoken-alert volume 0..100, SAPI's own scale. Separate from
+    /// <see cref="AlertVolume"/> on purpose: that slider drives only the MediaPlayer that
+    /// plays sound files — SAPI never saw it, so one slider claiming both would be a lie
+    /// in whichever direction it didn't reach.</summary>
+    public int SpeechVolume { get; set; } = 100;
     /// <summary>Position of the floating alert tile; NaN = above the widget.</summary>
     public double AlertLeft { get; set; } = double.NaN;
     public double AlertTop { get; set; } = double.NaN;

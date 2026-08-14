@@ -288,6 +288,62 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     public string SoundFileNote =>
         AlertSoundCatalog.IsCustom(_settings.AlertSound) ? $"Custom: {_settings.AlertSound}" : "";
 
+    // ---- spoken alerts ----
+    /// <summary>First entry of the voice picker; the rest are installed voice names.</summary>
+    public const string DefaultVoiceChoice = "System default";
+
+    /// <summary>Picker entries for the given installed voices. The list is a parameter
+    /// (the views pass SpokenAlerts.InstalledVoiceNames()) so this mapping stays
+    /// testable without instantiating SAPI.</summary>
+    public static string[] VoiceChoices(IReadOnlyList<string> installedVoices) =>
+        [DefaultVoiceChoice, .. installedVoices];
+
+    /// <summary>Index into <see cref="VoiceChoices"/> — 0 (default) also for a voice
+    /// that's no longer installed, matching the fallback SpokenAlerts applies at speak
+    /// time, so the picker never claims a voice the alerts won't actually use.</summary>
+    public int VoiceIndex(IReadOnlyList<string> installedVoices)
+    {
+        for (var i = 0; i < installedVoices.Count; i++)
+            if (string.Equals(installedVoices[i], _settings.SpeechVoice, StringComparison.OrdinalIgnoreCase))
+                return i + 1;
+        return 0;
+    }
+
+    public void SelectVoice(IReadOnlyList<string> installedVoices, int index)
+    {
+        _settings.SpeechVoice = index <= 0 || index > installedVoices.Count
+            ? "" : installedVoices[index - 1];
+        // Applied live — the next alert speaks with the new voice, no restart.
+        SpokenAlerts.SetVoice(_settings.SpeechVoice);
+        PersistAnd();
+    }
+
+    /// <summary>Clamped on read too: a hand-edited settings.json with rate 40 must show
+    /// the slider (and speak) at the same +5 it will actually use.</summary>
+    public int SpeechRate
+    {
+        get => Math.Clamp(_settings.SpeechRate, SpokenAlerts.MinRate, SpokenAlerts.MaxRate);
+        set
+        {
+            _settings.SpeechRate = Math.Clamp(value, SpokenAlerts.MinRate, SpokenAlerts.MaxRate);
+            SpokenAlerts.SetRate(_settings.SpeechRate);
+            PersistAnd(nameof(SpeechRateLabel));
+        }
+    }
+    public string SpeechRateLabel => SpeechRate == 0 ? "normal" : $"{SpeechRate:+0;-0}";
+
+    public int SpeechVolume
+    {
+        get => Math.Clamp(_settings.SpeechVolume, 0, 100);
+        set
+        {
+            _settings.SpeechVolume = Math.Clamp(value, 0, 100);
+            SpokenAlerts.SetVolume(_settings.SpeechVolume);
+            PersistAnd(nameof(SpeechVolumeLabel));
+        }
+    }
+    public string SpeechVolumeLabel => $"{SpeechVolume}%";
+
     /// <summary>Options window width (the user drags its right edge). Clamping to the
     /// window's own Min/Max stays in the view — Core has no notion of chrome.</summary>
     public double OptionsWidth

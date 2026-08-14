@@ -158,6 +158,38 @@
             <TextBlock Text="While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,4,0,0"/>
 
+            <!-- Speech gets its own volume: the slider above drives only the MediaPlayer
+                 that plays sound files — SAPI never saw it, so one slider claiming both
+                 would be a lie in whichever direction it didn't reach. -->
+            <Grid Margin="0,12,0,0">
+                <TextBlock Text="Alert voice" FontSize="12" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ComboBox x:Name="VoiceCombo" Width="164" FontSize="12"
+                              SelectionChanged="OnVoiceChanged"/>
+                    <Button Content="&#x25B6;" Style="{StaticResource IconButton}" FontSize="11"
+                            ToolTip="Hear a sample with the current voice, rate and volume"
+                            Click="OnVoiceTest" Margin="4,0,0,0"/>
+                </StackPanel>
+            </Grid>
+            <TextBlock Text="Used wherever EQBuddy speaks — watch rules with the S toggle, and the slow alert."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,0"/>
+            <Grid Margin="0,6,0,0">
+                <TextBlock Text="Speech rate" FontSize="12"/>
+                <TextBlock x:Name="SpeechRateLabel" Text="normal" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource AccentBrush}"/>
+            </Grid>
+            <Slider x:Name="SpeechRateSlider" Minimum="-5" Maximum="5" TickFrequency="1"
+                    IsSnapToTickEnabled="True" Margin="0,4,0,4"
+                    ValueChanged="OnSpeechRateChanged"/>
+            <Grid>
+                <TextBlock Text="Speech volume" FontSize="12"/>
+                <TextBlock x:Name="SpeechVolumeLabel" Text="100%" FontSize="12" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource AccentBrush}"/>
+            </Grid>
+            <Slider x:Name="SpeechVolumeSlider" Minimum="0" Maximum="100" TickFrequency="5"
+                    IsSnapToTickEnabled="True" Margin="0,4,0,4"
+                    ValueChanged="OnSpeechVolumeChanged"/>
+
             <CheckBox x:Name="SlowAlertCheck" Margin="0,12,0,0"
                       Checked="OnSlowAlertToggled" Unchecked="OnSlowAlertToggled">
                 <TextBlock Text="Slow alert (an attack-speed debuff lands on you)" FontSize="12"

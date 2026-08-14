@@ -137,6 +137,16 @@ public sealed class TrackedRule
     public string AlertSoundName { get; set; } = "";
 
     /// <summary>
+    /// What the voice says on a match, when <see cref="AlertSpeech"/> is on. Empty (the
+    /// default) speaks the auto-generated label ("Rusty Sword 3 times"), so every rule
+    /// from before this field keeps sounding exactly as it did. The point is rules whose
+    /// label states the event when what you need is the instruction: "Recast charm now"
+    /// instead of "Befriend Animal faded off a bear". Travels in share strings — the
+    /// codec ignores unknown fields, so old versions import phrased rules cleanly.
+    /// </summary>
+    public string SpokenPhrase { get; set; } = "";
+
+    /// <summary>
     /// Hold the alert back this many seconds after the match, instead of firing at once.
     /// 0 (the default) is the original behaviour, so nothing changes for existing rules.
     ///

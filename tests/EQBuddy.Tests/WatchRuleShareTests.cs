@@ -21,6 +21,7 @@ public class WatchRuleShareTests
         AlertSoundName = "Alarm",
         AlertColor = "Purple",
         AlertDelaySeconds = 2.5,
+        SpokenPhrase = "Cast now",
     };
 
     [Fact]
@@ -42,6 +43,48 @@ public class WatchRuleShareTests
         Assert.Equal("Alarm", r.AlertSoundName);
         Assert.Equal("Purple", r.AlertColor);
         Assert.Equal(2.5, r.AlertDelaySeconds);
+        Assert.Equal("Cast now", r.SpokenPhrase);
+    }
+
+    /// <summary>The codec's whole compatibility contract: unknown JSON keys are ignored,
+    /// so a FUTURE version's string (extra fields like "ph" once was) imports on this
+    /// one minus what this one can't represent. Pinned by hand-building a token whose
+    /// wire JSON carries a key no version defines.</summary>
+    [Fact]
+    public void UnknownWireFieldsAreIgnoredNotFatal()
+    {
+        var json = """[{"n":"From the future","k":0,"b":true,"zz":"field this version has never heard of"}]""";
+        var rules = WatchRuleShare.TryDecode(TokenFor(json), out var error);
+        Assert.Equal("", error);
+        var r = Assert.Single(rules!);
+        Assert.Equal("From the future", r.Name);
+        Assert.True(r.AlertBanner);
+    }
+
+    /// <summary>Strings from versions BEFORE SpokenPhrase (no "ph" key) import with the
+    /// empty phrase — i.e. the speak-the-label behavior those versions had.</summary>
+    [Fact]
+    public void PrePhraseStringsImportWithEmptyPhrase()
+    {
+        var json = """[{"n":"Old rule","k":0,"sp":true}]""";
+        var r = WatchRuleShare.TryDecode(TokenFor(json), out _)!.Single();
+        Assert.True(r.AlertSpeech);
+        Assert.Equal("", r.SpokenPhrase);
+    }
+
+    /// <summary>Re-implements the token pipeline (deflate → base64url → fnv1a) so the
+    /// tests above can craft wire JSON the encoder would never emit.</summary>
+    private static string TokenFor(string wireJson)
+    {
+        using var buffer = new System.IO.MemoryStream();
+        using (var deflate = new System.IO.Compression.DeflateStream(
+            buffer, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true))
+            deflate.Write(System.Text.Encoding.UTF8.GetBytes(wireJson));
+        var payload = Convert.ToBase64String(buffer.ToArray())
+            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        var hash = 2166136261u;
+        foreach (var c in payload) { hash ^= c; hash *= 16777619u; }
+        return $"EQB1.{payload}.{hash:x8}";
     }
 
     [Fact]
@@ -125,5 +168,11 @@ public class WatchRuleShareTests
         Assert.Contains("banner", text);
         Assert.Contains("sound: Alarm", text);
         Assert.Contains("delay 2.5s", text);
+        // A custom phrase IS what the import will say — the preview shows it verbatim.
+        Assert.Contains("says \"Cast now\"", text);
+
+        var unphrased = Sample();
+        unphrased.SpokenPhrase = "";
+        Assert.Contains("speech", WatchRuleShare.Describe(unphrased));
     }
 }

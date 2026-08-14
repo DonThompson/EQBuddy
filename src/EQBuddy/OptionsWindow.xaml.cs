@@ -74,6 +74,16 @@ public partial class OptionsWindow : Window
         AlertVolumeLabel.Text = $"{AlertVolumeSlider.Value:P0}";
         UpdateSoundFileNote();
 
+        // Enumerated once per Options open — voices install with language packs, not
+        // mid-session, and the SAPI walk isn't free.
+        _installedVoices = EQBuddy.UI.Shared.SpokenAlerts.InstalledVoiceNames();
+        foreach (var choice in OptionsViewModel.VoiceChoices(_installedVoices)) VoiceCombo.Items.Add(choice);
+        VoiceCombo.SelectedIndex = _vm.VoiceIndex(_installedVoices);
+        SpeechRateSlider.Value = _vm.SpeechRate;
+        SpeechRateLabel.Text = _vm.SpeechRateLabel;
+        SpeechVolumeSlider.Value = _vm.SpeechVolume;
+        SpeechVolumeLabel.Text = _vm.SpeechVolumeLabel;
+
         BuildRulesEditor();
         BuildCardsEditor();
         UpdateGearImportStatus();
@@ -603,6 +613,36 @@ public partial class OptionsWindow : Window
 
     private void OnSoundTest(object sender, RoutedEventArgs e) => _main.PlayAlertSound();
 
+    private IReadOnlyList<string> _installedVoices = [];
+
+    private void OnVoiceChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!_ready || VoiceCombo.SelectedIndex < 0) return;
+        _vm.SelectVoice(_installedVoices, VoiceCombo.SelectedIndex);
+        SpeakSample();   // a voice choice you can hear, like the sound picker's instant play
+    }
+
+    private void OnVoiceTest(object sender, RoutedEventArgs e) => SpeakSample();
+
+    // Real alert text, × and all, so the sample demonstrates exactly what an alert
+    // will sound like (SpokenAlerts.Speakable rewrites the × for the voice).
+    private static void SpeakSample() =>
+        EQBuddy.UI.Shared.SpokenAlerts.SpeakSample("Rusty Sword ×3");
+
+    private void OnSpeechRateChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_ready) return;
+        _vm.SpeechRate = (int)Math.Round(SpeechRateSlider.Value);
+        SpeechRateLabel.Text = _vm.SpeechRateLabel;
+    }
+
+    private void OnSpeechVolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (!_ready) return;
+        _vm.SpeechVolume = (int)Math.Round(SpeechVolumeSlider.Value);
+        SpeechVolumeLabel.Text = _vm.SpeechVolumeLabel;
+    }
+
     private void OnAlertVolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (!_ready) return;
@@ -805,6 +845,7 @@ public partial class OptionsWindow : Window
         Auto("RuleBanner");
         Auto("RuleColor");
         Auto("RuleSpeech");
+        Auto("RulePhrase");
         Auto("RuleSound");
         Auto("RuleDelay");
         Auto("RuleShare");
@@ -819,7 +860,7 @@ public partial class OptionsWindow : Window
 
         var header = RuleGrid();
         header.Margin = new Thickness(0, 2, 0, 2);
-        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 8) };
+        var headings = new[] { ("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 9) };
         foreach (var (text, column) in headings)
         {
             var label = new System.Windows.Controls.TextBlock
@@ -1062,8 +1103,27 @@ public partial class OptionsWindow : Window
             System.Windows.Controls.Grid.SetColumn(colorDot, 5);
             row.Children.Add(colorDot);
 
+            // Custom spoken phrase, beside the S toggle and only while it's on — a
+            // phrase box on a rule that never speaks is dead weight in a tight row.
+            // Empty speaks the alert's own label, exactly as before the box existed.
+            var phrase = DarkBox(rule.SpokenPhrase,
+                "What the voice says for this rule (empty = the alert text itself).\n" +
+                "Say the instruction, not the event: \"Recast charm now\" instead of\n" +
+                "\"Befriend Animal faded off a bear\".");
+            phrase.Width = 76;
+            phrase.FontSize = 11;
+            phrase.Margin = new Thickness(4, 0, 0, 0);
+            phrase.Visibility = rule.AlertSpeech ? Visibility.Visible : Visibility.Collapsed;
+            phrase.LostFocus += (_, _) => { rule.SpokenPhrase = phrase.Text.Trim(); _vm.Persist(); };
+            System.Windows.Controls.Grid.SetColumn(phrase, 7);
+
             row.Children.Add(RuleToggle("S", "Speak this alert with the Windows voice", 6,
-                rule.AlertSpeech, v => rule.AlertSpeech = v));
+                rule.AlertSpeech, v =>
+                {
+                    rule.AlertSpeech = v;
+                    phrase.Visibility = v ? Visibility.Visible : Visibility.Collapsed;
+                }));
+            row.Children.Add(phrase);
 
             // Per-rule sound, so you can tell what happened from the audio alone.
             // Replaces the old on/off toggle: "Off" mutes, "Default" follows the shared
@@ -1108,7 +1168,7 @@ public partial class OptionsWindow : Window
                 if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
                     _main.PlayAlertSound(preview);
             };
-            System.Windows.Controls.Grid.SetColumn(sound, 7);
+            System.Windows.Controls.Grid.SetColumn(sound, 8);
             row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
@@ -1130,7 +1190,7 @@ public partial class OptionsWindow : Window
                 delay.Text = DelayText.Format(rule.AlertDelaySeconds);   // shows any clamp
                 _vm.Persist();
             };
-            System.Windows.Controls.Grid.SetColumn(delay, 8);
+            System.Windows.Controls.Grid.SetColumn(delay, 9);
             row.Children.Add(delay);
 
             // Share: the rule as a guild-chat string (WatchRuleShare). The ✓ flash is
@@ -1153,7 +1213,7 @@ public partial class OptionsWindow : Window
                 revert.Tick += (_, _) => { share.Content = "⤴"; revert.Stop(); };
                 revert.Start();
             };
-            System.Windows.Controls.Grid.SetColumn(share, 9);
+            System.Windows.Controls.Grid.SetColumn(share, 10);
             row.Children.Add(share);
 
             var del = new System.Windows.Controls.Button
@@ -1165,7 +1225,7 @@ public partial class OptionsWindow : Window
                 _vm.RemoveRule(rule);
                 BuildRulesEditor();
             };
-            System.Windows.Controls.Grid.SetColumn(del, 10);
+            System.Windows.Controls.Grid.SetColumn(del, 11);
             row.Children.Add(del);
 
             // Arrange (#105, wizen): this order IS the Tracked card's "manual" sort.
@@ -1184,7 +1244,7 @@ public partial class OptionsWindow : Window
                 move.Click += (_, _) => { _vm.MoveRule(rule, d); BuildRulesEditor(); };
                 arrange.Children.Add(move);
             }
-            System.Windows.Controls.Grid.SetColumn(arrange, 11);
+            System.Windows.Controls.Grid.SetColumn(arrange, 12);
             row.Children.Add(arrange);
 
             RulesPanel.Children.Add(row);
