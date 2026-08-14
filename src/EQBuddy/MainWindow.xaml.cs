@@ -1046,14 +1046,9 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Classes for level-unlock filtering: the Quest Tracker's picked classes,
-    /// falling back to the combat-inferred class — the Gear Locker rule (#104).</summary>
-    private IReadOnlyList<string> UnlockClasses(StatsSnapshot s)
-    {
-        var picked = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
-        if (picked.Count == 0 && s.InferredClass is { Length: > 0 } inf)
-            picked = [inf];
-        return picked;
-    }
+    /// falling back to the combat-inferred class — the Gear Locker rule (#104). Buff-set
+    /// assembly (#120 stage 2) reads the same source via BuffSetClassSource.</summary>
+    private IReadOnlyList<string> UnlockClasses(StatsSnapshot s) => BuffSetClassSource(s).Classes;
 
     /// <summary>Unlock rows for FillList: the AA group in its category order, then
     /// the Spells grouping — same list, rows told apart by their value column.</summary>
@@ -1212,7 +1207,7 @@ public partial class MainWindow : Window
     private readonly List<(TextBlock Clock, string Label)> _buffClocks = [];
     private string _buffsSignature = "";
 
-    private void RenderBuffs()
+    private void RenderBuffs(StatsSnapshot snap)
     {
         if (_settings.HiddenSections.Contains("buffs")) return;   // layout collapsed it
         BuffsSection.Visibility = Visibility.Visible;
@@ -1224,7 +1219,9 @@ public partial class MainWindow : Window
 
         // The buff set's honesty line (#120): evaluated against the FULL active list,
         // before the expiring-only filter — the set cares what's up, not what's shown.
-        var set = CurrentBuffSet;
+        // Stage 2: the set is ASSEMBLED per class combination; the line itself is
+        // unchanged in look.
+        var set = AssembledBuffSet(BuffSetClassSource(snap).Classes);
         List<BuffSetEntryState> setStates = set.Count > 0 ? EvaluateBuffSet(set, buffs, now) : [];
         var setMissing = setStates.Where(s => s.Status == BuffSetStatus.Missing).Select(s => s.Spell).ToList();
         var setNotSeen = setStates.Where(s => s.Status == BuffSetStatus.NotSeen).Select(s => s.Spell).ToList();
@@ -1310,15 +1307,59 @@ public partial class MainWindow : Window
     internal string BuffSetKey => _stats.LedgerCharacterKey;
     internal string BuffSetCharacterName => _stats.CharacterName ?? "";
 
-    internal List<string> CurrentBuffSet =>
-        BuffSetKey is { Length: > 0 } key && _settings.BuffSets.TryGetValue(key, out var set) ? set : [];
+    /// <summary>The active class combination for buff-set assembly (#120 stage 2), and
+    /// whether it was picked or read: the Quest Tracker's picked classes, falling back
+    /// to the combat-inferred class — the Gear Locker rule (#104). No /who parsing
+    /// exists in the log pipeline (the #120 thread's open question stays open), so
+    /// this is the honest signal the app already has, and every surface that shows
+    /// the combination says which source it came from.</summary>
+    internal (IReadOnlyList<string> Classes, bool Picked) BuffSetClassSource(StatsSnapshot s)
+    {
+        var picked = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
+        if (picked.Count > 0) return (picked, true);
+        return s.InferredClass is { Length: > 0 } inf ? ([inf], false) : ([], false);
+    }
+
+    /// <summary>The assembled set (#120 stage 2, Frankthetankk): the "(any class)"
+    /// bucket plus every active class's picks — swap one class and the others' picks
+    /// survive, exactly the requester's design.</summary>
+    internal List<string> AssembledBuffSet(IReadOnlyList<string> classes) =>
+        BuffSetKey is { Length: > 0 } key
+            ? BuffSetStore.Assemble(_settings.BuffSetsByClass.GetValueOrDefault(key), classes)
+            : [];
+
+    /// <summary>Per-class sections with each entry's live honesty state — the Buff Set
+    /// breakout's content (#120 stage 2). Sections come from the active combination
+    /// (empty ones included: they're where the breakout's editor adds), each evaluated
+    /// against the same tracker state the card uses.</summary>
+    internal List<(string Class, List<BuffSetEntryState> Entries)> BuffSetSectionStates(
+        StatsSnapshot s, DateTime now)
+    {
+        if (BuffSetKey is not { Length: > 0 } key) return [];
+        var active = _buffTracker.Snapshot(now);
+        return BuffSetStore.Sections(
+                _settings.BuffSetsByClass.GetValueOrDefault(key), BuffSetClassSource(s).Classes)
+            .Select(sec => (sec.Class, EvaluateBuffSet([.. sec.Spells], active, now)))
+            .ToList();
+    }
 
     /// <summary>Set edits repaint the card immediately — a change that waits for the
     /// next tick reads as a silent no-op, and silent no-ops read as broken.</summary>
     internal void RepaintBuffs()
     {
         _buffsSignature = "";
-        RenderBuffs();
+        RenderBuffs(CurrentSnapshot());
+    }
+
+    /// <summary>Stage 2 grew a second editor (the breakout); both write the same
+    /// per-class storage, so an edit from either repaints the card AND the other
+    /// editor at once — David's rule, same as above.</summary>
+    internal void OnBuffSetEdited()
+    {
+        RepaintBuffs();
+        if (_optionsWindow is { IsLoaded: true } ow) ow.RefreshBuffSetEditor();
+        if (_breakouts.TryGetValue(BreakoutKind.Buffs, out var b) && b.IsVisible)
+            b.RefreshBuffSet(CurrentSnapshot());
     }
 
     /// <summary>The set editor's seen-first ranking: buffs YOU were seen casting this
@@ -1355,7 +1396,8 @@ public partial class MainWindow : Window
                 + "expiring = still up, inside the warn window. "
                 + "not seen = no landing line this session — it may still be up from before "
                 + "EQBuddy was watching; the log can't tell, so this stays a separate state. "
-                + "Edit the set in Options → Alerts & chips.",
+                + "The set is assembled from your active classes' picks plus (any class). "
+                + "Edit it in Options → Alerts & chips, or in the ⏳ Buff set breakout.",
         };
         void Add(string label, List<string> names, string brush, bool italic = false)
         {
@@ -2274,7 +2316,7 @@ public partial class MainWindow : Window
         }   // end fullRender gate
 
         RenderTracked(s);   // per-tick: live ⏳ cue countdowns and "last: … ago" ages
-        RenderBuffs();      // per-tick: the countdowns ARE the content
+        RenderBuffs(s);     // per-tick: the countdowns ARE the content
         if (fullRender) RenderRaids();   // changes on kills and imports only
         UpdatePerfStats();  // #112: self-measurement, every few seconds, off by default
 
@@ -4024,6 +4066,7 @@ public partial class MainWindow : Window
         yield return ("money", StarMoney);
         yield return ("xp", StarXp);
         yield return ("deaths", StarDeaths);
+        yield return ("buffs", StarBuffs);
     }
 
     /// <summary>The 🐾/⚡ glyphs beside their stars: clicking the glyph must toggle the
@@ -4089,6 +4132,9 @@ public partial class MainWindow : Window
                            BreakoutKind.Healing => _settings.MiniStats.Contains("hps"),
                            BreakoutKind.Pet => _settings.MiniStats.Contains("pet"),
                            BreakoutKind.Loot => _settings.MiniStats.Contains("loot"),
+                           // "buffs" never renders a mini chip (MiniStatOrder skips
+                           // it) — the Buffs card's star gates this window alone.
+                           BreakoutKind.Buffs => _settings.MiniStats.Contains("buffs"),
                            _ => _settings.PinWatchChips &&
                                 _settings.TrackedRules.Any(r => r.Enabled && r.Pinned),
                        };

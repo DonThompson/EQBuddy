@@ -230,14 +230,26 @@
 
             <TextBlock Text="Buff set — the missing line" FontSize="12" FontWeight="SemiBold"
                        Foreground="{DynamicResource AccentBrush}" Margin="0,14,0,2"/>
-            <TextBlock Text="Pick the buffs this character never camps without. The ⏳ Buffs card grows one line ONLY when something's off: missing (seen fading, or its timer ran out), expiring (inside the warn window above), or not seen (no landing line this session — it may be up from before EQBuddy was watching; the log can't tell, so it's shown as its own honest state). Everything up = no line at all. You build the list yourself; nothing is ever added for you."
+            <TextBlock Text="Pick the buffs this character never camps without — per class: each pick lands in a class bucket, and the live set assembles from the classes you're running plus (any class), so swapping one class keeps the other classes' picks. The ⏳ Buffs card grows one line ONLY when something's off: missing (seen fading, or its timer ran out), expiring (inside the warn window above), or not seen (no landing line this session — it may be up from before EQBuddy was watching; the log can't tell, so it's shown as its own honest state). Everything up = no line at all. You build the list yourself; nothing is ever added for you."
                        Style="{StaticResource Dim}" TextWrapping="Wrap"/>
             <TextBlock x:Name="BuffSetCharNote" Style="{StaticResource Dim}" TextWrapping="Wrap"
                        Margin="0,2,0,0"/>
             <StackPanel x:Name="BuffSetPanel" Margin="0,4,0,0"/>
-            <TextBox x:Name="BuffSetAddBox" Style="{StaticResource InputBox}" Margin="0,4,0,0"
-                     TextChanged="OnBuffSetSearchChanged"
-                     ToolTip="Type a few letters of a buff's name — buffs you've been seen casting list first, then the whole buff catalog"/>
+            <!-- Stage 2 (#120): the add box targets a class bucket. The FULL class list
+                 is offered here (unlike the breakout's active-only list) so a swap can
+                 be configured in advance. -->
+            <Grid Margin="0,4,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <ComboBox x:Name="BuffSetClassBox" MinWidth="110" Margin="0,0,6,0" FontSize="12"
+                          VerticalAlignment="Center"
+                          ToolTip="Which class bucket the next pick goes into — (any class) applies whatever combination you run"/>
+                <TextBox Grid.Column="1" x:Name="BuffSetAddBox" Style="{StaticResource InputBox}"
+                         TextChanged="OnBuffSetSearchChanged"
+                         ToolTip="Type a few letters of a buff's name — buffs you've been seen casting list first, then the whole buff catalog"/>
+            </Grid>
             <Popup x:Name="BuffSetPopup" PlacementTarget="{Binding ElementName=BuffSetAddBox}"
                    Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
                 <Border x:Name="BuffSetChrome" BorderThickness="1" Padding="2" CornerRadius="6">

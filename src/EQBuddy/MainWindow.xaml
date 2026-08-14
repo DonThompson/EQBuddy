@@ -719,9 +719,15 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="&#x23F3; Buffs" FontSize="13"/>
                         <TextBlock x:Name="BuffsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
+                        <!-- No mini chip behind this star — it opens the Buff Set breakout
+                             while minimized (#120 stage 2, Frankthetankk). -->
+                        <ToggleButton x:Name="StarBuffs" Grid.Column="2" Style="{StaticResource StarToggle}"
+                                      Tag="buffs" Click="OnStarChanged"
+                                      ToolTip="Show the Buff Set breakout while minimized — your per-class set with live states, editable in place"/>
                     </Grid>
                 </Expander.Header>
                 <StackPanel x:Name="BuffsPanel"/>

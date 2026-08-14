@@ -246,6 +246,11 @@ public sealed class LogWatcher : IDisposable
             InitialIngestDone = false;
             _stats.ClearCharacterState();
             _stats.Reset();
+            // Buff sights and active buffs are per character/session, and the tracker
+            // used to be process-lifetime — character A's landings leaked into B's
+            // Missing/NotSeen claims (#120 stage-2 fix). The full-file ingest below
+            // re-derives the new character's state.
+            Buffs?.ResetSession();
         }
         Task.Run(() =>
         {
