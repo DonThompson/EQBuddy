@@ -118,9 +118,12 @@ public static class ZoneMapFiles
         ["upper guk"] = "guktop", ["lower guk"] = "gukbottom",
         ["field of bone"] = "fieldofbone", ["warsliks woods"] = "warslikswood",
         ["cabilis west"] = "cabwest", ["cabilis east"] = "cabeast", ["cabilis"] = "cabwest",
+        ["west cabilis"] = "cabwest", ["east cabilis"] = "cabeast",
         ["swamp of no hope"] = "swampofnohope", ["firiona vie"] = "firiona",
         ["lake of ill omen"] = "lakeofillomen", ["dreadlands"] = "dreadlands",
-        ["burning wood"] = "burningwood", ["the burning woods"] = "burningwood",
+        // Normalize strips a leading "the ", so alias KEYS must arrive pre-stripped —
+        // "the burning woods" could never match (found by the coverage audit).
+        ["burning wood"] = "burningwood", ["burning woods"] = "burningwood",
         ["kaesora"] = "kaesora", ["ruins of sebilis"] = "sebilis", ["city of mist"] = "citymist",
         ["skyfire mountains"] = "skyfire", ["frontier mountains"] = "frontiermtns",
         ["the overthere"] = "overthere", ["emerald jungle"] = "emeraldjungle",
@@ -136,6 +139,26 @@ public static class ZoneMapFiles
         ["crystal caverns"] = "crystal", ["dragon necropolis"] = "necropolis",
         ["temple of veeshan"] = "templeveeshan", ["siren's grotto"] = "sirens",
         ["plane of mischief"] = "mischiefplane", ["plane of growth"] = "growthplane",
+        // The names the game ITSELF speaks — the client's zone table (mined via
+        // eqltools, scripts/harvests/eqltools/layout-extract.json) and the spawn
+        // catalog's logZoneName/aliases. The wiki-style keys above don't bridge
+        // these: "The Western Plains of Karana" contains no "qey2hh1", so a missing
+        // alias here is a zone with NO map (the Qeynos Hills report, 2026-08-13).
+        ["western plains of karana"] = "qey2hh1", ["northern plains of karana"] = "northkarana",
+        ["southern plains of karana"] = "southkarana", ["eastern plains of karana"] = "eastkarana",
+        ["northern desert of ro"] = "nro", ["southern desert of ro"] = "sro",
+        ["neriak - foreign quarter"] = "neriaka", ["neriak - commons"] = "neriakb",
+        ["neriak - third gate"] = "neriakc", ["neriak - 3rd gate"] = "neriakc",
+        ["qeynos aqueduct system"] = "qcat", ["ruins of old paineel"] = "hole",
+        ["city of thurgadin"] = "thurgadina", ["lair of the splitpaw"] = "paw",
+        ["clan crushbone"] = "crushbone", ["castle of mistmoore"] = "mistmoore",
+        ["liberated citadel of runnyeye"] = "runnyeye", ["crypt of dalnir"] = "dalnir",
+        ["karnor's castle"] = "karnor", ["sleeper's tomb"] = "sleeper",
+        ["new sebilis expedition"] = "newsebexp", ["old sebilis"] = "sebilis",
+        ["guk"] = "guktop", ["ruins of ancient guk"] = "gukbottom",
+        ["felwithe north"] = "felwithea", ["felwithe south"] = "felwitheb",
+        ["kaladim north"] = "kaladimb", ["kaladim south"] = "kaladima",
+        ["kelethin"] = "gfaydark", ["permafrost caverns"] = "permafrost",
     };
 
     /// <summary>The game's maps folder sits beside Logs; a user override wins.</summary>
@@ -146,6 +169,22 @@ public static class ZoneMapFiles
         if (root is null) return null;
         var maps = Path.Combine(root, "maps");
         return Directory.Exists(maps) ? maps : null;
+    }
+
+    /// <summary>Probe folders in order — the user's custom pack first, the game's own
+    /// maps folder as the fallback — so a pack that skips a zone degrades to the
+    /// game's shipped map instead of a blank window (Qeynos Hills, 2026-08-13).</summary>
+    public static string? Resolve(IReadOnlyList<string> folders, string zoneName) =>
+        folders.Select(f => Resolve(f, zoneName)).FirstOrDefault(f => f is not null);
+
+    /// <summary>The map-file stem a zone SHOULD have — the alias shortname when one
+    /// is carried, the squeezed display name otherwise — regardless of what exists
+    /// on disk. This is what lets the window name the missing file precisely
+    /// ("qeytoqrg.txt not found in …") instead of shrugging.</summary>
+    public static string ExpectedShortname(string zoneName)
+    {
+        var key = Normalize(zoneName);
+        return Shortnames.TryGetValue(key, out var shortname) ? shortname : Squeeze(key);
     }
 
     /// <summary>Resolve a display zone name to a map file in <paramref name="folder"/>,
@@ -160,7 +199,7 @@ public static class ZoneMapFiles
             var direct = Path.Combine(folder, shortname + ".txt");
             if (File.Exists(direct)) return direct;
         }
-        var squeezed = key.Replace(" ", "").Replace("'", "").Replace("-", "");
+        var squeezed = Squeeze(key);
         return Directory.EnumerateFiles(folder, "*.txt")
             .Where(f =>
             {
@@ -186,6 +225,9 @@ public static class ZoneMapFiles
             if (File.Exists(layer)) yield return layer;
         }
     }
+
+    private static string Squeeze(string key) =>
+        key.Replace(" ", "").Replace("'", "").Replace("-", "");
 
     private static string Normalize(string zone)
     {

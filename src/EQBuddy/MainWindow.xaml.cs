@@ -4352,7 +4352,9 @@ public partial class MainWindow : Window
 
     private void OnZoneMap(object sender, RoutedEventArgs e)
     {
-        if (_mapWindow is { IsLoaded: true } m) { m.Activate(); return; }
+        // Re-opening re-probes: a zone whose map wasn't found (pack unzipped since?)
+        // must not stay a cached failure just because the window object lived on.
+        if (_mapWindow is { IsLoaded: true } m) { m.MaybeRefresh(force: true); m.Activate(); return; }
         _mapWindow = new MapWindow(this);
         _mapWindow.Show();
     }

@@ -69,6 +69,49 @@ public class ZoneMapTests : IDisposable
     }
 
     [Fact]
+    public void QeynosHillsResolvesToTheClientShortname()
+    {
+        // The 2026-08-13 field report zone. Its stem is qeytoqrg — the client zone
+        // table and the wiki's "/who" field agree — and containment can never
+        // bridge "qeynoshills" → "qeytoqrg", so the alias is the only path.
+        File.WriteAllText(Path.Combine(_dir, "qeytoqrg.txt"), "L 0, 0, 0, 1, 1, 0, 0, 0, 0");
+        Assert.EndsWith("qeytoqrg.txt", ZoneMapFiles.Resolve(_dir, "Qeynos Hills")!);
+        Assert.Equal("qeytoqrg", ZoneMapFiles.ExpectedShortname("Qeynos Hills"));
+    }
+
+    [Fact]
+    public void PackFolderFallsBackToTheGamesOwnMaps()
+    {
+        var pack = Directory.CreateDirectory(Path.Combine(_dir, "pack")).FullName;
+        var game = Directory.CreateDirectory(Path.Combine(_dir, "game")).FullName;
+        const string line = "L 0, 0, 0, 1, 1, 0, 0, 0, 0";
+        File.WriteAllText(Path.Combine(game, "qeytoqrg.txt"), line);
+        File.WriteAllText(Path.Combine(pack, "crushbone.txt"), line);
+        File.WriteAllText(Path.Combine(game, "crushbone.txt"), line);
+
+        // The pack skips Qeynos Hills: the game's own map fills in instead of nothing.
+        Assert.Equal(Path.Combine(game, "qeytoqrg.txt"),
+            ZoneMapFiles.Resolve([pack, game], "Qeynos Hills"));
+        // Both carry Crushbone: the pack, listed first, wins.
+        Assert.Equal(Path.Combine(pack, "crushbone.txt"),
+            ZoneMapFiles.Resolve([pack, game], "Crushbone"));
+        // Nothing anywhere: null — and the expected stem still names the file to
+        // ask for, which is what the window's guidance prints.
+        Assert.Null(ZoneMapFiles.Resolve([pack, game], "Plane of Nowhere"));
+        Assert.Equal("planeofnowhere", ZoneMapFiles.ExpectedShortname("Plane of Nowhere"));
+    }
+
+    [Fact]
+    public void FileWithNoDrawableContentParsesToIsEmpty()
+    {
+        // The map window checks IsEmpty and reports the file by name — a parse to
+        // nothing must never become a silently blank canvas.
+        var path = Path.Combine(_dir, "arena.txt");
+        File.WriteAllText(path, "placeholder line that matches nothing\r\n");
+        Assert.True(ZoneMap.Load(path).IsEmpty);
+    }
+
+    [Fact]
     public void BreadcrumbTrailAccumulatesAndClearsOnZoning()
     {
         var stats = new SessionStats { CharacterName = "Dranak" };
