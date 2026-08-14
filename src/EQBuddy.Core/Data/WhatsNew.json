@@ -12,8 +12,8 @@
   "version": "1.80.1",
   "date": "2026-08-14",
   "highlights": [
-   "FIXED - EQBuddy Mobile on a PHONE showing a single screen wasted about half the display: the map sat in a fixed-height box with an empty screen underneath it. One chosen screen now fills the device, the same way it already did on a tablet - the map went from roughly half the screen to about 80% of it. The map's zoom buttons also wrap now instead of crowding the edge on a narrow phone.",
-   "The README has EQBuddy Mobile screenshots at last - a real zone map on a tablet and on a phone, both captured from genuine Splitpaw data."
+   "FIXED - EQBUDDY MOBILE on a small screen, showing a single window, wasted about half the display: the map sat in a fixed-height box with an empty screen underneath it. One chosen screen now fills the device, the same way it already did on a tablet - the map went from roughly half the screen to about 80% of it. The map's zoom buttons also wrap now instead of crowding the edge on a narrow device.",
+   "The README has EQBuddy Mobile screenshots at last - a real zone map on both a tablet and a handset, both captured from genuine Splitpaw data."
   ]
  },
  {
@@ -24,7 +24,7 @@
    "It is OFF until you turn it on, and it stays on your own Wi-Fi. No account, no cloud, no telemetry: the pages are served by EQBuddy.exe straight to your device, and nothing leaves your network. You decide what may be sent at all (Options → Behavior → EQBuddy Mobile), and \"New code\" instantly locks out every device you have paired.",
    "Worth knowing up front: Windows will ask to allow EQBuddy through the firewall the first time you switch it on - if you dismiss that prompt, devices simply can't connect and nothing will say why, so switch it off and on again to get the prompt back. Guest/public Wi-Fi that isolates devices from each other will also block it. And browsers won't hold a screen awake over plain HTTP, so bump your device's screen timeout if you're camping.",
    "NEW - THE MOBILE MAP NOW MATCHES THE PC'S: your /loc breadcrumb trail (the comet tail that fades over the last minute of movement), camp pins for every named you're waiting on - marked \"~\" when the location came from the wiki rather than your own kill - and the full Named list beside the map with countdowns and elapsed bars. On a tablet you can also CURATE spawn points by touch: tap a point to confirm, un-confirm or remove it, or use ⋯ to reset a zone. Every edit answers back in words, and it shows up on the PC's map immediately.",
-   "FIXED - map labels on the phone grew with the picture as you zoomed in, until a single name filled the screen; they now hold their size at any zoom. The map also refits when the view changes shape - rotating a tablet or going fullscreen used to leave it drawn at the size of a window that no longer existed. (Both were there since the mobile map first appeared.)",
+   "FIXED - map labels in EQBuddy Mobile grew with the picture as you zoomed in, until a single name filled the screen; they now hold their size at any zoom. The map also refits when the view changes shape - rotating a tablet or going fullscreen used to leave it drawn at the size of a window that no longer existed. (Both were there since the mobile map first appeared.)",
    "IMPROVED - fullscreen on a tablet now spends its height on the map instead of on furniture: the header shrinks, the footer tip steps aside, and a single chosen screen fills the display. (Reported by David from a tablet in Splitpaw - the map was using 94% of its panel's height but only a third of its width, so the Named list moved into the space the map couldn't use.)",
    "EQBuddy is a BETA and EQBuddy Mobile is the newest part of it - if something reads wrong, tell us: ⚙ → Help → Send feedback."
   ]

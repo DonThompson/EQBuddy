@@ -501,7 +501,7 @@ sentence the desktop's status bar would show, including when nothing changed.
 
 **Verify:** switch it on, pair a device, and confirm the client count rises. Untick a
 surface on the desktop → the device says "Not shared by the PC". Pick a different
-subset on the device → the desktop is unaffected. Tick an Epic row on the phone → the
+subset on the device → the desktop is unaffected. Tick an Epic row on the device → the
 desktop card repaints. On the map, tap a spawn point and remove it → a notice appears
 on *every* connected device and the PC's own map window drops the circle within a
 tick. Press **New code** → paired devices drop and refuse to reconnect. Finally set

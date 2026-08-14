@@ -57,8 +57,8 @@ public static class CompanionSurfaces
         Session => "Kills, xp/hr, session length, dps.",
         Loot => "Session loot, what you've made, and your watch counters.",
         Progress => "XP and AA rates, and what unlocked at your level.",
-        Epics => "Your Epic quest checklist — tappable from the phone.",
-        Sky => "Your Sky quest checklist — tappable from the phone.",
+        Epics => "Your Epic quest checklist — tappable from EQBuddy Mobile.",
+        Sky => "Your Sky quest checklist — tappable from EQBuddy Mobile.",
         Gear => "Your gear checklist, by slot and by farm zone.",
         _ => "",
     };

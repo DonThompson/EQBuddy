@@ -129,10 +129,10 @@ public sealed class CompanionWindow : Window
         // ---- the honest firewall talk (see CompanionServer's header comment) ----
         var fw = Dim(
             "First time on, Windows Firewall usually asks whether to allow EQBuddy — say yes " +
-            "for private networks. If the phone's page never loads: that prompt was missed " +
-            "(Windows Security → Firewall → Allow an app), or your Wi-Fi keeps devices apart " +
-            "(guest networks often do — use the main network). Best check: open the address " +
-            "above in the phone's browser right now.");
+            "for private networks. If the page never loads on your device: that prompt was " +
+            "missed (Windows Security → Firewall → Allow an app), or your Wi-Fi keeps devices " +
+            "apart (guest networks often do — use the main network). Best check: open the " +
+            "address above in that device's browser right now.");
         fw.Margin = new Thickness(0, 12, 0, 0);
         _pairPanel.Children.Add(fw);
 
