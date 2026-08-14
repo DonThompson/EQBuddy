@@ -52,6 +52,10 @@ public static class AaCatalog
 
     public static int Count => ByName.Value.Count;
 
+    /// <summary>Every catalog entry (name-deduplicated) — the level-unlock scan needs
+    /// the whole table, not a name lookup.</summary>
+    public static IReadOnlyCollection<AaCatalogEntry> All => ByName.Value.Values;
+
     /// <summary>Catalog entry for an ability name, or null — the log can name abilities
     /// the wiki page doesn't list yet ("Symphonic Aura: Enabled" toggle rows).</summary>
     public static AaCatalogEntry? Find(string name) =>

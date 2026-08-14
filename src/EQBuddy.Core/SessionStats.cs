@@ -1973,6 +1973,7 @@ public sealed class SessionStats
                 AaTotal = _aaTotal,
                 AaPerHour = _aaGained / hours,
                 Levels = _levels.Select(l => new TimedDetail(l.Time, $"Level {l.Level}")).ToList(),
+                LastLevel = _levels.Count > 0 ? _levels[^1].Level : null,
                 SkillUps = _skills.OrderByDescending(kv => kv.Value.Ups)
                     .Select(kv => new SkillDetail(kv.Key, kv.Value.Ups, kv.Value.Value)).ToList(),
                 SkillUpTotal = _skills.Values.Sum(v => v.Ups),
@@ -2190,6 +2191,9 @@ public sealed class StatsSnapshot
     public int AaTotal { get; init; }
     public double AaPerHour { get; init; }
     public List<TimedDetail> Levels { get; init; } = [];
+    /// <summary>The latest level-up the ingest saw ("Welcome to level N!"), null when
+    /// none — the level-unlock views key off the number, not the display text.</summary>
+    public int? LastLevel { get; init; }
     public List<SkillDetail> SkillUps { get; init; } = [];
     public int SkillUpTotal { get; init; }
     public List<FactionDetail> Faction { get; init; } = [];

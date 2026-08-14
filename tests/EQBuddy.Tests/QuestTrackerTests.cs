@@ -76,6 +76,20 @@ public class QuestTrackerTests : IDisposable
     }
 
     [Fact]
+    public void AnnouncedLevelPersistsAcrossReload()
+    {
+        // The log states the level only at the ding; the level-unlock preview reads
+        // this after a restart. Replay re-offers the same ding — idempotent.
+        var store = Store();
+        store.SetLevel("dranak_legends", 30);
+        store.SetLevel("dranak_legends", 30);
+        store.Flush();
+        var reloaded = new QuestLedgerStore(_path);
+        Assert.Equal(30, reloaded.LevelFor("dranak_legends"));
+        Assert.Equal(0, reloaded.LevelFor("vex_legends"));   // unknown = 0, never a guess
+    }
+
+    [Fact]
     public void FilterKeepsNonQuestLootOut_ButManualBypasses()
     {
         var store = new QuestLedgerStore(_path) { TrackFilter = i => i == "Bone Chips" };

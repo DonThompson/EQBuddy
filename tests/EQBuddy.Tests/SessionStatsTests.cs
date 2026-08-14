@@ -558,6 +558,7 @@ public class SessionStatsTests
         var s = stats.Snapshot();
         Assert.Equal(80, s.XpPercent, 1);
         Assert.Single(s.Levels);
+        Assert.Equal(6, s.LastLevel);   // the level-unlock views key off the number
         Assert.NotNull(s.HoursToLevel);
         // 50% into level 6, earning 80% per 59 min → ~0.61h remaining
         Assert.InRange(s.HoursToLevel!.Value, 0.55, 0.68);

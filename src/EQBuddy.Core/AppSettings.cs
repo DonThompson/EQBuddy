@@ -83,6 +83,10 @@ public sealed class AppSettings
     /// report): session-new AAs show always; the complete list is a click away.</summary>
     public bool ShowAllAAs { get; set; }
 
+    /// <summary>The Progress card's next-milestone AA preview, folded by default: the
+    /// label always names the level and count; the rows are a click away.</summary>
+    public bool ShowNextUnlocks { get; set; }
+
     /// <summary>Chip-stack growth direction (#95): anchored at the bottom edge, new
     /// chips push the stack upward — so boss timers can sit above mez timers with
     /// each growing away from the other.</summary>
