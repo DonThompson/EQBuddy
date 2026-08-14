@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.79.1",
+  "date": "2026-08-14",
+  "highlights": [
+   "FIXED (discussion #93, thanks pmcginn) - ALERT SOUNDS ON macOS were silent, and it was our bug rather than anyone's setup: the built-in sounds were only ever looked for in the Linux desktop sound theme, which a Mac doesn't have, so the alert died before it reached a speaker - and even if it had, the list of players to try had no afplay in it. Both halves fixed: the seven built-in sounds now map onto the clips every Mac already ships (Ding→Ping, Notify→Glass, Chimes→Blow, Chord→Pop, Tada→Hero, Exclamation→Sosumi, Alarm→Submarine) and play at your chosen volume. Nothing to install. Custom sound files keep working as before - on a Mac, pick .aiff/.wav/.mp3/.m4a rather than .ogg.",
+   "Windows and Linux alert sounds are untouched by this - same clips, same behavior."
+  ]
+ },
+ {
   "version": "1.79.0",
   "date": "2026-08-14",
   "highlights": [
