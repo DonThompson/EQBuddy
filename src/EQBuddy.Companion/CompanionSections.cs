@@ -39,6 +39,10 @@ public sealed record CompanionSessionSection(
 /// </summary>
 public sealed record CompanionMapSection(
     string Zone,
+    /// <summary>The catalog zone the spawn archive lives under — what a curation edit
+    /// must name. Not the same string as <see cref="Zone"/> in tiered zones, and
+    /// aiming an edit at the wrong one would quietly curate a different archive.</summary>
+    string TimerZone,
     string GeometryStamp,
     CompanionMapGeometry? Geometry,
     string? Missing,
@@ -94,7 +98,12 @@ public sealed record CompanionMapPin(
 /// <summary>An archived spawn point. <see cref="Named"/> points wear the accent and
 /// carry a <see cref="Label"/>; ordinary ones sit dim. <see cref="DueSeconds"/> is the
 /// countdown at send time (negative = already due), <see cref="Projected"/> marks the
-/// ordinary-point estimate the desktop prints with a "~".</summary>
+/// ordinary-point estimate the desktop prints with a "~".
+///
+/// <see cref="LocY"/>/<see cref="LocX"/> are the point's own game coordinates, carried
+/// so a device curating this circle echoes them back verbatim. The page must never
+/// derive them from <see cref="X"/>/<see cref="Y"/>: getting that inversion subtly
+/// wrong would aim a removal at the wrong dot, and nothing on screen would say so.</summary>
 public sealed record CompanionMapCircle(
     double X, double Y,
     bool Named,
@@ -104,7 +113,8 @@ public sealed record CompanionMapCircle(
     bool Imminent,
     bool Projected,
     int Kills,
-    string Mobs);
+    string Mobs,
+    double LocY, double LocX);
 
 // ---------------- mez ----------------
 

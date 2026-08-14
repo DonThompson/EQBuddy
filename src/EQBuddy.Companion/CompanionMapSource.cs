@@ -99,6 +99,7 @@ public sealed class CompanionMapSource
 
         return new CompanionMapSection(
             Zone: request.MapZone,
+            TimerZone: request.TimerZone,
             GeometryStamp: _geometry?.Stamp ?? "",
             Geometry: _geometry,
             Missing: _missing,
@@ -300,7 +301,8 @@ public sealed class CompanionMapSource
                 Mobs: string.Join(", ", p.Mobs
                     .OrderByDescending(kv => kv.Value.Kills)
                     .Take(4)
-                    .Select(kv => $"{kv.Key} ×{kv.Value.Kills}"))));
+                    .Select(kv => $"{kv.Key} ×{kv.Value.Kills}")),
+                LocY: p.LocY, LocX: p.LocX));
         }
         return circles;
     }
