@@ -551,6 +551,7 @@ public class SpellTrackingTests
             var first = new SpellCatalog();
             first.AttachStore(path);
             Assert.True(first.Learn("Word of Submission", SpellCategory.Charm));
+            first.Flush();   // saves are debounced now (audit #13) — flush is "exit"
 
             var second = new SpellCatalog();          // fresh session
             second.AttachStore(path);

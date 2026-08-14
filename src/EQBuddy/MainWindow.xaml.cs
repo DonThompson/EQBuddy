@@ -421,8 +421,18 @@ public partial class MainWindow : Window
     internal (string Character, string Server) Identity =>
         (_stats.CharacterName ?? "", _stats.ServerName ?? "");
 
-    /// <summary>A fresh stats snapshot, for windows that refresh on their own cadence.</summary>
-    internal StatsSnapshot CurrentSnapshot() => _stats.Snapshot();
+    /// <summary>The snapshot RefreshUi built this tick, reused by every satellite
+    /// window on its own cadence (perf audit #12: the map's marker/trail, Drops'
+    /// signature and Quests' inferred-class checks each built their own full
+    /// snapshot per tick). Snapshots are immutable, so sharing one instance is
+    /// safe; it is at most one tick (~1 s) old, which is already the cadence the
+    /// satellites polled at. Null only before the first tick.</summary>
+    private StatsSnapshot? _latestSnapshot;
+
+    /// <summary>The current stats snapshot for windows that refresh on their own
+    /// cadence: this tick's shared instance, or a fresh build when a window opens
+    /// before RefreshUi has ever ticked.</summary>
+    internal StatsSnapshot CurrentSnapshot() => _latestSnapshot ?? _stats.Snapshot();
 
     /// <summary>The 🗺 badge signal: a known quest's turn-in OR a member of the wiki's
     /// Quest Items category (back to the broad set once the loud green retired — a
@@ -1901,6 +1911,7 @@ public partial class MainWindow : Window
 
         var s = _stats.Snapshot(TimeSpan.FromMinutes(Math.Max(1, _settings.RecentWindowMinutes)),
             _settings.TrackedRules);
+        _latestSnapshot = s;   // satellites reuse this tick's snapshot (perf audit #12)
 
         ProcessTrackedAlerts(s);
 
@@ -2343,11 +2354,57 @@ public partial class MainWindow : Window
 
         if (_settings.TrackedRules.Count == 0)
         {
+            if (_trackedSignature == "empty") return;
+            _trackedSignature = "empty";
+            _trackedRowRefs.Clear();
             TrackedPanel.Children.Clear();
             TrackedPanel.Children.Add(EmptyCardLine(
                 "No watch rules yet — add one under ⚙ Options (or pick a recent log line there)."));
             return;
         }
+
+        var dueNow = _delayedAlerts.NextDueByRule(DateTime.Now);
+        var orderedResults = _settings.WatchSortMode switch
+        {
+            "alpha" => s.Tracked.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToList(),
+            "total" => s.Tracked.OrderByDescending(t => t.TotalQuantity).ToList(),
+            // Never-matched rules sink to the bottom rather than jumbling the top.
+            "recent" => s.Tracked.OrderByDescending(t => t.LastMatch ?? DateTime.MinValue).ToList(),
+            _ => s.Tracked,
+        };
+
+        // The RenderBuffs template (perf audit #14): a signature over everything that
+        // changes the element TREE — rule identities and order, counts, last-match
+        // identity, sort mode, cue presence, and the expanded per-item breakdowns.
+        // While it holds, the per-tick work is text-in-place: the live cue countdown,
+        // the rates (their hour denominators move with every event), and the
+        // "last: … ago" age. Anything structural (a match, a sort click, a cue
+        // starting or firing, an expand toggle, a rule edit) changes the signature
+        // and rebuilds exactly as before.
+        var signature = _settings.WatchSortMode + "§" + string.Join("¦",
+            orderedResults.Select(r =>
+                $"{r.Id}|{r.Name}|{r.TotalQuantity}|{r.LastItem}|{r.Items.Count}" +
+                $"|{dueNow.ContainsKey(r.Id)}|{_watchExpandedRules.Contains(r.Id)}" +
+                (_watchExpandedRules.Contains(r.Id) && r.Items.Count > 1
+                    ? "|" + string.Join(",", r.Items.Select(i => $"{i.Name}:{i.Count}"))
+                    : "")));
+        if (signature == _trackedSignature)
+        {
+            for (var i = 0; i < _trackedRowRefs.Count && i < orderedResults.Count; i++)
+            {
+                var row = _trackedRowRefs[i];
+                var r = orderedResults[i];
+                row.Head.Text = dueNow.TryGetValue(row.RuleId, out var due)
+                    ? $"{row.RuleName.ToUpperInvariant()} ⏳ {EQBuddy.UI.Shared.Countdown.Format(due - DateTime.Now)}"
+                    : row.RuleName.ToUpperInvariant();
+                row.Rate.Text = $"{r.TotalQuantity} total · {r.PerHour:0.#}/hr · {r.PerActiveHour:0.#}/active hr";
+                if (row.LastLine is { } lastLine && r.LastMatch is { } lm && r.LastItem is { } li)
+                    lastLine.Text = $"last: {li} · {FormatAge(DateTime.Now - lm)} ago";
+            }
+            return;
+        }
+        _trackedSignature = signature;
+        _trackedRowRefs.Clear();
 
         TrackedPanel.Children.Clear();
 
@@ -2393,32 +2450,23 @@ public partial class MainWindow : Window
             TrackedPanel.Children.Add(sortBar);
         }
 
-        var ordered = _settings.WatchSortMode switch
-        {
-            "alpha" => s.Tracked.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToList(),
-            "total" => s.Tracked.OrderByDescending(t => t.TotalQuantity).ToList(),
-            // Never-matched rules sink to the bottom rather than jumbling the top.
-            "recent" => s.Tracked.OrderByDescending(t => t.LastMatch ?? DateTime.MinValue).ToList(),
-            _ => s.Tracked,
-        };
-
-        var dueByRule = _delayedAlerts.NextDueByRule(DateTime.Now);
-        foreach (var r in ordered)
+        foreach (var r in orderedResults)
         {
             var head = new Grid { Margin = new Thickness(0, 4, 0, 0) };
             head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             // A rule with a cue counting down says so in its heading, so you can watch the
             // respawn timer you set without opening Options to remember what it was.
-            var counting = dueByRule.TryGetValue(r.Id, out var dueAt);
-            head.Children.Add(new TextBlock
+            var counting = dueNow.TryGetValue(r.Id, out var dueAt);
+            var headText = new TextBlock
             {
                 Text = counting
                     ? $"{r.Name.ToUpperInvariant()} ⏳ {EQBuddy.UI.Shared.Countdown.Format(dueAt - DateTime.Now)}"
                     : r.Name.ToUpperInvariant(),
                 FontSize = 11, FontWeight = FontWeights.SemiBold,
                 Foreground = (Brush)FindResource(counting ? "WarnBrush" : "AccentBrush"),
-            });
+            };
+            head.Children.Add(headText);
             var rate = new TextBlock
             {
                 Text = $"{r.TotalQuantity} total · {r.PerHour:0.#}/hr · {r.PerActiveHour:0.#}/active hr",
@@ -2431,19 +2479,24 @@ public partial class MainWindow : Window
             // The card leads with what just happened, not with everything that ever did
             // (asked for by an enchanter drowning in an hour of mez targets): one
             // "last:" line per rule, the full per-item breakdown behind a toggle.
+            TextBlock? lastLine = null;
             if (r.LastMatch is { } lm && r.LastItem is { } li)
-                TrackedPanel.Children.Add(new TextBlock
+            {
+                lastLine = new TextBlock
                 {
                     Text = $"last: {li} · {FormatAge(DateTime.Now - lm)} ago", FontSize = 12,
                     Foreground = (Brush)FindResource("TextBrush"), Margin = new Thickness(6, 1, 0, 2),
                     TextTrimming = TextTrimming.CharacterEllipsis,
-                });
+                };
+                TrackedPanel.Children.Add(lastLine);
+            }
             else
                 TrackedPanel.Children.Add(new TextBlock
                 {
                     Text = "no matches yet", FontSize = 11,
                     Foreground = (Brush)FindResource("DimBrush"), Margin = new Thickness(6, 1, 0, 2),
                 });
+            _trackedRowRefs.Add(new TrackedRowRefs(r.Id, r.Name, headText, rate, lastLine));
 
             if (r.Items.Count > 1)
             {
@@ -2477,6 +2530,15 @@ public partial class MainWindow : Window
     /// <summary>Rules whose full per-item breakdown is open on the Watch card.
     /// Session-scoped on purpose: the collapsed "last:" view is the designed default.</summary>
     private readonly HashSet<string> _watchExpandedRules = new(StringComparer.Ordinal);
+
+    /// <summary>The Watch card's rebuild signature + kept TextBlocks (perf audit #14,
+    /// the RenderBuffs idiom): while the signature holds, ticks update countdown /
+    /// rate / age text in place instead of rebuilding the panel's element tree.
+    /// Row refs are parallel to the signature's rule order.</summary>
+    private string _trackedSignature = "";
+    private sealed record TrackedRowRefs(
+        string RuleId, string RuleName, TextBlock Head, TextBlock Rate, TextBlock? LastLine);
+    private readonly List<TrackedRowRefs> _trackedRowRefs = [];
 
     private static string FormatAge(TimeSpan age) => age.TotalMinutes < 1
         ? $"{Math.Max(0, (int)age.TotalSeconds)}s"
@@ -3025,8 +3087,19 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Last snapshot version each auto-checker processed (perf audit #13):
+    /// loot can only change with an event, and every event bumps the version — so an
+    /// unchanged version means the per-tick regroup can be skipped without moving any
+    /// high-water mark. Every path that clears the seen-dictionaries (session
+    /// identity, review entry, character switch) also moves the version, so the
+    /// re-arm pass is never skipped.</summary>
+    private long _epicAutoCheckVersion = -1;
+    private long _skyAutoCheckVersion = -1;
+
     private bool AutoCheckEpicQuestLoot(StatsSnapshot s)
     {
+        if (s.Version == _epicAutoCheckVersion) return false;   // perf audit #13
+        _epicAutoCheckVersion = s.Version;
         var changed = false;
         // The class-scoping rules live in Core (EpicLootAutoCheck) where they are
         // tested — the Sky rules (#98/#106) over prose steps keyed by the catalog
@@ -3066,6 +3139,8 @@ public partial class MainWindow : Window
 
     private bool AutoCheckSkyQuestLoot(StatsSnapshot s)
     {
+        if (s.Version == _skyAutoCheckVersion) return false;   // perf audit #13
+        _skyAutoCheckVersion = s.Version;
         var changed = false;
         // The class-scoping rules live in Core (SkyLootAutoCheck) where they are
         // tested: shared items tick your selected classes / active tab (#98),
@@ -4910,6 +4985,8 @@ public partial class MainWindow : Window
         _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)
         _stats.AaStore?.Flush();
         _stats.StackingStore?.Flush();
+        _stats.Spells.Flush();        // learned spell categories (audit #13, same idiom)
+        _buffTracker.Flush();         // learned buff durations
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();

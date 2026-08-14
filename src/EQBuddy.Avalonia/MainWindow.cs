@@ -2281,6 +2281,7 @@ public sealed class MainWindow : Window
         _alertWindow?.Close();
         _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)
         _stats.AaStore?.Flush();
+        _stats.Spells.Flush();        // learned spell categories (audit #13, same idiom)
         _archiver.FinalizeActiveSync(CurrentSnapshot(), "ApplicationExit");
         _watcher.Dispose();
         _repo.Dispose();

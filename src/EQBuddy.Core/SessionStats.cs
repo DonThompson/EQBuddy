@@ -118,6 +118,45 @@ public sealed class SessionStats
         List<NameCount> Items, DateTime? First, DateTime? Last, string? LastItem);
     private (long Version, string Fingerprint, List<TrackedScan> Scans)? _trackedMemo;
 
+    /// <summary>Perf audit #10: one rule's running journal-scan totals, folded forward
+    /// as entries append instead of rescanned O(rules × journal) every tick. Valid only
+    /// together with <see cref="_trackedScanIndex"/> and the invalidation guards below.</summary>
+    private sealed class TrackedAcc
+    {
+        public readonly Dictionary<string, int> Items = new(StringComparer.OrdinalIgnoreCase);
+        public int Total;
+        public DateTime? First, Last;
+        public string? LastItem;
+    }
+    /// <summary>Accumulators parallel to the enabled-rule subsequence the fingerprint
+    /// describes; null = must rebuild from the whole journal.</summary>
+    private List<TrackedAcc>? _trackedAccs;
+    private string? _trackedAccFingerprint;
+    /// <summary>First _journal index the accumulators have NOT folded in. The journal
+    /// prune adjusts it by however many entries it removed below it, so the index keeps
+    /// pointing at the same unscanned entry.</summary>
+    private int _trackedScanIndex;
+    // The scan's answers depend on more than the journal + rules: FadeLabel reads
+    // _charmHoldByBreak, SpellFadeMatches/BuffFadeMatches classify via the (learning)
+    // spell catalog, and Kill rules ask IsPet against the CURRENT pet name. A
+    // from-scratch scan re-evaluates all of that per tick; the incremental scan must
+    // therefore rebuild whenever any of them changes, or an already-folded event
+    // could be stuck with a stale answer. Each is a cheap revision/identity check.
+    private int _trackedSpellsRevision = -1;
+    private int _trackedHoldRevision = -1;
+    private string _trackedPetName = "";
+    /// <summary>Bumped whenever <see cref="_charmHoldByBreak"/> gains an entry —
+    /// see the invalidation note above.</summary>
+    private int _charmHoldRevision;
+
+    /// <summary>Perf audit #12: the last snapshot built, keyed by everything that can
+    /// change its content — the version (every applied event bumps it), the recent
+    /// window, and the rules fingerprint. Identical inputs return the identical
+    /// instance, so idle ticks rebuild nothing anywhere. Snapshots are immutable
+    /// (init-only properties over freshly built lists), which is what makes sharing
+    /// one instance across consumers safe.</summary>
+    private (long Version, TimeSpan? Window, string RulesFp, StatsSnapshot Snap)? _snapshotMemo;
+
     /// <summary>Player-supplied hp-per-tick for the regen estimate (Options), 0 = unset.
     /// The log can't know instrument resonance or ranks; the player's health bar can —
     /// same "your number wins" rule the spawn timers use.</summary>
@@ -135,14 +174,17 @@ public sealed class SessionStats
     public string? CharacterName
     {
         get { lock (_lock) return _characterName; }
-        set { lock (_lock) _characterName = value; }
+        // The version bump keeps the snapshot memo honest: the character key feeds
+        // the AA ledger a snapshot shows, so identity changes must not serve a
+        // cached snapshot (perf audit #12).
+        set { lock (_lock) { _characterName = value; _version++; } }
     }
 
     private string? _serverName;
     public string? ServerName
     {
         get { lock (_lock) return _serverName; }
-        set { lock (_lock) _serverName = value; }
+        set { lock (_lock) { _serverName = value; _version++; } }
     }
 
     private readonly Dictionary<string, (int Count, string LastSource)> _loot = new(StringComparer.OrdinalIgnoreCase);
@@ -167,8 +209,15 @@ public sealed class SessionStats
     private readonly Dictionary<string, (int Rank, DateTime Time)> _aaAbilities = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Optional durable ledger behind <see cref="_aaAbilities"/> — purchases write
-    /// through to it, and snapshots read the union, so truncated logs can't forget an AA.</summary>
-    public AaLedgerStore? AaStore { get; set; }
+    /// through to it, and snapshots read the union, so truncated logs can't forget an AA.
+    /// Attaching one bumps the version: the store's contents feed snapshots, so the
+    /// memo (perf audit #12) must not keep serving a pre-attach one.</summary>
+    public AaLedgerStore? AaStore
+    {
+        get { lock (_lock) return _aaStore; }
+        set { lock (_lock) { _aaStore = value; _version++; } }
+    }
+    private AaLedgerStore? _aaStore;
 
     /// <summary>Optional quest-item ledger, fed from loot events the same way AaStore
     /// rides AA purchases (QUEST-*; the UI wires catalog + path).</summary>
@@ -451,9 +500,15 @@ public sealed class SessionStats
 
     public void ObserveRawLine(string line)
     {
+        if (LogParser.TrySplitLine(line, out var ts, out var msg)) ObserveRawLine(ts, msg);
+    }
+
+    /// <summary>Already-split overload (perf audit #13): LogWatcher splits each line
+    /// once and hands the parts to both Parse and this — same behavior, one split.</summary>
+    public void ObserveRawLine(DateTime ts, string msg)
+    {
         TrackedRule[] patterns;
         lock (_lock) patterns = _textPatterns;
-        if (!LogParser.TrySplitLine(line, out var ts, out var msg)) return;
         lock (_lock)
         {
             _recentLines.Enqueue((ts, msg));
@@ -519,11 +574,7 @@ public sealed class SessionStats
             if (++_journalAppendsSincePrune >= 512)
             {
                 _journalAppendsSincePrune = 0;
-                var cutoff = e.Time - CombatJournalRetention;
-                _journal.RemoveAll(j => j.Time < cutoff && j is DamageDealtEvent
-                    or DamageTakenEvent or MissEvent or RuneBlockEvent or ThirdMeleeEvent
-                    or ThirdDotEvent or ThirdSchoolEvent or ThirdMissEvent or HealEvent
-                    or RegenTickEvent);
+                PruneJournalLocked(e.Time - CombatJournalRetention);
             }
 
             SweepStaleFights(e.Time);
@@ -1192,6 +1243,35 @@ public sealed class SessionStats
         }
     }
 
+    /// <summary>Drop high-frequency combat/heal entries older than the retention
+    /// cutoff. In-place compaction rather than RemoveAll so the tracked scan's index
+    /// can follow: every removed entry below <see cref="_trackedScanIndex"/> shifts
+    /// the same unscanned entry one slot left (perf audit #10). No accumulator ever
+    /// rewinds — the combat kinds are ones no tracked rule can match, and RawLineEvents
+    /// (perf audit #5: previously retained whole-session) are kept countable by the
+    /// Text-rule ACCUMULATORS, which survive pruning by construction — see
+    /// ScanTrackedLocked's text-preservation rule.</summary>
+    private void PruneJournalLocked(DateTime cutoff)
+    {
+        var removedBeforeScanIndex = 0;
+        var write = 0;
+        for (var read = 0; read < _journal.Count; read++)
+        {
+            var j = _journal[read];
+            if (j.Time < cutoff && j is DamageDealtEvent
+                or DamageTakenEvent or MissEvent or RuneBlockEvent or ThirdMeleeEvent
+                or ThirdDotEvent or ThirdSchoolEvent or ThirdMissEvent or HealEvent
+                or RegenTickEvent or RawLineEvent)
+            {
+                if (read < _trackedScanIndex) removedBeforeScanIndex++;
+                continue;
+            }
+            _journal[write++] = j;
+        }
+        _journal.RemoveRange(write, _journal.Count - write);
+        _trackedScanIndex -= removedBeforeScanIndex;
+    }
+
     /// <summary>#130 (bjstrange): close the charm-hold clock at a break and remember
     /// how long it held, keyed by the break time so the fade alert's label can carry
     /// it ("Charm (a gnoll) — held 4:32").</summary>
@@ -1204,6 +1284,9 @@ public sealed class SessionStats
         var held = (at - l).TotalSeconds;
         if (held <= 0) return;
         _charmHoldByBreak[at] = held;
+        // A new hold can retroactively relabel an already-scanned fade (FadeLabel
+        // tolerates ordering skew), so the incremental tracked scan must rebuild.
+        _charmHoldRevision++;
         if (_charmHoldByBreak.Count > 64)
             foreach (var old in _charmHoldByBreak.Keys.OrderBy(k => k)
                          .Take(_charmHoldByBreak.Count - 64).ToList())
@@ -1693,6 +1776,7 @@ public sealed class SessionStats
         {
             _aaAbilities.Clear();
             _classEvidence.Clear();   // the next character's swings vote fresh
+            _version++;   // both feed snapshots — the memo must not serve stale ones
         }
     }
 
@@ -1710,6 +1794,12 @@ public sealed class SessionStats
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
         _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null; _lastConsider = null;
         _lastLoc = null; _locTrail.Clear(); _trackedMemo = null;
+        _snapshotMemo = null;   // also frees the ended session's lists for GC
+        // The journal is about to be cleared: every place _journal empties or is
+        // replaced funnels through here (reset, rollover, character/review switches
+        // via LogWatcher.Select), so this is the one invalidation point the
+        // incremental tracked scan needs (perf audit #10).
+        _trackedAccs = null; _trackedAccFingerprint = null; _trackedScanIndex = 0;
         _runeGainCount = 0; _runeGainPoints = 0;
         _runeBlockStreak = 0; _runeBlockStreakMax = 0; _runeBlockCount = 0;
         _loot.Clear(); _lootCount = 0; _crafted.Clear(); _upgraded.Clear();
@@ -1791,6 +1881,22 @@ public sealed class SessionStats
     private StatsSnapshot BuildSnapshotLocked(TimeSpan? recentWindow, IReadOnlyList<TrackedRule>? rules)
     {
         {
+            // Perf audit #12: same version + window + rules = the same snapshot —
+            // serve the cached instance instead of rebuilding every list. The one
+            // field that reads the wall clock is CurrentDps ("only advertise a
+            // current DPS while the fight is actually live", below): a cached 0
+            // stays 0 without new events (the combat damage can't move), and a
+            // cached >0 is only served while the live-fight window that produced
+            // it still holds — once it lapses, the rebuild honestly reports 0.
+            var rulesFp = rules is null ? "" : string.Join("", rules.Select(r =>
+                $"{r.Id}|{r.Enabled}|{(int)r.Kind}|{(int)r.SpellFilter}|{r.EffectivePattern}|{r.UseRegex}"));
+            if (_snapshotMemo is { } sm && sm.Version == _version
+                && sm.Window == recentWindow && sm.RulesFp == rulesFp
+                && (sm.Snap.CurrentDps == 0
+                    || (_combatLast is { } liveCl
+                        && DateTime.Now - liveCl <= CombatGap + TimeSpan.FromSeconds(2))))
+                return sm.Snap;
+
             double combatSeconds = _closedCombatSeconds;
             long combatDamage = _closedCombatDamage;
             double currentDps = 0;
@@ -1820,9 +1926,16 @@ public sealed class SessionStats
                 double xp = 0, dmg = 0, healed = 0;
                 int kills = 0;
                 long coin = 0;
-                foreach (var evt in _journal)
+                // Perf audit #11: the journal is appended in log order (timestamps
+                // are non-decreasing within a session — a 60-min regression rolls
+                // the session and clears it), so walk BACKWARD from the end and stop
+                // at the first entry older than the window instead of touching every
+                // entry per snapshot. An entry exactly AT winStart still counts,
+                // same as the old forward filter (`< winStart` skipped).
+                for (var i = _journal.Count - 1; i >= 0; i--)
                 {
-                    if (evt.Time < winStart) continue;
+                    var evt = _journal[i];
+                    if (evt.Time < winStart) break;
                     switch (evt)
                     {
                         case XpEvent x: xp += x.Percent; break;
@@ -1834,8 +1947,17 @@ public sealed class SessionStats
                     }
                 }
                 double combatInWindow = 0;
-                foreach (var (s2, e2) in _combatSpans)
+                // Same bound for the spans: they close in chronological order, so
+                // ends are non-decreasing and everything before the first span
+                // ending short of winStart overlaps zero seconds (OverlapSeconds
+                // already returns 0 for a span ending exactly AT winStart, so
+                // stopping there changes no total).
+                for (var i = _combatSpans.Count - 1; i >= 0; i--)
+                {
+                    var (s2, e2) = _combatSpans[i];
+                    if (e2 < winStart) break;
                     combatInWindow += OverlapSeconds(s2, e2, winStart, winEnd);
+                }
                 if (_combatStart is { } ocs && _combatLast is { } ocl)
                     combatInWindow += OverlapSeconds(ocs, ocl, winStart, winEnd);
                 if (combatInWindow < 1 && dmg > 0) combatInWindow = 1;
@@ -1864,10 +1986,10 @@ public sealed class SessionStats
                 // Perf audit #4: this replay is O(rules × journal) and ran EVERY
                 // second — the one per-tick cost that scales with session length and
                 // rule count. The scan result can only change when an event lands or
-                // the rules themselves change, so it's memoized on exactly that pair;
+                // the rules themselves change, so it's memoized on exactly that pair
+                // (the fingerprint is computed once at the top, shared with the
+                // snapshot memo of perf audit #12);
                 // only the time-derived rates below are recomputed per snapshot.
-                var rulesFp = string.Join("", rules.Select(r =>
-                    $"{r.Id}|{r.Enabled}|{(int)r.Kind}|{(int)r.SpellFilter}|{r.EffectivePattern}|{r.UseRegex}"));
                 if (_trackedMemo is { } memo && memo.Version == _version && memo.Fingerprint == rulesFp)
                 {
                     foreach (var sc in memo.Scans)
@@ -1875,67 +1997,10 @@ public sealed class SessionStats
                             sc.Total / hours, sc.Total / activeHours, sc.First, sc.Last, sc.LastItem, sc.Id));
                     goto trackedDone;
                 }
-                var scans = new List<TrackedScan>();
-
-                foreach (var rule in rules)
-                {
-                    if (!rule.Enabled) continue;
-                    if (rule.EffectivePattern.Length == 0 && !rule.IsMatchAllKind) continue;
-                    var items = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                    var total = 0;
-                    DateTime? first = null, last = null;
-                    string? lastItem = null;
-                    foreach (var evt in _journal)
-                    {
-                        var (item, qty) = (rule.Kind, evt) switch
-                        {
-                            (WatchKind.Loot, LootEvent l) when rule.Matches(l.Item) => (l.Item, 1),
-                            (WatchKind.Loot, AutoSellEvent a) when rule.Matches(a.Item) => (a.Item, a.Count),
-                            (WatchKind.Kill, KillEvent k) when (k.Killer == "You" || IsPet(k.Killer))
-                                && rule.Matches(k.Target) => (k.Target, 1),
-                            (WatchKind.SkillUp, SkillUpEvent su) when rule.Matches(su.Skill) => (su.Skill, 1),
-                            (WatchKind.Death, DeathEvent de) when rule.Matches(de.Killer)
-                                => ($"Slain by {de.Killer}", 1),
-                            (WatchKind.Milestone, LevelEvent lev) => ($"Level {lev.Level}", 1),
-                            (WatchKind.Milestone, AaEvent) => ("AA point", 1),
-                            (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
-                                when SpellFadeMatches(rule, wo.Spell)
-                                => (FadeLabel(wo), 1),
-                            // Buff/HoT fades carry candidate spells (the log named
-                            // none); the rule fires if ANY candidate satisfies it, and
-                            // the row shows the catalog label ("Haste") since we can't
-                            // know which haste it was. CC filters are excluded: these
-                            // flavor lines are first-person — something wore off YOU —
-                            // while the CC filters mean "my control of a MOB ended".
-                            // rahvynn (#69): once the fade catalog learned "You are no
-                            // longer stunned.", the default CC-broke rule fired every
-                            // time an NPC's stun on HIM wore off. ByName/AnySpell/HoT
-                            // still hear self-fades — watching your own buffs is their job.
-                            (WatchKind.SpellFade, BuffFadeEvent bf)
-                                when !IsCcFilter(rule.SpellFilter) && BuffFadeMatches(rule, bf)
-                                => (bf.Label, 1),
-                            // Re-matched here rather than trusted from ingest: the journal
-                            // holds lines kept for ANY text rule, so each rule still has to
-                            // claim its own. The line itself is the item, so a raid script
-                            // repeating the same call groups into one row with a count.
-                            (WatchKind.Text, RawLineEvent raw) when rule.Matches(raw.Line)
-                                => (Ellipsize(raw.Line), 1),
-                            _ => (null, 0),
-                        };
-                        if (item is null) continue;
-                        items[item] = items.TryGetValue(item, out var c) ? c + qty : qty;
-                        total += qty;
-                        first ??= evt.Time;
-                        last = evt.Time;
-                        lastItem = item;
-                    }
-                    scans.Add(new TrackedScan(
-                        rule.Name.Length > 0 ? rule.Name : rule.Pattern,
-                        rule.Id, total,
-                        items.OrderByDescending(kv => kv.Value)
-                            .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
-                        first, last, lastItem));
-                }
+                // Perf audit #10: the version moved (a raid keeps it moving every
+                // tick), so fold ONLY the entries appended since the last scan into
+                // per-rule accumulators, instead of rescanning O(rules × journal).
+                var scans = ScanTrackedLocked(rules, rulesFp);
                 _trackedMemo = (_version, rulesFp, scans);
                 foreach (var sc in scans)
                     tracked.Add(new TrackedRuleResult(sc.Name, sc.Total, sc.Items,
@@ -1943,7 +2008,7 @@ public sealed class SessionStats
                 trackedDone: ;
             }
 
-            return new StatsSnapshot
+            var snap = new StatsSnapshot
             {
                 Version = _version,
                 LastLocation = _lastLoc,
@@ -2105,9 +2170,174 @@ public sealed class SessionStats
                         kv.Value.Seconds > 0 ? kv.Value.Damage / kv.Value.Seconds : 0))
                     .OrderByDescending(x => x.CombatSeconds).ToList(),
             };
+            _snapshotMemo = (_version, recentWindow, rulesFp, snap);
+            return snap;
         }
     }
 
+    /// <summary>The enabled rules the tracked scan evaluates, in rule order — the
+    /// subsequence the fingerprint (and the accumulator list) describes.</summary>
+    private static List<TrackedRule> ActiveTrackedRules(IReadOnlyList<TrackedRule> rules)
+    {
+        var active = new List<TrackedRule>(rules.Count);
+        foreach (var rule in rules)
+        {
+            if (!rule.Enabled) continue;
+            if (rule.EffectivePattern.Length == 0 && !rule.IsMatchAllKind) continue;
+            active.Add(rule);
+        }
+        return active;
+    }
+
+    /// <summary>Incremental tracked-rule scan (perf audit #10). Behavior contract: the
+    /// result must always equal a from-scratch scan of the current journal (the test
+    /// seam <see cref="TrackedScanFromScratch"/> is that oracle) — EXCEPT Text rules
+    /// once the raw-line prune has run (perf audit #5): their accumulators keep
+    /// counts whose raw events have aged out of the journal, deliberately, so a
+    /// text total never shrinks mid-session. Accumulators fold
+    /// forward over appended entries only; they rebuild from index 0 whenever anything
+    /// an already-folded answer could have depended on changed — the rules fingerprint,
+    /// the learning spell catalog (SpellFade classification), the charm-hold lookaside
+    /// (FadeLabel), or the current pet name (Kill rules' IsPet). Session resets null
+    /// the accumulators in <see cref="ResetLocked"/>. The journal prune never removes
+    /// an entry a rule can match, so pruning only shifts the index.</summary>
+    private List<TrackedScan> ScanTrackedLocked(IReadOnlyList<TrackedRule> rules, string rulesFp)
+    {
+        var active = ActiveTrackedRules(rules);
+        var petName = _petName ?? "";
+        var fpChanged = _trackedAccs is null || _trackedAccFingerprint != rulesFp;
+        var stateChanged = _trackedSpellsRevision != _spells.Revision
+            || _trackedHoldRevision != _charmHoldRevision
+            || !string.Equals(_trackedPetName, petName, StringComparison.OrdinalIgnoreCase);
+        var start = _trackedScanIndex;
+        var textStart = start;
+        if (fpChanged || stateChanged)
+        {
+            // Raw lines are pruned past retention (perf audit #5), so the Text
+            // accumulators are the ONLY keeper of pre-retention text counts. A
+            // state-triggered rescan (spell catalog / charm holds / pet name — none
+            // of which a Text rule's match depends on) therefore KEEPS them and
+            // re-folds only the entries they haven't seen; every other kind
+            // rebuilds from the journal as before. Only a rules edit (fingerprint
+            // change) rebuilds Text accumulators too — their counts then honestly
+            // reflect the retained window, the same trade the combat prune makes.
+            var fresh = new List<TrackedAcc>(active.Count);
+            for (var i = 0; i < active.Count; i++)
+                fresh.Add(!fpChanged && active[i].Kind == WatchKind.Text
+                    ? _trackedAccs![i] : new TrackedAcc());
+            textStart = fpChanged ? 0 : _trackedScanIndex;
+            start = 0;
+            _trackedAccs = fresh;
+            _trackedAccFingerprint = rulesFp;
+            _trackedSpellsRevision = _spells.Revision;
+            _trackedHoldRevision = _charmHoldRevision;
+            _trackedPetName = petName;
+        }
+        for (var i = start; i < _journal.Count; i++)
+        {
+            var evt = _journal[i];
+            for (var r = 0; r < active.Count; r++)
+            {
+                if (i < textStart && active[r].Kind == WatchKind.Text) continue;
+                FoldTrackedEvent(active[r], _trackedAccs![r], evt);
+            }
+        }
+        _trackedScanIndex = _journal.Count;
+
+        var scans = new List<TrackedScan>(active.Count);
+        for (var r = 0; r < active.Count; r++)
+        {
+            var rule = active[r];
+            var acc = _trackedAccs[r];
+            scans.Add(new TrackedScan(
+                rule.Name.Length > 0 ? rule.Name : rule.Pattern,
+                rule.Id, acc.Total,
+                acc.Items.OrderByDescending(kv => kv.Value)
+                    .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
+                acc.First, acc.Last, acc.LastItem));
+        }
+        return scans;
+    }
+
+    /// <summary>TEST SEAM (perf audit #10): the tracked results recomputed from scratch
+    /// over the current journal, bypassing the incremental accumulators — the oracle
+    /// the incremental path is asserted equal to. Never used by production callers.</summary>
+    internal List<TrackedRuleResult> TrackedScanFromScratch(IReadOnlyList<TrackedRule> rules)
+    {
+        lock (_lock)
+        {
+            // Same rate denominators BuildSnapshotLocked derives (both event-derived).
+            var elapsed = _sessionStart is { } ss && _lastEventTime is { } le
+                ? (le - ss) : TimeSpan.Zero;
+            var hours = Math.Max(elapsed.TotalHours, 1.0 / 60);
+            var activeSeconds = Math.Min(_activeBuckets.Count * ActiveBucket.TotalSeconds,
+                Math.Max(elapsed.TotalSeconds, ActiveBucket.TotalSeconds));
+            var activeHours = Math.Max(activeSeconds / 3600.0, 1.0 / 60);
+
+            var active = ActiveTrackedRules(rules);
+            var results = new List<TrackedRuleResult>(active.Count);
+            foreach (var rule in active)
+            {
+                var acc = new TrackedAcc();
+                foreach (var evt in _journal) FoldTrackedEvent(rule, acc, evt);
+                results.Add(new TrackedRuleResult(
+                    rule.Name.Length > 0 ? rule.Name : rule.Pattern,
+                    acc.Total,
+                    acc.Items.OrderByDescending(kv => kv.Value)
+                        .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
+                    acc.Total / hours, acc.Total / activeHours,
+                    acc.First, acc.Last, acc.LastItem, rule.Id));
+            }
+            return results;
+        }
+    }
+
+    /// <summary>Fold one journal entry into one rule's accumulator — the match logic
+    /// is the old per-tick rescan's, unchanged, just applied once per entry.</summary>
+    private void FoldTrackedEvent(TrackedRule rule, TrackedAcc acc, GameEvent evt)
+    {
+        var (item, qty) = (rule.Kind, evt) switch
+        {
+            (WatchKind.Loot, LootEvent l) when rule.Matches(l.Item) => (l.Item, 1),
+            (WatchKind.Loot, AutoSellEvent a) when rule.Matches(a.Item) => (a.Item, a.Count),
+            (WatchKind.Kill, KillEvent k) when (k.Killer == "You" || IsPet(k.Killer))
+                && rule.Matches(k.Target) => (k.Target, 1),
+            (WatchKind.SkillUp, SkillUpEvent su) when rule.Matches(su.Skill) => (su.Skill, 1),
+            (WatchKind.Death, DeathEvent de) when rule.Matches(de.Killer)
+                => ($"Slain by {de.Killer}", 1),
+            (WatchKind.Milestone, LevelEvent lev) => ($"Level {lev.Level}", 1),
+            (WatchKind.Milestone, AaEvent) => ("AA point", 1),
+            (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
+                when SpellFadeMatches(rule, wo.Spell)
+                => (FadeLabel(wo), 1),
+            // Buff/HoT fades carry candidate spells (the log named
+            // none); the rule fires if ANY candidate satisfies it, and
+            // the row shows the catalog label ("Haste") since we can't
+            // know which haste it was. CC filters are excluded: these
+            // flavor lines are first-person — something wore off YOU —
+            // while the CC filters mean "my control of a MOB ended".
+            // rahvynn (#69): once the fade catalog learned "You are no
+            // longer stunned.", the default CC-broke rule fired every
+            // time an NPC's stun on HIM wore off. ByName/AnySpell/HoT
+            // still hear self-fades — watching your own buffs is their job.
+            (WatchKind.SpellFade, BuffFadeEvent bf)
+                when !IsCcFilter(rule.SpellFilter) && BuffFadeMatches(rule, bf)
+                => (bf.Label, 1),
+            // Re-matched here rather than trusted from ingest: the journal
+            // holds lines kept for ANY text rule, so each rule still has to
+            // claim its own. The line itself is the item, so a raid script
+            // repeating the same call groups into one row with a count.
+            (WatchKind.Text, RawLineEvent raw) when rule.Matches(raw.Line)
+                => (Ellipsize(raw.Line), 1),
+            _ => (null, 0),
+        };
+        if (item is null) return;
+        acc.Items[item] = acc.Items.TryGetValue(item, out var c) ? c + qty : qty;
+        acc.Total += qty;
+        acc.First ??= evt.Time;
+        acc.Last = evt.Time;
+        acc.LastItem = item;
+    }
     private static double OverlapSeconds(DateTime aStart, DateTime aEnd, DateTime bStart, DateTime bEnd)
     {
         var s = aStart > bStart ? aStart : bStart;

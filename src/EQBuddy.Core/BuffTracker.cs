@@ -291,13 +291,36 @@ public sealed class BuffTracker
                 new HashSet<string>(_seenOwnCasts, StringComparer.OrdinalIgnoreCase));
     }
 
+    private int _savePending;
+
+    /// <summary>Debounced like StackingLedgerStore.Save (perf audit #13, the #3
+    /// idiom): SaveStore is called under this tracker's lock on the ingest path —
+    /// the synchronous write stalled tailing whenever a fade taught a duration.
+    /// Flag now, one write ~2 s later; hosts call <see cref="Flush"/> at exit.
+    /// Callers hold _lock.</summary>
     private void SaveStore()
+    {
+        if (_storePath is null) return;
+        if (Interlocked.Exchange(ref _savePending, 1) == 1) return;
+        Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            Interlocked.Exchange(ref _savePending, 0);
+            Flush();
+        });
+    }
+
+    /// <summary>Write now — hosts call this at exit. Serializes under the lock,
+    /// writes outside it.</summary>
+    public void Flush()
     {
         if (_storePath is not { } path) return;
         try
         {
+            string json;
+            lock (_lock) json = JsonSerializer.Serialize(_learned);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(_learned));
+            File.WriteAllText(path, json);
         }
         catch { /* best-effort */ }
     }

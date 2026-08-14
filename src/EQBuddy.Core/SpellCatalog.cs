@@ -245,6 +245,12 @@ public sealed partial class SpellCatalog
         new(StringComparer.OrdinalIgnoreCase);
     private string? _storePath;
 
+    /// <summary>Bumped every time <see cref="Learn"/> actually changes a
+    /// classification — the cheap "did any Classify answer move" signal consumers
+    /// memoizing over classifications key their invalidation on (perf audit #10).
+    /// Store loading counts too: it changes answers the same way.</summary>
+    public int Revision { get; private set; }
+
     /// <summary>
     /// Loads previously learned categories from <paramref name="path"/> and saves after
     /// every new learning, so a charm spell taught once (via its "Master" tell) stays
@@ -260,9 +266,11 @@ public sealed partial class SpellCatalog
             var stored = JsonSerializer.Deserialize<Dictionary<string, SpellCategory>>(
                 File.ReadAllText(path));
             if (stored is null) return;
-            foreach (var (name, category) in stored)
-                if (category != SpellCategory.Unknown && name.Length > 0 && !Seed.ContainsKey(name))
-                    _learned.TryAdd(name, category);
+            lock (_storeLock)
+                foreach (var (name, category) in stored)
+                    if (category != SpellCategory.Unknown && name.Length > 0 && !Seed.ContainsKey(name)
+                        && _learned.TryAdd(name, category))
+                        Revision++;
         }
         catch
         {
@@ -270,19 +278,50 @@ public sealed partial class SpellCatalog
         }
     }
 
+    private int _savePending;
+
+    /// <summary>Debounced like StackingLedgerStore.Save (perf audit #13, the #3
+    /// idiom): Learn runs on the ingest path — inside SessionStats.Apply, under its
+    /// stats lock — so a synchronous file write here stalled tailing for the disk's
+    /// worth of time on every new spell. Flag now, ONE write ~2 s later on a worker
+    /// thread; hosts call <see cref="Flush"/> at exit for the last word. A crash in
+    /// the window merely re-learns the spell from the next log line.</summary>
     private void SaveStore()
+    {
+        if (_storePath is null) return;
+        if (Interlocked.Exchange(ref _savePending, 1) == 1) return;
+        Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            Interlocked.Exchange(ref _savePending, 0);
+            Flush();
+        });
+    }
+
+    /// <summary>Write now — hosts call this at exit. Serializes a copy taken under
+    /// the store lock (Learn mutates concurrently on the ingest thread), writes
+    /// outside it, and never inside SessionStats' lock.</summary>
+    public void Flush()
     {
         if (_storePath is not { } path) return;
         try
         {
+            string json;
+            lock (_storeLock)
+                json = JsonSerializer.Serialize(_learned);
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, JsonSerializer.Serialize(_learned));
+            File.WriteAllText(path, json);
         }
         catch
         {
             // Persistence is best-effort; in-memory learning still works for the session.
         }
     }
+
+    /// <summary>Guards <see cref="_learned"/> against the background serializer —
+    /// reads on the hot Classify path stay lock-free, same as before (writes were
+    /// already serialized by the callers' own locks).</summary>
+    private readonly object _storeLock = new();
 
     /// <summary>Strips a trailing roman-numeral rank so "Stinging Swarm V" and
     /// "Stinging Swarm" are the same spell.</summary>
@@ -319,7 +358,8 @@ public sealed partial class SpellCatalog
         var name = BaseName(spell);
         if (name.Length == 0 || Seed.ContainsKey(name) || WikiCc.Value.ContainsKey(name)) return false;
         if (_learned.TryGetValue(name, out var existing) && existing == category) return false;
-        _learned[name] = category;
+        lock (_storeLock) _learned[name] = category;   // vs. the background serializer
+        Revision++;
         SaveStore();
         return true;
     }
