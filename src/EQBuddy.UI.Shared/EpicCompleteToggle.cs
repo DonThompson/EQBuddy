@@ -21,7 +21,9 @@ public static class EpicCompleteToggle
 
     public static void CheckAll(IEnumerable<EpicQuestChecklistItem> items)
     {
-        foreach (var i in items) i.Acquired = true;
+        // Marking the class complete IS the player deciding, so parked auto-ticks
+        // (the * rows) stop being provisional — same contract as a manual toggle.
+        foreach (var i in items) { i.Acquired = true; i.AcquiredUnassigned = false; }
     }
 
     /// <summary>Put every row back the way the snapshot saw it — the snapshot wins
@@ -32,6 +34,13 @@ public static class EpicCompleteToggle
     public static void Restore(IEnumerable<EpicQuestChecklistItem> items, List<string> acquiredIds)
     {
         var acquired = new HashSet<string>(acquiredIds, StringComparer.Ordinal);
-        foreach (var i in items) i.Acquired = acquired.Contains(i.Id);
+        // The snapshot stores ids only, so a restored tick comes back without its
+        // provisional * — the tick is what matters; the auto-check never re-parks
+        // a row that is already acquired.
+        foreach (var i in items)
+        {
+            i.Acquired = acquired.Contains(i.Id);
+            if (!i.Acquired) i.AcquiredUnassigned = false;
+        }
     }
 }

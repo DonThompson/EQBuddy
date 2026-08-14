@@ -1,5 +1,18 @@
 [
  {
+  "version": "1.77.0",
+  "date": "2026-08-14",
+  "highlights": [
+   "NEW - the EPIC CHECKLIST CHECKS ITSELF: the second half promised in discussion #121 (thanks tvongaza for the ask, dandrews2930 for the prototype it builds on). Steps now auto-tick from your own loot lines, the same machinery the Sky checklist uses - 392 of the 486 steps name a lootable item and are now hands-free; hail/kill/dialogue steps stay manual checkboxes. An item wanted by several classes parks one tick with a * so you decide who it was for.",
+   "NEW (discussion #138, thanks aodgizmo): \"Epic complete\" now asks before bulk-checking a class (\"Mark all N remaining steps complete?\"), and unchecking it RESTORES the exact per-step state from before - an accidental click is two clicks to undo instead of a manual re-tour of the list.",
+   "NEW (discussion #131, thanks TropicMike): the Loot drill-down window grows a per-item \"Created by merging\" section - every crafted item with its count, same bars, same wiki hover and quest badges as loot rows. The card header's \"+N made\" finally has a breakdown behind it.",
+   "FIXED (discussion #135, thanks bjstrange - the bug behind the bug): re-charming quickly after a break could silently wipe the NEW charm's clock when the old charm's fade line printed late, so the next break announced no \"held M:SS\". A fade arriving within seconds of an already-recorded break is now recognized as the echo it is.",
+   "FIXED (discussion #137, thanks bjstrange): a watch rule catching several DIFFERENT items in the same instant (\"Wind Rune\" when two runes drop together) announced the last name twice (\"Wind Rune Meda ×2\"). The alert now names each new item; ×N is reserved for real multiples of the same one.",
+   "IMPROVED - the SKY TESTS quest catalog is now complete: the community wiki restructured its Plane of Sky pages this week (which would have silently emptied them from the quest tracker), and the harvester now follows the reorganization - every class's Sky tests carry their full item lists (wind runes AND boss drops, which even the old pages never had), with Bard, Beastlord, and Berserker entering the catalog for the first time. Weekly wiki refresh included: 247 changed pages, 10,956 items, plus a corrected Monk Improved Mend AA (3/6/9, 10/20/30%).",
+   "EQBuddy is a BETA - if a checkbox ticks itself wrongly, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.76.0",
   "date": "2026-08-13",
   "highlights": [
