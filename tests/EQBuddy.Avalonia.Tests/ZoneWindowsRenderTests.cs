@@ -101,14 +101,6 @@ public sealed class ZoneWindowsRenderTests : IDisposable
         var window = new MapWindow(host);
         window.Show();
         window.MaybeRefresh(force: true);
-        // Settle layout BEFORE touching the menus. The map host's size change refits
-        // the view, and refitting rewrites the status bar with the map's standing
-        // caption — so a first layout pass still pending when a menu click runs the
-        // dispatcher wipes the message that click just wrote. Text measures differently
-        // per platform, so the pass lands at a different moment on each; forcing it here
-        // makes the status bar mean the last click everywhere.
-        window.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
 
         // Circles win over the map's own menu when the right-click lands on a dot:
         // the ring owns the ContextRequested bubble and stops it there.
@@ -122,18 +114,16 @@ public sealed class ZoneWindowsRenderTests : IDisposable
         Assert.False(mapHost.ContextMenu!.IsOpen);
         ring.ContextMenu.Close();
 
-        Click(CircleMenuItem(window, "Confirm location"));
+        var said = ClickAndReadTexts(window, CircleMenuItem(window, "Confirm location"));
         Assert.True(host.SpawnPoints.Snapshot("Befallen").Points.Single().Confirmed);
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
-            t => t.Text?.StartsWith("Location confirmed (Decaying skeleton)") == true);
+        Assert.Contains(said, t => t?.StartsWith("Location confirmed (Decaying skeleton)") == true);
 
         // The edit bumped Revision, so the next tick rebuilds the circles — and the
         // rebuilt menu offers the other direction.
         window.MaybeRefresh(force: true);
-        Click(CircleMenuItem(window, "Remove this spawn point"));
+        said = ClickAndReadTexts(window, CircleMenuItem(window, "Remove this spawn point"));
         Assert.Empty(host.SpawnPoints.Snapshot("Befallen").Points);
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
-            t => t.Text?.StartsWith("Spawn point removed (Decaying skeleton)") == true);
+        Assert.Contains(said, t => t?.StartsWith("Spawn point removed (Decaying skeleton)") == true);
 
         // Opening the map menu relabels its one item with the zone it would wipe…
         var reset = mapHost.ContextMenu.Items.OfType<MenuItem>().Single();
@@ -142,9 +132,8 @@ public sealed class ZoneWindowsRenderTests : IDisposable
         Assert.Equal("Reset spawn points — Befallen…", reset.Header);
         mapHost.ContextMenu.Close();
         // …and with nothing archived any more, it says so instead of asking.
-        Click(reset);
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
-            t => t.Text == "Nothing to reset — Befallen has no archived spawn points yet.");
+        Assert.Contains("Nothing to reset — Befallen has no archived spawn points yet.",
+            ClickAndReadTexts(window, reset));
 
         window.Close();
         Dispatcher.UIThread.RunJobs();
@@ -157,10 +146,18 @@ public sealed class ZoneWindowsRenderTests : IDisposable
             .ContextMenu!.Items.OfType<MenuItem>()
             .Single(i => (i.Header as string) == header);
 
-    private static void Click(MenuItem item)
+    /// <summary>Click a menu item and read the window's text back before anything else runs.
+    /// The reply a click writes is transient: the status bar it lands in is shared with the
+    /// map's standing caption, and any layout pass that resizes the map host refits the view,
+    /// which rewrites the caption over the reply (as does the app's own refresh tick a second
+    /// later — the same reason the WPF window behaves this way). Whether a pass resizes
+    /// anything depends on how the text measures, so pumping the dispatcher here made this
+    /// test pass on one platform's fonts and fail on another's. Handlers run synchronously on
+    /// RaiseEvent, so the snapshot below is exactly what the click put on screen.</summary>
+    private static List<string?> ClickAndReadTexts(MapWindow window, MenuItem item)
     {
         item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
+        return window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
     }
 
     [AvaloniaFact]
