@@ -321,6 +321,12 @@ public sealed class SessionStats
     // Break-time → held seconds, so the fade alert's label can say "held 4:32"
     // (the journal scan rebuilds labels repeatedly; this is its lookaside).
     private readonly Dictionary<DateTime, double> _charmHoldByBreak = new();
+    // The game prints a charm's fade line up to several seconds AFTER the event that
+    // actually broke it. One window covers both faces of that skew: FadeLabel looks
+    // this far back for a recorded hold (#135, v1.76.0: attack-then-fade), and the
+    // wear-off ingest treats a fade this close to an already-recorded break as that
+    // break's delayed echo rather than a new break (#135, bjstrange: re-charm cascade).
+    private const int CharmFadeSkewSeconds = 10;
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
@@ -705,6 +711,11 @@ public sealed class SessionStats
                     break;
                 case SpellWornOffEvent { Pet: false } wo when _petName is not null && wo.Target.Length > 0
                         && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
+                    // A fade this soon after a recorded break is that break's delayed
+                    // echo: the break already dropped the OLD claim, so the claim held
+                    // now belongs to a re-charm of the same creature and must survive
+                    // the stale line (#135, bjstrange: re-charm echo cascade).
+                    if (IsCharmBreakEcho(wo.Time)) break;
                     // Charm broke on our pet. Drop the claim now instead of waiting for the
                     // creature to turn around and hit us.
                     RecordCharmBreak(wo.Time);
@@ -717,6 +728,7 @@ public sealed class SessionStats
                     // Befriend Animal's break line names NO target — "Your charm spell
                     // has worn off." (eqlwiki; unique among the animal charms). Only one
                     // charm can be active, so a targetless charm fade is ours.
+                    if (IsCharmBreakEcho(woNoTarget.Time)) break;   // #135: stale echo, claim is the re-charm's
                     RecordCharmBreak(woNoTarget.Time);
                     _petName = null;
                     _petConfirmed = false;
@@ -1143,19 +1155,27 @@ public sealed class SessionStats
                 _charmHoldByBreak.Remove(old);
     }
 
+    /// <summary>#135 (bjstrange): a charm fade line landing within the skew window of
+    /// an already-recorded break is that break's delayed echo, not a new break. Acting
+    /// on it would measure a bogus tiny hold from any re-charm in between AND null the
+    /// re-charm's live claim — the later real break then has no landing to measure from,
+    /// which is exactly the missing "held M:SS" bjstrange kept seeing.</summary>
+    private bool IsCharmBreakEcho(DateTime at) => _charmHoldByBreak.Keys
+        .Any(k => k <= at && (at - k).TotalSeconds <= CharmFadeSkewSeconds);
+
     /// <summary>Journal label for a fade row/alert — a charm break gets its hold
     /// duration appended (#130). The lookup tolerates ordering skew (#135,
     /// bjstrange: "doesn't always trigger the time"): when the pet turning on you
     /// is what breaks the charm, the hold gets recorded at the ATTACK's timestamp
     /// and the fade line prints a few seconds later — so an exact-time miss falls
-    /// back to the most recent hold recorded within the previous ten seconds.</summary>
+    /// back to the most recent hold recorded within the skew window.</summary>
     private string FadeLabel(SpellWornOffEvent wo)
     {
         var label = wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell;
         if (!_charmHoldByBreak.TryGetValue(wo.Time, out var held))
         {
             var near = _charmHoldByBreak.Keys
-                .Where(k => k <= wo.Time && (wo.Time - k).TotalSeconds <= 10)
+                .Where(k => k <= wo.Time && (wo.Time - k).TotalSeconds <= CharmFadeSkewSeconds)
                 .OrderByDescending(k => k)
                 .Cast<DateTime?>()
                 .FirstOrDefault();
