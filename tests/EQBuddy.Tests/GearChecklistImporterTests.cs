@@ -111,4 +111,33 @@ public sealed class GearChecklistImporterTests
             item => { Assert.True(item.IsExaltation); Assert.False(item.Acquired); Assert.Equal("Haste Gem", item.Item); Assert.Equal("Enhancement Haste I", item.ExaltationEffect); },
             item => { Assert.True(item.IsExaltation); Assert.True(item.Acquired); Assert.Equal("See Invisible Eye", item.Item); });
     }
+
+    [Fact]
+    public void ReimportPreservesTicksMadeInTheApp()
+    {
+        // A box ticked in the app — by hand or by the loot/inventory auto-done — is
+        // the player's state; a fresh export that doesn't know about it must not
+        // untick it. Matching is the importer's own slot|exaltation|item key, so a
+        // changed wish (new item in the slot) honestly starts unticked.
+        var existing = new List<GearChecklistItem>
+        {
+            new() { Slot = "Head", Item = "Steel Helm", Acquired = true },
+            new() { Slot = "Head", IsExaltation = true, Item = "Haste Gem", Acquired = true },
+            new() { Slot = "Waist", Item = "Crushbone Belt +5", Acquired = false },
+        };
+        var imported = new List<GearChecklistItem>
+        {
+            new() { Slot = "Head", Item = "Steel Helm", Acquired = false },
+            new() { Slot = "Head", IsExaltation = true, Item = "Haste Gem", Acquired = false },
+            new() { Slot = "Waist", Item = "Crushbone Belt +5", Acquired = false },
+            new() { Slot = "Chest", Item = "Fine Breastplate", Acquired = true },   // export's own tick
+        };
+
+        GearChecklistImporter.PreserveAcquired(imported, existing);
+
+        Assert.True(imported.Single(i => i.Item == "Steel Helm").Acquired);
+        Assert.True(imported.Single(i => i.Item == "Haste Gem").Acquired);
+        Assert.False(imported.Single(i => i.Item == "Crushbone Belt +5").Acquired);
+        Assert.True(imported.Single(i => i.Item == "Fine Breastplate").Acquired);
+    }
 }

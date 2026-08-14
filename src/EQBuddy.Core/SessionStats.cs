@@ -148,6 +148,11 @@ public sealed class SessionStats
     private readonly Dictionary<string, (int Count, string LastSource)> _loot = new(StringComparer.OrdinalIgnoreCase);
     private int _lootCount;
     private readonly Dictionary<string, int> _crafted = new(StringComparer.OrdinalIgnoreCase);
+    // Loot-merge RESULTS ("looted a Belt +2 ... to create a Belt +5"): the consumed
+    // item lands in _loot, but the created "+5" appeared nowhere in the snapshot —
+    // and reaching a wished tier via loot-merge is the Gear card's main auto-done
+    // moment. Kept apart from _crafted so the "+N made" header stays what it was.
+    private readonly Dictionary<string, int> _upgraded = new(StringComparer.OrdinalIgnoreCase);
 
     private long _copper; private int _coinDrops; private long _biggestDrop;
     private long _vendorCopper; private int _salesCount;
@@ -986,6 +991,8 @@ public sealed class SessionStats
                     // "ready ×17" was counting every merge-consumed belt).
                     if (l.UpgradeResult is null)
                         QuestStore?.RecordLoot(AaCharacterKey, l.Item, l.Count, l.Time);
+                    else
+                        Bump(_upgraded, l.UpgradeResult);   // the created "+N" form
                     break;
                 case CraftEvent c:
                     Bump(_crafted, c.Item);
@@ -1657,7 +1664,7 @@ public sealed class SessionStats
         _lastLoc = null; _locTrail.Clear(); _trackedMemo = null;
         _runeGainCount = 0; _runeGainPoints = 0;
         _runeBlockStreak = 0; _runeBlockStreakMax = 0; _runeBlockCount = 0;
-        _loot.Clear(); _lootCount = 0; _crafted.Clear();
+        _loot.Clear(); _lootCount = 0; _crafted.Clear(); _upgraded.Clear();
         _copper = 0; _coinDrops = 0; _biggestDrop = 0;
         _vendorCopper = 0; _salesCount = 0; _soldItems.Clear();
         _xpPercent = 0; _xpTicks = 0; _xpSinceLevel = 0; _levels.Clear();
@@ -1953,6 +1960,8 @@ public sealed class SessionStats
                 Crafted = _crafted.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 CraftedTotal = _crafted.Values.Sum(),
+                Upgraded = _upgraded.OrderByDescending(kv => kv.Value)
+                    .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 Copper = _copper + _vendorCopper,
                 CorpseCopper = _copper,
                 VendorCopper = _vendorCopper,
@@ -2170,6 +2179,10 @@ public sealed class StatsSnapshot
     public List<LootDetail> Loot { get; init; } = [];
     public List<NameCount> Crafted { get; init; } = [];
     public int CraftedTotal { get; init; }
+    /// <summary>Loot-merge results by created name ("... to create a Belt +5" → Belt +5).
+    /// Not part of CraftedTotal — the merge consumed a held item, nothing new was "made";
+    /// the Gear card's auto-done is the consumer (reaching a wished "+N" tier).</summary>
+    public List<NameCount> Upgraded { get; init; } = [];
     public long Copper { get; init; }
     public long CorpseCopper { get; init; }
     public long VendorCopper { get; init; }

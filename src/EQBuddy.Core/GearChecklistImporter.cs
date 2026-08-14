@@ -50,6 +50,25 @@ public static partial class GearChecklistImporter
         return result;
     }
 
+    /// <summary>A re-import must not lose ticks made in the app — hand-checked or
+    /// auto-done boxes are the player's state, and the fresh export only knows what
+    /// the website was told. Any row Acquired in the OLD list stays Acquired when the
+    /// new list carries the same row (the importer's own slot|exaltation|item key).
+    /// Union on purpose: the export's is-collected still ticks rows it knows about.</summary>
+    public static void PreserveAcquired(IReadOnlyList<GearChecklistItem> imported,
+        IReadOnlyList<GearChecklistItem> existing)
+    {
+        var acquired = existing.Where(i => i.Acquired)
+            .Select(ItemKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in imported)
+            if (!item.Acquired && acquired.Contains(ItemKey(item)))
+                item.Acquired = true;
+    }
+
+    private static string ItemKey(GearChecklistItem item) =>
+        $"{item.Slot}|{item.IsExaltation}|{item.Item}";
+
     private static void AddItem(GearChecklistImportResult result, HashSet<string> seen,
         string heading, string openTag, string body)
     {
