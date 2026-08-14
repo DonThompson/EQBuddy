@@ -14,9 +14,14 @@ internal static class SkyQuestDefaults
         SkyLine("sky-012|Bard|Cilin Spellsinger|Harmonic Spear|Efreeti War Spear|Isle eight: the Hand of Veeshan; Isle four: Overseer of Air; Isle 1.5: Noble Dojorn"),
         SkyLine("sky-013|Bard|Cilin Spellsinger|Harmonic Spear|Nebulous Diamond|Isle 8: Eye of Veeshan"),
         SkyLine("sky-014|Bard|Cilin Spellsinger|Harmonic Spear|Wind Rune Heda|Trash mobs"),
-        SkyLine("sky-003|Bard|Cilin Spellsinger|Mantle of the Songweaver|Light Woolen Mantle|Isle 4: Keeper of Souls"),
+        // #139 (n3cr0nk1tt3n, first-hand hand-in): Mask of Song takes the Light Woolen
+        // MANTLE and Mantle of the Songweaver the MASK. The wiki's bard table still
+        // carries these two swapped, so a harvest diff that "agrees" with the wiki here
+        // is reproducing its error — the drop sources belong to the ITEMS and travel
+        // with them (Mask: Isle 3 Gorgalosk, Mantle: Isle 4 Keeper of Souls).
+        SkyLine("sky-003|Bard|Cilin Spellsinger|Mantle of the Songweaver|Light Woolen Mask|Isle 3: Gorgalosk"),
         SkyLine("sky-004|Bard|Cilin Spellsinger|Mantle of the Songweaver|Wind Rune Kala|Trash mobs"),
-        SkyLine("sky-005|Bard|Cilin Spellsinger|Mask of Song|Light Woolen Mask|Isle 3: Gorgalosk"),
+        SkyLine("sky-005|Bard|Cilin Spellsinger|Mask of Song|Light Woolen Mantle|Isle 4: Keeper of Souls"),
         SkyLine("sky-006|Bard|Cilin Spellsinger|Mask of Song|Wind Rune Meda|Trash mobs"),
         SkyLine("sky-015|Beastlord|Animist Kratho|Azarack Skin Wristwraps|Azarack Skin|Isle 2: Protector of Sky"),
         SkyLine("sky-016|Beastlord|Animist Kratho|Azarack Skin Wristwraps|Wind Rune Heda|Trash mobs"),
