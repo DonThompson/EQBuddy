@@ -77,6 +77,25 @@ src/EQBuddy.UI.Shared/AlertThrottle.cs were written independently):
 Good designs deserve naming their source. Thanks, Josh.
 --------------------------------------------------------------------------------
 
+EQBuddy Sans (src/EQBuddy/Fonts/EQBuddySans.ttf)
+--------------------------------------------------------------------------------
+Built from Google's Noto fonts — Noto Sans, Noto Sans Symbols, Noto Sans
+Symbols 2, Noto Sans Math, and Noto Emoji — all licensed under the SIL Open
+Font License 1.1, whose full text ships beside the font in
+src/EQBuddy/Fonts/OFL.txt.
+
+The font is a subset of those sources with EQBuddy's own 80-odd icon code
+points merged into a Latin text base. It is renamed rather than shipped as
+"Noto", per the OFL's reserved-name rule, because it is a modified version.
+It loads ONLY under Wine — where prefixes ship no Segoe fonts and DirectWrite
+consults just the primary font, so every icon boxes without it. Native Windows
+never touches it.
+
+Built and contributed by liminalwarmth (PR #148), together with
+scripts/build-icon-font.py, which regenerates it reproducibly from pinned,
+hash-verified sources. Thanks!
+--------------------------------------------------------------------------------
+
 Lineage
 --------------------------------------------------------------------------------
 EQBuddy reads the log file the game already writes and nothing else — the

@@ -7,10 +7,15 @@
 
     <!-- 2026-08-11 modernization: Segoe UI Variable when the OS ships it (Win11),
          Segoe UI otherwise — no font payload either way. Tabular numerals globally:
-         every count, countdown, and dps figure lines up without per-site opt-in. -->
+         every count, countdown, and dps figure lines up without per-site opt-in.
+         The family lives in a resource so App can swap in the bundled app font
+         when running under Wine (WineFonts.cs) — Wine prefixes ship no Segoe
+         fonts at all, and Wine's DirectWrite reads only the primary font for
+         WPF, so every 💀/🔮 section icon renders as an empty box there. -->
+    <FontFamily x:Key="AppFontFamily">Segoe UI Variable Text, Segoe UI</FontFamily>
     <Style TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
         <Setter Property="Typography.NumeralAlignment" Value="Tabular"/>
     </Style>
 
