@@ -77,6 +77,10 @@ public partial class MainWindow : Window
         // (+5/15/30/50%); learned durations already carry it and are never re-scaled.
         _buffTracker.ReinforcementRank = () => _stats.AaRank("Spell Casting Reinforcement");
         _watcher.Buffs = _buffTracker;
+        // Configure BEFORE Warmup: the warmup instance applies the stored voice/rate/
+        // volume at creation, so even the very first alert speaks with them.
+        EQBuddy.UI.Shared.SpokenAlerts.Configure(
+            _settings.SpeechVoice, _settings.SpeechRate, _settings.SpeechVolume);
         EQBuddy.UI.Shared.SpokenAlerts.Warmup();   // first alert must not pay SAPI's init
         _raidLedger = new RaidKillLedger(AppPaths.File("raid-kills.json"))
         { CharacterKey = () => _stats.LedgerCharacterKey };
@@ -3409,7 +3413,8 @@ public partial class MainWindow : Window
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
             PlayAlertSound(sound, coalesce: true);
         if (rule.AlertSpeech)
-            EQBuddy.UI.Shared.SpokenAlerts.Speak(label);
+            EQBuddy.UI.Shared.SpokenAlerts.Speak(
+                EQBuddy.UI.Shared.SpokenAlerts.ResolvePhrase(rule.SpokenPhrase, label));
     }
 
     /// <summary>

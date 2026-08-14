@@ -184,6 +184,12 @@ public sealed class MainWindow : Window
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
+        // Voice settings are set app-wide even though the picker UI is WPF-only for now:
+        // this build speaks through the same SpokenAlerts on Windows, and settings.json
+        // may have been shaped by the WPF app. Stored-only on Linux (Speak no-ops there)
+        // and ignored by macOS's `say`.
+        EQBuddy.UI.Shared.SpokenAlerts.Configure(
+            _settings.SpeechVoice, _settings.SpeechRate, _settings.SpeechVolume);
         // Before any tailing: the initial full-log ingest has to know which text rules to
         // watch for, or a Text rule would miss everything already in today's log.
         _stats.RefreshTextPatterns(_settings.TrackedRules);
@@ -1371,7 +1377,8 @@ public sealed class MainWindow : Window
         if (EQBuddy.UI.Shared.AlertSoundCatalog.Resolve(rule, _settings.AlertSound) is { } sound)
             PlayAlertSound(sound, coalesce: true);
         if (rule.AlertSpeech)
-            EQBuddy.UI.Shared.SpokenAlerts.Speak(label);
+            EQBuddy.UI.Shared.SpokenAlerts.Speak(
+                EQBuddy.UI.Shared.SpokenAlerts.ResolvePhrase(rule.SpokenPhrase, label));
     }
 
     /// <summary>Deaths seen last refresh, so a new one can cancel pending cues — a reminder

@@ -44,6 +44,12 @@ public static partial class WatchRuleShare
         [JsonPropertyName("c")] public string? Color { get; set; }
         [JsonPropertyName("sn")] public string? SoundName { get; set; }
         [JsonPropertyName("d")] public double Delay { get; set; }
+        // Added after 1.77.0. The codec's compatibility contract is exactly this:
+        // System.Text.Json ignores unknown keys, so older versions import strings
+        // carrying "ph" cleanly (minus the phrase), and the enum guard on k/f is the
+        // only thing that ever refuses a newer string. New optional fields must stay
+        // nullable-with-default so their absence in old strings reads as "not set".
+        [JsonPropertyName("ph")] public string? Phrase { get; set; }
     }
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -68,6 +74,7 @@ public static partial class WatchRuleShare
             // mildly leaky) elsewhere. Only built-in names travel.
             SoundName = IsBuiltInSoundName(r.AlertSoundName) ? r.AlertSoundName : null,
             Delay = r.AlertDelaySeconds,
+            Phrase = r.SpokenPhrase.Length > 0 ? r.SpokenPhrase : null,
         }).ToList();
 
         var json = JsonSerializer.SerializeToUtf8Bytes(wire, JsonOpts);
@@ -137,6 +144,7 @@ public static partial class WatchRuleShare
                 AlertColor = Clean(w.Color, 30),
                 AlertSoundName = IsBuiltInSoundName(w.SoundName ?? "") ? w.SoundName! : "",
                 AlertDelaySeconds = w.Delay,   // property setter clamps
+                SpokenPhrase = Clean(w.Phrase),
             });
         }
         return rules;
@@ -152,7 +160,9 @@ public static partial class WatchRuleShare
         var cues = new List<string>();
         if (r.AlertBanner) cues.Add("banner");
         if (r.AlertSound) cues.Add(r.AlertSoundName.Length > 0 ? $"sound: {r.AlertSoundName}" : "sound");
-        if (r.AlertSpeech) cues.Add("speech");
+        // The phrase is shown verbatim: the import preview's whole job is "what will
+        // this say on my machine", and a custom phrase IS what it will say.
+        if (r.AlertSpeech) cues.Add(r.SpokenPhrase.Length > 0 ? $"says \"{r.SpokenPhrase}\"" : "speech");
         if (r.AlertDelaySeconds > 0) cues.Add($"delay {r.AlertDelaySeconds:0.#}s");
         var name = r.Name.Length > 0 ? r.Name : "(unnamed)";
         return $"{name} — {what}" + (cues.Count > 0 ? $" — {string.Join(", ", cues)}" : " — silent");
