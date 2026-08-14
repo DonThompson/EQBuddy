@@ -29,7 +29,8 @@ public sealed class BreakoutWindow : Window
     private string _signature = "";
     private PixelPoint _savedPosition;
     private LastFightInfo? _lastFight;
-    private IReadOnlyDictionary<string, (int Casts, int Resists)>? _resists;
+    private IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? _resists;
+    private IReadOnlyDictionary<string, string>? _blockedBy;
     private (double Opacity, Color Tint) _appliedBg = (-1, default);
 
     /// <summary>Raised when the user ✕-dismisses the window — the owner disables this
@@ -43,6 +44,11 @@ public sealed class BreakoutWindow : Window
     /// <summary>Whose parse the ⧉ fight export is labeled with — the owner supplies the
     /// current character name (WPF: Main.Identity.Character).</summary>
     public Func<string>? CharacterName { get; set; }
+
+    /// <summary>Names the buffs that blocked a spell, for the "N blocked" row tooltip.
+    /// The ledger lives on MainWindow (WPF reaches it through its Main reference; here
+    /// the hook is explicit, same as the two above).</summary>
+    public Func<StatsSnapshot, IReadOnlyDictionary<string, string>?>? BlockedBy { get; set; }
 
     public BreakoutWindow(AppSettings settings, BreakoutKind kind)
     {
@@ -171,6 +177,7 @@ public sealed class BreakoutWindow : Window
         ApplyBackgroundOpacity();
         _lastFight = s.LastFight;
         _resists = MainWindow.SpellResistLookup(s);
+        _blockedBy = BlockedBy?.Invoke(s);
         var fight = s.LastFight;
         var (title, stats, seconds, rateLabel) = _kind switch
         {
@@ -224,7 +231,7 @@ public sealed class BreakoutWindow : Window
         // session-wide, and stamping them on a single fight would misstate it.
         var resists = _kind == BreakoutKind.Damage && !_fightScope ? _resists : null;
         BreakdownRows.FillAbilityRowsSorted(_rows, stats, StatSort.Total, Math.Max(1, seconds),
-            rateLabel, max: 10, resists: resists);
+            rateLabel, max: 10, resists: resists, blockedBy: resists is null ? null : _blockedBy);
     }
 
     public void HideAndSave() { SavePosition(); Hide(); }

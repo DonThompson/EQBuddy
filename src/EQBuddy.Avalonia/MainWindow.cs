@@ -1877,7 +1877,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             PaintCombatSpark(s);
             FillBreakdown(_damageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps",
-                SpellResistLookup(s));
+                SpellResistLookup(s), BlockedByLookup(s));
             // Shares the damage sort bar above it — it's the same rows, one level down.
             // The overall Pet row is already visible above, so keep this potentially long
             // per-ability list folded until the player asks for it.
@@ -1933,7 +1933,11 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             var showSpells = s.HealsBySpell.Count > 0;
             _healSpellsLabel.IsVisible = showSpells;
             _healSortBar.IsVisible = showSpells;
-            FillBreakdown(_healSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps");
+            // The resist/block lookup rides along: a blocked HoT or buff that has
+            // landed at least once this session gets its "N blocked" here — the only
+            // per-spell row a non-damage spell ever has.
+            FillBreakdown(_healSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps",
+                SpellResistLookup(s), BlockedByLookup(s));
             _healersLabel.IsVisible = s.HealsByHealer.Count > 0;
             FillList(_healerList, s.HealsByHealer.Select(h => (h.Name, $"{h.Total:N0} - {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
         }
@@ -2461,12 +2465,14 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     /// clipboard — the official Discord bans image sharing, so parses travel as text.</summary>
     private async void OnCopyFight(object? sender, EventArgs e)
     {
-        if (CurrentSnapshot().LastFight is not { } f) return;
+        var s = CurrentSnapshot();
+        if (s.LastFight is not { } f) return;
         try
         {
             if (Clipboard is { } clipboard)
                 await clipboard.SetTextAsync(EQBuddy.UI.Shared.FightExport.ToText(
-                    f, Identity.Character, $"v{UpdateChecker.CurrentVersion}"));
+                    f, Identity.Character, $"v{UpdateChecker.CurrentVersion}",
+                    EQBuddy.UI.Shared.FightExport.DeathsDuring(f.Start, f.DurationSeconds, s.Deaths)));
         }
         catch (Exception ex) { App.LogError(ex); }
     }
@@ -2720,6 +2726,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                     {
                         OpenTimeline = OpenFightTimeline,
                         CharacterName = () => Identity.Character,
+                        BlockedBy = BlockedByLookup,
                     };
                     window.Dismissed += dismissed =>
                     {
@@ -4423,15 +4430,34 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         });
     }
 
-    /// <summary>Per-spell resist tallies as a row-lookup dict (session-scoped; empty →
-    /// null so rows skip the lookup entirely). BreakoutWindow consumes this too — WPF
-    /// keeps it on MainWindow, breakouts borrow it.</summary>
-    internal static IReadOnlyDictionary<string, (int Casts, int Resists)>? SpellResistLookup(
+    /// <summary>Per-spell resist/block tallies as a row-lookup dict (session-scoped;
+    /// empty → null so rows skip the lookup entirely). BreakoutWindow consumes this too —
+    /// WPF keeps it on MainWindow, breakouts borrow it.</summary>
+    internal static IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? SpellResistLookup(
         StatsSnapshot s) =>
         s.SpellResists.Count == 0
             ? null
-            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists),
+            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists, x.Blocked),
                 StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Tooltip text per blocked spell ("Blocked by: Chloroplast ×3") from the
+    /// per-character stacking ledger — only for spells the session actually saw blocked,
+    /// so the ledger read stays proportional to what's on screen. Null when nothing was.</summary>
+    internal IReadOnlyDictionary<string, string>? BlockedByLookup(StatsSnapshot s)
+    {
+        if (_stats.StackingStore is not { } store) return null;
+        var blockedSpells = s.SpellResists.Where(x => x.Blocked > 0).Select(x => x.Spell).ToList();
+        if (blockedSpells.Count == 0) return null;
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var spell in blockedSpells)
+        {
+            var blockers = store.BlockersFor(_stats.LedgerCharacterKey, spell);
+            if (blockers.Count == 0) continue;   // blocker-less lines only — no names to show
+            result[spell] = "Blocked by: " + string.Join(", ",
+                blockers.Select(b => $"{b.BlockedBy} ×{b.Count}"));
+        }
+        return result.Count > 0 ? result : null;
+    }
 
     /// <summary>Card lists cap at 30 rows with a spoken overflow line (David's field
     /// report: a long session's Combat card built EVERY ability row ever seen — procs
@@ -4444,9 +4470,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     /// windows grew sort bars).</summary>
     private static void FillBreakdown(Panel list, IEnumerable<SourceDamage> stats,
         StatSort sort, double combatSeconds, string rateLabel,
-        IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null) =>
+        IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? resists = null,
+        IReadOnlyDictionary<string, string>? blockedBy = null) =>
         BreakdownRows.FillAbilityRowsSorted(list, stats, sort, combatSeconds, rateLabel,
-            CardRowCap, resists);
+            CardRowCap, resists, blockedBy);
 
     private static Grid BarRow(string name, string value, double fraction, IBrush barBrush, string? tooltip)
     {
