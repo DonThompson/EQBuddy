@@ -1820,12 +1820,12 @@ public sealed class MainWindow : Window
             };
             var named = Array.Find(AlertSounds, x => x.Name == choice);
             var file = named.File is { } systemFile
-                ? FindDesktopSound(systemFile)
+                ? FindBuiltInSound(choice, systemFile)
                 : choice;
             // Sound themes are not required to carry every freedesktop event. A named
             // built-in should still make noise when its preferred clip is absent.
             if (file.Length == 0 && named.File is not null)
-                file = FindDesktopSound("bell.oga");
+                file = FindBuiltInSound("Ding", "bell.oga");
             if (file.Length > 0 && File.Exists(file))
             {
                 var volume = Math.Clamp(_settings.AlertVolume, 0.0, 1.0);
@@ -1836,6 +1836,35 @@ public sealed class MainWindow : Window
             Console.Beep();
         }
         catch (Exception ex) { App.LogError(ex); }
+    }
+
+    /// <summary>macOS ships no freedesktop sound theme, so every built-in resolved to
+    /// nothing there and alerts were silent (#93, pmcginn). Map the seven built-ins onto
+    /// the system clips every Mac has instead; the names are chosen for character, not
+    /// literal translation (Chimes has no freedesktop twin, Glass is the closest ear).</summary>
+    private static readonly Dictionary<string, string> MacSounds = new()
+    {
+        ["Ding"] = "Ping", ["Notify"] = "Glass", ["Chimes"] = "Blow", ["Chord"] = "Pop",
+        ["Tada"] = "Hero", ["Exclamation"] = "Sosumi", ["Alarm"] = "Submarine",
+    };
+
+    private static string FindBuiltInSound(string name, string desktopFile)
+    {
+        if (!OperatingSystem.IsMacOS()) return FindDesktopSound(desktopFile);
+        var clip = MacSounds.GetValueOrDefault(name, "Ping");
+        foreach (var dir in new[]
+                 {
+                     System.IO.Path.Combine(Environment.GetFolderPath(
+                         Environment.SpecialFolder.UserProfile), "Library", "Sounds"),
+                     "/Library/Sounds", "/System/Library/Sounds",
+                 })
+        {
+            var path = System.IO.Path.Combine(dir, clip + ".aiff");
+            if (File.Exists(path)) return path;
+        }
+        // A Mac missing even Ping.aiff is unheard of, but fall back rather than go silent.
+        var ping = "/System/Library/Sounds/Ping.aiff";
+        return File.Exists(ping) ? ping : "";
     }
 
     private static string FindDesktopSound(string fileName)
@@ -1876,16 +1905,21 @@ public sealed class MainWindow : Window
         return "";
     }
 
-    /// <summary>Try Linux audio backends in order and verify their exit status. Merely
-    /// starting pw-play is not success: it can launch and immediately fail to connect or
-    /// decode an .oga file, which used to swallow the alert without trying paplay.</summary>
+    /// <summary>Try the platform's audio backends in order and verify their exit status.
+    /// Merely starting pw-play is not success: it can launch and immediately fail to
+    /// connect or decode an .oga file, which used to swallow the alert without trying
+    /// paplay. macOS gets afplay first — the Linux list is not installed there, so alerts
+    /// were silently falling through to a Console.Beep the platform ignores (#93,
+    /// pmcginn: "can't get sound working").</summary>
     private static void PlaySoundFile(string file, double volume)
     {
-        // Each Linux backend expresses volume differently. Canberra uses decibels,
-        // PipeWire uses a 0..1 scalar, and PulseAudio uses 0..65536. ALSA's aplay has
-        // no per-stream volume, so it remains the last-resort fallback.
+        // Each backend expresses volume differently. afplay takes a 0..1 (and beyond)
+        // scalar, Canberra uses decibels, PipeWire a 0..1 scalar, PulseAudio 0..65536.
+        // ALSA's aplay has no per-stream volume, so it remains the last-resort fallback.
         var decibels = volume <= 0 ? -100 : 20 * Math.Log10(volume);
-        var players = new (string Command, string[] Args)[]
+        var players = OperatingSystem.IsMacOS()
+            ? [("afplay", new[] { "-v", $"{volume:0.###}", file })]
+            : new (string Command, string[] Args)[]
         {
             ("canberra-gtk-play", ["--volume", $"{decibels:0.##}", "--file", file]),
             ("pw-play", ["--volume", $"{volume:0.###}", file]),
