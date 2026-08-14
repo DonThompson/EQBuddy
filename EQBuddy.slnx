@@ -7,6 +7,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EQBuddy.Avalonia.Tests/EQBuddy.Avalonia.Tests.csproj" />
+    <Project Path="tests/EQBuddy.E2E/EQBuddy.E2E.csproj" />
     <Project Path="tests/EQBuddy.Tests/EQBuddy.Tests.csproj" />
   </Folder>
 </Solution>
