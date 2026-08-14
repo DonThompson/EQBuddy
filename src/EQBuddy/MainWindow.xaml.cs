@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
     private readonly Dictionary<string, int> _skyQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _epicQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
     // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
     // does elsewhere — the checklist re-renders only when a box actually changed.
     private bool _skyQuestDirty = true;
@@ -1472,6 +1473,7 @@ public partial class MainWindow : Window
         _reviewPath = path;
         _targetResults.Clear();
         _skyQuestLootSeen.Clear();
+        _epicQuestLootSeen.Clear();
         if (pick is not null) _watcher.Select(path, pick.StartOffset, pick.EndOffset);
         else _watcher.Select(path);
         ReviewLogItem.Header = "✓ Reviewing an archive — return to live log";
@@ -1545,6 +1547,7 @@ public partial class MainWindow : Window
             // rest of the character state.
             _targetResults.Clear();
             _skyQuestLootSeen.Clear();
+            _epicQuestLootSeen.Clear();
         }
     }
 
@@ -1735,7 +1738,7 @@ public partial class MainWindow : Window
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         UpdateSkyQuestChecklist(s);
         UpdateGearHeaderOnly();
-        UpdateEpicQuestHeaderOnly();
+        UpdateEpicQuestChecklist(s);
         MoneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         ProgressHeader.Text = $"{s.XpPercent:0.0}% xp"
             + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "")
@@ -2417,13 +2420,28 @@ public partial class MainWindow : Window
 
                     foreach (var item in sectionGroup)
                     {
+                        // * = the auto-tick parked a multi-class item here because no
+                        // class lens claimed it (the Sky #106 contract) — the player
+                        // decides where it belongs.
                         var text = new TextBlock
                         {
-                            Text = item.QuestItem,
+                            Text = item.AcquiredUnassigned ? item.QuestItem + " *" : item.QuestItem,
                             FontSize = 11,
                             Foreground = (Brush)FindResource("TextBrush"),
                             TextWrapping = TextWrapping.Wrap,
                         };
+
+                        var tip = $"{item.QuestName}: {item.QuestItem}";
+                        if (item.AcquiredUnassigned)
+                        {
+                            var others = _settings.EpicQuestChecklist
+                                .Where(i => !i.ClassName.Equals(item.ClassName, StringComparison.OrdinalIgnoreCase)
+                                         && i.ItemNames.Any(n => item.ItemNames.Contains(n, StringComparer.OrdinalIgnoreCase)))
+                                .Select(i => i.ClassName).Distinct().ToList();
+                            tip += "\n* Auto-ticked here, but the looted item is also wanted by: "
+                                + string.Join(", ", others)
+                                + ". Untick it and tick the right class if this guess is wrong.";
+                        }
 
                         var check = new CheckBox
                         {
@@ -2432,7 +2450,7 @@ public partial class MainWindow : Window
                             Margin = new Thickness(0, 2, 0, 2),
                             IsEnabled = !completed,
                             Opacity = completed ? 0.55 : 1.0,
-                            ToolTip = $"{item.QuestName}: {item.QuestItem}",
+                            ToolTip = tip,
                         };
                         check.Checked += (_, _) => OnEpicQuestToggled(item, true);
                         check.Unchecked += (_, _) => OnEpicQuestToggled(item, false);
@@ -2523,6 +2541,9 @@ public partial class MainWindow : Window
     private void OnEpicQuestToggled(EpicQuestChecklistItem item, bool acquired)
     {
         item.Acquired = acquired;
+        // The player deciding IS the resolution of an auto-parked tick (#106) —
+        // whichever way they toggled, the * has served its purpose.
+        item.AcquiredUnassigned = false;
         _settings.Save();
         UpdateEpicQuestHeaderOnly();
         UpdateEpicQuestTabHeader(item.ClassName);
@@ -2558,6 +2579,45 @@ public partial class MainWindow : Window
         var total = items.Count;
         var acquired = items.Count(i => i.Acquired);
         EpicHeader.Text = $"{acquired}/{total}";
+    }
+
+    private void UpdateEpicQuestChecklist(StatsSnapshot s)
+    {
+        var changed = AutoCheckEpicQuestLoot(s);
+        UpdateEpicQuestHeaderOnly();
+        if (changed)
+        {
+            _epicQuestDirty = true;
+            _settings.Save();
+        }
+    }
+
+    private bool AutoCheckEpicQuestLoot(StatsSnapshot s)
+    {
+        var changed = false;
+        // The class-scoping rules live in Core (EpicLootAutoCheck) where they are
+        // tested — the Sky rules (#98/#106) over prose steps keyed by the catalog
+        // items their text mentions (#121). Same high-water diff as Sky: only the
+        // newly-looted delta ticks steps, so a re-render never double-counts.
+        var myClasses = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
+        var lootByName = s.Loot
+            .GroupBy(l => l.Item, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Sum(l => l.Count), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var key in _epicQuestLootSeen.Keys.ToList())
+            if (!lootByName.ContainsKey(key))
+                _epicQuestLootSeen[key] = 0;
+
+        foreach (var (name, count) in lootByName)
+        {
+            _epicQuestLootSeen.TryGetValue(name, out var seen);
+            _epicQuestLootSeen[name] = count;
+            if (count <= seen) continue;
+            changed |= EpicLootAutoCheck.Apply(_settings.EpicQuestChecklist, name,
+                count - seen, myClasses, _settings.EpicQuestClass);
+        }
+
+        return changed;
     }
 
     private void UpdateSkyQuestChecklist(StatsSnapshot s)
