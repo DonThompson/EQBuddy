@@ -665,7 +665,11 @@ public partial class BreakoutWindow : Window
         RefreshBuffClassChoices(classes);
 
         var sections = main.BuffSetSectionStates(s, now);
-        if (sections.All(sec => sec.Entries.Count == 0))
+        // Stage 3 (#120): the card's suggestion rows mirror here, and the lost-buff
+        // history folds at the bottom — both live content, both in the signature.
+        var suggestions = main.BuffSuggestionsFor(s, main.AssembledBuffSet(classes));
+        var losses = main.BuffLosses.Snapshot();
+        if (sections.All(sec => sec.Entries.Count == 0) && suggestions.Count == 0 && losses.Count == 0)
         {
             EmptyText.Text = "Nothing picked yet — choose a class bucket below\nand type a buff to build the set.";
             EmptyText.Visibility = Visibility.Visible;
@@ -677,10 +681,14 @@ public partial class BreakoutWindow : Window
         EmptyText.Visibility = Visibility.Collapsed;
 
         // Signature covers spells and STATUSES, not countdown text — clocks update in
-        // place on a match, so a ticking timer never forces a rebuild.
+        // place on a match, so a ticking timer never forces a rebuild. Losses key on
+        // the newest entry too: at the cap the count alone stops moving.
         var flat = sections.SelectMany(sec => sec.Entries).ToList();
         var sig = "buffs|" + SubText.Text + "|" + string.Join(";", sections.Select(sec =>
-            sec.Class + ":" + string.Join(",", sec.Entries.Select(e => $"{e.Spell}·{e.Status}"))));
+                sec.Class + ":" + string.Join(",", sec.Entries.Select(e => $"{e.Spell}·{e.Status}"))))
+            + "|sug:" + string.Join(",", suggestions.Select(x => x.Spell + "@" + x.Class))
+            + "|loss:" + losses.Count + (_lossesOpen ? "▾" : "▸")
+            + (losses.Count > 0 ? losses[0].Time.Ticks + losses[0].Spell : "");
         if (sig == _signature)
         {
             for (var i = 0; i < _buffSetClocks.Count && i < flat.Count; i++)
@@ -710,6 +718,118 @@ public partial class BreakoutWindow : Window
                 continue;
             }
             foreach (var entry in entries) Rows.Items.Add(BuffSetRow(main, key, cls, entry));
+        }
+        foreach (var sug in suggestions) Rows.Items.Add(BuffSuggestionRow(main, sug));
+        AddBuffLossFold(main, losses);
+    }
+
+    /// <summary>The card's suggestion row, mirrored (#120 stage 3): dim, ✓ add to the
+    /// gaining class's bucket / ✕ dismiss for good — never auto-added.</summary>
+    private Grid BuffSuggestionRow(MainWindow main, BuffSuggestion sug)
+    {
+        var row = new Grid { Margin = new Thickness(4, 3, 0, 1) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var text = new TextBlock
+        {
+            Text = $"new at your level — add {sug.Spell} to {sug.Class}?",
+            FontSize = 11, FontStyle = FontStyles.Italic,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = "Your level-up made this buff available. ✓ adds it to that class's "
+                + "bucket; ✕ never asks again for this character. A new RANK of a set "
+                + "buff folds into the same slot and is never suggested.",
+        };
+        text.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        row.Children.Add(text);
+        var add = new Button
+        {
+            Style = (Style)FindResource("IconButton"), Content = "✓", FontSize = 11,
+            Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Add {sug.Spell} to your {sug.Class} set",
+        };
+        add.Click += (_, _) => main.AcceptBuffSuggestion(sug);
+        Grid.SetColumn(add, 1);
+        row.Children.Add(add);
+        var dismiss = new Button
+        {
+            Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+            Margin = new Thickness(4, 0, 0, 0),
+            ToolTip = "Dismiss — never suggest this buff for this character again",
+        };
+        dismiss.Click += (_, _) => main.DismissBuffSuggestion(sug);
+        Grid.SetColumn(dismiss, 2);
+        row.Children.Add(dismiss);
+        return row;
+    }
+
+    private bool _lossesOpen;
+
+    /// <summary>The lost-buff history fold (#120 stage 3, Frankthetankk): "▸ lost this
+    /// session (N)" at the bottom of the breakout — time · buff · cause per row, the
+    /// AA-list fold idiom. ⧉ on the header copies the list as plain text: the
+    /// requester's dev-report evidence ("Buff X was active, NPC Y cast debuff Z,
+    /// Buff X was gone"), same content-copy style as the fight export.</summary>
+    private void AddBuffLossFold(MainWindow main, List<BuffLossEntry> losses)
+    {
+        if (losses.Count == 0) return;
+        var head = new Grid { Margin = new Thickness(0, 5, 0, 0) };
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var label = new TextBlock
+        {
+            Text = $"{(_lossesOpen ? "▾" : "▸")} lost this session ({losses.Count})",
+            FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+            ToolTip = "Every set buff that went missing this session, newest first, with "
+                + "the best cause the log names: expired (the countdown ran out; est = "
+                + "the duration was still the wiki-base estimate), faded (the wear-off "
+                + "line), \"lost as X landed\" (a hostile spell landed on you within "
+                + "2 s before the fade), lost on death.",
+        };
+        label.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        label.MouseLeftButtonDown += (_, e) =>
+        {
+            e.Handled = true;
+            _lossesOpen = !_lossesOpen;
+            if (Main is { } m) RefreshBuffSet(m.CurrentSnapshot());   // repaint now, not next tick
+        };
+        head.Children.Add(label);
+        var copy = new TextBlock
+        {
+            Text = "⧉", FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+            Padding = new Thickness(4, 0, 0, 0),
+            ToolTip = "Copy the list as plain text — evidence for a bug report to the game devs.",
+        };
+        copy.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        copy.MouseLeftButtonDown += (_, e) =>
+        {
+            e.Handled = true;
+            try
+            {
+                Clipboard.SetText(main.BuffLosses.ExportText(main.BuffSetCharacterName));
+                copy.Text = "✓";
+                var t = new System.Windows.Threading.DispatcherTimer
+                    { Interval = TimeSpan.FromSeconds(1.5) };
+                t.Tick += (_, _) => { copy.Text = "⧉"; t.Stop(); };
+                t.Start();
+            }
+            catch (Exception ex) { App.LogError(ex); }
+        };
+        Grid.SetColumn(copy, 1);
+        head.Children.Add(copy);
+        Rows.Items.Add(head);
+        if (!_lossesOpen) return;
+        foreach (var loss in losses)
+        {
+            var row = new TextBlock
+            {
+                Text = $"{loss.Time:h:mm:ss tt}  {loss.Spell} — {loss.Cause}",
+                FontSize = 10.5, Margin = new Thickness(8, 0, 0, 1),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = $"{loss.Spell} — {loss.Cause} at {loss.Time:h:mm:ss tt}",
+            };
+            row.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            Rows.Items.Add(row);
         }
     }
 

@@ -84,6 +84,13 @@ public sealed class AppSettings
     /// only — it owns the case-insensitive identity and the empty-entry pruning.</summary>
     public Dictionary<string, Dictionary<string, List<string>>> BuffSetsByClass { get; set; } = new();
 
+    /// <summary>Stage 3 (#120, Frankthetankk): new-buff-unlock suggestions the player
+    /// ✕-dismissed — character "name_server" → rank-folded base spell names, edited
+    /// through <see cref="BuffSuggestions"/>. Dismissed = never asked again for that
+    /// character; accepting needs no memory here (the spell joins a bucket and is
+    /// covered from then on).</summary>
+    public Dictionary<string, List<string>> BuffSuggestionDismissed { get; set; } = new();
+
     /// <summary>The Options tab last used — iterating on watch rules shouldn't cost a
     /// click per visit. "look" / "alerts" / "watch" / "cards" / "behavior".</summary>
     public string OptionsTab { get; set; } = "look";

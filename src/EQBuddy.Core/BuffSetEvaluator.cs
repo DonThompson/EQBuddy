@@ -21,7 +21,11 @@ public enum BuffSetStatus
     NotSeen,
 }
 
-public sealed record BuffSetEntryState(string Spell, BuffSetStatus Status, double? RemainingSeconds);
+/// <summary>Estimated carries the matched state's flag (wiki-base duration, not yet
+/// learned) so the loss log can say "expired (est)" — an estimate running out is a
+/// weaker claim than a learned duration doing so (#120 stage 3).</summary>
+public sealed record BuffSetEntryState(
+    string Spell, BuffSetStatus Status, double? RemainingSeconds, bool Estimated = false);
 
 /// <summary>
 /// Evaluates a player-defined buff set against what the session's log actually showed
@@ -72,7 +76,7 @@ public static class BuffSetEvaluator
                     <= 0 => BuffSetStatus.Missing,       // timer ran out (linger is a hedge, this is the claim)
                     var r when r <= warnSeconds => BuffSetStatus.Expiring,
                     _ => BuffSetStatus.Active,
-                }, remaining));
+                }, remaining, match.Estimated));
             }
             else if (landings.Contains(entry) || fades.Contains(entry))
                 result.Add(new BuffSetEntryState(raw, BuffSetStatus.Missing, null));
