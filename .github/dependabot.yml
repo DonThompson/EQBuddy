@@ -24,11 +24,15 @@ updates:
     commit-message:
       prefix: "deps"
 
-  # Workflow actions pin to major tags that quietly go stale otherwise.
+  # Workflow actions are pinned to full commit SHAs (with the version in a
+  # trailing comment), so Dependabot is the only way they move at all — weekly,
+  # matching nuget, so a pinned action with a security fix doesn't sit for a month.
+  # Dependabot understands the sha-plus-comment idiom and updates both together.
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: monthly
+      interval: weekly
+      day: monday
     open-pull-requests-limit: 3
     labels:
       - dependencies

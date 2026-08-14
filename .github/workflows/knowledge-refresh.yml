@@ -18,17 +18,21 @@ on:
     - cron: "0 9 * * 1"   # Mondays 09:00 UTC — quiet hours US, before the week's play
   workflow_dispatch: {}    # and on demand, e.g. after a burst of wiki edits
 
+# Default deny; the refresh job re-grants exactly what pushing the branch and
+# managing the rolling PR require.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # push the knowledge-refresh branch
+      pull-requests: write   # create/update the rolling PR
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
 
