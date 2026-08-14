@@ -214,7 +214,10 @@
      alone doesn't stretch a replaced element. Against the positioned .mapwrap the
      percentages always resolve. */
   .mapwrap svg { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
-  .mapctl { position:absolute; right:8px; bottom:8px; display:flex; gap:6px; z-index:2; }
+  /* Wraps and stays inside the panel: the row grew a fifth button (⋯) and a narrow
+     phone had it running off the edge, taking "fit the whole zone" with it. */
+  .mapctl { position:absolute; right:8px; bottom:8px; display:flex; gap:6px; z-index:2;
+            flex-wrap:wrap; justify-content:flex-end; max-width:calc(100% - 16px); }
   .mapctl button {
     background:var(--popup); border:1px solid var(--border); color:var(--text);
     border-radius:8px; width:40px; height:40px; font-size:15px; cursor:pointer; opacity:.92;
@@ -296,18 +299,29 @@
   html.lean header button.tool { width:34px; height:34px; font-size:15px; }
   html.lean footer { display:none; }
   html.lean main { padding-top:8px; padding-bottom:8px; }
-  /* One screen picked, on a layout with room: it gets the whole viewport rather than a
-     fixed slab with dead page under it. Only in the solo case — with several panels the
-     grid stays content-sized and the page scrolls, which is what a stack of lists wants. */
-  @media (min-width:900px) {
-    body.solo { display:flex; flex-direction:column; height:100dvh; overflow:hidden; }
-    /* width:100% is load-bearing: main carries `margin:0 auto`, and auto margins on a
-       flex item's cross axis switch off the stretch that would otherwise size it — it
-       collapses to its content and takes the map down with it. */
-    body.solo main { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; width:100%; }
-    body.solo #sections { flex:1 1 auto; min-height:0; align-items:stretch; }
-    body.solo section.surface { max-height:none; min-height:0; }
+  /* One screen picked: it gets the whole viewport rather than a fixed slab with dead
+     page under it. Phone as well as tablet — a phone showing only the map had a 420px
+     map and half a screen of nothing under it. Only in the SOLO case; with several
+     panels the grid stays content-sized and the page scrolls, which is what a stack of
+     lists wants. */
+  body.solo { display:flex; flex-direction:column; height:100dvh; overflow:hidden; }
+  /* width:100% is load-bearing: main carries `margin:0 auto`, and auto margins on a
+     flex item's cross axis switch off the stretch that would otherwise size it — it
+     collapses to its content and takes the map down with it. */
+  body.solo main { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; width:100%; }
+  body.solo #sections { flex:1 1 auto; min-height:0; align-items:stretch; }
+  /* Below the tablet breakpoint #sections is a plain block, so nothing hands the lone
+     section a height and the map keeps its min-height with dead page beneath. A column
+     flex box here is what lets it actually fill. (Above the breakpoint it is a grid,
+     and align-items:stretch above does the same job.) */
+  @media (max-width:899px) {
+    body.solo #sections { display:flex; flex-direction:column; }
+    body.solo section.surface { flex:1 1 auto; }
   }
+  body.solo section.surface { max-height:none; min-height:0; display:flex; flex-direction:column; }
+  body.solo section.surface > .body { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  /* The map stops being a fixed-height box and simply takes what is left. */
+  body.solo .mapwrap { height:auto; flex:1 1 auto; min-height:200px; }
 </style>
 </head>
 <body>

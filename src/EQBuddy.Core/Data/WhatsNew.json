@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.80.1",
+  "date": "2026-08-14",
+  "highlights": [
+   "FIXED - EQBuddy Mobile on a PHONE showing a single screen wasted about half the display: the map sat in a fixed-height box with an empty screen underneath it. One chosen screen now fills the device, the same way it already did on a tablet - the map went from roughly half the screen to about 80% of it. The map's zoom buttons also wrap now instead of crowding the edge on a narrow phone.",
+   "The README has EQBuddy Mobile screenshots at last - a real zone map on a tablet and on a phone, both captured from genuine Splitpaw data."
+  ]
+ },
+ {
   "version": "1.80.0",
   "date": "2026-08-14",
   "highlights": [

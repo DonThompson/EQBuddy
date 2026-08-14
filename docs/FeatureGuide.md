@@ -479,6 +479,41 @@ append another kill → it pops again. Clear the timer (✕ on the row) → the 
 closes itself. `You have entered Befallen 1 (Awakened).` must select Befallen; picking
 another zone by hand must NOT untick Follow, and zoning afterwards snaps back.
 
+## EQBuddy Mobile
+
+The 📱 title-bar button (also the first entry in the right-click windows list) opens
+the pairing window: a QR code, the URL under it, a client count, and **New code**.
+The device's browser becomes a second screen. Off until switched on; the server binds
+only LAN addresses (never loopback), and the pairing token travels in the URL
+*fragment*, so it never appears in an HTTP request line.
+
+Two layers decide what a device sees. The **desktop gate** (Options → Behavior →
+EQBuddy Mobile) is a checkbox per surface — the owner deciding what may be sent at
+all; an unoffered surface is never even projected. The **device picker** (⚙ on the
+page) is that device's own subset and running order, stored in its localStorage, so a
+tablet and a phone differ. On the page, one picked screen fills the viewport; several
+tile into a grid, with the zone map taking the wide slot.
+
+Writes a device may make: checklist rows (Epic, Sky, Gear) tick as if clicked on the
+desktop, and spawn points can be curated from the map — tap a point for confirm /
+un-confirm / remove, or ⋯ for a two-step zone reset. Every edit answers with the same
+sentence the desktop's status bar would show, including when nothing changed.
+
+**Verify:** switch it on, pair a device, and confirm the client count rises. Untick a
+surface on the desktop → the device says "Not shared by the PC". Pick a different
+subset on the device → the desktop is unaffected. Tick an Epic row on the phone → the
+desktop card repaints. On the map, tap a spawn point and remove it → a notice appears
+on *every* connected device and the PC's own map window drops the circle within a
+tick. Press **New code** → paired devices drop and refuse to reconnect. Finally set
+`CompanionEnabled=false` in settings.json, restart, and confirm nothing is listening
+(`Get-NetTCPConnection -State Listen` shows no EQBuddy port).
+
+**Known limits, all honest failures rather than silent ones:** Windows Firewall
+prompts on the first listen and a dismissed prompt means no device can connect;
+AP/client isolation on guest Wi-Fi blocks it; and browsers refuse a wake lock over
+plain HTTP, so the page tells the user to raise their screen timeout instead of
+pretending it can hold the screen awake.
+
 ## Mini mode
 
 Minimize (the – button) collapses to a pill: status dot + starred stats (star

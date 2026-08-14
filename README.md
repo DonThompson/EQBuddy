@@ -8,7 +8,7 @@ loot with personal drop rates, money, XP, spawn timers that learn from your kill
 countdowns, **buff timers that learn your character's real durations**,
 **raid-target tracking with D0–D4 difficulty badges**, a **slow alert with the cure
 attached**, a **Gear Locker** that compares every wearable you own per slot and
-flags arithmetic dump candidates, a **built-in catalog of 10,955 items** (stats,
+flags arithmetic dump candidates, a **built-in catalog of 10,956 items** (stats,
 quests, recipes, drop zones — instant and offline, refreshed weekly from the
 community wiki), a quest tracker that flags what you're ready to turn in, and
 alerts you write yourself (substring or regex, per-rule sounds and colors, a spoken
@@ -16,6 +16,11 @@ voice — or just click a recent log line and it becomes a rule). Click any card
 drill into details; every session lands in a local searchable history with level
 and AA progress charts. A tray icon keeps EQBuddy one click away even when the
 widget hides itself with the game.
+
+**New: [EQBuddy Mobile](#eqbuddy-mobile-beta)** puts any of it on the phone or tablet
+already sitting beside your keyboard — scan a code once and that device becomes a
+second screen, showing whichever windows *it* chooses. LAN-only, off until you turn
+it on, nothing to install on the device.
 
 **EQBuddy is a beta, improving weekly — and most features on this page started as a
 player's suggestion.** Rough edges, wild ideas, wrong numbers: [say so in
@@ -51,9 +56,9 @@ page instead.
 | ![Fight timeline](docs/screenshots/fight-timeline.png) | ![Buffs, raids and watch cards](docs/screenshots/widget-cards.png) |
 | **Fight timeline** — the whole pull on one canvas: a lane per skill, solid bars for hits (taller = harder, bright = critical), hollow outlines for misses and resists with the log's own words on hover, dotted markers where you swapped stance or invocation, and a smoothed DPS-over-time graph whose curves mathematically can't exaggerate — colors are colorblind-validated, and damage you took wears blue so red always means trouble | **Buff timers & raid targets** — buffs count down with honest `est` labels until a natural fade teaches your character's *real* duration; the Raids card remembers every raid target your log saw die, now with **D0–D4 difficulty badges** for the highest tier a witnessed kill proves |
 | ![Gear Locker](docs/screenshots/gear-locker.png) | ![Behavior options](docs/screenshots/options-behavior.png) |
-| **Gear Locker** — every wearable you own, grouped by slot and compared against the rest of your bags: an item beaten on every stat by something else you hold gets flagged **⬇ outclassed**, a dump candidate by arithmetic, not taste. Stats come from the built-in 10,955-item catalog, instantly — never "BiS", it ranks *your* bags | **It gets out of your way** — hide the widget when the game loses focus, or whenever the game isn't running at all; a tray icon stays put so EQBuddy is always one click from coming back |
+| **Gear Locker** — every wearable you own, grouped by slot and compared against the rest of your bags: an item beaten on every stat by something else you hold gets flagged **⬇ outclassed**, a dump candidate by arithmetic, not taste. Stats come from the built-in 10,956-item catalog, instantly — never "BiS", it ranks *your* bags | **It gets out of your way** — hide the widget when the game loses focus, or whenever the game isn't running at all; a tray icon stays put so EQBuddy is always one click from coming back |
 | ![Drops by Creature](docs/screenshots/drops-window.png) | ![Quest Tracker](docs/screenshots/quest-tracker.png) |
-| **Drops by Creature** — your personal drop rates per mob, with ✦ marking drops the [community wiki](https://eqlwiki.com) doesn't know yet and **✦ Copy for wiki** building a paste-ready contribution | **Quest Tracker** — 900+ wiki quests; loot something a quest wants and it flips to **✓ ready**, sorted by how close the quest is to where you're standing |
+| **Drops by Creature** — your personal drop rates per mob, with ✦ marking drops the [community wiki](https://eqlwiki.com) doesn't know yet and **✦ Copy for wiki** building a paste-ready contribution | **Quest Tracker** — 1,172 wiki quests; loot something a quest wants and it flips to **✓ ready**, sorted by how close the quest is to where you're standing |
 | ![Sky Quest checklist](docs/screenshots/sky-quest.png) | ![Spawn timers](docs/screenshots/spawns-window.png) |
 | **Plane of Sky checklist** — all 222 turn-in items, a tab per class; loot auto-checks *your* class's boxes, and a reward's own checkbox marks the quest turned in | **Spawn timers** — kill a named (or its placeholder) and a countdown chip appears; timers tighten themselves from your own kills, every duration editable |
 | ![Session history with progress charts](docs/screenshots/history-progress.png) | ![Review an archived session](docs/screenshots/session-picker.png) |
@@ -68,6 +73,8 @@ page instead.
 | **Spawn-point circles, up close** — named spawns wear the theme accent *with their name beside them* (a running timer's camp pin takes over with a countdown, like Bloodgurgler here); trash camps sit dim; circles pulse when a respawn is due within ten seconds. All learned from your own kills near your own `/loc`s — this is real Crushbone data | **Share zone knowledge** — a zone's spawn points and timers as one paste-safe string; imports preview every change first, and a timer far off the zone's known clock arrives flagged |
 | ![Cursor ring](docs/screenshots/cursor-ring.png) | ![Send feedback and a color-coded alert](docs/screenshots/feedback-and-alert.png) |
 | **Cursor ring** — a click-through halo that rides your pointer, for everyone who's ever lost the tiny cursor mid-fight | **Send feedback** opens a pre-written GitHub Discussion for your review — most of the features on this page started as one |
+| ![EQBuddy Mobile on a tablet](docs/screenshots/mobile-map-tablet.png) | ![EQBuddy Mobile on a phone](docs/screenshots/mobile-map-phone.png) |
+| **EQBuddy Mobile on a tablet** — the zone map with your spawn-point circles, camp pins, and the Named list beside it: every running timer, its countdown, and where its camp came from (`📍` your own `/loc` at kill, `~` the wiki, or "no camp yet"). Tap a spawn point to confirm or remove it — the PC's map updates as you do | **…and on a phone** — the same page, laid out for one hand. Each device picks which windows it shows and in what order, so the tablet propped beside you and the phone in your pocket show different things. This is real Splitpaw data over a home Wi-Fi |
 
 ## For players (install guide)
 
@@ -439,6 +446,44 @@ Notes:
   rates work regardless of how you loot.
 - A "session" is a contiguous stretch of play. After 60+ minutes of no log activity,
   the next activity starts a fresh session automatically.
+
+## EQBuddy Mobile (beta)
+
+Your phone or tablet, as a second screen for EQBuddy. Click the **📱 button in the title
+bar**, and EQBuddy shows a QR code; point the device's camera at it and its browser
+becomes a live view of your session. There is nothing to install on the device, and the
+pages ship inside `EQBuddy.exe`, so they update when EQBuddy does.
+
+Eleven screens are available — zone map, spawn timers, mez chips, buffs, combat
+breakdowns, session stats, loot & watches, XP & AA, and your Epic, Sky and Gear
+checklists. **Each device picks which of them it shows, and in what order** (the ⚙ on the
+device), so a tablet propped beside the keyboard and a phone in your pocket can show
+completely different things. On a tablet the zone map gets the Named list beside it; tap
+a spawn point to confirm, un-confirm or remove it, and the PC's own map updates with you.
+Checklist rows tick from the device too.
+
+**Privacy and safety, plainly:**
+
+- **Off until you turn it on.** A fresh install opens no port at all.
+- **Your network only.** EQBuddy serves the pages straight to your device over your LAN.
+  No account, no cloud, no telemetry — nothing leaves your network, and there is no
+  server anywhere for it to leave *to*.
+- **You choose what may be sent.** Options → Behavior → EQBuddy Mobile has a checkbox per
+  screen; an unticked screen is never even built, let alone transmitted.
+- **Pairing is revocable.** The code travels in the URL *fragment*, so it never appears in
+  an HTTP request; "New code" instantly locks out every device you have paired.
+
+**Things that will bite you, so you know up front:**
+
+- **Windows Firewall** asks to allow EQBuddy the first time you switch it on. If you
+  dismiss that prompt, devices simply can't connect and nothing will say why — switch
+  EQBuddy Mobile off and on again to get the prompt back.
+- **Guest or public Wi-Fi** that isolates devices from one another will block it. So will
+  having the PC and the device on different networks (a 5 GHz guest SSID counts).
+- **Your screen will sleep.** Browsers won't hold a screen awake over plain HTTP, even
+  from a Home Screen launch, so raise your device's screen timeout if you're camping.
+- The **breadcrumb trail** is the last minute of movement, and it only moves when a `/loc`
+  reaches the log — the map window's ⧉ button copies a social that makes that one keypress.
 
 ## How DPS is measured
 
