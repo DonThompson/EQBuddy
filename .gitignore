@@ -6,3 +6,4 @@ dist/
 .DS_Store
 
 scripts/harvests/eqlwiki/cache/items-wikitext.jsonl
+__pycache__/
