@@ -2,7 +2,7 @@ using EQBuddy.Core;
 
 namespace EQBuddy.Companion;
 
-/// <summary>One thing a device asked to change. The rule (David, 2026-08-15) is that a
+/// <summary>One thing a device asked to change. The rule (David, 2026-08-14) is that a
 /// tap may do anything a click already does on the desktop — no more, and nothing the
 /// desktop hides behind a dialog it hasn't been given here.
 /// <see cref="CompanionSurfaces.AcceptsTicks"/> is the whole tick list.</summary>

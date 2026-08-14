@@ -138,7 +138,7 @@ public sealed class CompanionHost : IDisposable
     private void Start()
     {
         // Reached only when the player has turned EQBuddy Mobile on: the launch gate
-        // that used to stand here is gone (2026-08-15), and CompanionEnabled — off in a
+        // that used to stand here is gone (2026-08-14), and CompanionEnabled — off in a
         // fresh settings file — is now the only thing between a dormant feature and a
         // listening port.
         LastError = null;

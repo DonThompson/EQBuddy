@@ -1,7 +1,7 @@
 [
  {
   "version": "1.80.0",
-  "date": "2026-08-15",
+  "date": "2026-08-14",
   "highlights": [
    "NEW - EQBUDDY MOBILE (BETA) IS OUT OF PREVIEW: put EQBuddy on the phone or tablet already sitting beside your keyboard. Click the 📱 button in the title bar, scan the code with the device's camera, and its browser becomes a second screen - a live zone map, spawn timers, mez chips, buffs, combat breakdowns, session stats, loot, XP, and your Epic/Sky/Gear checklists. Each device picks WHICH of those it shows and in what order, so the tablet propped up beside you and the phone in your pocket can show completely different things. Nothing to install on the device, and it updates with EQBuddy itself.",
    "It is OFF until you turn it on, and it stays on your own Wi-Fi. No account, no cloud, no telemetry: the pages are served by EQBuddy.exe straight to your device, and nothing leaves your network. You decide what may be sent at all (Options → Behavior → EQBuddy Mobile), and \"New code\" instantly locks out every device you have paired.",

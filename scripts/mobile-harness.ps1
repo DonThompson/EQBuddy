@@ -20,7 +20,7 @@
     not a deliverable, and it must never be mistaken for the page itself.
 
 .NOTES
-    Written 2026-08-15 while restoring the breadcrumb trail. It immediately earned its
+    Written 2026-08-14 while restoring the breadcrumb trail. It immediately earned its
     keep: driving the real page at zoom exposed that text.poi's CSS font-size had been
     beating the counter-scaling attribute, so every map label had been ballooning on
     zoom since the map shipped. Unit tests could not have seen that.

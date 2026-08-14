@@ -6,7 +6,7 @@ namespace EQBuddy.Tests;
 
 /// <summary>
 /// Spawn-point curation from a tablet: the desktop map's right-click, arriving over the
-/// wire. David's rule (2026-08-15) is that a tap may do anything a click already does —
+/// wire. David's rule (2026-08-14) is that a tap may do anything a click already does —
 /// so these assert the tap does the SAME thing, and above all that it always answers.
 /// A write that goes quiet is indistinguishable from one that failed.
 /// </summary>

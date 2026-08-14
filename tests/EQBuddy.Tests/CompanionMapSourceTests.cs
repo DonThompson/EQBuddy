@@ -132,7 +132,7 @@ public class CompanionMapSourceTests : IDisposable
     }
 
     // ---- the breadcrumb trail ----
-    // David, 2026-08-15: "the breadcrumbs don't render at all now. This should work and
+    // David, 2026-08-14: "the breadcrumbs don't render at all now. This should work and
     // display the same as it would on the PC." They had never been projected at all —
     // StatsSnapshot.LocationTrail reached MapWindow and nothing else.
 

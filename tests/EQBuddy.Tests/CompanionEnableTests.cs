@@ -5,7 +5,7 @@ using Xunit;
 namespace EQBuddy.Tests;
 
 /// <summary>
-/// EQBuddy Mobile launched 2026-08-15 and its preview gate is gone. That gate used to be
+/// EQBuddy Mobile launched 2026-08-14 and its preview gate is gone. That gate used to be
 /// the belt beside the braces; <see cref="AppSettings.CompanionEnabled"/> is now the ONLY
 /// thing standing between a dormant feature and a listening port, which makes pinning it
 /// more important than it was, not less.
