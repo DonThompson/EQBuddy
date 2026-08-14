@@ -2282,10 +2282,14 @@ public partial class MainWindow : Window
         {
             try
             {
+                // Row counts say "a new name appeared"; the snapshot totals say "the
+                // session moved" — the E2E suite (tests/EQBuddy.E2E) asserts on both.
                 var dump = $"dmgSrc={DamageSourceList.Items.Count} dmgTaken={DamageTakenList.Items.Count} " +
                     $"kills={KillList.Items.Count} party={PartyKillList.Items.Count} loot={LootList.Items.Count} " +
                     $"crafted={CraftedList.Items.Count} skills={SkillList.Items.Count} faction={FactionList.Items.Count} " +
                     $"zones={ZoneList.Items.Count} deaths={DeathList.Items.Count} " +
+                    $"killsTotal={s.YourKillCount} lootTotal={s.LootTotal} " +
+                    $"tracked={s.Tracked.Sum(t => t.TotalQuantity)} " +
                     $"actualH={ActualHeight:0} actualW={ActualWidth:0}";
                 System.IO.File.WriteAllText(Core.AppPaths.File("debug.txt"), dump);
             }

@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      run-e2e:
+        description: "Also run the end-to-end suite (launches the real WPF EQBuddy.exe)"
+        type: boolean
+        default: false
 
 # Build-and-test only: nothing here writes to the repo.
 permissions:
@@ -30,6 +36,27 @@ jobs:
       # written on rather than waiting for the Linux job.
       - name: Run Avalonia render tests
         run: dotnet test tests/EQBuddy.Avalonia.Tests/EQBuddy.Avalonia.Tests.csproj -c Release --no-build --logger "console;verbosity=normal"
+
+  # End-to-end: launches the real EQBuddy.exe against an isolated profile and asserts on
+  # its rendered state (tests/EQBuddy.E2E). Deliberately NOT part of push/PR CI — it
+  # needs a desktop session, which hosted runners don't guarantee a WPF window on. The
+  # supported way to run it is locally: `dotnet test tests/EQBuddy.E2E -c Release` after a
+  # Release build. This job is the opt-in remote attempt, gated on manual dispatch.
+  e2e-windows:
+    if: github.event_name == 'workflow_dispatch' && inputs.run-e2e
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build solution (E2E launches the built exe)
+        run: dotnet build EQBuddy.slnx -c Release
+
+      - name: Run end-to-end suite
+        run: dotnet test tests/EQBuddy.E2E/EQBuddy.E2E.csproj -c Release --no-build --logger "console;verbosity=normal"
 
   build-avalonia-linux:
     runs-on: ubuntu-latest
