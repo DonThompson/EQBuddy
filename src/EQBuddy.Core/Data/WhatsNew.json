@@ -1,5 +1,18 @@
 [
  {
+  "version": "1.79.0",
+  "date": "2026-08-14",
+  "highlights": [
+   "NEW - BUFF SETS, THE WHOLE SPEC (discussion #120, thanks Frankthetankk - stages 2 and 3, hours after stage 1): sets now live PER CLASS and assemble to your active class combination - swap Warrior for Rogue and the other classes' picks survive, exactly as you designed. A new Buffs breakout window shows every set buff's live state with in-place editing (⭐ on the Buffs card opens it). When you level into a NEW buff line, a quiet suggestion row offers it for your set (rank-ups need nothing - the set already covers them). And the breakout's \"lost this session\" fold answers WHY a buff dropped: expired, faded, lost on death, or \"lost as Plague landed (a swamp rat)\" - the dev-report evidence you wanted, with a ⧉ copy button.",
+   "FIXED (discussion #139, thanks n3cr0nk1tt3n - first-hand hand-in beats the wiki): the bard Sky tests had Mask of Song and Mantle of the Songweaver's required items SWAPPED - the community wiki carries the same swap, so your report corrected both. Sky checklist corrections now reach existing installs automatically.",
+   "FIXED (discussion #140, thanks AkevoTheBard): raid bosses whose kill lines carry a title (\"Innoruuk, Prince of Hate\") now land in the Raids section - and kills recorded in the past under mismatched name forms get recovered on update.",
+   "FIXED - a RELIABILITY BATCH from a full audit of the app's oldest seams: the ↻ reset button no longer quietly corrupts the finished session's history row; a family member's raid kills survive character switching; re-reviewing archives can't double-count spawn-point kills; REVIEWING AN ARCHIVE IS NOW TRULY READ-ONLY (no more phantom characters in the ledgers); and rapid log switching can't fire alert storms for hours-old lines.",
+   "FASTER ON RAID NIGHTS - a performance pass aimed at exactly the moments the widget works hardest: the Watch card's rule scanning now folds new events in instead of rescanning the whole fight history every second, windows share one snapshot per tick instead of building their own, and every optimization is proven output-identical by new tests. Quieter CPU, same numbers.",
+   "The repo also grew its engineering armor today: a SECURITY.md documenting every network destination and the zero-telemetry doctrine (verified from code), supply-chain-hardened CI, and a true end-to-end test harness that launches the real app against a live-growing log. Boring, invisible, and exactly why the pace here stays safe.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.78.0",
   "date": "2026-08-14",
   "highlights": [
