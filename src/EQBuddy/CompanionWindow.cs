@@ -69,7 +69,7 @@ public sealed class CompanionWindow : Window
         _qrImage.HorizontalAlignment = HorizontalAlignment.Center;
         RenderOptions.SetBitmapScalingMode(_qrImage, BitmapScalingMode.NearestNeighbor);
         _pairPanel.Children.Add(_qrImage);
-        var urlHint = Dim("Scanning not cooperating? Type this address in the phone's browser " +
+        var urlHint = Dim("Scanning not cooperating? Type this address in the device's browser " +
             "instead — the part after # is the pairing code, keep it:");
         urlHint.Margin = new Thickness(0, 4, 0, 0);
         _pairPanel.Children.Add(urlHint);
@@ -77,6 +77,13 @@ public sealed class CompanionWindow : Window
         _pairPanel.Children.Add(_urlBox);
         _statusLine.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         _pairPanel.Children.Add(_statusLine);
+
+        var chrome = Dim("Propping a tablet beside the monitor? Once the page is open, use the " +
+            "browser's \"Add to Home Screen\" — it launches EQBuddy Mobile in its own window " +
+            "with no address bar, and remembers the pairing code. The ⛶ button at the top of " +
+            "the page does the same for one visit.");
+        chrome.Margin = new Thickness(0, 6, 0, 0);
+        _pairPanel.Children.Add(chrome);
 
         var regen = Theming.Button("New code (disconnects every paired device)");
         regen.Margin = new Thickness(0, 6, 0, 0);

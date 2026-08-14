@@ -60,11 +60,16 @@ here is exactly what it does:
   token, carried in the QR code's URL *fragment* (the part after `#`, which
   browsers never send in requests). The page presents it on the WebSocket
   connect; a connect without the exact token is refused, and repeated failures
-  are rate-limited per IP. "New code" mints a fresh token and disconnects
-  every previously paired device.
+  are rate-limited per IP. Once the PC has accepted it, the device remembers
+  the code in its own browser storage, so an "Add to Home Screen" launch (which
+  starts at the bare address, without the `#`) reconnects — the code never
+  leaves that device. "New code" mints a fresh token, disconnects every paired
+  device, and makes every remembered one useless; a device whose remembered
+  code is refused forgets it and asks to be paired again.
 - **Unauthenticated surface = the explainer page only.** A browser hitting the
-  address without the token gets a static page that says how to pair. It
-  contains no game data; data flows only over the token-checked WebSocket.
+  address without the token gets a static page that says how to pair, plus the
+  Home Screen manifest and its icon. None of it contains game data or the
+  pairing code; data flows only over the token-checked WebSocket.
 - **You choose what's offered.** The pairing window lists every screen the PC is
   willing to send — the zone map, spawn timers, mez chips, buffs, the combat
   breakdowns, session stats, loot and watches, XP/AA, and the Epic, Sky and

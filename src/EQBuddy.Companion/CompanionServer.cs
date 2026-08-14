@@ -244,6 +244,22 @@ public sealed class CompanionServer : IDisposable
                 tcp.Close(); return;
             }
 
+            // The two static crumbs "Add to Home Screen" needs — a chrome-free window
+            // is the durable answer to "make it full screen" (and the only reliable
+            // one on iOS). Neither carries player data or the pairing token.
+            if (path == "/manifest.webmanifest")
+            {
+                await WriteSimpleAsync(stream, "200 OK", "application/manifest+json; charset=utf-8",
+                    PhonePage.Manifest, ct).ConfigureAwait(false);
+                tcp.Close(); return;
+            }
+
+            if (path == "/icon.png")
+            {
+                await WriteBytesAsync(stream, "200 OK", "image/png", PhonePage.Icon, ct).ConfigureAwait(false);
+                tcp.Close(); return;
+            }
+
             if (path == "/ws")
             {
                 await HandleWebSocketAsync(tcp, stream, query, headers, ct).ConfigureAwait(false);
@@ -311,9 +327,11 @@ public sealed class CompanionServer : IDisposable
         return -1;
     }
 
-    private static async Task WriteSimpleAsync(Stream stream, string status, string contentType, string body, CancellationToken ct)
+    private static Task WriteSimpleAsync(Stream stream, string status, string contentType, string body, CancellationToken ct) =>
+        WriteBytesAsync(stream, status, contentType, Encoding.UTF8.GetBytes(body), ct);
+
+    private static async Task WriteBytesAsync(Stream stream, string status, string contentType, byte[] payload, CancellationToken ct)
     {
-        var payload = Encoding.UTF8.GetBytes(body);
         var head = Encoding.ASCII.GetBytes(
             $"HTTP/1.1 {status}\r\n" +
             $"Content-Type: {contentType}\r\n" +

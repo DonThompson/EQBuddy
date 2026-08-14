@@ -8,6 +8,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#16130e" id="themeColor">
+<!-- Add to Home Screen: the durable version of "make it full screen" — the launcher
+     opens it with no browser chrome at all, which is the only reliable answer on iOS
+     (Safari's fullscreen API is not one on iPhone). -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EQBuddy">
 <title>EQBuddy Mobile (Beta)</title>
 <style>
   /* The FALLBACK palette only — ParchmentBrass, the desktop default — shown for the
@@ -40,10 +49,15 @@
   #dot.ok { background:var(--good); }
   #who { font-weight:600; font-size:17px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #zone { color:var(--dim); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #gear {
-    margin-left:auto; flex:none; background:none; border:1px solid var(--hairline);
+  header button.tool {
+    flex:none; background:none; border:1px solid var(--hairline);
     color:var(--dim); border-radius:8px; font-size:18px; width:40px; height:40px; cursor:pointer;
   }
+  #full { margin-left:auto; }
+  /* "You asked for fullscreen last time" — browsers refuse to enter without a fresh
+     tap, so the button asks for one instead of failing silently. */
+  #full.want { border-color:var(--accent); color:var(--accent); }
+  #full.on { color:var(--accent); }
   #banner {
     display:none; background:var(--warn); color:var(--bg); font-weight:600;
     padding:8px 16px; font-size:14px; position:sticky; top:0; z-index:5;
@@ -90,8 +104,10 @@
     }
     section.surface { margin-top:0; display:flex; flex-direction:column; min-height:0;
                       max-height:calc(100dvh - 140px); }
-    section.surface > .body { overflow:auto; min-height:0; -webkit-overflow-scrolling:touch; }
+    section.surface > .body { overflow:auto; min-height:0; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
     section.surface.wide { grid-column:1 / -1; }
+    /* The map fills its panel instead of falling back to an SVG's default height. */
+    section.surface.wide > .body { display:flex; flex-direction:column; overflow:hidden; }
   }
   @media (min-width:1280px) {
     #sections { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -173,9 +189,17 @@
   /* ---- map ---- */
   .mapwrap { position:relative; background:var(--popup); border:1px solid var(--hairline);
              border-radius:12px; overflow:hidden; height:min(60dvh,420px); }
-  section.surface.wide .mapwrap { height:100%; min-height:280px; }
-  @media (min-width:900px) { .mapwrap { height:auto; flex:1; min-height:320px; } }
-  .mapwrap svg { width:100%; height:100%; display:block; touch-action:none; }
+  /* On a tablet the map is the panel worth the room: the section claims a tall slot
+     and the map fills whatever the header leaves. */
+  @media (min-width:900px) {
+    section.surface.wide { min-height:min(72dvh,620px); }
+    section.surface.wide .mapwrap { height:auto; flex:1 1 auto; min-height:260px; }
+  }
+  /* Absolutely positioned AND sized: an <svg> with no viewBox falls back to its
+     300×150 intrinsic size whenever a percentage height can't resolve, and inset
+     alone doesn't stretch a replaced element. Against the positioned .mapwrap the
+     percentages always resolve. */
+  .mapwrap svg { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
   .mapctl { position:absolute; right:8px; bottom:8px; display:flex; gap:6px; z-index:2; }
   .mapctl button {
     background:var(--popup); border:1px solid var(--border); color:var(--text);
@@ -200,7 +224,8 @@
     <div id="who">EQBuddy</div>
     <div id="zone">connecting…</div>
   </div>
-  <button id="gear" title="Choose screens" aria-label="Choose screens">⚙</button>
+  <button id="full" class="tool" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+  <button id="gear" class="tool" title="Choose screens" aria-label="Choose screens">⚙</button>
 </header>
 
 <div id="pair">
@@ -218,6 +243,9 @@
       narrow screen the picks stack down the page; on a tablet they lay out side by side in
       this order, with the map taking the big panel. The PC decides which screens are
       offered at all (EQBuddy → Options).</div>
+    <div class="note">No browser chrome: tap ⛶ at the top for this visit, or use your
+      browser's <b>Add to Home Screen</b> — that launches EQBuddy Mobile in its own window
+      with no address bar at all, and it survives closing the tab.</div>
   </div>
   <div id="sections"></div>
 </main>
@@ -226,7 +254,17 @@
 <script>
 "use strict";
 // ---------- pairing token (URL fragment — never sent in the HTTP request) ----------
-const token = location.hash.replace(/^#/, "");
+// A device that has paired REMEMBERS the code, because a Home Screen launch starts at
+// the bare address with no fragment (the manifest can't carry the code — it is served
+// without authentication). The code is only remembered once the PC has accepted it,
+// it never leaves this device, and "New code" on the PC makes the remembered one
+// useless — which is exactly what revoking a paired device should mean.
+const TOKEN_KEY = "eqbuddy-token";
+let remembered = null;
+try { remembered = localStorage.getItem(TOKEN_KEY); } catch {}
+const fragmentToken = location.hash.replace(/^#/, "");
+const token = fragmentToken || remembered || "";
+const tokenFromMemory = !fragmentToken && !!token;
 const PROTOCOL = 2;
 const SURFACE_META = {
   map:      { label: "Zone map", wide: true },
@@ -274,7 +312,7 @@ function boot() {
   let latest = null;         // last snapshot message
   let receivedAt = 0;        // ms clock when latest arrived
   let lastMsgAt = 0;         // any message (heartbeats count as freshness)
-  let ws = null, backoff = 1000, everConnected = false;
+  let ws = null, backoff = 1000, everConnected = false, refusals = 0;
   const panels = {};         // surface -> { section, body }
   const painted = {};        // surface -> JSON of what that panel currently shows
   const scope = {};          // combat board -> "fight" | "session"
@@ -303,6 +341,9 @@ function boot() {
     ws.onopen = () => {
       backoff = 1000; everConnected = true;
       $("dot").classList.add("ok");
+      // The PC accepted this code, so it is worth remembering for a chrome-free
+      // Home Screen launch, which arrives without the fragment.
+      try { localStorage.setItem(TOKEN_KEY, token); } catch {}
       if (choice) sendSubscribe(); // returning device: ask for its picks up front
     };
     ws.onmessage = e => {
@@ -326,6 +367,17 @@ function boot() {
     };
     ws.onclose = () => {
       $("dot").classList.remove("ok");
+      // A remembered code that the PC never accepts has been revoked ("New code").
+      // Forget it and ask to be paired again rather than retrying forever in silence.
+      if (!everConnected && tokenFromMemory && ++refusals >= 3) {
+        try { localStorage.removeItem(TOKEN_KEY); } catch {}
+        $("app").style.display = "none";
+        $("pair").classList.add("show");
+        $("pair").insertBefore(
+          el("p", null, "The code this device remembered isn't accepted any more — the PC has issued a new one."),
+          $("pair").children[1]);
+        return;
+      }
       setTimeout(connect, backoff);
       backoff = Math.min(backoff * 2, 15000); // 1s → 2s → 4s … 15s cap
     };
@@ -929,8 +981,44 @@ function boot() {
     gear: checklist("gear"),
   };
 
+  // ---------- fullscreen ----------
+  // Browser chrome eats a propped-up tablet's screen. Two answers: this button for a
+  // session, and Add to Home Screen for good. The API only enters on a real gesture
+  // and can refuse outright, so nothing here is ever attempted on load — a remembered
+  // preference lights the button up and waits for a tap instead of no-oping silently.
+  const standalone = () =>
+    matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  function syncFull() {
+    const on = !!document.fullscreenElement;
+    const btn = $("full");
+    btn.classList.toggle("on", on);
+    btn.classList.toggle("want", !on && !standalone() && !!(choice && choice.fullscreen));
+    btn.textContent = on ? "⛶" : "⛶";
+    btn.title = on ? "Leave fullscreen"
+      : (choice && choice.fullscreen) ? "Tap for fullscreen (browsers need a tap each visit)"
+      : "Fullscreen";
+    // Standalone launches have no chrome to hide; offering the button there is noise.
+    btn.style.display = standalone() ? "none" : "";
+  }
+  $("full").onclick = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+      if (choice) { choice.fullscreen = !!document.fullscreenElement; saveChoice(); }
+    } catch {
+      // iPhone Safari has no element fullscreen; say the useful thing instead.
+      $("full").title = "This browser won't go fullscreen — use Share → Add to Home Screen.";
+    }
+    syncFull();
+  };
+  document.addEventListener("fullscreenchange", () => {
+    if (choice) { choice.fullscreen = !!document.fullscreenElement; saveChoice(); }
+    syncFull();
+  });
+  syncFull();
+
   // ---------- ⚙ screens panel ----------
-  $("gear").onclick = () => $("screens").classList.toggle("show");
+  $("gear").onclick = () => { $("screens").classList.toggle("show"); syncFull(); };
   function renderScreens() {
     const rows = $("screenRows");
     rows.replaceChildren();

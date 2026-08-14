@@ -92,6 +92,26 @@ public class CompanionServerTests : IDisposable
     }
 
     [Fact]
+    public async Task HomeScreenManifestAndIcon_ServeWithoutTokenAndCarryNoCode()
+    {
+        using var http = new HttpClient();
+        var manifest = await http.GetAsync($"http://127.0.0.1:{_server.Port}/manifest.webmanifest", Deadline());
+        manifest.EnsureSuccessStatusCode();
+        var json = await manifest.Content.ReadAsStringAsync();
+        Assert.Contains("\"display\": \"standalone\"", json);
+        Assert.Contains("EQBuddy Mobile", json);
+        // Served unauthenticated, so it must never carry the pairing code — a Home
+        // Screen launch reconnects from what the device remembered instead.
+        Assert.DoesNotContain(Token, json);
+
+        var icon = await http.GetAsync($"http://127.0.0.1:{_server.Port}/icon.png", Deadline());
+        icon.EnsureSuccessStatusCode();
+        Assert.Equal("image/png", icon.Content.Headers.ContentType?.MediaType);
+        var bytes = await icon.Content.ReadAsByteArrayAsync();
+        Assert.Equal(new byte[] { 0x89, (byte)'P', (byte)'N', (byte)'G' }, bytes.Take(4).ToArray());
+    }
+
+    [Fact]
     public async Task UnknownPath_Is404()
     {
         using var http = new HttpClient();
