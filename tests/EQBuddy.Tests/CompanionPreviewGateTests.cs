@@ -9,12 +9,24 @@ namespace EQBuddy.Tests;
 public class CompanionPreviewGateTests
 {
     [Fact]
-    public void PreviewIsOffUnlessTheEnvironmentAsksForIt()
+    public void PreviewIsOffWithoutAnExplicitOptIn()
     {
-        // The test host does not set EQBUDDY_COMPANION, which is exactly a player's
-        // machine. If this ever fails, released builds are surfacing the feature.
+        // The test host sets neither the env var nor the marker file, which is exactly
+        // a player's machine. If this fails, released builds are surfacing the feature.
         Assert.Null(Environment.GetEnvironmentVariable(CompanionPreview.EnvVar));
+        Assert.False(File.Exists(CompanionPreview.MarkerPath));
         Assert.False(CompanionPreview.Enabled);
+    }
+
+    [Fact]
+    public void TheMarkerLivesBesideSettingsSoItSurvivesHoweverTheAppWasLaunched()
+    {
+        // The point of the file gate: a process reads the environment it INHERITED, so
+        // an installer-relaunched app never saw a variable set afterwards. A path under
+        // the profile folder has no such dependency — and it follows EQBUDDY_APPDATA,
+        // so an isolated profile gets its own answer.
+        Assert.Equal(AppPaths.File(CompanionPreview.MarkerFile), CompanionPreview.MarkerPath);
+        Assert.EndsWith("mobile-preview.enabled", CompanionPreview.MarkerPath);
     }
 
     [Fact]

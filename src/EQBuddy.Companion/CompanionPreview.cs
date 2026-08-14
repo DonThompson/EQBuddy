@@ -1,3 +1,6 @@
+using System.IO;
+using EQBuddy.Core;
+
 namespace EQBuddy.Companion;
 
 /// <summary>
@@ -19,15 +22,32 @@ public static class CompanionPreview
 {
     public const string EnvVar = "EQBUDDY_COMPANION";
 
-    /// <summary>True only when the preview env var is explicitly set to 1/true/yes.</summary>
+    /// <summary>The marker file that opts a machine in: an empty file named this, beside
+    /// settings.json in the EQBuddy app-data folder. A FILE rather than only an env var
+    /// because a process reads the environment it INHERITED — EQBuddy relaunched by the
+    /// installer never saw a variable set afterwards, and the feature stayed hidden with
+    /// no clue why (field-hit 2026-08-14). A file does not care how the app was launched,
+    /// it survives restarts, it can be inspected, and a released build never writes one.</summary>
+    public const string MarkerFile = "mobile-preview.enabled";
+
+    /// <summary>True when the marker file exists, or the env var is set (kept for CI and
+    /// one-off dev runs). Read once — flipping it means restarting, which is the honest
+    /// contract for a build-level preview switch.</summary>
     public static bool Enabled { get; } = Read();
+
+    /// <summary>Where the marker lives — the same folder settings.json uses, so the
+    /// isolated-profile dev flow (EQBUDDY_APPDATA) gets its own answer for free.</summary>
+    public static string MarkerPath => AppPaths.File(MarkerFile);
 
     private static bool Read()
     {
         var v = Environment.GetEnvironmentVariable(EnvVar);
-        return v is not null
+        if (v is not null
             && (v.Equals("1", StringComparison.Ordinal)
                 || v.Equals("true", StringComparison.OrdinalIgnoreCase)
-                || v.Equals("yes", StringComparison.OrdinalIgnoreCase));
+                || v.Equals("yes", StringComparison.OrdinalIgnoreCase)))
+            return true;
+        try { return File.Exists(MarkerPath); }
+        catch { return false; }   // an unreadable profile folder is not an opt-in
     }
 }
