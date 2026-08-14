@@ -387,6 +387,21 @@ public sealed class AppSettings
     public string BreakoutHealingSort { get; set; } = "total";
     public string BreakoutPetSort { get; set; } = "total";
 
+    // ---- second screen (the LAN companion server; see SECURITY.md) ----
+    /// <summary>The phone companion listener. OFF by default and stays off until the
+    /// player flips it — a network listener is opt-in, never a surprise.</summary>
+    public bool CompanionEnabled { get; set; }
+    /// <summary>TCP port the companion listens on. One fixed default (so firewall
+    /// rules and muscle memory stick) but editable for the rare collision.</summary>
+    public int CompanionPort { get; set; } = 47859;
+    /// <summary>The pairing token, minted (crypto-random) the first time the feature
+    /// is enabled. Regenerating revokes every previously paired device.</summary>
+    public string? CompanionToken { get; set; }
+    /// <summary>Surfaces the owner does NOT want leaving the PC (the desktop gate in
+    /// the pairing window). Hidden-list idiom like <see cref="HiddenSections"/>:
+    /// empty = everything offered, which is the default.</summary>
+    public List<string> CompanionHiddenSurfaces { get; set; } = [];
+
     private static string FilePath => AppPaths.File("settings.json");
 
     // NaN is a legitimate value here ("not placed yet" window positions), and the

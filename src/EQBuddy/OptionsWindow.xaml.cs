@@ -1591,5 +1591,7 @@ public partial class OptionsWindow : Window
         if (e.ChangedButton == MouseButton.Left) DragMove();
     }
 
+    private void OnSecondScreen(object sender, RoutedEventArgs e) => _main.OpenCompanionWindow();
+
     private void OnClose(object sender, RoutedEventArgs e) => Close();
 }

@@ -44,6 +44,19 @@ files; boat and port routes supplement from eqlwiki.com (CC BY-SA 4.0).
 Quest and item knowledge derives from eqlwiki.com, the community wiki.
 --------------------------------------------------------------------------------
 
+QR code layout conventions (qrcode-generator)
+--------------------------------------------------------------------------------
+https://github.com/kazuhikoarase/qrcode-generator
+Copyright (c) 2009 Kazuhiko Arase, MIT License
+
+The second-screen pairing QR encoder (src/EQBuddy.Companion/QrEncoder.cs) was
+written for this project against ISO/IEC 18004, but its module-layout
+conventions - format-info bit placement, the zigzag data walk, and the mask
+formulas - were adapted from Kazuhiko Arase's qrcode-generator. The MIT
+license text is as printed for Spyxy's DPS Meter above, with the copyright
+line "Copyright (c) 2009 Kazuhiko Arase".
+--------------------------------------------------------------------------------
+
 Design inspirations (no code copied)
 --------------------------------------------------------------------------------
 EQ Legends Companion

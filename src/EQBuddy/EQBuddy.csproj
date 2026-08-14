@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\EQBuddy.Companion\EQBuddy.Companion.csproj" />
     <ProjectReference Include="..\EQBuddy.Core\EQBuddy.Core.csproj" />
     <ProjectReference Include="..\EQBuddy.UI.Shared\EQBuddy.UI.Shared.csproj" />
   </ItemGroup>
