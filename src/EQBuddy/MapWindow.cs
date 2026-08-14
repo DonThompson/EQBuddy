@@ -137,10 +137,11 @@ public sealed class MapWindow : Window
         bar.Children.Add(_zonePick);
         _zonePick.SelectionChanged += (_, _) =>
         {
-            if (_zonePick.SelectedItem is string stem && MapFolder is { } dir)
+            if (_zonePick.SelectedItem is string stem && FileForStem(stem) is { } file
+                && file != _shownFile)
             {
-                var file = Path.Combine(dir, stem + ".txt");
-                if (file != _shownFile) { _userPicked = true; ShowFile(file); }
+                _userPicked = true;
+                ShowFile(file);
             }
         };
 
@@ -213,20 +214,40 @@ public sealed class MapWindow : Window
         MaybeRefresh(force: true);
     }
 
-    private string? MapFolder =>
-        _main.Settings.MapFolder is { Length: > 0 } custom && Directory.Exists(custom)
-            ? custom
-            : ZoneMapFiles.DefaultFolder(_main.Settings.LogFolder);
+    /// <summary>Every folder worth probing, in precedence order: the user's custom
+    /// pack folder first, then the game's own maps folder beside Logs. Both, always —
+    /// a Brewall-style pack that skips a zone must degrade to the game's shipped map
+    /// for it, not to a blank window (the Qeynos Hills report, 2026-08-13).</summary>
+    private IReadOnlyList<string> MapFolders
+    {
+        get
+        {
+            var folders = new List<string>(2);
+            if (_main.Settings.MapFolder is { Length: > 0 } custom && Directory.Exists(custom))
+                folders.Add(custom);
+            if (ZoneMapFiles.DefaultFolder(_main.Settings.LogFolder) is { } game
+                && !folders.Contains(game, StringComparer.OrdinalIgnoreCase))
+                folders.Add(game);
+            return folders;
+        }
+    }
+
+    /// <summary>A dropdown stem maps back to a file through the same folder
+    /// precedence Resolve uses — never a folder the stem didn't come from.</summary>
+    private string? FileForStem(string stem) =>
+        MapFolders.Select(dir => Path.Combine(dir, stem + ".txt")).FirstOrDefault(File.Exists);
 
     private void PopulateZoneList()
     {
         _zonePick.Items.Clear();
-        if (MapFolder is not { } folder) return;
-        foreach (var f in Directory.EnumerateFiles(folder, "*.txt")
-                     .Select(Path.GetFileNameWithoutExtension)
-                     .Where(stem => stem is { Length: > 0 } && !stem.Contains('_'))
-                     .OrderBy(s => s, StringComparer.OrdinalIgnoreCase))
-            _zonePick.Items.Add(f!);
+        // Union across folders: the pack's zones plus the game's own — each stem once.
+        var stems = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var folder in MapFolders)
+            foreach (var f in Directory.EnumerateFiles(folder, "*.txt")
+                         .Select(Path.GetFileNameWithoutExtension)
+                         .Where(stem => stem is { Length: > 0 } && !stem.Contains('_')))
+                stems.Add(f!);
+        foreach (var stem in stems) _zonePick.Items.Add(stem);
     }
 
     /// <summary>Cheap follow tick from RefreshUi: reload only when the zone (or the
@@ -234,25 +255,32 @@ public sealed class MapWindow : Window
     public void MaybeRefresh(bool force = false)
     {
         var zone = _main.CurrentZoneName;
-        if (MapFolder is not { } folder)
+        var folders = MapFolders;
+        if (folders.Count == 0)
         {
             _status.Text = "No maps folder found. EQBuddy looks for the game's own \"maps\" folder " +
                 "beside Logs — click \"Get maps…\" for Brewall's pack (unzip it there), or point " +
                 "me at an existing folder with Maps folder…";
             return;
         }
-        if (!_userPicked && zone.Length > 0 && zone != _followedZone)
+        // A failed lookup is NOT cached: force (window open, Follow me) re-probes a
+        // zone that came up empty, so unzipping a pack mid-session takes effect
+        // without waiting for a zone line.
+        if (!_userPicked && zone.Length > 0 && (zone != _followedZone || (force && _shownFile.Length == 0)))
         {
             _followedZone = zone;
-            var file = ZoneMapFiles.Resolve(folder, zone);
+            var file = ZoneMapFiles.Resolve(folders, zone);
             if (file is not null) ShowFile(file);
             else
             {
-                _mapLayer.Children.Clear();
-                _map = null;
-                _shownFile = "";
-                _status.Text = $"No map file matched \"{zone}\" in {folder} — pick one from the dropdown " +
-                    "(and tell the discussions board which file it should have been).";
+                ClearShownMap();
+                // Name the exact file and every folder probed — a blank map must
+                // always say what would have filled it (David's rule: silent
+                // no-ops = broken).
+                _status.Text = $"No map for \"{zone}\" — {ZoneMapFiles.ExpectedShortname(zone)}.txt " +
+                    $"not found in {string.Join(" or ", folders)}. Pick a map from the dropdown, or " +
+                    "click \"Get maps…\" for Brewall's pack (and tell the discussions board if the " +
+                    "filename should be something else).";
             }
         }
         else if (force && _shownFile.Length > 0)
@@ -712,6 +740,20 @@ public sealed class MapWindow : Window
         PlaceSpawnCircles();
     }
 
+    /// <summary>Take down everything the shown map put up — geometry, screen-space
+    /// POIs included (the old failure path left the previous zone's labels floating
+    /// over the blank) — so the failure message stands alone and a later pick or
+    /// re-probe starts clean.</summary>
+    private void ClearShownMap()
+    {
+        _mapLayer.Children.Clear();
+        _linePaths.Clear();
+        foreach (var (el, _, _, _, _) in _pois) _canvas.Children.Remove(el);
+        _pois.Clear();
+        _map = null;
+        _shownFile = "";
+    }
+
     private void ShowFile(string file)
     {
         try
@@ -722,6 +764,18 @@ public sealed class MapWindow : Window
                 var part = ZoneMap.Load(layer);
                 map.Lines.AddRange(part.Lines);
                 map.Points.AddRange(part.Points);
+            }
+            if (map.IsEmpty)
+            {
+                // A file that parses to nothing must not become the shown map: the
+                // canvas would be silently blank while the status talks about /loc.
+                // Say which file, and leave _shownFile empty so re-picks and force
+                // re-probes still fire.
+                ClearShownMap();
+                _status.Text = $"{Path.GetFileName(file)} exists but holds no map lines — the file " +
+                    "may be a placeholder. Click \"Get maps…\" for Brewall's pack, or pick another " +
+                    "map from the dropdown.";
+                return;
             }
             // Bounds: recompute from merged content.
             _map = ZoneMapFromParts(map);
