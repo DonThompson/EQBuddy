@@ -545,7 +545,12 @@ public class WidgetRenderTests : IDisposable
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
         Assert.Contains("☁ Sky Quest", text);
-        Assert.Contains(text, t => t.StartsWith("BRD 0/"));   // a class tab with its score
+        // The tab header is now the D/R/P state count (#3d7911d), not "collected/total":
+        // the class abbreviation leads, then the three metric labels beside it.
+        Assert.Contains(text, t => t.StartsWith("BRD"));
+        Assert.Contains("D", text);
+        Assert.Contains("R", text);
+        Assert.Contains("P", text);
         Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(),
             combo => combo.Items.Contains("ready") && combo.Items.Contains("open"));
         Assert.Contains(window.GetVisualDescendants().OfType<CheckBox>(),

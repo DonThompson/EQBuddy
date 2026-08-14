@@ -159,6 +159,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private readonly TextBlock _procLabel = AppTheme.Heading("⚡ Procs");
     private readonly ItemsControl _procList = new();
     private readonly TextBlock _aaNewLabel = AppTheme.Heading("AA learned this session");
+    // #813c82d: "what did I just unlock?" — the ding list, and the always-on preview
+    // of the next level that unlocks anything.
+    private readonly TextBlock _levelUnlocksLabel = AppTheme.Heading("");
+    private readonly ItemsControl _levelUnlocksList = new();
+    private readonly TextBlock _nextUnlocksLabel = AppTheme.Heading("");
+    private readonly ItemsControl _nextUnlocksList = new();
     private readonly ItemsControl _aaNewList = new();
     private readonly Button _combatFightCopy = AppTheme.IconButton("⧉",
         "Copy this fight as Discord-ready text (a monospace block — the official Discord blocks images, "
@@ -1142,6 +1148,29 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         var panel = new StackPanel();
         _progressSummary.Margin = new Thickness(0, 2, 0, 4);
         panel.Children.Add(_progressSummary);
+        // Ding, and the card answers "what did I just get?" — AAs first (labeled, not
+        // guessed: the wiki doesn't say which classes they cover), then spells.
+        _levelUnlocksLabel.Margin = new Thickness(0, 4, 0, 0);
+        _levelUnlocksLabel.IsVisible = false;
+        panel.Children.Add(_levelUnlocksLabel);
+        _levelUnlocksList.IsVisible = false;
+        panel.Children.Add(_levelUnlocksList);
+        // "What do I get at N?" without waiting for a ding — click to fold.
+        _nextUnlocksLabel.Margin = new Thickness(0, 4, 0, 0);
+        _nextUnlocksLabel.IsVisible = false;
+        _nextUnlocksLabel.Cursor = new Cursor(StandardCursorType.Hand);
+        ToolTip.SetTip(_nextUnlocksLabel,
+            "The next level that unlocks anything for your classes — click to expand or fold");
+        _nextUnlocksLabel.PointerPressed += (_, e) =>
+        {
+            e.Handled = true;
+            _settings.ShowNextUnlocks = !_settings.ShowNextUnlocks;
+            _settings.Save();
+            RefreshUi();
+        };
+        panel.Children.Add(_nextUnlocksLabel);
+        _nextUnlocksList.IsVisible = false;
+        panel.Children.Add(_nextUnlocksList);
         panel.Children.Add(AppTheme.Heading("Skill-ups"));
         panel.Children.Add(_skillList);
         // Session-new AAs lead (Reddit, 2026-08-11); the full character ledger folds
@@ -2060,6 +2089,37 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                         return $"{l.Text} at {l.Time:h:mm tt} ({mins}m)";
                     }))
                     : "");
+            // Ding: the AA group in its category order (labeled, not guessed — the wiki
+            // doesn't say which classes they cover); the Spells grouping follows, its
+            // rows marked "… spell".
+            var ding = DingUnlocks(s);
+            _levelUnlocksLabel.IsVisible = ding.Count > 0;
+            _levelUnlocksList.IsVisible = _levelUnlocksLabel.IsVisible;
+            if (ding.Count > 0 && s.LastLevel is { } dingLevel)
+            {
+                _levelUnlocksLabel.Text = LevelUnlockText.NewAtLevelLabel(dingLevel);
+                FillList(_levelUnlocksList, UnlockRows(ding), tooltip: UnlockTooltip(ding));
+            }
+
+            // "What do I get at N?" without waiting for a ding — the next milestone
+            // that unlocks anything, anchored to the last level the log ever announced
+            // (persisted per character, so it works across restarts). Hidden until a
+            // level is known: previewing from an unknown level would be a guess.
+            int? knownLevel = s.LastLevel;
+            if (knownLevel is null && QuestLedger?.LevelFor(QuestCharacterKey) is > 0 and var stored)
+                knownLevel = stored;
+            var next = knownLevel is { } kl ? LevelUnlocks.Next(UnlockClasses(s), kl) : null;
+            _nextUnlocksLabel.IsVisible = next is not null;
+            if (next is { } nx)
+            {
+                _nextUnlocksLabel.Text = LevelUnlockText.NextLabel(
+                    nx.Level, nx.Unlocks.Aas.Count, nx.Unlocks.Spells.Count, _settings.ShowNextUnlocks);
+                _nextUnlocksList.IsVisible = _settings.ShowNextUnlocks;
+                if (_settings.ShowNextUnlocks)
+                    FillList(_nextUnlocksList, UnlockRows(nx.Unlocks), tooltip: UnlockTooltip(nx.Unlocks));
+            }
+            else _nextUnlocksList.IsVisible = false;
+
             FillList(_skillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
             // AA display, rethought (Reddit, 2026-08-11: "is it supposed to just show
             // newly learned this session?" — yes, now it is): session-new AAs lead,
@@ -3514,6 +3574,58 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         return changed;
     }
 
+    // ---- level-up unlocks (#813c82d) ----
+
+    // Memoized per (level, classes) — the header cue reads this every UI tick, and the
+    // answer only changes on a ding or a class pick (perf audit #1's rule: steady-state
+    // ticks allocate nothing they don't have to).
+    private int? _dingLevelMemo;
+    private string _dingClassesMemo = "";
+    private LevelUnlockSet _dingUnlocks = LevelUnlockSet.Empty;
+
+    /// <summary>AAs and spells newly available at the session's latest level-up;
+    /// empty when the session hasn't leveled.</summary>
+    private LevelUnlockSet DingUnlocks(StatsSnapshot s)
+    {
+        if (s.LastLevel is not { } level) return LevelUnlockSet.Empty;
+        var classes = UnlockClasses(s);
+        var key = string.Join(",", classes);
+        if (_dingLevelMemo != level || _dingClassesMemo != key)
+        {
+            _dingLevelMemo = level;
+            _dingClassesMemo = key;
+            _dingUnlocks = LevelUnlocks.UnlocksAt(classes, level);
+        }
+        return _dingUnlocks;
+    }
+
+    /// <summary>Classes for level-unlock filtering: the Quest Tracker's picked classes,
+    /// falling back to the combat-inferred class — the Gear Locker rule (#104), which
+    /// this UI already applies when it opens the Locker. (WPF routes the same source
+    /// through BuffSetClassSource; that helper arrives with buff sets.)</summary>
+    private IReadOnlyList<string> UnlockClasses(StatsSnapshot s)
+    {
+        var picked = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
+        if (picked.Count == 0 && s.InferredClass is { Length: > 0 } inferred)
+            return [inferred];
+        return picked;
+    }
+
+    /// <summary>Unlock rows for FillList: the AA group in its category order, then
+    /// the Spells grouping — same list, rows told apart by their value column.</summary>
+    private static IEnumerable<(string Name, string Value)> UnlockRows(LevelUnlockSet set) =>
+        set.Aas.Select(a => (a.Name, LevelUnlockText.RowValue(a)))
+            .Concat(set.Spells.Select(sp => (sp.Name, LevelUnlockText.SpellRowValue(sp))));
+
+    /// <summary>Tooltip lookup for a merged unlock list: spell rows show which classes
+    /// get the spell and when (catalog facts, never invented effect text); AA rows keep
+    /// the wiki effect prose. Resolved per set, since only it knows which group a name
+    /// came from.</summary>
+    private static Func<string, string?> UnlockTooltip(LevelUnlockSet set) =>
+        name => set.Spells.Any(sp => sp.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            ? LevelUnlockText.SpellTooltip(SpellLevelCatalog.Default.Find(name))
+            : AaCatalog.Find(name)?.Effect;
+
     private void UpdateGearChecklist(StatsSnapshot s)
     {
         var changed = AutoCheckGearLoot(s);
@@ -3633,12 +3745,29 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         var selectedClass = (_skyQuestTabs.SelectedItem as TabItem)?.Tag as string
             ?? (_settings.SkyQuestClass.Length > 0 ? _settings.SkyQuestClass : null);
         _skyQuestTabs.Items.Clear();
+        AddSkyReadyAllTab(selectedClass);
 
         foreach (var classGroup in _settings.SkyQuestChecklist.GroupBy(i => i.ClassName).OrderBy(g => g.Key))
         {
             var classTotal = classGroup.Count();
             var classDone = classGroup.Count(i => i.Acquired);
             var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+            // #14ed6a2: the tab says WHO to hand it to, so the last step isn't a
+            // separate wiki trip.
+            var turnInNpc = classGroup.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0);
+            if (!string.IsNullOrWhiteSpace(turnInNpc))
+            {
+                var npcRow = new TextBlock
+                {
+                    Text = "Turn-in NPC: " + turnInNpc,
+                    FontSize = 10.5,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(0, 0, 0, 4),
+                    Foreground = AppTheme.DimBrush,
+                };
+                ToolTip.SetTip(npcRow, $"{classGroup.Key} Plane of Sky turn-in NPC: {turnInNpc}");
+                panel.Children.Add(npcRow);
+            }
 
             // Unfinished quests float to the top (Reddit, 2026-08-11), and within
             // the unfinished, CLOSEST TO DONE leads — the question a tab answers is
@@ -3704,7 +3833,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
 
             var tab = new TabItem
             {
-                Header = $"{ClassAbbrev(classGroup.Key)} {classDone}/{classTotal}",
+                Header = SkyQuestTabHeader(classGroup.Key),
                 Tag = classGroup.Key,
                 FontSize = 11,
                 Content = new ScrollViewer
@@ -3716,7 +3845,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                     Padding = new Thickness(0, 0, 4, 0),
                 },
             };
-            ToolTip.SetTip(tab, classGroup.Key);
+            ToolTip.SetTip(tab, SkyQuestTabToolTip(classGroup.Key));
             _skyQuestTabs.Items.Add(tab);
             if (string.Equals(selectedClass, classGroup.Key, StringComparison.Ordinal))
                 _skyQuestTabs.SelectedItem = tab;
@@ -3898,12 +4027,139 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         foreach (var tab in _skyQuestTabs.Items.OfType<TabItem>())
             if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
             {
-                var done = _settings.SkyQuestChecklist.Count(i =>
-                    string.Equals(i.ClassName, className, StringComparison.Ordinal) && i.Acquired);
-                var total = _settings.SkyQuestChecklist.Count(i =>
-                    string.Equals(i.ClassName, className, StringComparison.Ordinal));
-                tab.Header = $"{ClassAbbrev(className)} {done}/{total}";
+                tab.Header = SkyQuestTabHeader(className);
+                ToolTip.SetTip(tab, SkyQuestTabToolTip(className));
             }
+    }
+
+    /// <summary>#129: one tab that answers "what can I hand in right now?" across
+    /// every class — a multi-class character otherwise toured 14 tabs to find out.
+    /// Absent entirely when nothing is ready, rather than showing an empty tab.</summary>
+    private void AddSkyReadyAllTab(string? selectedClass)
+    {
+        var ready = _settings.SkyQuestChecklist
+            .GroupBy(i => (i.ClassName, i.Reward))
+            .Where(g => g.All(i => i.Acquired)
+                && !IsSkyRewardCompleted(g.Key.ClassName, g.Key.Reward))
+            .OrderBy(g => g.Key.ClassName).ThenBy(g => g.Key.Reward)
+            .ToList();
+        if (ready.Count == 0) return;
+
+        var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+        foreach (var quest in ready)
+        {
+            var npc = quest.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0) ?? "";
+            var row = new TextBlock
+            {
+                Text = $"{ClassAbbrev(quest.Key.ClassName)} — {quest.Key.Reward}"
+                    + (npc.Length > 0 ? $"  ({npc})" : ""),
+                FontSize = 11,
+                Margin = new Thickness(0, 1, 0, 1),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Foreground = AppTheme.TextBrush,
+            };
+            ToolTip.SetTip(row,
+                $"{quest.Key.ClassName}: all {quest.Count()} item{(quest.Count() == 1 ? "" : "s")} acquired"
+                + (npc.Length > 0 ? $" — turn in to {npc}" : ""));
+            panel.Children.Add(row);
+        }
+
+        var tab = new TabItem
+        {
+            Header = new TextBlock
+            {
+                Text = $"★ Ready {ready.Count}",
+                FontSize = 10,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = AppTheme.WarnBrush,
+            },
+            Tag = "★ready-all",
+            FontSize = 11,
+            Content = new ScrollViewer
+            {
+                Content = panel,
+                MaxHeight = 300,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Padding = new Thickness(0, 0, 4, 0),
+            },
+        };
+        ToolTip.SetTip(tab,
+            $"{ready.Count} quest{(ready.Count == 1 ? "" : "s")} ready to turn in, across all classes");
+        _skyQuestTabs.Items.Add(tab);
+        if (selectedClass == "★ready-all") tab.IsSelected = true;
+    }
+
+    // ---- Sky tab state counts (#3d7911d) ----
+    // A tab said "7/22" — items collected, which answers nothing about whether any
+    // QUEST is turnable. The counts are per reward group: done (turned in), ready
+    // (every piece collected, go hand it in), partial (started).
+    private sealed record SkyQuestTabCounts(int Done, int Ready, int Partial, int Total);
+
+    private SkyQuestTabCounts SkyQuestTabCountsFor(string className)
+    {
+        var rewards = _settings.SkyQuestChecklist
+            .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
+            .GroupBy(i => i.Reward)
+            .ToList();
+        var done = 0;
+        var ready = 0;
+        var partial = 0;
+        foreach (var reward in rewards)
+        {
+            if (IsSkyRewardCompleted(className, reward.Key))
+                done++;
+            else if (reward.All(i => i.Acquired))
+                ready++;
+            else if (reward.Any(i => i.Acquired))
+                partial++;
+        }
+
+        return new SkyQuestTabCounts(done, ready, partial, rewards.Count);
+    }
+
+    private Control SkyQuestTabHeader(string className)
+    {
+        var counts = SkyQuestTabCountsFor(className);
+        var header = new StackPanel { Orientation = Orientation.Horizontal };
+        header.Children.Add(new TextBlock
+        {
+            Text = ClassAbbrev(className) + " ",
+            FontSize = 10,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = AppTheme.TextBrush,
+        });
+        AddSkyQuestTabMetric(header, "D", counts.Done, AppTheme.GoodBrush);
+        AddSkyQuestTabMetric(header, "R", counts.Ready, AppTheme.WarnBrush);
+        // WPF asks for an "IncomingBrush" resource that project never defines, so its
+        // P metric quietly falls back to the default foreground. The intent is a third
+        // distinct tone; this theme has one, so P actually reads as its own state here.
+        AddSkyQuestTabMetric(header, "P", counts.Partial, AppTheme.ChartIncomingBrush);
+        return header;
+    }
+
+    private static void AddSkyQuestTabMetric(StackPanel header, string label, int count, IBrush brush)
+    {
+        header.Children.Add(new TextBlock
+        {
+            Text = label,
+            FontSize = 10,
+            Margin = new Thickness(header.Children.Count == 1 ? 0 : 3, 0, 0, 0),
+            Foreground = AppTheme.DimBrush,
+        });
+        header.Children.Add(new TextBlock
+        {
+            Text = count.ToString(),
+            FontSize = 10,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = brush,
+        });
+    }
+
+    private string SkyQuestTabToolTip(string className)
+    {
+        var counts = SkyQuestTabCountsFor(className);
+        return $"{className}: {counts.Done} turned in, {counts.Ready} ready to turn in, " +
+               $"{counts.Partial} partially complete, {counts.Total} total quests";
     }
 
     private static string ClassAbbrev(string className) => className switch
