@@ -7,7 +7,7 @@ using EQBuddy.Companion;
 namespace EQBuddy;
 
 /// <summary>
-/// The second-screen pairing window (Options → Behavior → "Second screen…"): the
+/// The EQBuddy Mobile pairing window (Options → Behavior → "EQBuddy Mobile…"): the
 /// enable switch, the QR code a phone scans to become a live companion display, the
 /// literal URL for when scanning won't take, the desktop gate (which screens the PC
 /// is willing to send), and the honest firewall talk. All lifecycle logic lives in
@@ -35,7 +35,7 @@ public sealed class CompanionWindow : Window
     public CompanionWindow(CompanionHost host)
     {
         _host = host;
-        Title = "Second screen";
+        Title = "EQBuddy Mobile (Beta)";
         Width = 430;
         SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -45,16 +45,17 @@ public sealed class CompanionWindow : Window
         var root = new StackPanel { Margin = new Thickness(14, 10, 14, 12) };
 
         var intro = Dim(
-            "Turn a phone or tablet on the same Wi-Fi into a live companion display: scan " +
-            "the code, the browser opens, spawn timers follow you around the house. " +
-            "Everything stays on your own network — nothing is hosted, nothing is uploaded, " +
-            "and it's off unless you turn it on.");
+            "Turn a phone or tablet on the same Wi-Fi into a live EQBuddy display: scan " +
+            "the code, the browser opens, and your timers, map and checklists follow you " +
+            "around the house. Everything stays on your own network — nothing is hosted, " +
+            "nothing is uploaded, and it's off unless you turn it on. Beta: it works, it " +
+            "just hasn't been through as many camps as the rest of EQBuddy.");
         intro.Margin = new Thickness(0, 0, 0, 10);
         root.Children.Add(intro);
 
         _enable = new CheckBox
         {
-            Content = new TextBlock { Text = "Enable the second screen", FontSize = 12 },
+            Content = new TextBlock { Text = "Enable EQBuddy Mobile", FontSize = 12 },
             IsChecked = _host.Running,
         };
         ((TextBlock)_enable.Content).SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
@@ -68,7 +69,7 @@ public sealed class CompanionWindow : Window
         _qrImage.HorizontalAlignment = HorizontalAlignment.Center;
         RenderOptions.SetBitmapScalingMode(_qrImage, BitmapScalingMode.NearestNeighbor);
         _pairPanel.Children.Add(_qrImage);
-        var urlHint = Dim("Scanning not cooperating? Type this address in the phone's browser " +
+        var urlHint = Dim("Scanning not cooperating? Type this address in the device's browser " +
             "instead — the part after # is the pairing code, keep it:");
         urlHint.Margin = new Thickness(0, 4, 0, 0);
         _pairPanel.Children.Add(urlHint);
@@ -76,6 +77,13 @@ public sealed class CompanionWindow : Window
         _pairPanel.Children.Add(_urlBox);
         _statusLine.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
         _pairPanel.Children.Add(_statusLine);
+
+        var chrome = Dim("Propping a tablet beside the monitor? Once the page is open, use the " +
+            "browser's \"Add to Home Screen\" — it launches EQBuddy Mobile in its own window " +
+            "with no address bar, and remembers the pairing code. The ⛶ button at the top of " +
+            "the page does the same for one visit.");
+        chrome.Margin = new Thickness(0, 6, 0, 0);
+        _pairPanel.Children.Add(chrome);
 
         var regen = Theming.Button("New code (disconnects every paired device)");
         regen.Margin = new Thickness(0, 6, 0, 0);
@@ -92,7 +100,10 @@ public sealed class CompanionWindow : Window
         gateHead.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         _pairPanel.Children.Add(gateHead);
         _pairPanel.Children.Add(Dim("Untick anything you'd rather never leave this PC. " +
-            "Each phone then picks its own view (the ⚙ on the page) from what's offered."));
+            "Each device then picks its own screens (the ⚙ on the page) from what's offered."));
+        // The list is long enough now to need its own scroll rather than a window
+        // taller than a laptop screen.
+        var gateList = new StackPanel();
         foreach (var surface in CompanionSurfaces.All)
         {
             var cb = new CheckBox
@@ -100,12 +111,20 @@ public sealed class CompanionWindow : Window
                 Content = new TextBlock { Text = CompanionSurfaces.Label(surface), FontSize = 12 },
                 IsChecked = _host.OfferedSurfaces.Contains(surface),
                 Margin = new Thickness(0, 4, 0, 0),
+                ToolTip = CompanionSurfaces.Describe(surface),
             };
             ((TextBlock)cb.Content).SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
             cb.Checked += (_, _) => _host.SetSurfaceOffered(surface, true);
             cb.Unchecked += (_, _) => _host.SetSurfaceOffered(surface, false);
-            _pairPanel.Children.Add(cb);
+            gateList.Children.Add(cb);
         }
+        _pairPanel.Children.Add(new ScrollViewer
+        {
+            Content = gateList,
+            MaxHeight = 210,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Margin = new Thickness(0, 2, 0, 0),
+        });
 
         // ---- the honest firewall talk (see CompanionServer's header comment) ----
         var fw = Dim(

@@ -4,46 +4,77 @@ namespace EQBuddy.Companion;
 
 /// <summary>
 /// Projects the desktop's already-built state (the per-tick shared StatsSnapshot plus
-/// SpawnTimers' state list) into the wire DTO. Pure functions: the host owns when to
-/// call, the server owns when (and to whom) to send.
+/// the live trackers) into the wire DTO. Pure functions: the host owns when to call,
+/// the server owns when (and to whom) to send.
+///
+/// Every surface is built ONLY when the desktop gate offers it, so a withheld surface
+/// doesn't exist in memory to leak, let alone send. Each also gets a
+/// <see cref="SectionFingerprints"/> entry — the per-section change detection that
+/// keeps a mez-only phone from being woken by a loot line.
 /// </summary>
-public static class CompanionProjection
+public static partial class CompanionProjection
 {
     /// <summary>A timer with this much or less left counts as "imminent" — the page
     /// pulses those rows. Matches the "get ready to camp" horizon, not a lore number.</summary>
     public const double ImminentSeconds = 120;
 
-    /// <summary>Build the full offered snapshot. <paramref name="offered"/> is the
-    /// desktop gate (Options → Second screen): sections outside it are never even
-    /// projected, so gated data doesn't exist in memory to leak, let alone send.</summary>
-    public static CompanionSnapshot Build(
-        StatsSnapshot? stats,
-        IReadOnlyList<SpawnTimerState> timers,
-        string character,
-        string appVersion,
-        DateTime now,
-        IReadOnlyList<string>? offered = null)
+    /// <summary>Rows per list. A phone scrolls; a phone does not want 400 rows, and
+    /// the desktop's own breakouts cap in the same neighborhood.</summary>
+    private const int MaxRows = 20;
+
+    /// <summary>Build the full offered snapshot. The gate (Options → EQBuddy Mobile)
+    /// decides which sections are projected at all, so gated data doesn't exist in
+    /// memory to leak, let alone send.</summary>
+    public static CompanionSnapshot Build(CompanionInputs input, DateTime now)
     {
-        offered ??= CompanionSurfaces.All;
-        var offerSpawns = offered.Contains(CompanionSurfaces.Spawns, StringComparer.OrdinalIgnoreCase);
-        var offerSession = offered.Contains(CompanionSurfaces.Session, StringComparer.OrdinalIgnoreCase);
+        var offered = input.Offered ?? CompanionSurfaces.All;
+        var stats = input.Stats;
+        bool On(string surface) => offered.Contains(surface, StringComparer.OrdinalIgnoreCase);
 
         return new CompanionSnapshot
         {
             Version = stats?.Version ?? 0,
             SentAtUtc = now.ToUniversalTime(),
-            Identity = new CompanionIdentity(character, stats?.CurrentZone ?? "", appVersion),
+            Identity = new CompanionIdentity(input.Character, stats?.CurrentZone ?? "", input.AppVersion),
             Offered = offered,
-            Spawns = offerSpawns ? new CompanionSpawnSection(BuildTimers(timers, now)) : null,
-            Session = offerSession
+            Theme = input.Theme,
+            Map = On(CompanionSurfaces.Map) ? input.Map : null,
+            Spawns = On(CompanionSurfaces.Spawns) ? new CompanionSpawnSection(BuildTimers(input.Timers, now)) : null,
+            Mez = On(CompanionSurfaces.Mez) ? BuildMez(input.Mezzes, now) : null,
+            Buffs = On(CompanionSurfaces.Buffs) ? BuildBuffs(input.BuffSets, input.BuffLosses, now) : null,
+            Combat = On(CompanionSurfaces.Combat) ? BuildCombat(stats) : null,
+            Session = On(CompanionSurfaces.Session)
                 ? new CompanionSessionSection(
                     Kills: stats?.YourKillCount ?? 0,
                     XpPerHour: stats?.XpPerHour ?? 0,
                     SessionSeconds: stats?.Elapsed.TotalSeconds ?? 0,
                     SessionDps: stats?.SessionDps ?? 0)
                 : null,
+            Loot = On(CompanionSurfaces.Loot) ? BuildLoot(stats) : null,
+            Progress = On(CompanionSurfaces.Progress) ? BuildProgress(stats, input.Level, input.Unlocks) : null,
+            Epics = On(CompanionSurfaces.Epics) ? BuildEpics(input.Settings) : null,
+            Sky = On(CompanionSurfaces.Sky) ? BuildSky(input.Settings) : null,
+            Gear = On(CompanionSurfaces.Gear) ? BuildGear(input.Settings, input.HopsFromHere) : null,
         };
     }
+
+    /// <summary>The Phase 1 call shape, kept so spawn/session callers and their tests
+    /// don't have to know about the bundle.</summary>
+    public static CompanionSnapshot Build(
+        StatsSnapshot? stats,
+        IReadOnlyList<SpawnTimerState> timers,
+        string character,
+        string appVersion,
+        DateTime now,
+        IReadOnlyList<string>? offered = null) =>
+        Build(new CompanionInputs
+        {
+            Stats = stats,
+            Timers = timers,
+            Character = character,
+            AppVersion = appVersion,
+            Offered = offered ?? [CompanionSurfaces.Spawns, CompanionSurfaces.Session],
+        }, now);
 
     private static List<CompanionSpawnTimer> BuildTimers(IReadOnlyList<SpawnTimerState> timers, DateTime now)
     {
@@ -66,26 +97,89 @@ public static class CompanionProjection
     }
 
     /// <summary>
-    /// What "the version moved" means for push decisions: a stable string over the
-    /// DATA identity, deliberately excluding the values that drift every single tick
-    /// (remaining seconds, session length, xp rate) — the page ticks those locally.
-    /// Included: the stats event counter (kills/loot/zone changes bump it), the offer
-    /// list (gate edits must push), the roster of timers, and each row's due/imminent
-    /// flags (those flips are exactly the transitions the phone must repaint for).
-    /// Phase 2 note: when more surfaces land, fingerprint PER SECTION so a mez-only
-    /// phone isn't pushed for loot changes.
+    /// What "the version moved" means for push decisions, PER SECTION: a stable string
+    /// over each surface's DATA identity, deliberately excluding the values that drift
+    /// every single tick (remaining seconds, session length, xp rate) — the page ticks
+    /// those locally. A section absent from the result is a section not offered.
+    ///
+    /// The host diffs this against the previous tick's map and hands the changed names
+    /// to the server, which wakes only the devices subscribed to one of them: a phone
+    /// showing mez chips is not woken by a loot line, and a phone showing loot is not
+    /// woken by a mez landing. The envelope's own identity (character, zone, the offer
+    /// list, the theme) rides <see cref="EnvelopeSection"/>, which wakes everyone.
     /// </summary>
+    public static Dictionary<string, string> SectionFingerprints(CompanionSnapshot snap)
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [EnvelopeSection] =
+                $"{snap.Identity.Character}|{snap.Identity.Zone}|{string.Join(',', snap.Offered)}|{snap.Theme?.Stamp}",
+        };
+
+        if (snap.Map is { } m)
+            map[CompanionSurfaces.Map] = Fold(m.Zone, m.GeometryStamp, m.Missing,
+                m.You is { } you ? $"{you.X:0.#},{you.Y:0.#}" : "-",
+                Join(m.Circles, c => $"{c.X:0}:{c.Y:0}:{c.Label}:{c.Imminent}:{c.Confirmed}:{c.Kills}"));
+
+        if (snap.Spawns is { } sp)
+            map[CompanionSurfaces.Spawns] = Join(sp.Timers,
+                t => $"{t.Zone}/{t.Name}:{(t.Due ? 'D' : t.Imminent ? 'I' : '-')}:{t.DurationSeconds ?? -1}");
+
+        if (snap.Mez is { } mz)
+            map[CompanionSurfaces.Mez] = Join(mz.Chips, c => $"{c.Name}:{c.Warning}");
+
+        if (snap.Buffs is { } bf)
+            map[CompanionSurfaces.Buffs] = Fold(
+                Join(bf.Groups, g => g.Class + "=" + Join(g.Rows, r => $"{r.Spell}:{r.Status}")),
+                Join(bf.Lost, l => $"{l.Spell}:{l.Cause}"));
+
+        if (snap.Combat is { } cb)
+            map[CompanionSurfaces.Combat] = Join(cb.Boards,
+                b => $"{b.Key}:{b.FightHeader}:{Join(b.Fight, r => $"{r.Name}={r.Total}")}" +
+                     $":{Join(b.Session, r => $"{r.Name}={r.Total}")}");
+
+        // Session's numbers all drift every tick; its identity is the kill count (the
+        // one step change), and the forced refresh carries the rest.
+        if (snap.Session is { } se)
+            map[CompanionSurfaces.Session] = se.Kills.ToString();
+
+        if (snap.Loot is { } lt)
+            map[CompanionSurfaces.Loot] = Fold($"{lt.Total}/{lt.CraftedTotal}",
+                Join(lt.Items, i => $"{i.Name}={i.Count}"),
+                Join(lt.Watch, w => $"{w.Name}={w.Total}"));
+
+        if (snap.Progress is { } pr)
+            map[CompanionSurfaces.Progress] = $"{pr.Level}|{pr.AaTotal}|{pr.Unlocks.Count}|{(int)pr.XpPercent}";
+
+        AddChecklist(map, CompanionSurfaces.Epics, snap.Epics);
+        AddChecklist(map, CompanionSurfaces.Sky, snap.Sky);
+        AddChecklist(map, CompanionSurfaces.Gear, snap.Gear);
+        return map;
+
+        static void AddChecklist(Dictionary<string, string> into, string surface, CompanionChecklistSection? section)
+        {
+            if (section is null) return;
+            into[surface] = Fold($"{section.Done}/{section.Total}",
+                Join(section.Groups, g => g.Heading + "=" + Join(g.Rows, r => $"{r.Id}:{(r.Done ? '1' : '0')}")));
+        }
+    }
+
+    /// <summary>The pseudo-section for envelope-level change (who/where/the gate/the
+    /// theme): every connected device is woken by it, whatever it subscribed to. The
+    /// leading space keeps it out of the surface namespace.</summary>
+    public const string EnvelopeSection = " envelope";
+
+    /// <summary>The Phase 1 whole-snapshot fingerprint, now the section map flattened —
+    /// still the answer to "did anything at all move".</summary>
     public static string Fingerprint(CompanionSnapshot snap)
     {
-        var sb = new System.Text.StringBuilder(128);
-        sb.Append(snap.Version).Append('|')
-          .Append(snap.Identity.Character).Append('|')
-          .Append(snap.Identity.Zone).Append('|')
-          .Append(string.Join(',', snap.Offered));
-        foreach (var t in snap.Spawns?.Timers ?? [])
-            sb.Append('|').Append(t.Zone).Append('/').Append(t.Name)
-              .Append(':').Append(t.Due ? 'D' : t.Imminent ? 'I' : '-')
-              .Append(':').Append(t.DurationSeconds ?? -1);
-        return sb.ToString();
+        var sections = SectionFingerprints(snap);
+        return $"{snap.Version}|" + string.Join('|',
+            sections.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => kv.Key + "=" + kv.Value));
     }
+
+    private static string Fold(params string?[] parts) => string.Join('|', parts);
+
+    private static string Join<T>(IEnumerable<T> items, Func<T, string> of) =>
+        string.Join(';', items.Select(of));
 }

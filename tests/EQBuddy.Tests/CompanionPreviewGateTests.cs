@@ -3,7 +3,7 @@ using EQBuddy.Core;
 
 namespace EQBuddy.Tests;
 
-/// <summary>The second screen is merged but must not reach players until David says go
+/// <summary>EQBuddy Mobile is merged but must not reach players until David says go
 /// (2026-08-14). These pin the gate itself: the property that hides it, and the guard
 /// that keeps a socket closed even when a settings file asks for one.</summary>
 public class CompanionPreviewGateTests

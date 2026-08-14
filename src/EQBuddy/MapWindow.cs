@@ -964,11 +964,13 @@ public sealed class MapWindow : Window
         UpdateMarker();
     }
 
-    /// <summary>Map packs assume the game's parchment map window; a pure-black line
-    /// vanishes on our dark theme. Lines darker than the floor are lifted to a
-    /// readable gray, everything else keeps its pack color.</summary>
-    private static Color Readable(byte r, byte g, byte b) =>
-        r * 2 + g * 5 + b < 300 ? Color.FromRgb(170, 170, 170) : Color.FromRgb(r, g, b);
+    /// <summary>The shared lift-dark-lines rule (UI.Shared.MapColors), as a WPF color —
+    /// the phone's map applies the identical rule to the same packs.</summary>
+    private static Color Readable(byte r, byte g, byte b)
+    {
+        var (rr, gg, bb) = EQBuddy.UI.Shared.MapColors.Readable(r, g, b);
+        return Color.FromRgb(rr, gg, bb);
+    }
 
     /// <summary>The old forager's trick, offered wherever the marker is explained:
     /// the game itself makes /loc nearly automatic if you fold it into a social.</summary>

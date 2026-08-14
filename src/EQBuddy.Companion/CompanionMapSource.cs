@@ -1,0 +1,228 @@
+using System.IO;
+using EQBuddy.Core;
+using EQBuddy.UI.Shared;
+
+namespace EQBuddy.Companion;
+
+/// <summary>
+/// The map surface's builder, and its cache. The zone's PICTURE is static — thousands
+/// of segments parsed off disk — so it is loaded once per zone and then handed out by
+/// reference; only the marker and the spawn-point circles are rebuilt per tick, and
+/// the circles only when the ledger's revision moves. Nothing here runs unless the map
+/// surface is offered AND a device is connected.
+///
+/// The geometry is serialized ONCE per zone too: <see cref="CompanionSnapshot.ForClient"/>
+/// withholds it from any device already holding the stamp, so a phone parked in Lower
+/// Guk for an hour receives the picture exactly once.
+/// </summary>
+public sealed class CompanionMapSource
+{
+    /// <summary>"Imminent" = due within this many seconds, and it keeps pulsing this
+    /// long past due — the same window the desktop map pulses its circles on.</summary>
+    public const double PulseWindowSeconds = 10;
+    public const double PulseLingerSeconds = 30;
+
+    /// <summary>A hard ceiling on segments shipped for one zone. Brewall's biggest maps
+    /// run into the tens of thousands; past this the phone is drawing hair, not a map,
+    /// and the page says so rather than pretending it drew everything.</summary>
+    public const int MaxSegments = 24000;
+
+    private readonly AppSettings _settings;
+    private string _geometryZone = "\0";
+    private CompanionMapGeometry? _geometry;
+    private string? _missing;
+
+    private (string Zone, int Revision) _pointsStamp = ("\0", -1);
+    private SpawnPointLedger.ZoneArchive? _points;
+
+    public CompanionMapSource(AppSettings settings) => _settings = settings;
+
+    /// <summary>The user's pack first, the game's own maps folder as the fallback —
+    /// the desktop map window's precedence, so both windows show the same file.</summary>
+    public IReadOnlyList<string> Folders()
+    {
+        var folders = new List<string>(2);
+        try
+        {
+            if (_settings.MapFolder is { Length: > 0 } custom && Directory.Exists(custom))
+                folders.Add(custom);
+            if (ZoneMapFiles.DefaultFolder(_settings.LogFolder) is { } game
+                && !folders.Contains(game, StringComparer.OrdinalIgnoreCase))
+                folders.Add(game);
+        }
+        catch (Exception ex) { CoreLog.Error(ex); }
+        return folders;
+    }
+
+    /// <summary>Build the section. <paramref name="mapZone"/> is the log's zone name
+    /// (which names the map FILE); <paramref name="timerZone"/> is the catalog zone the
+    /// spawn archive and timers live under — the desktop keeps them apart for the same
+    /// reason ("Befallen 4 (Refined)" has no map file of its own).</summary>
+    public CompanionMapSection Build(
+        string mapZone,
+        string timerZone,
+        SpawnPointLedger? points,
+        IReadOnlyList<SpawnTimerState> timers,
+        LocationEvent? location,
+        DateTime now)
+    {
+        EnsureGeometry(mapZone);
+
+        var circles = points is null || timerZone.Length == 0
+            ? []
+            : BuildCircles(points, timerZone, timers, now);
+
+        CompanionMapMarker? you = location is { } loc
+            ? Marker(loc, now)
+            : null;
+
+        return new CompanionMapSection(
+            Zone: mapZone,
+            GeometryStamp: _geometry?.Stamp ?? "",
+            Geometry: _geometry,
+            Missing: _missing,
+            You: you,
+            Circles: circles);
+    }
+
+    private static CompanionMapMarker Marker(LocationEvent loc, DateTime now)
+    {
+        var (x, y) = ZoneMap.FromLoc(loc.LocY, loc.LocX);
+        return new CompanionMapMarker(x, y, Math.Max(0, (now - loc.Time).TotalSeconds));
+    }
+
+    private void EnsureGeometry(string zone)
+    {
+        if (zone == _geometryZone) return;
+        _geometryZone = zone;
+        _geometry = null;
+        _missing = null;
+        if (zone.Length == 0) { _missing = "Waiting for the log to say where you are."; return; }
+
+        var folders = Folders();
+        if (folders.Count == 0)
+        {
+            _missing = "No maps folder found — EQBuddy looks for the game's own \"maps\" folder " +
+                "beside Logs (the desktop's map window has a Get maps… button).";
+            return;
+        }
+        var file = ZoneMapFiles.Resolve(folders, zone);
+        if (file is null)
+        {
+            // Name the exact file that would have filled this, same as the desktop:
+            // a blank map must always say what's missing.
+            _missing = $"No map for \"{zone}\" — {ZoneMapFiles.ExpectedShortname(zone)}.txt " +
+                $"not found in {string.Join(" or ", folders)}.";
+            return;
+        }
+        try { _geometry = Load(file); }
+        catch (Exception ex)
+        {
+            CoreLog.Error(ex);
+            _missing = $"Couldn't read {Path.GetFileName(file)}.";
+        }
+    }
+
+    private static CompanionMapGeometry? Load(string file)
+    {
+        // Layer files ("crushbone_1.txt") carry detail the base map leaves out.
+        var merged = new ZoneMap();
+        foreach (var layer in ZoneMapFiles.WithLayers(file))
+        {
+            var part = ZoneMap.Load(layer);
+            merged.Lines.AddRange(part.Lines);
+            merged.Points.AddRange(part.Points);
+        }
+        if (merged.IsEmpty) return null;
+
+        // ZoneMap tracks its bounds during Load; merging the lists bypassed that, so
+        // they are re-derived here (the same trap the desktop map documents).
+        double minX = double.MaxValue, minY = double.MaxValue, maxX = double.MinValue, maxY = double.MinValue;
+        foreach (var l in merged.Lines)
+        {
+            minX = Math.Min(minX, Math.Min(l.X1, l.X2)); maxX = Math.Max(maxX, Math.Max(l.X1, l.X2));
+            minY = Math.Min(minY, Math.Min(l.Y1, l.Y2)); maxY = Math.Max(maxY, Math.Max(l.Y1, l.Y2));
+        }
+        foreach (var p in merged.Points)
+        {
+            minX = Math.Min(minX, p.X); maxX = Math.Max(maxX, p.X);
+            minY = Math.Min(minY, p.Y); maxY = Math.Max(maxY, p.Y);
+        }
+
+        var truncated = false;
+        var strokes = new List<CompanionMapStroke>();
+        var budget = MaxSegments;
+        // One stroke per color, exactly as the desktop makes one Path per color —
+        // and coordinates rounded to whole map units (roughly game feet), which is
+        // invisible at any zoom a tablet offers and halves the payload.
+        foreach (var group in merged.Lines.GroupBy(l => MapColors.Readable(l.R, l.G, l.B)))
+        {
+            if (budget <= 0) { truncated = true; break; }
+            var take = group.Take(budget).ToList();
+            if (take.Count < group.Count()) truncated = true;
+            budget -= take.Count;
+            var flat = new List<int>(take.Count * 4);
+            foreach (var l in take)
+            {
+                flat.Add((int)Math.Round(l.X1)); flat.Add((int)Math.Round(l.Y1));
+                flat.Add((int)Math.Round(l.X2)); flat.Add((int)Math.Round(l.Y2));
+            }
+            var (r, g, b) = group.Key;
+            strokes.Add(new CompanionMapStroke($"#{r:X2}{g:X2}{b:X2}", flat));
+        }
+
+        var pois = merged.Points.Select(p =>
+        {
+            var (r, g, b) = MapColors.Readable(p.R, p.G, p.B);
+            return new CompanionMapPoi((int)Math.Round(p.X), (int)Math.Round(p.Y), $"#{r:X2}{g:X2}{b:X2}", p.Label);
+        }).ToList();
+
+        var stamp = CompanionHash.Of(
+            $"{file}|{merged.Lines.Count}|{merged.Points.Count}|{minX:0}|{minY:0}|{maxX:0}|{maxY:0}");
+
+        return new CompanionMapGeometry(
+            stamp,
+            (int)Math.Floor(minX), (int)Math.Floor(minY),
+            (int)Math.Ceiling(maxX), (int)Math.Ceiling(maxY),
+            strokes, pois, truncated);
+    }
+
+    private List<CompanionMapCircle> BuildCircles(
+        SpawnPointLedger points, string zone, IReadOnlyList<SpawnTimerState> timers, DateTime now)
+    {
+        // Change detection by the ledger's revision counter, not a deep clone per
+        // tick — the same trick the desktop map uses.
+        if (_pointsStamp != (zone, points.Revision))
+        {
+            _pointsStamp = (zone, points.Revision);
+            _points = points.Snapshot(zone);
+        }
+
+        var circles = new List<CompanionMapCircle>(_points?.Points.Count ?? 0);
+        foreach (var p in _points?.Points ?? [])
+        {
+            var named = points.NamedPointName(zone, p);
+            // Named circles match their timer on the CANONICAL name, so a named
+            // killed under a catalog alias still finds its countdown.
+            var due = named is { } n
+                ? timers.FirstOrDefault(t => SpawnCatalog.NameMatches(t.Name, n))?.DueAt
+                : points.ProjectedRespawn(zone, p);
+            var secs = due is { } d ? (d - now).TotalSeconds : (double?)null;
+            var (x, y) = ZoneMap.FromLoc(p.LocY, p.LocX);
+            circles.Add(new CompanionMapCircle(
+                x, y,
+                Named: named is not null,
+                Label: named,
+                Confirmed: p.Confirmed,
+                DueSeconds: secs,
+                Imminent: secs is { } s && s <= PulseWindowSeconds && s >= -PulseLingerSeconds,
+                Projected: named is null,
+                Kills: p.TotalKills(),
+                Mobs: string.Join(", ", p.Mobs
+                    .OrderByDescending(kv => kv.Value.Kills)
+                    .Take(4)
+                    .Select(kv => $"{kv.Key} ×{kv.Value.Kills}"))));
+        }
+        return circles;
+    }
+}

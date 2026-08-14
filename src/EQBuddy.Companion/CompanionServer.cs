@@ -27,13 +27,13 @@ public sealed class CompanionServerOptions
 }
 
 /// <summary>
-/// The second-screen listener: a deliberately tiny HTTP/1.1 + RFC 6455 WebSocket
+/// The EQBuddy Mobile listener: a deliberately tiny HTTP/1.1 + RFC 6455 WebSocket
 /// server over raw TcpListener. Two routes only — GET / serves the embedded phone
 /// page (which shows nothing but pairing instructions until its JS presents the
 /// token), and GET /ws?token=… upgrades to a WebSocket that streams
 /// CompanionSnapshot JSON. Everything else is 404.
 ///
-/// Trust model (see SECURITY.md "Second screen"): binds LAN addresses only, never
+/// Trust model (see SECURITY.md "EQBuddy Mobile"): binds LAN addresses only, never
 /// 0.0.0.0 unless the caller says so; every WS connect must carry the pairing token
 /// (constant-time compare); failed attempts are rate-limited per IP; the unauthed
 /// HTTP surface contains no player data at all.
@@ -83,6 +83,11 @@ public sealed class CompanionServer : IDisposable
 
     /// <summary>Raised (on a worker thread) when a phone connects or drops.</summary>
     public event Action? ClientsChanged;
+
+    /// <summary>Raised (on a socket thread) when a device ticks a checklist row. The
+    /// host queues it and applies it on the desktop's own tick — nothing here touches
+    /// settings while the UI is reading them.</summary>
+    public event Action<CompanionAction>? ActionReceived;
 
     /// <summary>The machine's LAN IPv4s: up interfaces, skipping loopback and
     /// link-local (169.254 — an address that means "no network"). Order: private
@@ -153,12 +158,43 @@ public sealed class CompanionServer : IDisposable
     /// already skips the projection when no client is connected; here we remember it
     /// for the next connect and send each connected phone ONLY the sections it
     /// subscribed to (see <see cref="CompanionSnapshot.ForSubscription"/>) — a phone
-    /// showing just spawn timers never receives session payloads.</summary>
-    public void Publish(CompanionSnapshot snapshot)
+    /// showing just spawn timers never receives session payloads.
+    ///
+    /// <paramref name="changed"/> is the per-section change set from the host: a
+    /// device is woken only when one of ITS surfaces moved, so a mez-only phone sleeps
+    /// through a loot line and a loot phone sleeps through a mez landing. Null means
+    /// "tell everyone" — the periodic full refresh, and the first push after a
+    /// connect.</summary>
+    public void Publish(CompanionSnapshot snapshot, IReadOnlySet<string>? changed = null)
     {
         _latest = snapshot;
         foreach (var client in _clients.Values)
-            _ = SendTextAsync(client, snapshot.ForSubscription(client.Subscriptions).ToJson());
+        {
+            if (!Wants(client.Subscriptions, changed)) continue;
+            _ = SendTextAsync(client, ForClient(client, snapshot));
+        }
+    }
+
+    /// <summary>Does this device care about anything in the change set? A device that
+    /// hasn't picked yet (null subscription) takes everything.</summary>
+    private static bool Wants(IReadOnlyList<string>? subscriptions, IReadOnlySet<string>? changed)
+    {
+        if (changed is null) return true;
+        if (changed.Count == 0) return false;
+        if (changed.Contains(CompanionProjection.EnvelopeSection)) return true;
+        if (subscriptions is null) return true;
+        foreach (var surface in subscriptions)
+            if (changed.Contains(surface)) return true;
+        return false;
+    }
+
+    /// <summary>Filter for one device and advance what it now holds. Serialized on the
+    /// client's own lock: the tick thread and the read loop (a fresh subscribe) can
+    /// both land here, and the sticky-payload bookkeeping must not interleave.</summary>
+    private static string ForClient(WsClient client, CompanionSnapshot snapshot)
+    {
+        lock (client.StateLock)
+            return snapshot.ForClient(client.Subscriptions, client.State).ToJson();
     }
 
     public void Dispose()
@@ -205,6 +241,22 @@ public sealed class CompanionServer : IDisposable
             if (path is "/" or "/index.html")
             {
                 await WriteSimpleAsync(stream, "200 OK", "text/html; charset=utf-8", PhonePage.Html, ct).ConfigureAwait(false);
+                tcp.Close(); return;
+            }
+
+            // The two static crumbs "Add to Home Screen" needs — a chrome-free window
+            // is the durable answer to "make it full screen" (and the only reliable
+            // one on iOS). Neither carries player data or the pairing token.
+            if (path == "/manifest.webmanifest")
+            {
+                await WriteSimpleAsync(stream, "200 OK", "application/manifest+json; charset=utf-8",
+                    PhonePage.Manifest, ct).ConfigureAwait(false);
+                tcp.Close(); return;
+            }
+
+            if (path == "/icon.png")
+            {
+                await WriteBytesAsync(stream, "200 OK", "image/png", PhonePage.Icon, ct).ConfigureAwait(false);
                 tcp.Close(); return;
             }
 
@@ -275,9 +327,11 @@ public sealed class CompanionServer : IDisposable
         return -1;
     }
 
-    private static async Task WriteSimpleAsync(Stream stream, string status, string contentType, string body, CancellationToken ct)
+    private static Task WriteSimpleAsync(Stream stream, string status, string contentType, string body, CancellationToken ct) =>
+        WriteBytesAsync(stream, status, contentType, Encoding.UTF8.GetBytes(body), ct);
+
+    private static async Task WriteBytesAsync(Stream stream, string status, string contentType, byte[] payload, CancellationToken ct)
     {
-        var payload = Encoding.UTF8.GetBytes(body);
         var head = Encoding.ASCII.GetBytes(
             $"HTTP/1.1 {status}\r\n" +
             $"Content-Type: {contentType}\r\n" +
@@ -336,6 +390,10 @@ public sealed class CompanionServer : IDisposable
         /// null = everything the desktop offers. Written by the read loop, read by
         /// Publish on another thread — a volatile reference swap, never mutated.</summary>
         public volatile IReadOnlyList<string>? Subscriptions;
+        /// <summary>The sticky payloads this device already holds (theme, map
+        /// geometry), guarded by <see cref="StateLock"/>.</summary>
+        public CompanionClientState State { get; } = new();
+        public object StateLock { get; } = new();
     }
 
     private async Task HandleWebSocketAsync(
@@ -381,7 +439,7 @@ public sealed class CompanionServer : IDisposable
         try
         {
             if (_latest is { } snap)
-                await SendTextAsync(client, snap.ForSubscription(client.Subscriptions).ToJson()).ConfigureAwait(false);
+                await SendTextAsync(client, ForClient(client, snap)).ConfigureAwait(false);
             await ReadLoopAsync(client, ct).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is IOException or SocketException or OperationCanceledException or ObjectDisposedException)
@@ -444,31 +502,57 @@ public sealed class CompanionServer : IDisposable
         }
     }
 
-    /// <summary>The device's ⚙ Screens choice arriving mid-connection:
-    /// {"kind":"subscribe","surfaces":["spawns", …]} swaps the subscription and
-    /// immediately re-projects the latest snapshot for it — no reconnect. The choice
-    /// itself lives on the device (localStorage), never on this server. Anything
-    /// unparseable is ignored: a companion page bug must not kill the link.</summary>
+    /// <summary>The two things a device may say.
+    ///
+    /// {"kind":"subscribe","surfaces":["spawns", …]} — the ⚙ Screens choice arriving
+    /// mid-connection: swaps the subscription and immediately re-projects the latest
+    /// snapshot for it, no reconnect. The choice itself lives on the device
+    /// (localStorage), never on this server.
+    ///
+    /// {"kind":"tick","surface":"epics","id":"…","done":true} — a checklist row
+    /// tapped. Handed to the host as an event; it applies it on the desktop tick.
+    ///
+    /// Anything else, or anything unparseable, is ignored: a companion page bug must
+    /// not kill the link, and the phone has no other writes to make.</summary>
     private async Task HandleClientMessageAsync(WsClient client, byte[] payload)
     {
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(payload);
-            if (!doc.RootElement.TryGetProperty("kind", out var kind) ||
-                kind.GetString() != "subscribe" ||
-                !doc.RootElement.TryGetProperty("surfaces", out var surfaces) ||
-                surfaces.ValueKind != System.Text.Json.JsonValueKind.Array)
-                return;
-            var subs = surfaces.EnumerateArray()
-                .Where(e => e.ValueKind == System.Text.Json.JsonValueKind.String)
-                .Select(e => e.GetString()!)
-                .Take(32)
-                .ToList();
-            client.Subscriptions = subs;
-            if (_latest is { } snap)
-                await SendTextAsync(client, snap.ForSubscription(subs).ToJson()).ConfigureAwait(false);
+            if (!doc.RootElement.TryGetProperty("kind", out var kind)) return;
+            switch (kind.GetString())
+            {
+                case "subscribe":
+                {
+                    if (!doc.RootElement.TryGetProperty("surfaces", out var surfaces) ||
+                        surfaces.ValueKind != System.Text.Json.JsonValueKind.Array)
+                        return;
+                    var subs = surfaces.EnumerateArray()
+                        .Where(e => e.ValueKind == System.Text.Json.JsonValueKind.String)
+                        .Select(e => e.GetString()!)
+                        .Take(32)
+                        .ToList();
+                    client.Subscriptions = subs;
+                    if (_latest is { } snap)
+                        await SendTextAsync(client, ForClient(client, snap)).ConfigureAwait(false);
+                    return;
+                }
+                case "tick":
+                {
+                    if (!doc.RootElement.TryGetProperty("surface", out var surface) ||
+                        !doc.RootElement.TryGetProperty("id", out var id) ||
+                        surface.GetString() is not { Length: > 0 and < 200 } surfaceName ||
+                        id.GetString() is not { Length: > 0 and < 400 } rowId)
+                        return;
+                    var done = doc.RootElement.TryGetProperty("done", out var d)
+                        && d.ValueKind == System.Text.Json.JsonValueKind.True;
+                    ActionReceived?.Invoke(new CompanionAction(surfaceName, rowId, done));
+                    return;
+                }
+            }
         }
         catch (System.Text.Json.JsonException) { /* garbage in, nothing out */ }
+        catch (InvalidOperationException) { /* wrong JSON kind for a field — same */ }
     }
 
     private static async Task<bool> ReadExactAsync(NetworkStream stream, Memory<byte> target, CancellationToken ct)

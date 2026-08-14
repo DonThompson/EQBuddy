@@ -4,7 +4,7 @@ using EQBuddy.Core;
 namespace EQBuddy.Companion;
 
 /// <summary>
-/// The launch gate for the second screen (David, 2026-08-14): the feature is merged so
+/// The launch gate for EQBuddy Mobile (David, 2026-08-14): the feature is merged so
 /// it stays current with main and runs in CI, but it must not reach players until he has
 /// tested it and said go. Released builds therefore never show its Options entry and
 /// never open a socket — <see cref="Enabled"/> is false unless EQBUDDY_COMPANION=1 is set
