@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -1132,6 +1133,14 @@ public partial class MainWindow : Window
         var now = DateTime.Now;
         var buffs = count > 0 ? _buffTracker.Snapshot(now) : [];
 
+        // The buff set's honesty line (#120): evaluated against the FULL active list,
+        // before the expiring-only filter — the set cares what's up, not what's shown.
+        var set = CurrentBuffSet;
+        List<BuffSetEntryState> setStates = set.Count > 0 ? EvaluateBuffSet(set, buffs, now) : [];
+        var setMissing = setStates.Where(s => s.Status == BuffSetStatus.Missing).Select(s => s.Spell).ToList();
+        var setNotSeen = setStates.Where(s => s.Status == BuffSetStatus.NotSeen).Select(s => s.Spell).ToList();
+        var setExpiring = setStates.Where(s => s.Status == BuffSetStatus.Expiring).Select(s => s.Spell).ToList();
+
         // Expiring-only mode (David): the card stays quiet until a buff is inside the
         // warning window — "tell me when it matters", with the rest counted honestly.
         var quiet = 0;
@@ -1143,7 +1152,9 @@ public partial class MainWindow : Window
             buffs = urgent;
         }
 
-        var signature = string.Join("|", buffs.Select(b => b.Label + (b.Estimated ? "~" : ""))) + "·" + quiet;
+        var signature = string.Join("|", buffs.Select(b => b.Label + (b.Estimated ? "~" : ""))) + "·" + quiet
+            + "§" + string.Join(",", setMissing) + "§" + string.Join(",", setNotSeen)
+            + "§" + string.Join(",", setExpiring);
         if (signature == _buffsSignature)
         {
             // Same rows, newer clocks: update text and urgency tint in place.
@@ -1165,6 +1176,7 @@ public partial class MainWindow : Window
             BuffsPanel.Children.Add(EmptyCardLine(_settings.BuffTimersExpiringOnly && quiet > 0
                 ? $"{quiet} running quietly — timers appear at {Math.Max(10, _settings.BuffWarnSeconds):0}s left."
                 : "Nothing running — a buff landing on you starts its countdown here."));
+            AddBuffSetLine(setMissing, setNotSeen, setExpiring);
             return;
         }
         foreach (var b in buffs)
@@ -1194,10 +1206,86 @@ public partial class MainWindow : Window
             BuffsPanel.Children.Add(row);
             _buffClocks.Add((clock, b.Label));
         }
+        AddBuffSetLine(setMissing, setNotSeen, setExpiring);
 
         static string ClockText(double? remaining, bool estimated) => remaining is { } r
             ? $"{(int)r / 60}:{(int)r % 60:00}{(estimated ? " est" : "")}"
             : "?";
+    }
+
+    // ---- buff set (#120, Frankthetankk; see BuffSetEvaluator for the honesty rules) ----
+
+    /// <summary>Buff sets are per character — the same "name_server" key the AA ledger
+    /// uses. Empty until the log names the character; the Options editor says so
+    /// instead of silently saving into nowhere.</summary>
+    internal string BuffSetKey => _stats.LedgerCharacterKey;
+    internal string BuffSetCharacterName => _stats.CharacterName ?? "";
+
+    internal List<string> CurrentBuffSet =>
+        BuffSetKey is { Length: > 0 } key && _settings.BuffSets.TryGetValue(key, out var set) ? set : [];
+
+    /// <summary>Set edits repaint the card immediately — a change that waits for the
+    /// next tick reads as a silent no-op, and silent no-ops read as broken.</summary>
+    internal void RepaintBuffs()
+    {
+        _buffsSignature = "";
+        RenderBuffs();
+    }
+
+    /// <summary>The set editor's seen-first ranking: buffs YOU were seen casting this
+    /// session, plus buffs whose real duration was ever learned (evidence of use from
+    /// past sessions on this install).</summary>
+    internal IReadOnlyCollection<string> SeenBuffCasts()
+    {
+        var seen = new HashSet<string>(_buffTracker.SetSights().OwnCasts, StringComparer.OrdinalIgnoreCase);
+        foreach (var spell in _buffTracker.LearnedDurations.Keys) seen.Add(spell);
+        return seen;
+    }
+
+    private List<BuffSetEntryState> EvaluateBuffSet(List<string> set, List<BuffState> active, DateTime now)
+    {
+        var sights = _buffTracker.SetSights();
+        // Reuses the Buffs card's existing warn threshold — stage 1 adds no second knob.
+        return BuffSetEvaluator.Evaluate(set, active, sights.Landings, sights.Fades,
+            now, Math.Max(10, _settings.BuffWarnSeconds));
+    }
+
+    /// <summary>The "missing:" line (#120): appears ONLY when a set buff isn't cleanly
+    /// up, and disappears entirely when everything is. Three visibly different claims:
+    /// missing (seen fading, or timer ran out), expiring (inside the warn window), and
+    /// not seen (no landing line this session — it may be up from before the log was
+    /// watched; we can't know, and never pretend to).</summary>
+    private void AddBuffSetLine(List<string> missing, List<string> notSeen, List<string> expiring)
+    {
+        if (missing.Count == 0 && notSeen.Count == 0 && expiring.Count == 0) return;
+        var line = new TextBlock
+        {
+            FontSize = 11, TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 3, 0, 0),
+            ToolTip = "Your buff set. missing = EQBuddy saw it fade this session (or its timer ran out). "
+                + "expiring = still up, inside the warn window. "
+                + "not seen = no landing line this session — it may still be up from before "
+                + "EQBuddy was watching; the log can't tell, so this stays a separate state. "
+                + "Edit the set in Options → Alerts & chips.",
+        };
+        void Add(string label, List<string> names, string brush, bool italic = false)
+        {
+            if (names.Count == 0) return;
+            if (line.Inlines.Count > 0)
+            {
+                var sep = new Run(" · ");
+                sep.SetResourceReference(TextElement.ForegroundProperty, "DimBrush");
+                line.Inlines.Add(sep);
+            }
+            var run = new Run(label + string.Join(", ", names));
+            if (italic) run.FontStyle = FontStyles.Italic;
+            run.SetResourceReference(TextElement.ForegroundProperty, brush);
+            line.Inlines.Add(run);
+        }
+        Add("⚠ missing: ", missing, "WarnBrush");
+        Add("expiring: ", expiring, "AccentBrush");
+        Add("not seen: ", notSeen, "DimBrush", italic: true);
+        BuffsPanel.Children.Add(line);
     }
 
     /// <summary>Everything the fight-side chip stack shows: mez chips and slow chips,

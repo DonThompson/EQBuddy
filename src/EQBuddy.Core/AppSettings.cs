@@ -66,6 +66,13 @@ public sealed class AppSettings
     public bool BuffTimersExpiringOnly { get; set; }
     public double BuffWarnSeconds { get; set; } = 60;
 
+    /// <summary>Buff sets (#120, Frankthetankk): the buffs a character never wants to
+    /// camp without, keyed per character by the same "name_server" key the AA ledger
+    /// uses. Player-built only — never auto-populated — and evaluated by
+    /// BuffSetEvaluator into the Buffs card's missing line. Names stored as picked;
+    /// rank suffixes fold at match time, so "Temperance" covers "Temperance II".</summary>
+    public Dictionary<string, List<string>> BuffSets { get; set; } = new();
+
     /// <summary>The Options tab last used — iterating on watch rules shouldn't cost a
     /// click per visit. "look" / "alerts" / "watch" / "cards" / "behavior".</summary>
     public string OptionsTab { get; set; } = "look";

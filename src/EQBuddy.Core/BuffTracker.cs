@@ -38,6 +38,11 @@ public sealed class BuffDurationCatalog
     public Entry? Find(string message) => _byMessage.TryGetValue(message, out var e) ? e : null;
     public bool IsBuffSpell(string spell) => _spellNames.Contains(SpellCatalog.BaseName(spell));
 
+    /// <summary>Every spell whose landing line the catalog can attribute — the buff-set
+    /// editor's search space (#120). Restricting set entries to these keeps the set
+    /// honest: a spell whose landing we can't recognize would read "not seen" forever.</summary>
+    public IReadOnlyCollection<string> SpellNames => _spellNames;
+
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true };
 
     public static BuffDurationCatalog LoadEmbedded()
@@ -86,6 +91,13 @@ public sealed class BuffTracker
     private readonly BuffDurationCatalog _catalog;
     private readonly Dictionary<string, double> _learned = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BuffState> _active = new(StringComparer.OrdinalIgnoreCase);
+    // Session-seen evidence behind the buff set's honesty states (#120). These answer
+    // "did THIS session's log ever show it", not "is it up" — so death and zoning
+    // never clear them, and an unresolved landing marks its WHOLE candidate set seen
+    // (the same identity treatment the tracker gives the active entry itself).
+    private readonly HashSet<string> _seenLandings = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _seenFades = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _seenOwnCasts = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(string Caster, string Spell, DateTime Time)> _recentCasts = [];
     private readonly Dictionary<string, DateTime> _lastCastOf = new(StringComparer.OrdinalIgnoreCase);
     private string? _storePath;
@@ -129,6 +141,7 @@ public sealed class BuffTracker
             {
                 case SpellCastEvent own when _catalog.IsBuffSpell(own.Spell):
                     Remember("You", own.Spell, own.Time);
+                    _seenOwnCasts.Add(SpellCatalog.BaseName(own.Spell));
                     break;
                 case OtherCastEvent other when _catalog.IsBuffSpell(other.Spell):
                     Remember(other.Caster, other.Spell, other.Time);
@@ -139,11 +152,16 @@ public sealed class BuffTracker
                     break;
 
                 case BuffFadeEvent fade:
+                    // Even a fade with no active match is evidence (#120): the log
+                    // opened mid-session, the buff WAS up, and now it's gone.
+                    foreach (var s in fade.Spells.Where(_catalog.IsBuffSpell))
+                        _seenFades.Add(SpellCatalog.BaseName(s));
                     changed = OnFade(fade.Spells, fade.Time);
                     break;
                 // "Your X spell has worn off." with no target names YOUR buff ending.
                 case SpellWornOffEvent { Pet: false, Target.Length: 0 } worn
                     when _catalog.IsBuffSpell(worn.Spell):
+                    _seenFades.Add(SpellCatalog.BaseName(worn.Spell));
                     changed = OnFade([worn.Spell], worn.Time);
                     break;
 
@@ -195,6 +213,8 @@ public sealed class BuffTracker
 
         _active[label] = new BuffState(label, candidates, resolved ? cast.Caster : "",
             time, time.AddSeconds(learned ?? baseSeconds), estimated);
+        _seenLandings.Add(SpellCatalog.BaseName(label));
+        foreach (var c in candidates) _seenLandings.Add(SpellCatalog.BaseName(c));
         return true;
     }
 
@@ -244,6 +264,20 @@ public sealed class BuffTracker
     public IReadOnlyDictionary<string, double> LearnedDurations
     {
         get { lock (_lock) return new Dictionary<string, double>(_learned); }
+    }
+
+    /// <summary>What this session's log has shown about buff identities, for the buff
+    /// set's honesty states (#120): spells seen landing on you (a landing's whole
+    /// candidate set counts), spells seen fading (with or without a matching landing),
+    /// and buff spells YOU were seen casting (the set editor's seen-first ranking).
+    /// Copies — safe to hold across the tracker's own updates.</summary>
+    public BuffSetSights SetSights()
+    {
+        lock (_lock)
+            return new BuffSetSights(
+                new HashSet<string>(_seenLandings, StringComparer.OrdinalIgnoreCase),
+                new HashSet<string>(_seenFades, StringComparer.OrdinalIgnoreCase),
+                new HashSet<string>(_seenOwnCasts, StringComparer.OrdinalIgnoreCase));
     }
 
     private void SaveStore()

@@ -196,6 +196,24 @@
             <TextBlock Text="Unticked, the Buffs card counts down everything that's running. Ticked, it stays quiet (with an honest count) until a buff is inside the warning window — tell me when it matters. Your own casts already include your Spell Casting Reinforcement rank; a buff's first natural fade teaches its exact duration either way."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
+            <TextBlock Text="Buff set — the missing line" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AccentBrush}" Margin="0,14,0,2"/>
+            <TextBlock Text="Pick the buffs this character never camps without. The ⏳ Buffs card grows one line ONLY when something's off: missing (seen fading, or its timer ran out), expiring (inside the warn window above), or not seen (no landing line this session — it may be up from before EQBuddy was watching; the log can't tell, so it's shown as its own honest state). Everything up = no line at all. You build the list yourself; nothing is ever added for you."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap"/>
+            <TextBlock x:Name="BuffSetCharNote" Style="{StaticResource Dim}" TextWrapping="Wrap"
+                       Margin="0,2,0,0"/>
+            <StackPanel x:Name="BuffSetPanel" Margin="0,4,0,0"/>
+            <TextBox x:Name="BuffSetAddBox" Style="{StaticResource InputBox}" Margin="0,4,0,0"
+                     TextChanged="OnBuffSetSearchChanged"
+                     ToolTip="Type a few letters of a buff's name — buffs you've been seen casting list first, then the whole buff catalog"/>
+            <Popup x:Name="BuffSetPopup" PlacementTarget="{Binding ElementName=BuffSetAddBox}"
+                   Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                <Border x:Name="BuffSetChrome" BorderThickness="1" Padding="2" CornerRadius="6">
+                    <ListBox x:Name="BuffSetMatches" MaxHeight="240" MaxWidth="480" FontSize="11.5"
+                             SelectionChanged="OnBuffSetMatchPicked"/>
+                </Border>
+            </Popup>
+
             <CheckBox x:Name="MezChipsCheck" Margin="0,12,0,0"
                       Checked="OnMezChipsToggled" Unchecked="OnMezChipsToggled">
                 <TextBlock Text="Mez countdown chips (who's asleep, wake-up timers)" FontSize="12"

@@ -76,6 +76,7 @@ public partial class OptionsWindow : Window
 
         BuildRulesEditor();
         BuildCardsEditor();
+        BuildBuffSetPanel();
         UpdateGearImportStatus();
         UpdateCustomColorsPanel();
         BuildBreakoutChecks();
@@ -215,6 +216,122 @@ public partial class OptionsWindow : Window
             _main.Settings.BuffWarnSeconds = Math.Clamp(seconds, 10, 3600);
         BuffWarnBox.Text = _main.Settings.BuffWarnSeconds.ToString("0");   // shows any clamp
         _main.Settings.Save();
+    }
+
+    // ---- buff set (#120, Frankthetankk — the missing line's editor) ----
+    // The set itself lives per character in Settings.BuffSets; the Buffs card renders
+    // its states via BuffSetEvaluator. Every edit saves AND repaints the card at once:
+    // an edit whose effect waits for the next tick reads as a silent no-op.
+
+    private void BuildBuffSetPanel()
+    {
+        var key = _main.BuffSetKey;
+        BuffSetCharNote.Text = key.Length > 0
+            ? $"Saved for {_main.BuffSetCharacterName} — each character keeps their own set."
+            : "No character detected yet — play (or let today's log load) and the editor unlocks for them.";
+        BuffSetAddBox.IsEnabled = key.Length > 0;
+        BuffSetPanel.Children.Clear();
+        var set = key.Length > 0 ? _main.Settings.BuffSets.GetValueOrDefault(key) : null;
+        if (set is not { Count: > 0 })
+        {
+            if (key.Length > 0)
+            {
+                var none = new TextBlock
+                {
+                    Text = "Nothing picked yet — search below to build the set.",
+                    FontSize = 11, Margin = new Thickness(0, 2, 0, 0),
+                };
+                none.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+                BuffSetPanel.Children.Add(none);
+            }
+            return;
+        }
+        foreach (var spell in set)
+        {
+            var row = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var label = new TextBlock
+            {
+                Text = spell, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            };
+            label.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+            row.Children.Add(label);
+            var remove = new Button
+            {
+                Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+                Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Remove {spell} from the set",
+            };
+            var doomed = spell;
+            remove.Click += (_, _) =>
+            {
+                set.Remove(doomed);
+                if (set.Count == 0) _main.Settings.BuffSets.Remove(key);
+                _main.Settings.Save();
+                _main.RepaintBuffs();
+                BuildBuffSetPanel();
+            };
+            Grid.SetColumn(remove, 1);
+            row.Children.Add(remove);
+            BuffSetPanel.Children.Add(row);
+        }
+    }
+
+    private void OnBuffSetSearchChanged(object sender, TextChangedEventArgs e)
+    {
+        if (!_ready) return;
+        var query = BuffSetAddBox.Text.Trim();
+        if (query.Length < 2) { BuffSetPopup.IsOpen = false; return; }
+        BuffSetChrome.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
+        BuffSetChrome.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+        BuffSetMatches.SetResourceReference(Control.BackgroundProperty, "PopupBrush");
+        BuffSetMatches.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+        BuffSetMatches.Items.Clear();
+
+        var inSet = new HashSet<string>(
+            _main.Settings.BuffSets.GetValueOrDefault(_main.BuffSetKey) ?? [],
+            StringComparer.OrdinalIgnoreCase);
+        // Seen first (the buffs this player demonstrably casts), then the whole buff
+        // catalog. Both draw from BuffDurationCatalog's attributable spells, so nothing
+        // can be added that would sit at "not seen" forever.
+        var seenMatches = _main.SeenBuffCasts()
+            .Where(s => s.Contains(query, StringComparison.OrdinalIgnoreCase) && !inSet.Contains(s))
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
+        var catalogMatches = BuffDurationCatalog.Default.SpellNames
+            .Where(s => s.Contains(query, StringComparison.OrdinalIgnoreCase)
+                && !inSet.Contains(s) && !seenMatches.Contains(s, StringComparer.OrdinalIgnoreCase))
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase);
+        foreach (var s in seenMatches.Concat(catalogMatches).Take(14))
+            BuffSetMatches.Items.Add(new ListBoxItem
+            {
+                Content = seenMatches.Contains(s, StringComparer.OrdinalIgnoreCase)
+                    ? s + "   · seen this session" : s,
+                Tag = s,
+            });
+        if (BuffSetMatches.Items.Count == 0)
+            BuffSetMatches.Items.Add(new ListBoxItem
+            {
+                Content = "No buff in the catalog matches — check the spelling?",
+                IsEnabled = false,
+            });
+        BuffSetPopup.IsOpen = true;
+    }
+
+    private void OnBuffSetMatchPicked(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || BuffSetMatches.SelectedItem is not ListBoxItem { Tag: string spell }) return;
+        BuffSetPopup.IsOpen = false;
+        BuffSetMatches.SelectedItem = null;
+        var key = _main.BuffSetKey;
+        if (key.Length == 0) return;
+        if (!_main.Settings.BuffSets.TryGetValue(key, out var set))
+            _main.Settings.BuffSets[key] = set = [];
+        if (!set.Contains(spell, StringComparer.OrdinalIgnoreCase)) set.Add(spell);
+        _main.Settings.Save();
+        _main.RepaintBuffs();
+        BuffSetAddBox.Text = "";   // TextChanged with an empty box closes the popup
+        BuildBuffSetPanel();
     }
 
     // ---- tabs (1.67.0, David: "a wall of options... needs serious reorganization") ----
