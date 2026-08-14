@@ -882,22 +882,14 @@ public partial class MainWindow : Window
     /// changes; the monitor's cap always wins.</summary>
     private double _sectionAutoCap = double.MaxValue;
 
+    /// <summary>SectionScroll sits under the UI-scale LayoutTransform, so its MaxHeight
+    /// is in pre-scale units while the monitor cap arrives in screen pixels. The
+    /// conversion lives in WidgetMetrics, where it is unit-tested (#144).</summary>
     private void ApplySectionMaxHeight(double? autoCap = null)
     {
         if (autoCap is { } cap) _sectionAutoCap = cap;
-        // SectionScroll sits UNDER the UI-scale LayoutTransform, so its MaxHeight is in
-        // pre-scale units — but the monitor cap arrives in screen pixels, and
-        // ContentHeight is deliberately stored pre-scale ("survives scale changes").
-        // Feeding the screen figure straight in made the usable height track the scale
-        // instead of the monitor: past 1.0 the viewer believed it had more room than the
-        // window could show, so the last card was clipped with no scrollbar to reach it
-        // (discussion #144, n3cr0nk1tt3n). OnHeightGripDelta already divides by scale for
-        // exactly this reason; this is the same conversion, in the place that sets it.
-        var scale = Math.Max(0.25, _settings.UiScale);
-        var capInLayoutUnits = _sectionAutoCap / scale;
-        SectionScroll.MaxHeight = double.IsNaN(_settings.ContentHeight)
-            ? capInLayoutUnits
-            : Math.Clamp(_settings.ContentHeight, 120, capInLayoutUnits);
+        SectionScroll.MaxHeight = EQBuddy.UI.Shared.WidgetMetrics.SectionMaxHeight(
+            _sectionAutoCap, _settings.ContentHeight, _settings.UiScale);
     }
 
     // Same absolute-cursor discipline as the scale grip: the window resizes under the
@@ -972,9 +964,8 @@ public partial class MainWindow : Window
     private void OnHeightGripDelta(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
     {
         // Cursor moves in screen units; the list lives under the scale transform.
-        var scale = Math.Max(0.25, _settings.UiScale);
-        _settings.ContentHeight = Math.Max(120,
-            _heightDragStart + (CursorY() - _heightDragCursorY) / scale);
+        _settings.ContentHeight = EQBuddy.UI.Shared.WidgetMetrics.ContentHeightFromDrag(
+            _heightDragStart, CursorY() - _heightDragCursorY, _settings.UiScale);
         ApplySectionMaxHeight();
     }
 

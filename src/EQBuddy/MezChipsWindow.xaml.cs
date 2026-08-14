@@ -38,7 +38,7 @@ public partial class MezChipsWindow : Window
         // Grow-up stacks restore their BOTTOM edge — the saved Top belongs to
         // whatever chip count the stack had at close, and restoring it makes the
         // stack walk upward across reopen cycles (#122, Snagglefern).
-        var anchorBottom = ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp,
+        var anchor = ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp,
             restored && _settings.MezChipsGrowUp && !double.IsNaN(_settings.MezChipsBottom)
                 ? _settings.MezChipsBottom : null);
         Closed += (_, _) =>
@@ -51,10 +51,9 @@ public partial class MezChipsWindow : Window
                 _settings.MezChipsLeft, _settings.MezChipsTop);
             // The bottom edge persists whenever the position we just kept is the
             // live one; a rejected fallback keeps the old bottom too.
-            // anchorBottom() is NaN until the stack has laid out at least once;
-            // persisting that would poison the restore path on the next open.
-            if (_settings.MezChipsTop == Top && !double.IsNaN(anchorBottom()))
-                _settings.MezChipsBottom = anchorBottom();
+            // The anchor, never the window: its geometry is already gone by now.
+            if (_settings.MezChipsTop == Top && anchor.HasAnchor)
+                _settings.MezChipsBottom = anchor.Bottom;
             _settings.Save();
         };
     }

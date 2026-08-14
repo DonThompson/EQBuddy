@@ -75,9 +75,13 @@ Read this list before touching the areas it names. Every entry cost a release.
    `LayoutTransform`. Anything you assign to a control *inside* it is in pre-scale units,
    but `SystemParameters.WorkArea` and cursor positions are screen pixels. Mixing them
    silently breaks only at scales ≠ 100%. Caused discussion #144.
+   → **Now guarded:** every such conversion belongs in `UI.Shared/WidgetMetrics.cs`,
+   which is unit-tested. Do not do the arithmetic inline in a window.
 2. **`ActualHeight` is 0 in a `Closed` handler.** The window is already torn down.
    Persisting geometry there records nonsense. Caused #152 — chips walked up the screen
    one row per reopen.
+   → **Now guarded:** `UI.Shared/ChipStackAnchor.cs` owns the anchoring and ignores
+   non-positive heights; `ChipAnchor.cs` is only the WPF wiring.
 3. **`redirects=1` means the page you get is not the page you asked for.** Record the
    *served* title (`WikiPageText.Title`), never the requested one. Caused the same
    article-dropping bug in #65 **twice**.
@@ -115,3 +119,9 @@ the game's own map files. This harness found trap 6 above; unit tests could not 
 - Behaviour change? Update [docs/TestPlan.md](docs/TestPlan.md) — that file is the
   contract for what EQBuddy is expected to do, and it is only useful if it stays true.
 - New trap discovered the hard way? Add it above. That is the whole point of this file.
+
+**And the standing move for window bugs:** if the bug is a *sum* rather than a pixel,
+extract it into `UI.Shared` and unit-test it there instead of fixing it in place. Both
+bugs that reached players on 2026-08-14 were sums. The WPF layer has no test project
+(see [docs/TestPlan.md](docs/TestPlan.md) §5), so this is the only way its logic gets
+covered at all.

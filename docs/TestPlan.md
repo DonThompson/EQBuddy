@@ -5,7 +5,7 @@ contract. When behaviour changes, this file changes in the same commit — a tes
 that has drifted from the product is worse than none, because it teaches confidently
 wrong things.
 
-Audited at **v1.82.0 (2026-08-14)**: 1,295 unit + 45 Avalonia + 4 E2E, all green.
+Audited at **v1.82.0 (2026-08-14)**: 1,311 unit + 45 Avalonia + 4 E2E, all green.
 
 **How to read the Held-by column**
 
@@ -74,16 +74,34 @@ Audited at **v1.82.0 (2026-08-14)**: 1,295 unit + 45 Avalonia + 4 E2E, all green
 | Theme reaches the page for every `var(--x)` it uses | **Auto** — `CompanionThemeTests` |
 | Layout: solo panel fills the viewport; chrome shrinks in fullscreen; nothing scrolls sideways | **Manual** — §6, or the harness |
 
+## 4b. The widget's geometry
+
+| Expectation | Held by |
+|---|---|
+| The card list covers the same screen height at any UI scale; the last card is always reachable by scrolling | **Auto** — `WidgetMetricsTests` (#144) |
+| A dragged height is stored pre-scale and clamped against a cap in the same units | **Auto** — `WidgetMetricsTests` |
+| The list never collapses below one card, and no scale can make the cap infinite | **Auto** — `WidgetMetricsTests` |
+| A grow-up chip stack holds its bottom edge as chips come and go | **Auto** — `ChipStackAnchorTests` (#122) |
+| A closing window (height 0) cannot move the anchor; the stack returns to the same spot across repeated empty/refill cycles | **Auto** — `ChipStackAnchorTests` (#152) |
+| A drag moves the anchor; a grow-down stack is never repositioned | **Auto** — `ChipStackAnchorTests` |
+| Those conversions are actually wired to the window's events | **Manual** — §6 items 1–3 |
+
 ## 5. The gap — read this before trusting the suite
 
 **`src/EQBuddy` (the WPF app, 14,432 lines across 37 files) has no automated coverage.
 No test project references it.**
 
-Everything below is **Manual** and can only be caught by a human or a player:
+**Partly closed 2026-08-14.** The *arithmetic* behind both reported bugs now lives in
+`UI.Shared` and is unit-tested — `WidgetMetricsTests` (screen-to-pre-scale conversions,
+#144) and `ChipStackAnchorTests` (grow-up anchoring, #122 and #152). Both suites were
+verified by reintroducing the original bugs and watching them go red. The windows keep
+only the wiring, which is the part a human still has to look at.
 
-- Window placement, sizing, the UI-scale transform, grip drags, screen guards
+Everything below remains **Manual** and can only be caught by a human or a player:
+
+- Window placement, screen guards, and the wiring of the transform to the controls
 - Card expand/collapse, section order, star/pin behaviour, the mini pill
-- Chip stacks (mez, spawn, slow) — placement, growth direction, anchoring
+- Chip stacks — that the tested anchoring is actually wired to the window events
 - Click-through, see-through, focus-hide, tray icon, hotkeys
 - The zone map window: rendering, pan/zoom, context menus, camp pins
 - Alert banners and sounds at the moment they fire
@@ -95,10 +113,10 @@ bugs of the kind a small pure helper *could* pin.
 
 ### Recommended, in order of value per effort
 
-1. **Extract the arithmetic, then test it.** Both bugs were sums, not pixels:
-   `screenCap → preScaleCap` and `bottomEdge → newTop`. Moved into `UI.Shared` as pure
-   functions they become ordinary unit tests, with the window left holding only the
-   wiring. Cheap, and it retires trap classes 1 and 2 in `CLAUDE.md`.
+1. ~~**Extract the arithmetic, then test it.**~~ **Done 2026-08-14** — see
+   `UI.Shared/WidgetMetrics.cs` and `UI.Shared/ChipStackAnchor.cs`. Apply the same move
+   to the next window bug rather than fixing it in place: if it is a sum, it belongs in
+   `UI.Shared` where it can be pinned.
 2. **A WPF render-test project** mirroring `EQBuddy.Avalonia.Tests`, which already
    proves the approach works on this codebase. Would cover placement, scaling and chip
    layout properly.

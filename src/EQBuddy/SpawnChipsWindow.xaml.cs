@@ -40,7 +40,7 @@ public partial class SpawnChipsWindow : Window
         if (restored) { Left = _settings.SpawnChipsLeft; Top = _settings.SpawnChipsTop; }
         else { Left = SystemParameters.WorkArea.Left + 40; Top = SystemParameters.WorkArea.Top + 40; }
         // Grow-up stacks restore their BOTTOM edge (#122) — see MezChipsWindow.
-        var anchorBottom = ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp,
+        var anchor = ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp,
             restored && _settings.SpawnChipsGrowUp && !double.IsNaN(_settings.SpawnChipsBottom)
                 ? _settings.SpawnChipsBottom : null);
         Closed += (_, _) =>
@@ -51,10 +51,9 @@ public partial class SpawnChipsWindow : Window
             (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
                 restored, _userMoved, Left, Top,
                 _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
-            // anchorBottom() is NaN until the stack has laid out at least once;
-            // persisting that would poison the restore path on the next open.
-            if (_settings.SpawnChipsTop == Top && !double.IsNaN(anchorBottom()))
-                _settings.SpawnChipsBottom = anchorBottom();
+            // The anchor, never the window: its geometry is already gone by now.
+            if (_settings.SpawnChipsTop == Top && anchor.HasAnchor)
+                _settings.SpawnChipsBottom = anchor.Bottom;
             _settings.Save();
         };
     }
