@@ -297,20 +297,26 @@ public sealed class LogWatcher : IDisposable
                     if (end > start)
                     {
                         var line = text[start..end];
-                        var evt = LogParser.Parse(line);
-                        if (evt is not null)
+                        // Split ONCE (perf audit #13): Parse and ObserveRawLine each
+                        // used to re-run the line regex + timestamp parse. A line
+                        // whose stamp doesn't split was ignored by both before too.
+                        if (LogParser.TrySplitLine(line, out var ts, out var msg))
                         {
-                            _stats.Apply(evt);
-                            Spawns?.Apply(evt);
-                            Mez?.Apply(evt);
-                            Slow?.Apply(evt);
-                            Buffs?.Apply(evt);
-                            Raids?.Apply(evt);
-                            SpawnPoints?.Apply(evt);
+                            var evt = LogParser.Parse(ts, msg);
+                            if (evt is not null)
+                            {
+                                _stats.Apply(evt);
+                                Spawns?.Apply(evt);
+                                Mez?.Apply(evt);
+                                Slow?.Apply(evt);
+                                Buffs?.Apply(evt);
+                                Raids?.Apply(evt);
+                                SpawnPoints?.Apply(evt);
+                            }
+                            // Every line, parsed or not: a Text watch rule matches the
+                            // line's words, not whatever event we did or didn't make of it.
+                            _stats.ObserveRawLine(ts, msg);
                         }
-                        // Every line, parsed or not: a Text watch rule matches the line's
-                        // words, not whatever event we did or didn't make of it.
-                        _stats.ObserveRawLine(line);
                     }
                     start = nl + 1;
                 }

@@ -3012,8 +3012,19 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Last snapshot version each auto-checker processed (perf audit #13):
+    /// loot can only change with an event, and every event bumps the version — so an
+    /// unchanged version means the per-tick regroup can be skipped without moving any
+    /// high-water mark. Every path that clears the seen-dictionaries (session
+    /// identity, review entry, character switch) also moves the version, so the
+    /// re-arm pass is never skipped.</summary>
+    private long _epicAutoCheckVersion = -1;
+    private long _skyAutoCheckVersion = -1;
+
     private bool AutoCheckEpicQuestLoot(StatsSnapshot s)
     {
+        if (s.Version == _epicAutoCheckVersion) return false;   // perf audit #13
+        _epicAutoCheckVersion = s.Version;
         var changed = false;
         // The class-scoping rules live in Core (EpicLootAutoCheck) where they are
         // tested — the Sky rules (#98/#106) over prose steps keyed by the catalog
@@ -3053,6 +3064,8 @@ public partial class MainWindow : Window
 
     private bool AutoCheckSkyQuestLoot(StatsSnapshot s)
     {
+        if (s.Version == _skyAutoCheckVersion) return false;   // perf audit #13
+        _skyAutoCheckVersion = s.Version;
         var changed = false;
         // The class-scoping rules live in Core (SkyLootAutoCheck) where they are
         // tested: shared items tick your selected classes / active tab (#98),
@@ -4892,6 +4905,8 @@ public partial class MainWindow : Window
         _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)
         _stats.AaStore?.Flush();
         _stats.StackingStore?.Flush();
+        _stats.Spells.Flush();        // learned spell categories (audit #13, same idiom)
+        _buffTracker.Flush();         // learned buff durations
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();

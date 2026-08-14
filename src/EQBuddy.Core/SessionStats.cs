@@ -492,9 +492,15 @@ public sealed class SessionStats
 
     public void ObserveRawLine(string line)
     {
+        if (LogParser.TrySplitLine(line, out var ts, out var msg)) ObserveRawLine(ts, msg);
+    }
+
+    /// <summary>Already-split overload (perf audit #13): LogWatcher splits each line
+    /// once and hands the parts to both Parse and this — same behavior, one split.</summary>
+    public void ObserveRawLine(DateTime ts, string msg)
+    {
         TrackedRule[] patterns;
         lock (_lock) patterns = _textPatterns;
-        if (!LogParser.TrySplitLine(line, out var ts, out var msg)) return;
         lock (_lock)
         {
             _recentLines.Enqueue((ts, msg));

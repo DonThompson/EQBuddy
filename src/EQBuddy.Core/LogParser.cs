@@ -401,7 +401,11 @@ public static partial class LogParser
         message = "";
         var m = LineRx().Match(line);
         if (!m.Success) return false;
-        var raw = Regex.Replace(m.Groups["ts"].Value, @" {2,}", " ");
+        // Single-digit days pad with a double space; only pay the regex when present
+        // (the same guard Parse always had — perf audit #13's split-once path makes
+        // this THE timestamp parse for every line, so it must be just as cheap).
+        var raw = m.Groups["ts"].Value;
+        if (raw.Contains("  ")) raw = Regex.Replace(raw, @" {2,}", " ");
         if (!DateTime.TryParseExact(raw, TsFormat, CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out ts))
             return false;
@@ -410,18 +414,14 @@ public static partial class LogParser
     }
 
     /// <summary>Parse one full log line. Returns null for lines we don't track.</summary>
-    public static GameEvent? Parse(string line)
-    {
-        var m = LineRx().Match(line);
-        if (!m.Success) return null;
-        // Single-digit days pad with a double space; only pay the regex when present.
-        var rawTs = m.Groups["ts"].Value;
-        if (rawTs.Contains("  ")) rawTs = Regex.Replace(rawTs, @" {2,}", " ");
-        if (!DateTime.TryParseExact(rawTs, TsFormat, CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var ts))
-            return null;
-        var msg = m.Groups["msg"].Value;
+    public static GameEvent? Parse(string line) =>
+        TrySplitLine(line, out var ts, out var msg) ? Parse(ts, msg) : null;
 
+    /// <summary>Parse an already-split line (perf audit #13: LogWatcher splits each
+    /// line ONCE and hands the parts to both this and ObserveRawLine, instead of both
+    /// re-running the line regex + timestamp parse per line).</summary>
+    public static GameEvent? Parse(DateTime ts, string msg)
+    {
         Match r;
 
         // Fast path for /loc: if players take the overlapping-keybind route (the
