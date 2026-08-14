@@ -111,6 +111,20 @@ public sealed class SpawnPointLedger
         _catalog = catalog;
     }
 
+    /// <summary>A replay is starting over — LogWatcher.Select calls this before every
+    /// (re)ingest. The in-process boundary counters must restart with it: they count
+    /// kills seen at each zone's HighWater second THIS replay, and a counter carried
+    /// over from the previous pass has already "used up" the persisted
+    /// HighWaterCount, so the re-replayed boundary kills would count as new and
+    /// re-archive on every auto-follow away-and-back or review enter/exit (audit
+    /// finding 3). Explicit hook rather than inferring a rewind from an
+    /// older-than-HighWater kill: a restart whose first surviving kill lands exactly
+    /// AT the boundary second sends nothing older to infer from.</summary>
+    public void ReplayStarting()
+    {
+        lock (_lock) _seenAtHighWater.Clear();
+    }
+
     public void Apply(GameEvent evt)
     {
         switch (evt)

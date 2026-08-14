@@ -246,6 +246,9 @@ public sealed class LogWatcher : IDisposable
             InitialIngestDone = false;
             _stats.ClearCharacterState();
             _stats.Reset();
+            // Every Select is a replay starting over; the ledger's boundary-second
+            // counters must not carry over from the previous pass (finding 3).
+            SpawnPoints?.ReplayStarting();
         }
         Task.Run(() =>
         {

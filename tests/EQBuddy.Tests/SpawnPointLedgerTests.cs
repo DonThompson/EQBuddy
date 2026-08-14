@@ -182,6 +182,34 @@ public class SpawnPointLedgerTests
     }
 
     [Fact]
+    public void ReplayRestartingInTheSameProcessStaysIdempotent()
+    {
+        // Audit finding 3: a fresh instance replays clean (the tests above), but the
+        // LIVE ledger replays through the SAME instance every time LogWatcher.Select
+        // restarts the pipeline — auto-follow away and back, review enter/exit — and
+        // the in-process boundary counter never reset, so kills at the HighWater
+        // second counted past the persisted HighWaterCount and re-archived on every
+        // pass. ReplayStarting (called by Select) is that reset.
+        void ReplayAll(SpawnPointLedger l)
+        {
+            l.Apply(new ZoneEvent(T0, "The Ruins of Old Guk"));
+            l.Apply(new LocationEvent(T0.AddMinutes(1), -500, 120, 3));
+            l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok guard", "You"));
+            l.Apply(new KillEvent(T0.AddMinutes(2), "a froglok scryer", "You"));   // boundary second
+        }
+        var l1 = Ledger();
+        ReplayAll(l1);
+        l1.ReplayStarting();
+        ReplayAll(l1);   // same instance, same history
+        Assert.Equal(2, l1.Snapshot("Lower Guk").Points.Single().TotalKills());
+
+        // And a live second kill in a NEW boundary second still lands after all that.
+        l1.Apply(new LocationEvent(T0.AddMinutes(30), -500, 120, 3));
+        l1.Apply(new KillEvent(T0.AddMinutes(31), "a froglok guard", "You"));
+        Assert.Equal(3, l1.Snapshot("Lower Guk").Points.Single().TotalKills());
+    }
+
+    [Fact]
     public void KillsAttachToTheNearestPointNotTheFirst()
     {
         // Two camps 50 units apart; a kill 8 units from the newer camp must refine
