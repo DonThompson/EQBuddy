@@ -336,6 +336,7 @@ public partial class BreakoutWindow : Window
         if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
         if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
         _lastFight = s.LastFight;
+        _deaths = s.Deaths;
         _resists = MainWindow.SpellResistLookup(s);
         var f = s.LastFight;
         var (title, rows, secs, rateLabel) = _kind switch
@@ -402,6 +403,7 @@ public partial class BreakoutWindow : Window
     }
 
     private LastFightInfo? _lastFight;
+    private IReadOnlyList<TimedDetail> _deaths = [];
     private IReadOnlyDictionary<string, (int Casts, int Resists)>? _resists;
 
     /// <summary>#102 (jeremycranfill): the Combat card's fight export without leaving
@@ -419,7 +421,8 @@ public partial class BreakoutWindow : Window
         try
         {
             Clipboard.SetText(EQBuddy.UI.Shared.FightExport.ToText(
-                f, Main?.Identity.Character ?? "", $"v{UpdateChecker.CurrentVersion}"));
+                f, Main?.Identity.Character ?? "", $"v{UpdateChecker.CurrentVersion}",
+                EQBuddy.UI.Shared.FightExport.DeathsDuring(f.Start, f.DurationSeconds, _deaths)));
             CopyFight.Text = "✓";
             var t = new System.Windows.Threading.DispatcherTimer
                 { Interval = TimeSpan.FromSeconds(1.5) };

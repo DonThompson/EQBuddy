@@ -953,11 +953,13 @@ public partial class MainWindow : Window
     /// clipboard — the official Discord bans image sharing, so parses travel as text.</summary>
     private void OnCopyFight(object sender, RoutedEventArgs e)
     {
-        if (CurrentSnapshot().LastFight is not { } f) return;
+        var s = CurrentSnapshot();
+        if (s.LastFight is not { } f) return;
         try
         {
             Clipboard.SetText(EQBuddy.UI.Shared.FightExport.ToText(
-                f, Identity.Character, $"v{UpdateChecker.CurrentVersion}"));
+                f, Identity.Character, $"v{UpdateChecker.CurrentVersion}",
+                EQBuddy.UI.Shared.FightExport.DeathsDuring(f.Start, f.DurationSeconds, s.Deaths)));
         }
         catch (Exception ex) { App.LogError(ex); }
     }
