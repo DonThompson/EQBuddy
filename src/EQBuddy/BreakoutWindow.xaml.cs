@@ -337,6 +337,7 @@ public partial class BreakoutWindow : Window
         if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
         _lastFight = s.LastFight;
         _resists = MainWindow.SpellResistLookup(s);
+        _blockedBy = Main?.BlockedByLookup(s);
         var f = s.LastFight;
         var (title, rows, secs, rateLabel) = _kind switch
         {
@@ -398,11 +399,12 @@ public partial class BreakoutWindow : Window
         // session-wide, and stamping them on a single fight would misstate it.
         var resists = _kind == BreakoutKind.Damage && !_fightScope ? _resists : null;
         BreakdownRows.FillAbilityRowsSorted(this, Rows, rows, _sort, Math.Max(1, secs), rateLabel,
-            max: 10, resists: resists);
+            max: 10, resists: resists, blockedBy: resists is null ? null : _blockedBy);
     }
 
     private LastFightInfo? _lastFight;
-    private IReadOnlyDictionary<string, (int Casts, int Resists)>? _resists;
+    private IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? _resists;
+    private IReadOnlyDictionary<string, string>? _blockedBy;
 
     /// <summary>#102 (jeremycranfill): the Combat card's fight export without leaving
     /// the minimized view — same Discord-ready text, same clipboard.</summary>

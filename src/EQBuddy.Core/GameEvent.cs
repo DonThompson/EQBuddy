@@ -130,6 +130,12 @@ public record FizzleEvent(DateTime Time, string Spell = "") : GameEvent(Time);
 public record SpellCastEvent(DateTime Time, string Spell, bool Song = false) : GameEvent(Time);
 /// <summary>"Your X spell is interrupted." — a started cast that never landed.</summary>
 public record SpellInterruptedEvent(DateTime Time, string Spell) : GameEvent(Time);
+/// <summary>"Your X spell did not take hold. (Blocked by Y.)" — the cast COMPLETED
+/// (mana spent, no interrupt) but the buff never landed: another buff occupies its
+/// stacking slot. A measured stacking fact — (Spell, BlockedBy) pairs feed the
+/// per-character <see cref="StackingLedgerStore"/>. BlockedBy is "" for the
+/// blocker-less form the game sometimes prints.</summary>
+public record SpellBlockedEvent(DateTime Time, string Spell, string BlockedBy = "") : GameEvent(Time);
 /// <summary>The player's pet announced itself — the attack order ("<Pet> told you,
 /// 'Attacking X Master.'") or the leader query ("<Pet> says, 'My leader is Vataro.'").
 /// Only pet lines that prove ownership are parsed into this event.</summary>

@@ -272,6 +272,16 @@ public static partial class LogParser
     [GeneratedRegex(@"^Your (?<spell>.+?) spell is interrupted\.$")]
     private static partial Regex CastInterruptedRx();
 
+    // Your Chloroplast spell did not take hold. (Blocked by Regrowth.)
+    // Your Chloroplast spell did not take hold.
+    // The cast COMPLETED — this is neither an interrupt nor a fizzle — but the buff
+    // never landed: another buff owns its stacking slot. Line shape documented in the
+    // wild by EQ Legends Companion's research corpus (fact, not code). The parenthetical
+    // is optional because the game sometimes omits the blocker; both names can carry
+    // apostrophes, colons, and hyphens, so the captures are lazy up to literal tails.
+    [GeneratedRegex(@"^Your (?<spell>.+?) spell did not take hold\.(?: \(Blocked by (?<blocker>.+?)\.\))?$")]
+    private static partial Regex SpellBlockedRx();
+
     // Lines we suspect are meaningful but whose exact EQ Legends wording we haven't seen.
     // Rather than ship guessed regexes that silently never match, unmatched lines that
     // look interesting go to the debug sink during play, so the real text can be captured
@@ -682,6 +692,10 @@ public static partial class LogParser
 
         if ((r = CastInterruptedRx().Match(msg)).Success)
             return new SpellInterruptedEvent(ts, r.Groups["spell"].Value);
+
+        if ((r = SpellBlockedRx().Match(msg)).Success)
+            return new SpellBlockedEvent(ts, r.Groups["spell"].Value,
+                r.Groups["blocker"].Success ? r.Groups["blocker"].Value : "");
 
         if ((r = FizzleRx().Match(msg)).Success)
             return new FizzleEvent(ts, r.Groups["spell"].Value);
