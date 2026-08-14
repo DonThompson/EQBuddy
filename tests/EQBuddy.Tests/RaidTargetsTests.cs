@@ -179,6 +179,44 @@ public class RaidTargetsTests
     }
 
     [Fact]
+    public void LoadRekeysPreCanonicalRecordsAndMergesDuplicates()
+    {
+        // Pre-#140 stores keyed kills by the raw log spelling: a "Cazic Thule"
+        // kill could never be read back through the catalog's "Cazic-Thule" row.
+        // Loading must re-key through ResolveBoss, merge with any canonical
+        // duplicate (kills sum — the keys held disjoint events; tiers max;
+        // FirstKill earliest, LastKill latest; achievement ORs), leave keys the
+        // catalog can't resolve alone, and persist once.
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        File.WriteAllText(path, """
+            {"Records":{
+              "Dranak|legends|Cazic thule":{"Kills":2,"FirstKill":"2026-07-01T20:00:00","LastKill":"2026-07-08T20:00:00","TierKills":{"d1":2}},
+              "Dranak|legends|Cazic-Thule":{"Kills":1,"FirstKill":"2026-07-15T20:00:00","LastKill":"2026-07-15T20:00:00","AchievementComplete":true,"TierKills":{"d3":1}},
+              "Dranak|legends|Fippy Darkpaw":{"Kills":5}},
+             "HighWater":"2026-07-15T20:00:00"}
+            """);
+        try
+        {
+            var l = new RaidKillLedger(path) { CharacterKey = () => "Dranak|legends" };
+
+            var rec = l.For("Cazic-Thule")!;
+            Assert.Equal(3, rec.Kills);
+            Assert.Equal(DateTime.Parse("2026-07-01T20:00:00"), rec.FirstKill);
+            Assert.Equal(DateTime.Parse("2026-07-15T20:00:00"), rec.LastKill);
+            Assert.True(rec.AchievementComplete);
+            Assert.Equal(2, rec.TierKills["d1"]);
+            Assert.Equal(1, rec.TierKills["d3"]);
+            Assert.Equal(5, l.For("Fippy Darkpaw")!.Kills);   // unresolvable key untouched
+
+            var once = File.ReadAllText(path);
+            Assert.Contains("Cazic-Thule", once);              // migrated form persisted
+            _ = new RaidKillLedger(path);
+            Assert.Equal(once, File.ReadAllText(path));        // second load changes nothing
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public void RecordsFromBeforeTierTrackingRoundTrip()
     {
         // A pre-1.72 store has no TierKills field at all: it must load, count as

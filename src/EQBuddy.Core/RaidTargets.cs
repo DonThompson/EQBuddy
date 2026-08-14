@@ -142,10 +142,51 @@ public sealed class RaidKillLedger
                     _records = new Dictionary<string, RaidBossRecord>(
                         stored.Records, StringComparer.OrdinalIgnoreCase);
                     _highWater = stored.HighWater;
+                    if (MigrateKeysToCanonical()) Save();   // one-time; canonical keys map to themselves
                 }
             }
         }
         catch { /* corrupt store: rebuilt from the log's own replay */ }
+    }
+
+    /// <summary>One-time load migration (#140 follow-up): records stored before
+    /// canonical keying — a log's "Cazic Thule" kill filed under a key the
+    /// catalog's "Cazic-Thule" row could never read back — sat invisible to
+    /// For(), a silent no-op. Each key's boss segment (after the LAST '|'; the
+    /// character key is "name|server") re-keys through ResolveBoss; a key the
+    /// catalog cannot resolve is not this migration's to rename and stays put.
+    /// When the canonical record already exists the two merge: Kills sum (the
+    /// duplicate keys held DISJOINT witnessed events — one kill is only ever
+    /// recorded once, under one key), FirstKill takes the earliest, LastKill the
+    /// latest, the achievement flag ORs, tiers take the max per tier.</summary>
+    private bool MigrateKeysToCanonical()
+    {
+        var migrated = new Dictionary<string, RaidBossRecord>(StringComparer.OrdinalIgnoreCase);
+        var changed = false;
+        foreach (var (key, rec) in _records)
+        {
+            var target = key;
+            var cut = key.LastIndexOf('|');
+            if (cut >= 0 && _catalog.ResolveBoss(key[(cut + 1)..]) is { } canonical)
+                target = key[..(cut + 1)] + LogParser.Normalize(canonical);
+            if (!string.Equals(target, key, StringComparison.OrdinalIgnoreCase))
+                changed = true;
+            if (!migrated.TryGetValue(target, out var into))
+            {
+                migrated[target] = rec;
+                continue;
+            }
+            into.Kills += rec.Kills;
+            into.FirstKill = into.FirstKill is { } f && rec.FirstKill is { } g
+                ? (f <= g ? f : g) : into.FirstKill ?? rec.FirstKill;
+            into.LastKill = into.LastKill is { } a && rec.LastKill is { } b
+                ? (a >= b ? a : b) : into.LastKill ?? rec.LastKill;
+            into.AchievementComplete |= rec.AchievementComplete;
+            foreach (var (tier, n) in rec.TierKills)
+                into.TierKills[tier] = Math.Max(into.TierKills.GetValueOrDefault(tier), n);
+        }
+        if (changed) _records = migrated;
+        return changed;
     }
 
     private sealed class Stored
