@@ -411,25 +411,42 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    /// <summary>AA display since the 2026-08-11 rethink: session-new AAs lead, the full
+    /// character ledger folds behind the ▸ label (Pet-abilities idiom, WPF parity).</summary>
     [AvaloniaFact]
-    public void ProgressCardShowsPersistentAaLedger()
+    public void ProgressCardFoldsTheAaLedgerBehindAToggle()
     {
         var window = new MainWindow();
         window.Show();
-        window.RenderSnapshotForTest(new StatsSnapshot
+        var snapshot = new StatsSnapshot
         {
+            SessionStart = new DateTime(2026, 8, 8),
             AaAbilities =
             [
-                new AaAbilityInfo("Spell Casting Mastery", 3, new DateTime(2026, 8, 8)),
+                new AaAbilityInfo("Spell Casting Mastery", 3, new DateTime(2026, 8, 8, 1, 0, 0)),
                 new AaAbilityInfo("Natural Durability", 1, new DateTime(2026, 8, 7)),
             ],
-        });
+        };
 
+        window.Settings.ShowAllAAs = false;
+        window.RenderSnapshotForTest(snapshot);
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("AA abilities", text);
+        // Learned this session: leads unfolded; the pre-session AA stays folded away.
+        Assert.Contains("AA learned this session", text);
         Assert.Contains("Spell Casting Mastery", text);
         Assert.Contains("rank 3", text);
+        Assert.Contains("▸ All AA abilities (2)", text);
+        Assert.DoesNotContain("Natural Durability", text);
+
+        window.Settings.ShowAllAAs = true;
+        window.RenderSnapshotForTest(snapshot);
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("▾ All AA abilities", text);
+        Assert.Contains("Natural Durability", text);
         window.Close();
     }
 

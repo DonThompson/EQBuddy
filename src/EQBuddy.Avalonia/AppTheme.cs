@@ -313,15 +313,22 @@ internal sealed class SectionPanel : Border
     private readonly Border _body;
     private readonly PathIcon _chevron;
 
+    /// <summary>Fires whenever the card opens or closes — MainWindow uses the open
+    /// edge to render a just-expanded card immediately instead of waiting out the
+    /// full-render gate (WPF's Expander.Expanded hook, integration pass).</summary>
+    public event Action<bool>? ExpandedChanged;
+
     public bool IsExpanded
     {
         get => _body.IsVisible;
         set
         {
+            var changed = _body.IsVisible != value;
             _body.IsVisible = value;
             _chevron.Data = StreamGeometry.Parse(value
                 ? "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41Z"
                 : "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41Z");
+            if (changed) ExpandedChanged?.Invoke(value);
         }
     }
 
