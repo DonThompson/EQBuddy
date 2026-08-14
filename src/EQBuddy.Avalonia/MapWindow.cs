@@ -241,6 +241,25 @@ public sealed class MapWindow : Window
         root.Children.Add(_mapHost);
         Content = root;
 
+        // Right-click on open map space: zone-level actions. Circles carry their
+        // own menus, which take precedence when the click lands on one — Avalonia
+        // stops the ContextRequested bubble at the innermost control that owns a
+        // menu, so the dot's menu wins with no hit-test bookkeeping of ours.
+        var mapMenu = new ContextMenu();
+        var reset = new MenuItem { Header = "Reset spawn points for this zone…" };
+        reset.Click += (_, _) => OnResetZonePoints();
+        mapMenu.Items.Add(reset);
+        // Opening, not Opened: Avalonia's Opened fires with the popup already
+        // realized (the gear menu leans on exactly that), so a relabel there would
+        // measure against the old header. Opening still runs per open, which is the
+        // point — the zone name in the item must be the zone you're looking at.
+        mapMenu.Opening += (_, _) =>
+        {
+            var z = ResolvedTimerZone();
+            reset.Header = z.Length > 0 ? $"Reset spawn points — {z}…" : "Reset spawn points…";
+        };
+        _mapHost.ContextMenu = mapMenu;
+
         _mapHost.PointerWheelChanged += OnWheel;
         _mapHost.PointerPressed += (_, e) =>
         {
@@ -398,10 +417,23 @@ public sealed class MapWindow : Window
             Ring = ring, Halo = halo, HaloOpacity = haloOpacity, Point = p, NamedName = namedName,
         };
         ring.PointerEntered += (_, _) => ToolTip.SetTip(ring, CircleTip(zone, meta));
+        ring.ContextMenu = CircleMenu(zone, meta);
         _spawnCircles.Add((halo, mx, my, -(d + 8) / 2, -(d + 8) / 2));
         _spawnCircles.Add((ring, mx, my, -d / 2, -d / 2));
         _overlay.Children.Add(halo);
         _overlay.Children.Add(ring);
+        if (p.Confirmed)
+        {
+            // A confirmed spot wears a small filled center dot — "this one is
+            // vouched for", visible without hovering.
+            var dot = new Ellipse
+            {
+                Width = 3.5, Height = 3.5, IsHitTestVisible = false,
+                Fill = named ? AppTheme.AccentBrush : AppTheme.DimBrush,
+            };
+            _spawnCircles.Add((dot, mx, my, -1.75, -1.75));
+            _overlay.Children.Add(dot);
+        }
         // Named points carry their NAME beside the circle — unless a running timer's
         // camp pin is already labeling that mob with name + countdown right there.
         // (NameMatches is symmetric fold-equality; one direction suffices.)
@@ -413,6 +445,131 @@ public sealed class MapWindow : Window
             _overlay.Children.Add(label);
         }
         _circleMeta.Add(meta);
+    }
+
+    /// <summary>Reset (clear) the shown zone's whole spawn-point archive — the map's
+    /// empty-space right-click (David, 2026-08-13: "a reset"). Confirmed first with
+    /// the real count; the wipe is durable, and future kills rebuild honestly.</summary>
+    private async void OnResetZonePoints()
+    {
+        try
+        {
+            var zone = ResolvedTimerZone();
+            if (zone.Length == 0)
+            {
+                _status.Text = "Reset needs to know the zone — it unlocks once the log sees you zone in.";
+                return;
+            }
+            var count = _host.SpawnPoints.Snapshot(zone).Points.Count;
+            if (count == 0)
+            {
+                _status.Text = $"Nothing to reset — {zone} has no archived spawn points yet.";
+                return;
+            }
+            var ok = await Confirm("Reset spawn points",
+                $"Reset {zone}'s spawn-point archive?\n\n" +
+                $"All {count} archived point{(count == 1 ? "" : "s")} — including confirmed ones — " +
+                "will be removed. The zone starts learning fresh from your next kills; " +
+                "nothing already archived comes back on its own.",
+                $"Reset {zone}");
+            if (!ok) return;
+            var cleared = _host.SpawnPoints.ClearZone(zone);
+            _status.Text = $"Reset {zone} — {cleared} spawn point{(cleared == 1 ? "" : "s")} cleared; the zone learns fresh from here.";
+        }
+        catch (Exception ex) { App.LogError(ex); }
+    }
+
+    /// <summary>WPF's MessageBox.Show(…, YesNo, Warning, defaultResult: No), which
+    /// Avalonia has no equivalent for — so it's the SessionPicker's shape instead: a
+    /// small owned dialog, awaited for its answer. Cancel carries BOTH Enter and Esc,
+    /// which is what the WPF default-to-No bought us: nothing that wipes an archive
+    /// is ever one stray keypress away.</summary>
+    private async Task<bool> Confirm(string title, string message, string confirmLabel)
+    {
+        var answer = false;
+        var dialog = new Window
+        {
+            Title = title,
+            CanResize = false,
+            ShowInTaskbar = false,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = AppTheme.BgBrush,
+        };
+        var text = new TextBlock
+        {
+            Text = message, FontSize = 12, TextWrapping = TextWrapping.Wrap,
+            MaxWidth = 380, Foreground = AppTheme.TextBrush,
+        };
+        var go = ZoneTheming.Button(confirmLabel);
+        go.Click += (_, _) => { answer = true; dialog.Close(); };
+        var cancel = ZoneTheming.Button("Cancel", isDefault: true, isCancel: true);
+        cancel.Margin = new Thickness(8, 0, 0, 0);
+        cancel.Click += (_, _) => dialog.Close();
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 10, 0, 0),
+        };
+        buttons.Children.Add(go);
+        buttons.Children.Add(cancel);
+        var root = new StackPanel { Margin = new Thickness(12) };
+        root.Children.Add(text);
+        root.Children.Add(buttons);
+        dialog.Content = root;
+        await dialog.ShowDialog(this);
+        return answer;
+    }
+
+    /// <summary>Right-click on a circle: remove the point from the zone's archive
+    /// (David, 2026-08-13). Honest about the semantics in the item itself — the
+    /// removal survives restarts, but fresh kills near the spot re-learn it,
+    /// because the log always outranks an edit.</summary>
+    private ContextMenu CircleMenu(string zone, SpawnCircle c)
+    {
+        var menu = new ContextMenu();
+        var what = c.NamedName
+            ?? c.Point.Mobs.Keys.OrderBy(n => n, StringComparer.OrdinalIgnoreCase).First();
+        var header = new MenuItem
+        {
+            Header = c.Point.Mobs.Count > 1 ? $"{what} +{c.Point.Mobs.Count - 1} more" : what,
+            IsEnabled = false, FontSize = 11,
+        };
+        // Built from the circle's snapshot, which is fine because every edit below
+        // bumps the ledger's Revision — the next tick rebuilds the circles, and the
+        // menus with them, so the label can't go stale behind the archive.
+        var confirm = new MenuItem
+        {
+            Header = c.Point.Confirmed ? "Un-confirm location" : "Confirm location",
+        };
+        ToolTip.SetTip(confirm,
+            "Marks this spot as verified by you: the dot stops drifting toward\n" +
+            "new kills and holds exactly here. Kills and timers keep counting.\n" +
+            "Confirmations travel in share strings like everything else you set.");
+        confirm.Click += (_, _) =>
+        {
+            var now = _host.SpawnPoints.ConfirmPoint(zone, c.Point.LocY, c.Point.LocX,
+                !c.Point.Confirmed);
+            if (now is { } state)
+                _status.Text = state
+                    ? $"Location confirmed ({what}) — the dot holds this spot from now on."
+                    : $"Confirmation removed ({what}) — the dot refines with new kills again.";
+        };
+        var remove = new MenuItem { Header = "Remove this spawn point" };
+        ToolTip.SetTip(remove,
+            "Takes the circle off the map and out of this zone's archive.\n" +
+            "New kills near this spot will honestly re-learn it — the log always wins.");
+        remove.Click += (_, _) =>
+        {
+            if (_host.SpawnPoints.RemovePoint(zone, c.Point.LocY, c.Point.LocX))
+                _status.Text = $"Spawn point removed ({what}) — new kills near that spot will re-learn it.";
+        };
+        menu.Items.Add(header);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(confirm);
+        menu.Items.Add(remove);
+        return menu;
     }
 
     /// <summary>Named circles match their timer on the CANONICAL name — the same
@@ -436,6 +593,7 @@ public sealed class MapWindow : Window
             lines.Add($"{kv.Key} ×{kv.Value.Kills}");
         var (lastName, lastSeen) = c.Point.LastKilled();
         lines.Add("");
+        if (c.Point.Confirmed) lines.Add("Location confirmed — this dot holds its spot");
         lines.Add($"Last kill: {lastName}, {EQBuddy.UI.Shared.Countdown.Format(now - lastSeen.LastKill)} ago");
         var label = named ? "Respawn" : "Projected respawn (~)";
         // Tooltips open rarely — a fresh timer snapshot here is fine.

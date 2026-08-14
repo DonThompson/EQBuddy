@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -80,6 +81,77 @@ public sealed class ZoneWindowsRenderTests : IDisposable
         Assert.True(window.GetVisualDescendants().OfType<Ellipse>().Count() >= 4);
 
         window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>The map's right-click menus (ported from WPF): a circle's menu edits
+    /// the archive through the shared ledger, and the map-level menu names the zone
+    /// it would reset. The reset itself is behind a dialog, so what's exercised here
+    /// is the guard that fires before one ever opens.</summary>
+    [AvaloniaFact]
+    public void MapCircleMenuConfirmsThenRemovesTheSpawnPoint()
+    {
+        var host = new FakeZoneHost(_profile);
+        var maps = Directory.CreateDirectory(Path.Combine(_profile, "maps")).FullName;
+        File.WriteAllText(Path.Combine(maps, "befallen.txt"), "L 0, 0, 0, 100, 100, 0, 0, 0, 0\n");
+        host.Settings.MapFolder = maps;
+        host.CurrentZoneName = "Befallen";
+        ObserveOneKill(host);
+
+        var window = new MapWindow(host);
+        window.Show();
+        window.MaybeRefresh(force: true);
+
+        // Circles win over the map's own menu when the right-click lands on a dot:
+        // the ring owns the ContextRequested bubble and stops it there.
+        var ring = window.GetVisualDescendants().OfType<Ellipse>()
+            .First(e => e.ContextMenu is not null);
+        var mapHost = window.GetVisualDescendants().OfType<Panel>()
+            .First(p => p.ContextMenu is not null);
+        ring.RaiseEvent(new ContextRequestedEventArgs());
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(ring.ContextMenu!.IsOpen);
+        Assert.False(mapHost.ContextMenu!.IsOpen);
+        ring.ContextMenu.Close();
+
+        Click(CircleMenuItem(window, "Confirm location"));
+        Assert.True(host.SpawnPoints.Snapshot("Befallen").Points.Single().Confirmed);
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text?.StartsWith("Location confirmed (Decaying skeleton)") == true);
+
+        // The edit bumped Revision, so the next tick rebuilds the circles — and the
+        // rebuilt menu offers the other direction.
+        window.MaybeRefresh(force: true);
+        Click(CircleMenuItem(window, "Remove this spawn point"));
+        Assert.Empty(host.SpawnPoints.Snapshot("Befallen").Points);
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text?.StartsWith("Spawn point removed (Decaying skeleton)") == true);
+
+        // Opening the map menu relabels its one item with the zone it would wipe…
+        var reset = mapHost.ContextMenu.Items.OfType<MenuItem>().Single();
+        mapHost.RaiseEvent(new ContextRequestedEventArgs());
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("Reset spawn points — Befallen…", reset.Header);
+        mapHost.ContextMenu.Close();
+        // …and with nothing archived any more, it says so instead of asking.
+        Click(reset);
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text == "Nothing to reset — Befallen has no archived spawn points yet.");
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>The circle rings are the only overlay ellipses carrying a menu.</summary>
+    private static MenuItem CircleMenuItem(MapWindow window, string header) =>
+        window.GetVisualDescendants().OfType<Ellipse>()
+            .First(e => e.ContextMenu is not null)
+            .ContextMenu!.Items.OfType<MenuItem>()
+            .Single(i => (i.Header as string) == header);
+
+    private static void Click(MenuItem item)
+    {
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         Dispatcher.UIThread.RunJobs();
     }
 
