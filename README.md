@@ -91,6 +91,14 @@ page instead.
 > If Defender quarantines the file, restore it and add an exclusion only after the
 > hash check passes.
 >
+> **Quality, concretely.** Every push runs 1,152 automated tests — 1,107 on the
+> parser, stats, and shared logic plus 45 headless render tests of the Avalonia
+> UI — on both Windows (WPF + Avalonia) and Ubuntu (Avalonia + Core), and a
+> release doesn't ship until it has passed CI and been played against a real
+> session by the maintainer. CI workflows are pinned to exact commit SHAs and
+> run with read-only permissions by default. What the app touches on disk and
+> on the network — all of it — is written down in [SECURITY.md](SECURITY.md).
+>
 > **This is being fixed for real.** A publicly trusted signing certificate (Azure
 > Artifact Signing, ~$10/month) is set up and in identity validation now, funded
 > personally by EQBuddy's maintainer through his small business — so the publisher
