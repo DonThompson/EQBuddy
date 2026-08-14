@@ -749,7 +749,12 @@ function boot() {
   // Pinch to zoom, drag to pan — pointer events only, which covers touch and mouse.
   const map = (function () {
     const SVG = "http://www.w3.org/2000/svg";
-    let svg = null, layer = null, dyn = null, wrap = null, tip = null;
+    // The comet tail's curve, mirroring EQBuddy.UI.Shared.TrailFade so the tablet burns
+    // down exactly as the PC map does: full strength the moment a crumb lands, straight
+    // line to nothing at the horizon, no plateau. CompanionMapSourceTests pins both
+    // numbers to the C# constants, so changing them there fails the build here.
+    const TRAIL_FULL_ALPHA = 200, TRAIL_HORIZON = 60;
+    let svg = null, layer = null, trailG = null, dyn = null, wrap = null, tip = null;
     let stamp = "", bounds = null, dynKey = "";
     let k = 1, tx = 0, ty = 0, fitted = false;
     const pointers = new Map();
@@ -759,8 +764,11 @@ function boot() {
       wrap = el("div", "mapwrap");
       svg = document.createElementNS(SVG, "svg");
       layer = document.createElementNS(SVG, "g");
+      // The tail sits between the pack's lines and the live layer: it must not hide a
+      // corridor, and the circles and your marker must not hide it.
+      trailG = document.createElementNS(SVG, "g");
       dyn = document.createElementNS(SVG, "g");
-      svg.append(layer, dyn);
+      svg.append(layer, trailG, dyn);
       tip = el("div", "maptip");
       const ctl = el("div", "mapctl");
       const b = (label, title, fn) => {
@@ -776,9 +784,14 @@ function boot() {
       return wrap;
     }
 
+    // One place that knows which groups ride the view, so a new layer can't be left
+    // behind by a pan.
+    function transform() {
+      const t = `translate(${tx} ${ty}) scale(${k})`;
+      for (const g of [layer, trailG, dyn]) g.setAttribute("transform", t);
+    }
     function apply() {
-      layer.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
-      dyn.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+      transform();
       rescale();
     }
     // Everything that must stay the same SIZE on screen while the picture zooms:
@@ -839,10 +852,11 @@ function boot() {
           }
           pinch = now;
         } else if (panFrom) {
+          // Pan skips rescale(): nothing changes SIZE while dragging, and re-walking
+          // every label per pointermove is the one thing that makes a pan stutter.
           tx = e.clientX - panFrom[0];
           ty = e.clientY - panFrom[1];
-          layer.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
-          dyn.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+          transform();
         }
       });
       const up = e => {
@@ -893,6 +907,32 @@ function boot() {
         layer.append(dot, t);
       }
       fitted = false;
+    }
+
+    // The breadcrumb tail. Redrawn on every render — unlike the circles, a tail that
+    // looks the same is a tail that has stopped fading, so this deliberately does NOT
+    // sit behind the dynKey gate. A segment takes the alpha of its NEWER end, exactly
+    // as the desktop's UpdateTrail does, and ages tick locally between pushes.
+    function drawTrail(data) {
+      trailG.replaceChildren();
+      const trail = data.trail;
+      if (!trail || trail.length < 2) return;
+      const elapsed = since();
+      for (let i = 1; i < trail.length; i++) {
+        const alpha = TRAIL_FULL_ALPHA * (1 - (trail[i].ageSeconds + elapsed) / TRAIL_HORIZON);
+        if (alpha <= 0) continue;   // oldest first, so the faded head is skipped and the live tail follows
+        const seg = document.createElementNS(SVG, "line");
+        seg.setAttribute("x1", trail[i - 1].x); seg.setAttribute("y1", trail[i - 1].y);
+        seg.setAttribute("x2", trail[i].x); seg.setAttribute("y2", trail[i].y);
+        seg.setAttribute("stroke", "rgb(255,200,60)");
+        seg.setAttribute("stroke-opacity", (alpha / 255).toFixed(3));
+        // Heavier than the pack's hairlines and non-scaling, so the tail stays
+        // followable at the zoom a tablet actually gets propped up at.
+        seg.setAttribute("stroke-width", "2.5");
+        seg.setAttribute("stroke-linecap", "round");
+        seg.setAttribute("vector-effect", "non-scaling-stroke");
+        trailG.appendChild(seg);
+      }
     }
 
     function drawDynamic(data) {
@@ -949,7 +989,7 @@ function boot() {
         else if (p.body.firstChild !== wrap) p.body.replaceChildren(wrap);
         if (data.missing && !data.geometry) {
           tip.textContent = data.missing;
-          layer.replaceChildren(); dyn.replaceChildren();
+          layer.replaceChildren(); trailG.replaceChildren(); dyn.replaceChildren();
           stamp = ""; bounds = null; dynKey = "";
           return;
         }
@@ -963,6 +1003,7 @@ function boot() {
         // animation mid-beat.
         const key = JSON.stringify([data.circles, data.you]);
         if (key !== dynKey) { dynKey = key; drawDynamic(data); }
+        drawTrail(data);
         fit();
         const age = data.you ? Math.round(data.you.ageSeconds + since()) : null;
         tip.textContent = data.zone + (data.you

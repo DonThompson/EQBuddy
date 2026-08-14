@@ -43,7 +43,8 @@ public sealed record CompanionMapSection(
     CompanionMapGeometry? Geometry,
     string? Missing,
     CompanionMapMarker? You,
-    IReadOnlyList<CompanionMapCircle> Circles);
+    IReadOnlyList<CompanionMapCircle> Circles,
+    IReadOnlyList<CompanionMapCrumb> Trail);
 
 /// <summary>Map-space geometry. Coordinates are rounded to whole map units (roughly
 /// game feet) — the pack's sub-unit precision is invisible on a phone and doubles the
@@ -63,6 +64,16 @@ public sealed record CompanionMapPoi(int X, int Y, string Color, string Label);
 
 /// <summary>Where the player's last /loc put them, in map space.</summary>
 public sealed record CompanionMapMarker(double X, double Y, double AgeSeconds);
+
+/// <summary>One breadcrumb of the /loc trail, in map space, oldest first — the same
+/// list the desktop map draws its comet tail from (thinned to 25 map units apart by
+/// SessionStats, so the tail spans real ground rather than one corridor).
+///
+/// The AGE rides the wire, not an alpha: the page fades locally against
+/// <see cref="EQBuddy.UI.Shared.TrailFade"/>'s curve every second, so the tail keeps
+/// burning down smoothly between pushes exactly as it does on the desktop — and a
+/// crumb merely fading never counts as a change worth waking a device for.</summary>
+public sealed record CompanionMapCrumb(double X, double Y, double AgeSeconds);
 
 /// <summary>An archived spawn point. <see cref="Named"/> points wear the accent and
 /// carry a <see cref="Label"/>; ordinary ones sit dim. <see cref="DueSeconds"/> is the

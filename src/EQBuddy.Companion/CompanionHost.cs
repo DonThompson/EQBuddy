@@ -201,7 +201,7 @@ public sealed class CompanionHost : IDisposable
             Map = On(CompanionSurfaces.Map)
                 ? _maps.Build(stats?.CurrentZone ?? "", timerZone, _sources.SpawnPoints,
                     timers.Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase)).ToList(),
-                    stats?.LastLocation, now)
+                    stats?.LastLocation, stats?.LocationTrail, now)
                 : null,
             Level = progress?.Level,
             Unlocks = progress?.Unlocks,

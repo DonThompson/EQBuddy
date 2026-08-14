@@ -119,7 +119,11 @@ public static partial class CompanionProjection
         if (snap.Map is { } m)
             map[CompanionSurfaces.Map] = Fold(m.Zone, m.GeometryStamp, m.Missing,
                 m.You is { } you ? $"{you.X:0.#},{you.Y:0.#}" : "-",
-                Join(m.Circles, c => $"{c.X:0}:{c.Y:0}:{c.Label}:{c.Imminent}:{c.Confirmed}:{c.Kills}"));
+                Join(m.Circles, c => $"{c.X:0}:{c.Y:0}:{c.Label}:{c.Imminent}:{c.Confirmed}:{c.Kills}"),
+                // Crumb POSITIONS only. A trail that is merely fading is not news — the
+                // page burns it down locally on the same curve, and shipping ages here
+                // would wake every map device every single second.
+                Join(m.Trail, c => $"{c.X:0}:{c.Y:0}"));
 
         if (snap.Spawns is { } sp)
             map[CompanionSurfaces.Spawns] = Join(sp.Timers,

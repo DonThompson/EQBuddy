@@ -37,7 +37,7 @@ public class CompanionMapSourceTests : IDisposable
     [Fact]
     public void LoadsTheZonesPictureAndStampsIt()
     {
-        var map = Source().Build("Befallen", "Befallen", null, [], null, Now);
+        var map = Source().Build("Befallen", "Befallen", null, [], null, null, Now);
 
         Assert.Equal("Befallen", map.Zone);
         Assert.Null(map.Missing);
@@ -60,8 +60,8 @@ public class CompanionMapSourceTests : IDisposable
     public void GeometryIsParsedOncePerZoneAndTheStampHoldsStill()
     {
         var source = Source();
-        var first = source.Build("Befallen", "Befallen", null, [], null, Now);
-        var second = source.Build("Befallen", "Befallen", null, [], null, Now.AddSeconds(1));
+        var first = source.Build("Befallen", "Befallen", null, [], null, null, Now);
+        var second = source.Build("Befallen", "Befallen", null, [], null, null, Now.AddSeconds(1));
 
         // The same object, not a re-parse — this is the "never re-serialized per tick"
         // promise the wire's sticky-geometry rule depends on.
@@ -72,7 +72,7 @@ public class CompanionMapSourceTests : IDisposable
     [Fact]
     public void AMissingMapNamesTheFileItWanted()
     {
-        var map = Source().Build("Plane of Sky", "Plane of Sky", null, [], null, Now);
+        var map = Source().Build("Plane of Sky", "Plane of Sky", null, [], null, null, Now);
         Assert.Null(map.Geometry);
         Assert.NotNull(map.Missing);
         Assert.Contains("airplane.txt", map.Missing);
@@ -84,7 +84,7 @@ public class CompanionMapSourceTests : IDisposable
     {
         // The game prints /loc as (Y, X); a position plots at map (-X, -Y).
         var loc = new LocationEvent(Now.AddSeconds(-45), 30, 20, 0);
-        var map = Source().Build("Befallen", "Befallen", null, [], loc, Now);
+        var map = Source().Build("Befallen", "Befallen", null, [], loc, null, Now);
 
         Assert.NotNull(map.You);
         Assert.Equal(-20, map.You!.X);
@@ -111,7 +111,7 @@ public class CompanionMapSourceTests : IDisposable
         {
             new("legends", zone.Zone, named, Now.AddSeconds(-55), 60),
         };
-        var map = Source().Build("Befallen", zone.Zone, ledger, timers, null, Now);
+        var map = Source().Build("Befallen", zone.Zone, ledger, timers, null, null, Now);
 
         var circle = Assert.Single(map.Circles);
         Assert.True(circle.Named);
@@ -124,5 +124,99 @@ public class CompanionMapSourceTests : IDisposable
         // Map space again: /loc (100, 200) plots at (-200, -100).
         Assert.Equal(-200, circle.X);
         Assert.Equal(-100, circle.Y);
+    }
+
+    // ---- the breadcrumb trail ----
+    // David, 2026-08-15: "the breadcrumbs don't render at all now. This should work and
+    // display the same as it would on the PC." They had never been projected at all —
+    // StatsSnapshot.LocationTrail reached MapWindow and nothing else.
+
+    private static LocationEvent Crumb(double ageSeconds, double locY, double locX) =>
+        new(Now.AddSeconds(-ageSeconds), locY, locX, 0);
+
+    [Fact]
+    public void TheTrailRidesTheWireInMapSpaceOldestFirst()
+    {
+        var map = Source().Build("Befallen", "Befallen", null, [], null,
+            [Crumb(30, 10, 20), Crumb(20, 30, 40), Crumb(5, 50, 60)], Now);
+
+        Assert.Equal(3, map.Trail.Count);
+        // Same (Y, X) → (-X, -Y) plot the marker and the circles use.
+        Assert.Equal(-20, map.Trail[0].X);
+        Assert.Equal(-10, map.Trail[0].Y);
+        // Oldest first, so ages descend along the list — the page draws each segment
+        // at the alpha of its newer end.
+        Assert.Equal([30d, 20d, 5d], map.Trail.Select(c => Math.Round(c.AgeSeconds)));
+    }
+
+    [Fact]
+    public void ASingleCrumbIsNotATail()
+    {
+        var one = Source().Build("Befallen", "Befallen", null, [], null, [Crumb(5, 10, 20)], Now);
+        Assert.Empty(one.Trail);
+
+        var none = Source().Build("Befallen", "Befallen", null, [], null, null, Now);
+        Assert.Empty(none.Trail);
+    }
+
+    [Fact]
+    public void CrumbsPastTheHorizonAreDroppedButOneAnchorSurvives()
+    {
+        // Two crumbs well past the fade horizon, two inside it. The desktop still draws
+        // the segment INTO the oldest live crumb, so its predecessor has to ride along
+        // as an anchor — otherwise the phone's tail is a segment shorter than the PC's.
+        var map = Source().Build("Befallen", "Befallen", null, [], null,
+        [
+            Crumb(300, 10, 10), Crumb(120, 20, 20), Crumb(40, 30, 30), Crumb(2, 40, 40),
+        ], Now);
+
+        Assert.Equal(3, map.Trail.Count);
+        Assert.Equal([120d, 40d, 2d], map.Trail.Select(c => Math.Round(c.AgeSeconds)));
+    }
+
+    [Fact]
+    public void AWhollyFadedTrailShipsNothing()
+    {
+        var map = Source().Build("Befallen", "Befallen", null, [], null,
+            [Crumb(600, 10, 10), Crumb(300, 20, 20)], Now);
+        Assert.Empty(map.Trail);
+    }
+
+    [Fact]
+    public void TheTrailDoesNotWakeADeviceMerelyForFading()
+    {
+        // Section fingerprints exist so a phone only wakes when ITS surfaces MOVE.
+        // Ages drift every tick by definition; only a new crumb is news.
+        static string Print(CompanionMapSection map) =>
+            CompanionProjection.SectionFingerprints(
+                CompanionProjection.Build(new CompanionInputs
+                {
+                    Offered = [CompanionSurfaces.Map],
+                    Map = map,
+                }, Now))[CompanionSurfaces.Map];
+
+        var source = Source();
+        var trail = new List<LocationEvent> { Crumb(20, 10, 20), Crumb(5, 30, 40) };
+        var first = source.Build("Befallen", "Befallen", null, [], null, trail, Now);
+        var older = source.Build("Befallen", "Befallen", null, [], null, trail, Now.AddSeconds(10));
+        Assert.Equal(Print(first), Print(older));
+
+        trail.Add(Crumb(-15, 50, 60));   // a fresh /loc, 15s after "now"
+        var moved = source.Build("Befallen", "Befallen", null, [], null, trail, Now.AddSeconds(15));
+        Assert.NotEqual(Print(first), Print(moved));
+    }
+
+    [Fact]
+    public void ThePageFadesOnTheSameCurveTheDesktopDoes()
+    {
+        // The phone can't call TrailFade, so it carries the two numbers itself. This is
+        // the lock: change the C# curve without changing the page and the tail silently
+        // stops matching the PC — which is exactly the class of bug that lost the
+        // breadcrumbs in the first place.
+        var declared = System.Text.RegularExpressions.Regex.Match(
+            PhonePage.Html, @"TRAIL_FULL_ALPHA\s*=\s*(\d+),\s*TRAIL_HORIZON\s*=\s*(\d+)");
+        Assert.True(declared.Success, "The phone page no longer declares its trail-fade constants.");
+        Assert.Equal(EQBuddy.UI.Shared.TrailFade.FullAlpha, byte.Parse(declared.Groups[1].Value));
+        Assert.Equal(EQBuddy.UI.Shared.TrailFade.Horizon.TotalSeconds, double.Parse(declared.Groups[2].Value));
     }
 }

@@ -64,6 +64,7 @@ public sealed class CompanionMapSource
         SpawnPointLedger? points,
         IReadOnlyList<SpawnTimerState> timers,
         LocationEvent? location,
+        IReadOnlyList<LocationEvent>? trail,
         DateTime now)
     {
         EnsureGeometry(mapZone);
@@ -82,13 +83,45 @@ public sealed class CompanionMapSource
             Geometry: _geometry,
             Missing: _missing,
             You: you,
-            Circles: circles);
+            Circles: circles,
+            Trail: BuildTrail(trail, now));
     }
 
     private static CompanionMapMarker Marker(LocationEvent loc, DateTime now)
     {
         var (x, y) = ZoneMap.FromLoc(loc.LocY, loc.LocX);
         return new CompanionMapMarker(x, y, Math.Max(0, (now - loc.Time).TotalSeconds));
+    }
+
+    /// <summary>The breadcrumb trail, oldest first — the wire form of what the desktop
+    /// map draws in UpdateTrail. A segment takes the alpha of its NEWER end, so the
+    /// oldest crumb still inside the horizon needs its predecessor to anchor the
+    /// leading segment: shipping only unfaded crumbs would drop that segment and make
+    /// the phone's tail one crumb shorter than the PC's. Ages decrease along the list,
+    /// so the shipped run is always a suffix.</summary>
+    private static List<CompanionMapCrumb> BuildTrail(IReadOnlyList<LocationEvent>? trail, DateTime now)
+    {
+        if (trail is null || trail.Count < 2) return [];
+        var horizon = TrailFade.Horizon.TotalSeconds;
+        var first = -1;
+        for (var i = 0; i < trail.Count; i++)
+        {
+            if ((now - trail[i].Time).TotalSeconds >= horizon) continue;
+            first = i;
+            break;
+        }
+        if (first < 0) return [];   // every crumb has faded out — no tail, same as the desktop
+
+        // The anchor is the crumb before the oldest unfaded one; a wholly fresh trail
+        // (first == 0) has none and needs none.
+        var start = Math.Max(0, first - 1);
+        var crumbs = new List<CompanionMapCrumb>(trail.Count - start);
+        for (var i = start; i < trail.Count; i++)
+        {
+            var (x, y) = ZoneMap.FromLoc(trail[i].LocY, trail[i].LocX);
+            crumbs.Add(new CompanionMapCrumb(x, y, Math.Max(0, (now - trail[i].Time).TotalSeconds)));
+        }
+        return crumbs;
     }
 
     private void EnsureGeometry(string zone)
