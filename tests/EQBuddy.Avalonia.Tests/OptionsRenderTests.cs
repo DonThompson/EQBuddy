@@ -191,6 +191,75 @@ public class OptionsRenderTests : IDisposable
         main.Close();
     }
 
+    /// <summary>The same drift as the sound picker, one feature over: SpeechVoice, SpeechRate
+    /// and SpeechVolume existed in settings.json with nothing on this side to set them, so the
+    /// only way to slow a too-fast voice down was a text editor. Asserts the controls exist and
+    /// write through.</summary>
+    [AvaloniaFact]
+    public void SpeechVoiceAndSlidersArePresentAndPersist()
+    {
+        var (main, options) = Open();
+
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "Alert voice");
+        var voice = options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(OptionsViewModel.DefaultVoiceChoice));
+        // Voice enumeration is Windows-only, so off it "System default" is the whole list.
+        // The honest empty state is a disabled picker that says why, not a hidden one.
+        Assert.Equal(OptionsViewModel.VoiceChoices([]).Length, voice.Items.Count);
+        Assert.Equal(0, voice.SelectedIndex);
+        Assert.False(voice.IsEnabled);
+
+        var rate = options.GetVisualDescendants().OfType<Slider>()
+            .Single(s => s.Minimum == SpokenAlerts.MinRate && s.Maximum == SpokenAlerts.MaxRate);
+        rate.Value = -2;
+        Assert.Equal(-2, main.Settings.SpeechRate);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "-2");
+
+        var volume = options.GetVisualDescendants().OfType<Slider>()
+            .Single(s => s.Minimum == 0 && s.Maximum == 100);
+        volume.Value = 60;
+        Assert.Equal(60, main.Settings.SpeechVolume);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "60%");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The per-rule phrase box: one per rule, revealed by that rule's S toggle, and
+    /// saved on the way out. Empty keeps the old behaviour of speaking the alert's own label.</summary>
+    [AvaloniaFact]
+    public void TheSpokenPhraseBoxFollowsTheSpeechToggle()
+    {
+        var (main, options) = Open();
+
+        var speechToggles = options.GetVisualDescendants()
+            .OfType<global::Avalonia.Controls.Primitives.ToggleButton>()
+            .Where(t => Equals(t.Content, "S"))
+            .ToList();
+        Assert.Equal(main.Settings.TrackedRules.Count, speechToggles.Count);
+
+        var row = Assert.IsType<Grid>(speechToggles[0].Parent);
+        var phrase = row.Children.OfType<TextBox>().Single(b => Grid.GetColumn(b) == 7);
+        Assert.False(phrase.IsVisible);   // the rule doesn't speak yet
+
+        speechToggles[0].IsChecked = true;
+        Assert.True(phrase.IsVisible);
+
+        phrase.Text = "Recast charm now";
+        // The box saves on LostFocus. Focus() is a no-op in this headless window (no active
+        // top level to hand focus to), so the event is raised directly — with the
+        // FocusChangedEventArgs its handlers are typed for, not a bare RoutedEventArgs.
+        phrase.RaiseEvent(new global::Avalonia.Input.FocusChangedEventArgs(
+            global::Avalonia.Input.InputElement.LostFocusEvent));
+        Assert.Equal("Recast charm now", main.Settings.TrackedRules[0].SpokenPhrase);
+
+        options.Close();
+        main.Close();
+    }
+
     /// <summary>The delay box is present and shows what was saved — the entry point for the
     /// cue feature.</summary>
     [AvaloniaFact]

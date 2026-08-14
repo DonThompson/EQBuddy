@@ -49,6 +49,12 @@ public sealed class OptionsWindow : Window
     private readonly TextBlock _alertVolumeLabel = LabelValue();
     private readonly ComboBox _soundCombo = new() { Width = 120, FontSize = 12 };
     private readonly TextBlock _soundFileNote = AppTheme.DimText("");
+    private readonly ComboBox _voiceCombo = new() { Width = 164, FontSize = 12 };
+    private readonly Slider _speechRateSlider = Slider(SpokenAlerts.MinRate, SpokenAlerts.MaxRate, 1);
+    private readonly TextBlock _speechRateLabel = LabelValue();
+    private readonly Slider _speechVolumeSlider = Slider(0, 100, 5);
+    private readonly TextBlock _speechVolumeLabel = LabelValue();
+    private IReadOnlyList<string> _installedVoices = [];
     private CheckBox _slowAlertCheck = null!;
     private CheckBox _slowSpokenCheck = null!;
     private CheckBox _slowRaidOnlyCheck = null!;
@@ -539,6 +545,31 @@ public sealed class OptionsWindow : Window
             "While Options is open, the ★ alert banner tile is visible — drag it to where alerts should appear. During play it's click-through and never steals focus.",
             new Thickness(0, 4, 0, 0)));
 
+        // Enumerated once per Options open — voices install with language packs, not
+        // mid-session, and the SAPI walk isn't free. Read here rather than with the rest of
+        // the population below because the dim line's wording depends on what came back.
+        _installedVoices = SpokenAlerts.InstalledVoiceNames();
+
+        // Speech gets its own volume: the slider above drives only the player that plays
+        // sound files — the voice never saw it, so one slider claiming both would be a lie
+        // in whichever direction it didn't reach.
+        var voiceRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        voiceRow.Children.Add(_voiceCombo);
+        // Linux has no voice at all (SpokenAlerts.Speak no-ops there), so a ▶ that plays
+        // nothing would be the dishonest kind of button — it says so and stays dead.
+        var canSpeak = OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+        var voiceTest = AppTheme.IconButton("▶", canSpeak
+            ? "Hear a sample with the current voice, rate and volume"
+            : "This build has no voice on Linux — there's nothing to play");
+        voiceTest.Margin = new Thickness(4, 0, 0, 0);
+        voiceTest.IsEnabled = canSpeak;
+        voiceTest.Click += (_, _) => SpeakSample();
+        voiceRow.Children.Add(voiceTest);
+        panel.Children.Add(Row("Alert voice", voiceRow, new Thickness(0, 12, 0, 0)));
+        panel.Children.Add(AppTheme.DimText(VoiceNote(), new Thickness(0, 2, 0, 0)));
+        AddSlider(panel, "Speech rate", _speechRateLabel, _speechRateSlider, topMargin: 6, bottomMargin: 4);
+        AddSlider(panel, "Speech volume", _speechVolumeLabel, _speechVolumeSlider, bottomMargin: 4);
+
         _slowAlertCheck = Check("Slow alert (an attack-speed debuff lands on you)",
             _main.Settings.SlowAlertEnabled, _ => SaveSlowAlert(), new Thickness(0, 12, 0, 0));
         panel.Children.Add(_slowAlertCheck);
@@ -616,7 +647,47 @@ public sealed class OptionsWindow : Window
             _main.PersistSettings();
         });
         _alertVolumeLabel.Text = $"{_alertVolumeSlider.Value:P0}";
+
+        foreach (var choice in OptionsViewModel.VoiceChoices(_installedVoices)) _voiceCombo.Items.Add(choice);
+        _voiceCombo.SelectedIndex = _vm.VoiceIndex(_installedVoices);
+        _voiceCombo.SelectionChanged += OnVoiceChanged;
+        // Enumeration only works on Windows, so off it the picker holds nothing but
+        // "System default" and a one-entry dropdown is not a choice. It stays visible and
+        // disabled with the dim line above saying why — hiding it would leave someone
+        // hunting for a control the screenshots show.
+        _voiceCombo.IsEnabled = _installedVoices.Count > 0;
+        _speechRateSlider.Value = _vm.SpeechRate;
+        Subscribe(_speechRateSlider, () => _vm.SpeechRate = (int)Math.Round(_speechRateSlider.Value));
+        _speechVolumeSlider.Value = _vm.SpeechVolume;
+        Subscribe(_speechVolumeSlider, () => _vm.SpeechVolume = (int)Math.Round(_speechVolumeSlider.Value));
+        _speechRateLabel.Text = _vm.SpeechRateLabel;
+        _speechVolumeLabel.Text = _vm.SpeechVolumeLabel;
     }
+
+    /// <summary>The dim line under the voice picker. The rate and volume sliders are always
+    /// live — they're stored for whichever machine reads this settings.json — but which of
+    /// the three the local platform actually honours differs, and saying so is cheaper than
+    /// letting someone conclude the sliders are broken.</summary>
+    private string VoiceNote() => _installedVoices.Count > 0
+        ? "Used wherever EQBuddy speaks — watch rules with the S toggle, and the slow alert."
+        : OperatingSystem.IsMacOS()
+            ? "Used wherever EQBuddy speaks — watch rules with the S toggle, and the slow alert. "
+              + "macOS speaks through `say`, which uses the voice, rate and volume from System "
+              + "Settings → Spoken Content; the three below are saved but only take effect on Windows."
+            : "Used wherever EQBuddy speaks — watch rules with the S toggle, and the slow alert. "
+              + "There's no voice on Linux, so nothing here is spoken; the settings are still saved "
+              + "for the Windows build reading the same settings.json.";
+
+    private void OnVoiceChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || _voiceCombo.SelectedIndex < 0) return;
+        _vm.SelectVoice(_installedVoices, _voiceCombo.SelectedIndex);
+        SpeakSample();   // a voice choice you can hear, like the sound picker's instant play
+    }
+
+    /// <summary>Real alert text, × and all, so the sample demonstrates exactly what an alert
+    /// will sound like (SpokenAlerts.Speakable rewrites the × for the voice).</summary>
+    private static void SpeakSample() => SpokenAlerts.SpeakSample("Rusty Sword ×3");
 
     private void SaveSlowAlert()
     {
@@ -859,7 +930,7 @@ public sealed class OptionsWindow : Window
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(92)));         // kind
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1, GridUnitType.Star)));
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(1.4, GridUnitType.Star)));
-        for (var i = 0; i < 9; i++)   // pin, banner, color, speech, sound, delay, share, delete, arrange
+        for (var i = 0; i < 10; i++)   // pin, banner, color, speech, phrase, sound, delay, share, delete, arrange
             grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         return grid;
     }
@@ -871,7 +942,7 @@ public sealed class OptionsWindow : Window
         var header = RuleGrid();
         header.Margin = new Thickness(0, 2, 0, 2);
         foreach (var (text, column) in (ReadOnlySpan<(string, int)>)
-            [("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 8)])
+            [("Watch", 0), ("Name", 1), ("Match", 2), ("Delay", 9)])
         {
             var label = new TextBlock
             {
@@ -1044,9 +1115,24 @@ public sealed class OptionsWindow : Window
             Grid.SetColumn(colorDot, 5);
             row.Children.Add(colorDot);
 
+            // Custom spoken phrase, beside the S toggle and only while it's on — a phrase
+            // box on a rule that never speaks is dead weight in a tight row. Empty speaks
+            // the alert's own label, exactly as before the box existed.
+            var phrase = DarkBox(rule.SpokenPhrase,
+                "What the voice says for this rule (empty = the alert text itself).\n" +
+                "Say the instruction, not the event: \"Recast charm now\" instead of\n" +
+                "\"Befriend Animal faded off a bear\".");
+            phrase.Width = 76;
+            phrase.FontSize = 11;
+            phrase.Margin = new Thickness(0, 0, 4, 0);
+            phrase.IsVisible = rule.AlertSpeech;
+            phrase.LostFocus += (_, _) => { rule.SpokenPhrase = (phrase.Text ?? "").Trim(); _vm.Persist(); };
+            Grid.SetColumn(phrase, 7);
+
             row.Children.Add(RuleToggle("S",
-                "Speak this alert with the system voice (Windows only for now — silent on Linux/macOS)", 6,
-                rule.AlertSpeech, v => rule.AlertSpeech = v));
+                "Speak this alert with the system voice (Windows and macOS; silent on Linux)", 6,
+                rule.AlertSpeech, v => { rule.AlertSpeech = v; phrase.IsVisible = v; }));
+            row.Children.Add(phrase);
 
             // Per-rule sound, replacing the old on/off toggle. Telling rules apart by ear is
             // the entire point — and it matters most for delayed alerts, where the usual
@@ -1093,7 +1179,7 @@ public sealed class OptionsWindow : Window
                 if (AlertSoundCatalog.Resolve(rule, _main.Settings.AlertSound) is { } preview)
                     _main.PlayAlertSound(preview);
             };
-            Grid.SetColumn(sound, 7);
+            Grid.SetColumn(sound, 8);
             row.Children.Add(sound);
 
             // Seconds to hold the alert back — 0 (or empty) is the immediate behaviour.
@@ -1114,7 +1200,7 @@ public sealed class OptionsWindow : Window
                 delay.Text = DelayText.Format(rule.AlertDelaySeconds);
                 _vm.Persist();
             };
-            Grid.SetColumn(delay, 8);
+            Grid.SetColumn(delay, 9);
             row.Children.Add(delay);
 
             // Share: the rule as a guild-chat string (WatchRuleShare). The ✓ flash is
@@ -1135,7 +1221,7 @@ public sealed class OptionsWindow : Window
                 revert.Tick += (_, _) => { share.Content = "⤴"; revert.Stop(); };
                 revert.Start();
             };
-            Grid.SetColumn(share, 9);
+            Grid.SetColumn(share, 10);
             row.Children.Add(share);
 
             var del = AppTheme.IconButton("✕", "Delete rule");
@@ -1144,7 +1230,7 @@ public sealed class OptionsWindow : Window
                 _vm.RemoveRule(rule);
                 BuildRulesEditor();
             };
-            Grid.SetColumn(del, 10);
+            Grid.SetColumn(del, 11);
             row.Children.Add(del);
 
             // Arrange (#105, wizen): this order IS the Tracked card's "manual" sort.
@@ -1162,7 +1248,7 @@ public sealed class OptionsWindow : Window
                 move.Click += (_, _) => { _vm.MoveRule(rule, d); BuildRulesEditor(); };
                 arrange.Children.Add(move);
             }
-            Grid.SetColumn(arrange, 11);
+            Grid.SetColumn(arrange, 12);
             row.Children.Add(arrange);
 
             _rulesPanel.Children.Add(row);
@@ -1835,6 +1921,8 @@ public sealed class OptionsWindow : Window
         _opacityLabel.Text = _vm.OpacityLabel;
         _bgOpacityLabel.Text = _vm.BackgroundOpacityLabel;
         _alertVolumeLabel.Text = $"{_alertVolumeSlider.Value:P0}";
+        _speechRateLabel.Text = _vm.SpeechRateLabel;
+        _speechVolumeLabel.Text = _vm.SpeechVolumeLabel;
         _gridSpacingLabel.Text = $"{_gridSpacingSlider.Value:0} px";
     }
 

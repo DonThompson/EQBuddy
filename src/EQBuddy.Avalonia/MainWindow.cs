@@ -329,10 +329,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
-        // Voice settings are set app-wide even though the picker UI is WPF-only for now:
-        // this build speaks through the same SpokenAlerts on Windows, and settings.json
-        // may have been shaped by the WPF app. Stored-only on Linux (Speak no-ops there)
-        // and ignored by macOS's `say`.
+        // Voice settings are set app-wide, from the Options → Alerts picker and sliders
+        // (which off Windows can only offer "System default" — see OptionsWindow.VoiceNote)
+        // or from a settings.json the WPF app shaped. Stored-only on Linux (Speak no-ops
+        // there) and ignored by macOS's `say`.
         EQBuddy.UI.Shared.SpokenAlerts.Configure(
             _settings.SpeechVoice, _settings.SpeechRate, _settings.SpeechVolume);
         // The map's spawn-point circles: kills near a fresh /loc accrete into
