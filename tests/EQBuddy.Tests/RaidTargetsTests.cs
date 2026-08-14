@@ -54,6 +54,57 @@ public class RaidTargetsTests
     }
 
     [Fact]
+    public void ASecondCharactersOlderKillSurvivesTheFirstOnesNewerOne()
+    {
+        // Audit finding 2a: one global high-water mark meant that after the watcher
+        // followed character A to a kill at T+600, character B's replayed kill at T
+        // was "history" forever — B's clear never landed. The gate is per
+        // character-and-boss now.
+        var character = "Dranak|legends";
+        var l = new RaidKillLedger(path: null) { CharacterKey = () => character };
+        l.Apply(Ev(600, "You have slain Lady Vox!"));
+
+        character = "Aenari|legends";                  // switch; B's log replays from earlier
+        l.Apply(Ev(0, "You have slain Lord Nagafen!"));
+        Assert.Equal(1, l.For("Lord Nagafen")!.Kills);
+        Assert.Equal(1, l.DefeatedCount());
+    }
+
+    [Fact]
+    public void TwoBossesDyingInTheSameLogSecondBothRecord()
+    {
+        // Audit finding 2b: log stamps have 1-second resolution, and the global mark
+        // swallowed the second boss of a same-second double kill even live.
+        var l = Ledger();
+        l.Apply(Ev(0, "Lord Nagafen has been slain by Tankname!"));
+        l.Apply(Ev(0, "Lady Vox has been slain by Tankname!"));
+
+        Assert.Equal(1, l.For("Lord Nagafen")!.Kills);
+        Assert.Equal(1, l.For("Lady Vox")!.Kills);
+        Assert.Equal(2, l.DefeatedCount());
+    }
+
+    [Fact]
+    public void ReplayingAWholeMultiKillLogTwiceChangesNothing()
+    {
+        // The idempotence bar the per-record gate has to clear: a full replay of
+        // everything already recorded — several bosses, repeat kills, a same-second
+        // pair — must leave every count exactly where it was.
+        var l = Ledger();
+        var history = new[]
+        {
+            Ev(0, "Lord Nagafen has been slain by Tankname!"),
+            Ev(0, "Lady Vox has been slain by Tankname!"),
+            Ev(300, "You have slain Lord Nagafen!"),
+        };
+        foreach (var e in history) l.Apply(e);
+        foreach (var e in history) l.Apply(e);   // auto-follow away and back
+
+        Assert.Equal(2, l.For("Lord Nagafen")!.Kills);
+        Assert.Equal(1, l.For("Lady Vox")!.Kills);
+    }
+
+    [Fact]
     public void AchievementsMarkOldClearsWithoutInventingKills()
     {
         var l = Ledger();
