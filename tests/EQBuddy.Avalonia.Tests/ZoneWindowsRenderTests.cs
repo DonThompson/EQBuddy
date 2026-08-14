@@ -101,6 +101,14 @@ public sealed class ZoneWindowsRenderTests : IDisposable
         var window = new MapWindow(host);
         window.Show();
         window.MaybeRefresh(force: true);
+        // Settle layout BEFORE touching the menus. The map host's size change refits
+        // the view, and refitting rewrites the status bar with the map's standing
+        // caption — so a first layout pass still pending when a menu click runs the
+        // dispatcher wipes the message that click just wrote. Text measures differently
+        // per platform, so the pass lands at a different moment on each; forcing it here
+        // makes the status bar mean the last click everywhere.
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
 
         // Circles win over the map's own menu when the right-click lands on a dot:
         // the ring owns the ContextRequested bubble and stops it there.

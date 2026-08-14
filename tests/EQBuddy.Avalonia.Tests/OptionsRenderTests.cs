@@ -204,11 +204,13 @@ public class OptionsRenderTests : IDisposable
             text => text.Text == "Alert voice");
         var voice = options.GetVisualDescendants().OfType<ComboBox>()
             .Single(c => c.Items.Contains(OptionsViewModel.DefaultVoiceChoice));
-        // Voice enumeration is Windows-only, so off it "System default" is the whole list.
-        // The honest empty state is a disabled picker that says why, not a hidden one.
-        Assert.Equal(OptionsViewModel.VoiceChoices([]).Length, voice.Items.Count);
+        // Voice enumeration is Windows-only, so the list is as long as this machine's
+        // voices allow — one entry off Windows, more on it (the CI runner has several).
+        // What holds everywhere: the default leads and is selected, and the honest empty
+        // state is a picker left visible but disabled, exactly when it offers no choice.
+        Assert.Equal(OptionsViewModel.DefaultVoiceChoice, voice.Items[0]);
         Assert.Equal(0, voice.SelectedIndex);
-        Assert.False(voice.IsEnabled);
+        Assert.Equal(voice.Items.Count > 1, voice.IsEnabled);
 
         var rate = options.GetVisualDescendants().OfType<Slider>()
             .Single(s => s.Minimum == SpokenAlerts.MinRate && s.Maximum == SpokenAlerts.MaxRate);
