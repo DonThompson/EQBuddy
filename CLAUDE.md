@@ -100,6 +100,22 @@ Read this list before touching the areas it names. Every entry cost a release.
    on per-section fingerprints; including a countdown or an age would wake every device
    every second.
 
+## Tooling notes that cost time when ignored
+
+- **`pwsh -NoProfile -File scripts/status.ps1`** answers "where did we leave off?" in one
+  call — version and whether it is tagged, uncommitted/unpushed work, hotspot headroom,
+  open PRs and issues, and any discussion whose last comment is not ours. Start here.
+- **Write file content with the editing tools, not shell heredocs.** Backticks in an
+  unquoted heredoc get command-substituted, `
+` inside a Python triple-quote can reach
+  the file as a real newline and break a C# string literal, and box-drawing characters
+  mangle through pipes. All three happened in one session. Heredocs are fine for running
+  code; they are a poor way to author it.
+- **PowerShell-tool failures are not always real.** It has returned a bare exit 1 with no
+  output for every command, mid-session. Run scripts as `pwsh -NoProfile -File …` through
+  Bash instead, and never read a silent failure as "nothing happened" — check the side
+  effects first.
+
 ## Working on EQBuddy Mobile
 
 The page can be driven without a phone, a PC or a live log:

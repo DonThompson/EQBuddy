@@ -137,6 +137,9 @@ bugs of the kind a small pure helper *could* pin.
 
 Run before a release that touches the widget, and after any change in §5.
 
+Orient first with `pwsh -NoProfile -File scripts/status.ps1`, which lists anything
+open and any thread waiting on a reply.
+
 **Setup** (never against the real profile):
 ```bash
 EQBUDDY_APPDATA=<scratch>   # isolated settings/history
