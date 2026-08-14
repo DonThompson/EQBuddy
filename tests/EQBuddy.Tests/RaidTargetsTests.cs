@@ -31,6 +31,21 @@ public class RaidTargetsTests
     }
 
     [Fact]
+    public void ResolveBossReturnsTheCanonicalNameForTitledAndFoldedForms()
+    {
+        var c = RaidTargetCatalog.Default;
+        Assert.Equal("Innoruuk", c.ResolveBoss("Innoruuk"));
+        // #140 (AkevoTheBard): the log titles him "Innoruuk, Prince of Hate";
+        // the pre-comma head must land on the catalog's bare name.
+        Assert.Equal("Innoruuk", c.ResolveBoss("Innoruuk, Prince of Hate"));
+        Assert.True(c.IsRaidBoss("Innoruuk, Prince of Hate"));
+        Assert.Equal("Cazic-Thule", c.ResolveBoss("Cazic Thule"));   // hyphen fold keeps the dump's spelling
+        Assert.Null(c.ResolveBoss("a gnoll pup"));
+        // The head consults only the catalog — a comma alone vouches for nothing.
+        Assert.Null(c.ResolveBoss("a servant, of nothing"));
+    }
+
+    [Fact]
     public void AWitnessedKillIsRecordedWithItsDateWhoeverLandedTheBlow()
     {
         var l = Ledger();
@@ -39,6 +54,23 @@ public class RaidTargetsTests
         var rec = l.For("Lord Nagafen")!;
         Assert.Equal(1, rec.Kills);
         Assert.Equal(T0, rec.FirstKill);
+        Assert.Equal(1, l.DefeatedCount());
+    }
+
+    [Fact]
+    public void ATitledKillLineLandsOnTheCatalogRow()
+    {
+        // #140 (AkevoTheBard): "Innoruuk, Prince of Hate has been slain" must
+        // record under "Innoruuk" — the name the Raids card and its D0–D4 badge
+        // ask For() with — not under the titled log form.
+        var l = Ledger();
+        l.Apply(Ev(0, "You have entered The Plane of Hate - Solo."));
+        l.Apply(Ev(10, "Innoruuk, Prince of Hate has been slain by Tankname!"));
+
+        var rec = l.For("Innoruuk")!;
+        Assert.Equal(1, rec.Kills);
+        Assert.Equal(1, rec.TierKills["d0"]);
+        Assert.Equal(0, rec.HighestDifficulty());
         Assert.Equal(1, l.DefeatedCount());
     }
 

@@ -23,20 +23,37 @@ public sealed class RaidTargetCatalog
     private sealed class Root { public List<ZoneEntry> Zones { get; set; } = []; }
 
     public IReadOnlyList<ZoneEntry> Zones { get; }
-    private readonly HashSet<string> _bossNames;
+    private readonly Dictionary<string, string> _canonicalByFold;
 
     public RaidTargetCatalog(IEnumerable<ZoneEntry> zones)
     {
         Zones = zones.ToList();
-        _bossNames = Zones.SelectMany(z => z.Bosses)
-            .Select(Fold)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        _canonicalByFold = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var boss in Zones.SelectMany(z => z.Bosses))
+            _canonicalByFold[Fold(boss)] = boss;
     }
 
     public int BossCount => Zones.Sum(z => z.Bosses.Length);
 
     public bool IsRaidBoss(string creature) =>
-        _bossNames.Contains(Fold(creature));
+        ResolveBoss(creature) is not null;
+
+    /// <summary>The catalog's canonical name for a creature, or null when it is no
+    /// raid boss. EQ titles bosses in the log as "Name, Title" — "Innoruuk, Prince
+    /// of Hate" (discussion #140, AkevoTheBard) — while the achievements dump keeps
+    /// the bare name, so when the full fold misses, the pre-comma head is tried.
+    /// The head consults only the catalog: "a servant, of nothing" matches nothing
+    /// unless "servant" itself were a listed boss. Every ledger boundary must key
+    /// on the name returned here, never the raw log form, or a titled kill and the
+    /// Raids card's catalog row split into two records.</summary>
+    public string? ResolveBoss(string creature)
+    {
+        if (_canonicalByFold.TryGetValue(Fold(creature), out var canonical)) return canonical;
+        var comma = creature.IndexOf(',');
+        return comma > 0 && _canonicalByFold.TryGetValue(Fold(creature[..comma]), out canonical)
+            ? canonical
+            : null;
+    }
 
     /// <summary>The achievements dump hyphenates where logs and the wiki use spaces
     /// ("Cazic-Thule" vs "Cazic Thule") — fold the difference so a witnessed kill and
@@ -145,8 +162,10 @@ public sealed class RaidKillLedger
             return;
         }
         if (evt is not KillEvent kill) return;
-        if (!_catalog.IsRaidBoss(kill.Target)) return;
-        var key = Key(kill.Target);
+        // Record under the CANONICAL catalog name (#140): the log's "Innoruuk,
+        // Prince of Hate" and the Raids card's "Innoruuk" row must share one record.
+        if (_catalog.ResolveBoss(kill.Target) is not { } boss) return;
+        var key = Key(boss);
         lock (_lock)
         {
             if (kill.Time <= _highWater) return;   // replayed history, already counted
@@ -176,7 +195,10 @@ public sealed class RaidKillLedger
                 foreach (var (boss, complete) in a.Criteria)
                 {
                     if (!complete) continue;
-                    var key = Key(boss);
+                    // Same canonical key as witnessed kills — the dump is the
+                    // catalog's own source, but folding through ResolveBoss keeps
+                    // one record per boss whichever spelling arrives.
+                    var key = Key(_catalog.ResolveBoss(boss) ?? boss);
                     var rec = _records.TryGetValue(key, out var r) ? r : _records[key] = new RaidBossRecord();
                     if (!rec.AchievementComplete) { rec.AchievementComplete = true; marked++; }
                 }
@@ -195,7 +217,7 @@ public sealed class RaidKillLedger
     {
         lock (_lock)
         {
-            if (!_records.TryGetValue(Key(boss), out var r)) return null;
+            if (!_records.TryGetValue(Key(_catalog.ResolveBoss(boss) ?? boss), out var r)) return null;
             return new RaidBossRecord
             {
                 Kills = r.Kills,
