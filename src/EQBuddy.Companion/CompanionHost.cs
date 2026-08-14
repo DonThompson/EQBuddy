@@ -137,12 +137,10 @@ public sealed class CompanionHost : IDisposable
 
     private void Start()
     {
-        // The hard half of the preview gate: even a settings file carrying
-        // CompanionEnabled=true (copied from a field-test machine, or hand-edited)
-        // opens no socket in a released build. The Options entry is hidden too, but
-        // this is the guard that matters — it is the one standing between a dormant
-        // feature and a listening port.
-        if (!CompanionPreview.Enabled) return;
+        // Reached only when the player has turned EQBuddy Mobile on: the launch gate
+        // that used to stand here is gone (2026-08-15), and CompanionEnabled — off in a
+        // fresh settings file — is now the only thing between a dormant feature and a
+        // listening port.
         LastError = null;
         _settings.CompanionToken ??= MintToken();
         try

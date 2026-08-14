@@ -397,11 +397,9 @@
 
         <!-- ========================== BEHAVIOR ========================== -->
         <StackPanel x:Name="TabBehaviorPanel" Visibility="Collapsed">
-            <!-- PREVIEW-GATED (see CompanionPreview): collapsed unless this machine opted
-                 in, so released builds never surface it and never open a socket. FIRST in
-                 the tab, not buried at the bottom — the primary way in is the title-bar
-                 📱 button; this is the explanation that sits beside it. -->
-            <StackPanel x:Name="SecondScreenBlock" Visibility="Collapsed" Margin="0,0,0,14">
+            <!-- FIRST in the tab, not buried at the bottom — the primary way in is the
+                 title-bar 📱 button; this is the explanation that sits beside it. -->
+            <StackPanel x:Name="SecondScreenBlock" Margin="0,0,0,14">
                 <TextBlock Text="EQBuddy Mobile (Beta)" FontSize="12" FontWeight="SemiBold"
                            Foreground="{DynamicResource AccentBrush}"/>
                 <TextBlock Text="Show EQBuddy on a phone or tablet on your Wi-Fi: scan the code once, then pick which windows that device shows. LAN-only and off by default — nothing leaves your network. The 📱 button in the title bar opens it any time."

@@ -48,17 +48,26 @@ $stub = @'
 <script>
 // Harness only: stand in for the PC so boot() can run. __PUSH(msg) delivers a snapshot
 // exactly as the server's WebSocket would.
-window.__PUSH = null;
+//
+// __PUSH resolves the CURRENT socket when it is CALLED, rather than closing over the one
+// that existed when it was defined. The page reconnects on its own schedule, and a
+// devtools/automation context can outlive a reload — a captured socket goes quietly
+// stale and every push lands on a dead object with no error to show for it.
+window.__SOCK = null;
+window.__SENT = [];
 window.WebSocket = class {
   constructor() {
     this.readyState = 1;
-    setTimeout(() => {
-      window.__PUSH = m => this.onmessage && this.onmessage({ data: JSON.stringify(m) });
-      this.onopen && this.onopen();
-    }, 0);
+    window.__SOCK = this;
+    setTimeout(() => this.onopen && this.onopen(), 0);
   }
-  send() {}
+  send(s) { try { window.__SENT.push(JSON.parse(s)); } catch { window.__SENT.push(s); } }
   close() {}
+};
+window.__PUSH = m => {
+  const s = window.__SOCK;
+  if (!s || !s.onmessage) throw new Error("harness: no socket yet — the page has not booted");
+  s.onmessage({ data: JSON.stringify(m) });
 };
 </script>
 <script>

@@ -109,14 +109,9 @@ public partial class MainWindow : Window
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
-        // EQBuddy Mobile — the title-bar 📱 and the menu's first window entry appear
-        // only on a machine that opted into the preview; the host itself is constructed
-        // below with its data sources, and only listens once CompanionEnabled is on.
-        if (EQBuddy.Companion.CompanionPreview.Enabled)
-        {
-            MobileBtn.Visibility = Visibility.Visible;
-            MobileMenuItem.Visibility = Visibility.Visible;
-        }
+        // EQBuddy Mobile — the title-bar 📱 and the menu's first window entry are always
+        // there now; the host below is constructed with its data sources but stays silent,
+        // opening no socket at all, until the player turns CompanionEnabled on.
         // The map's spawn-point circles: kills near a fresh /loc accrete into
         // per-zone archives that only refine over time (David's map brief).
         _spawnPoints = new SpawnPointLedger(

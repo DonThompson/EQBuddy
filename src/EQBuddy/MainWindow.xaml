@@ -23,11 +23,9 @@
                 <MenuItem Header="Options…" Click="OnOptions"
                           ToolTip="Size, theme, alerts, watch rules, cards, hotkeys — now in tabs"/>
                 <Separator/>
-                <!-- Preview-gated (CompanionPreview): shown only on opted-in machines,
-                     first in the windows list because it is the one you reach for at the
+                <!-- First in the windows list because it is the one you reach for at the
                      start of a session, not a setting you visit once. -->
                 <MenuItem x:Name="MobileMenuItem" Header="📱 EQBuddy Mobile (Beta)…" Click="OnCompanion"
-                          Visibility="Collapsed"
                           ToolTip="Show EQBuddy on a phone or tablet on your Wi-Fi — scan the code, pick which windows that device shows. LAN-only; nothing leaves your network."/>
                 <MenuItem Header="Zone map…" Click="OnZoneMap"
                           ToolTip="Your zone's map with your last /log position — type /loc in game to update the marker"/>

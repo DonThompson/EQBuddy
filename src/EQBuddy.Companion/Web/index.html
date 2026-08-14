@@ -283,6 +283,31 @@
   #pair h1 { color:var(--accent); font-size:22px; margin-bottom:14px; }
   #pair p { color:var(--dim); margin-bottom:10px; font-size:15px; }
   footer { color:var(--dim); font-size:11px; text-align:center; padding:8px 16px 20px; }
+
+  /* ---- chrome-free display: fullscreen, or a Home Screen launch ----
+     You go fullscreen on a propped-up tablet to LOOK at something, so the page stops
+     spending height on furniture: the footer tip has said its piece by then, and the
+     header shrinks to the three things still worth a glance — connected, who, where.
+     David, 2026-08-15: "fullscreen on the tablet, there is still a lot of wasted space
+     at the header and footer when looking just at the map". */
+  html.lean header { padding:6px 12px; }
+  html.lean #who { font-size:14px; }
+  html.lean #zone { font-size:11.5px; }
+  html.lean header button.tool { width:34px; height:34px; font-size:15px; }
+  html.lean footer { display:none; }
+  html.lean main { padding-top:8px; padding-bottom:8px; }
+  /* One screen picked, on a layout with room: it gets the whole viewport rather than a
+     fixed slab with dead page under it. Only in the solo case — with several panels the
+     grid stays content-sized and the page scrolls, which is what a stack of lists wants. */
+  @media (min-width:900px) {
+    body.solo { display:flex; flex-direction:column; height:100dvh; overflow:hidden; }
+    /* width:100% is load-bearing: main carries `margin:0 auto`, and auto margins on a
+       flex item's cross axis switch off the stretch that would otherwise size it — it
+       collapses to its content and takes the map down with it. */
+    body.solo main { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; width:100%; }
+    body.solo #sections { flex:1 1 auto; min-height:0; align-items:stretch; }
+    body.solo section.surface { max-height:none; min-height:0; }
+  }
 </style>
 </head>
 <body>
@@ -539,6 +564,9 @@ function boot() {
 
     const host = $("sections");
     const wanted = visibleSurfaces();
+    // One panel picked: it gets the whole viewport instead of a fixed slab with dead
+    // page underneath. Several, and the grid stays content-sized and the page scrolls.
+    document.body.classList.toggle("solo", wanted.length === 1);
     // Panels persist across repaints: rebuilding the DOM every second would throw
     // away scroll position, the map's pan/zoom, and a checkbox mid-tap.
     for (const name in panels)
@@ -1391,6 +1419,9 @@ function boot() {
       : "Fullscreen";
     // Standalone launches have no chrome to hide; offering the button there is noise.
     btn.style.display = standalone() ? "none" : "";
+    // Both routes to a chrome-free screen get the lean page — a Home Screen launch is
+    // just as propped-up as a fullscreen one.
+    document.documentElement.classList.toggle("lean", on || standalone());
   }
   $("full").onclick = async () => {
     try {
