@@ -13,6 +13,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
@@ -475,6 +476,14 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         Loaded += (_, _) =>
         {
             UpdateWindowHeightLimit();
+            // A grid left on comes back — turning it off is the same Options click (#34).
+            if (_settings.ShowGridOverlay) SetGridOverlay(true);
+            if (_settings.ShowCursorRing) SetCursorRing(true);
+            // Tray icon: EQBuddy's always-there presence (#114 follow-up) — when a hide
+            // takes the widget AND its taskbar entry, this is how you know it's running
+            // and how you get it back.
+            _trayIcon = new TrayIcon(this, () => OnOptions(this, EventArgs.Empty));
+            ApplyHotkeys();
             if (_settings.ShowTutorial)
                 new TutorialWindow(this).Show(this);
             else if (_whatsNewNotes.Count > 0)
@@ -1625,7 +1634,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             {
                 if (_spawnChipsWindow is not { IsVisible: true })
                 {
-                    var chips = new SpawnChipsWindow(this, _spawnsVm);
+                    var chips = new SpawnChipsWindow(this, _spawnsVm, SetChipScale);
                     chips.Closed += (_, _) =>
                     {
                         if (ReferenceEquals(_spawnChipsWindow, chips)) _spawnChipsWindow = null;
@@ -1641,14 +1650,26 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         else
             CloseSpawnChips();
 
-        // Combat-urgent mez targets use their own movable stack rather than mixing with
-        // ambient spawn timers. The stack exists only while a mez is believed active.
-        var mezzes = _mezTracker.Snapshot(DateTime.Now);
-        if (mezzes.Count > 0)
+        // The fight-side chip stack lives its own life, independent of spawn tracking:
+        // mez chips park next to the fight, spawn chips are ambient. Optional since the
+        // 2026-08-11 Reddit ask — a non-CC class never wants the stack. Slow chips (#94)
+        // ride the same stack: both are "active effect, counting down, parked next to
+        // the fight", and one window means one saved position. Emptiness is probed
+        // cheaply first — building the full chip list twice a second to learn it was
+        // empty was pure churn.
+        var chipsNow = DateTime.Now;
+        // Options open = placement preview: the stack exists (with a placeholder if
+        // empty) so it can be parked before the first real debuff (#94 follow-up).
+        var chipPlacement = _optionsWindow is { IsVisible: true }
+            && (_settings.MezChipsEnabled || _settings.SlowAlertEnabled);
+        var haveFightChips = chipPlacement
+            || (_settings.MezChipsEnabled && _mezTracker.Any(chipsNow))
+            || (SlowChipsVisible(chipsNow) && _slowTracker.Any(chipsNow));
+        if (haveFightChips)
         {
             if (_mezChipsWindow is not { IsVisible: true })
             {
-                var chips = new MezChipsWindow(_settings, MezChipsWindow.BuildChips);
+                var chips = new MezChipsWindow(_settings, FightChips, SetChipScale);
                 chips.Closed += (_, _) =>
                 {
                     if (ReferenceEquals(_mezChipsWindow, chips)) _mezChipsWindow = null;
@@ -1656,7 +1677,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                 _mezChipsWindow = chips;
                 chips.Show(this);
             }
-            _mezChipsWindow.RefreshChips(mezzes, DateTime.Now);
+            _mezChipsWindow.RefreshChips(DateTime.Now);
         }
         else
             CloseMezChips();
@@ -2741,12 +2762,30 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             return;
         }
         _optionsWindow = new OptionsWindow(this);
+        WireOptionsWindow(_optionsWindow);
         _optionsWindow.Closed += (_, _) => _alertWindow?.ExitPlacement();
         _optionsWindow.Show(this);
         AlertTile.EnterPlacement();
     }
 
-    internal void RegisterOptionsWindow(OptionsWindow window) => _optionsWindow = window;
+    internal void RegisterOptionsWindow(OptionsWindow window)
+    {
+        _optionsWindow = window;
+        WireOptionsWindow(window);
+    }
+
+    /// <summary>The Options window's live-side-effect hooks (its settings writes work
+    /// without them; these make the change visible immediately).</summary>
+    private void WireOptionsWindow(OptionsWindow window)
+    {
+        window.RecentLinesSource = RecentLogLines;
+        window.ApplyChipScale = SetChipScale;
+        window.ApplyGridOverlay = SetGridOverlay;
+        window.ApplyGridSpacing = RefreshGridSpacing;
+        window.ApplyCursorRing = SetCursorRing;
+        window.ApplyHotkeys = ApplyHotkeys;
+        window.RefreshGearCard = RefreshGearCard;
+    }
 
     private void OnTutorial(object? sender, EventArgs e) => new TutorialWindow(this).Show(this);
 
@@ -2887,6 +2926,177 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         var end = f.Start.AddSeconds(f.DurationSeconds + (f.InProgress ? 2 : 0));
         return (f, _stats.JournalWindow(f.Start, end), s.PetName);
     }
+
+    /// <summary>Mez chips as the fight stack sees them — MezChipsWindow.BuildChips is
+    /// the shared builder (names numbered, draining gauge fractions included).</summary>
+    private List<SpawnChip> MezChips(DateTime now) =>
+        MezChipsWindow.BuildChips(_mezTracker.Snapshot(now), now);
+
+    /// <summary>Everything the fight-side chip stack shows: mez chips and slow chips,
+    /// each behind its own Options toggle, sharing one window and saved position.</summary>
+    private List<SpawnChip> FightChips(DateTime now)
+    {
+        var chips = _settings.MezChipsEnabled ? MezChips(now) : [];
+        if (SlowChipsVisible(now)) chips.AddRange(SlowChips(now));
+        // Placement preview (#94 follow-up): the stack only exists while a mez or
+        // slow is live, so there was no way to park it BEFORE the first mid-fight
+        // debuff. While Options is open, an empty stack shows one draggable
+        // placeholder — same idea as the alert tile's placement mode.
+        if (chips.Count == 0 && _optionsWindow is { IsVisible: true })
+            chips.Add(new SpawnChip(Zone: "", Name: "drag me — chips appear here",
+                CountdownText: "", IsDue: false,
+                Detail: "Placement preview: 💤 mez and 🐌 slow chips will stack at this "
+                    + "spot. Drag it where you'll notice them; it disappears when "
+                    + "Options closes.",
+                Icon: "🐌"));
+        return chips;
+    }
+
+    private bool SlowChipsVisible(DateTime now) =>
+        _settings.SlowAlertEnabled
+        && (!_settings.SlowAlertRaidOnly || _slowTracker.InRaid(now));
+
+    /// <summary>Slow chips (#94): the debuff's honest % (a range when several slows
+    /// share the landing line), time left when the wiki documents a duration, and the
+    /// cure line in the tooltip — "how do I get rid of this" attached to the alert.</summary>
+    private List<SpawnChip> SlowChips(DateTime now) =>
+        _slowTracker.Snapshot(now).Select(s =>
+        {
+            var remaining = s.RemainingSeconds(now);
+            var detail = string.Join(" · ", new[]
+            {
+                s.Spells.Length == 1 ? s.Spells[0] : "One of: " + string.Join(", ", s.Spells),
+                s.CounterText,
+                _slowTracker.CureLine(s),
+                $"landed {s.LandedAt:h:mm:ss tt}",
+            }.Where(part => part.Length > 0));
+            return new SpawnChip(
+                Zone: "", Name: EQBuddy.UI.Shared.SlowChipText.Label(s),
+                CountdownText: remaining is { } r ? $"{(int)r / 60}:{(int)r % 60:00}" : "?",
+                IsDue: false, Detail: detail, Icon: "🐌")
+            {
+                Fraction = s.ExpiresAt is { } exp && (exp - s.LandedAt).TotalSeconds is > 0 and var dur
+                    ? Math.Clamp((now - s.LandedAt).TotalSeconds / dur, 0, 1)
+                    : null,
+            };
+        }).ToList();
+
+    /// <summary>Live-apply the chips/alerts scale to whichever family windows exist right
+    /// now; windows created later pick it up in their constructors.</summary>
+    public void SetChipScale(double scale)
+    {
+        _settings.ChipScale = Math.Clamp(scale, 0.5, 2.0);
+        foreach (var w in new Window?[] { _spawnChipsWindow, _mezChipsWindow, _alertWindow })
+            if (w is not null) ChipScale.Apply(w, _settings.ChipScale);
+        _settings.Save();
+    }
+
+    // ---- the alignment grid (discussion #34) ----
+
+    private GridOverlayWindow? _gridOverlay;
+
+    /// <summary>Options checkbox lands here (the SetTrackSpawns pattern). The overlay
+    /// window exists only while the grid is on — nothing invisible lingers.</summary>
+    internal void SetGridOverlay(bool on)
+    {
+        _settings.ShowGridOverlay = on;
+        _settings.Save();
+        if (on)
+        {
+            if (_gridOverlay is not { IsVisible: true })
+                _gridOverlay = new GridOverlayWindow(_settings);
+            _gridOverlay.Show();
+            _gridOverlay.ApplySpacing();
+        }
+        else
+        {
+            _gridOverlay?.Close();
+            _gridOverlay = null;
+        }
+    }
+
+    /// <summary>Live spacing updates from the Options slider.</summary>
+    internal void RefreshGridSpacing() => _gridOverlay?.ApplySpacing();
+
+    // ---- the cursor-finder ring (issue #81) ----
+
+    private CursorRingWindow? _cursorRing;
+
+    /// <summary>Same lockstep shape as SetGridOverlay: the window exists only while
+    /// the ring is on.</summary>
+    internal void SetCursorRing(bool on)
+    {
+        _settings.ShowCursorRing = on;
+        _settings.Save();
+        if (on)
+        {
+            if (_cursorRing is not { IsVisible: true })
+                _cursorRing = new CursorRingWindow(_settings);
+            _cursorRing.ApplySize();
+            _cursorRing.Show();
+        }
+        else if (_cursorRing is { } ring)
+        {
+            _cursorRing = null;
+            ring.Close();
+        }
+    }
+
+    // ---- global hotkeys, opt-in only (#100 — see HotkeyManager) ----
+
+    private readonly HotkeyManager _hotkeys = new();
+    private bool _hotkeyHidden;
+    private readonly List<Window> _hotkeyHiddenWindows = [];
+    private TrayIcon? _trayIcon;
+
+    /// <summary>Registers whatever the player bound in Options; called at startup
+    /// and again after any Options edit. Windows-only for now — HotkeyManager logs
+    /// the degradation once elsewhere.</summary>
+    internal void ApplyHotkeys() =>
+        _hotkeys.Apply(this, _settings.Hotkeys, action => Dispatcher.UIThread.Post(() =>
+        {
+            switch (action)
+            {
+                case "toggleAll":
+                    // The get-out-of-my-way key: everything hides as one, comes back
+                    // as it was. Same idea as focus-hide, but on demand.
+                    if (_hotkeyHidden)
+                    {
+                        foreach (var w in _hotkeyHiddenWindows) w.Show();
+                        _hotkeyHiddenWindows.Clear();
+                        _hotkeyHidden = false;
+                    }
+                    else if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                    {
+                        foreach (var w in desktop.Windows.ToList())
+                            if (w.IsVisible) { _hotkeyHiddenWindows.Add(w); w.Hide(); }
+                        _hotkeyHidden = _hotkeyHiddenWindows.Count > 0;
+                    }
+                    break;
+                case "toggleMap":
+                    if (_mapWindow is { IsVisible: true }) _mapWindow.Hide();
+                    else if (_mapWindow is not null) _mapWindow.Show();
+                    else OnZoneMap(this, EventArgs.Empty);
+                    break;
+                case "toggleQuests":
+                    if (_questsWindow is { IsVisible: true }) _questsWindow.Hide();
+                    else if (_questsWindow is not null) _questsWindow.Show();
+                    else OnQuestsWindow(this, EventArgs.Empty);
+                    break;
+                case "toggleSpawns":
+                    if (_spawnsWindow is { IsVisible: true }) _spawnsWindow.Hide();
+                    else if (_spawnsWindow is not null) _spawnsWindow.Show();
+                    else ShowSpawnsWindow();
+                    break;
+                case "toggleClickThrough":
+                    SetClickThrough(!_clickThrough);
+                    break;
+                // #100 round two (jlcrisp): the pill/dashboard flip, from the keyboard.
+                case "toggleMinimize":
+                    SetMode(!_settings.Minimized);
+                    break;
+            }
+        }));
 
     /// <summary>
     /// A slow landed on the player, straight off the ingest thread. Speaks once per
@@ -4184,6 +4394,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     protected override void OnClosed(EventArgs e)
     {
         _uiTimer.Stop();
+        _trayIcon?.Dispose();   // a ghost tray icon outliving its process reads as a crash
+        _gridOverlay?.Close();
+        _cursorRing?.Close();
         foreach (var breakout in _breakouts.Values) breakout.Close();
         _settings.WindowLeft = Position.X;
         _settings.WindowTop = Position.Y;
