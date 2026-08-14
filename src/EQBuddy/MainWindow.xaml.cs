@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using EQBuddy.Core;
+using LevelUnlockText = EQBuddy.UI.Shared.LevelUnlockText;
 using SpawnChip = EQBuddy.UI.Shared.SpawnChip;
 
 namespace EQBuddy;
@@ -1013,6 +1014,62 @@ public partial class MainWindow : Window
         _settings.Save();
     }
 
+    private void OnNextUnlocksToggled(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        _settings.ShowNextUnlocks = !_settings.ShowNextUnlocks;
+        _settings.Save();
+        RefreshUi();
+    }
+
+    // Memoized per (level, classes) — the header cue reads this every UI tick, and the
+    // answer only changes on a ding or a class pick (perf audit #1's rule: steady-state
+    // ticks allocate nothing they don't have to).
+    private int? _dingLevelMemo;
+    private string _dingClassesMemo = "";
+    private LevelUnlockSet _dingUnlocks = LevelUnlockSet.Empty;
+
+    /// <summary>AAs and spells newly available at the session's latest level-up;
+    /// empty when the session hasn't leveled.</summary>
+    private LevelUnlockSet DingUnlocks(StatsSnapshot s)
+    {
+        if (s.LastLevel is not { } level) return LevelUnlockSet.Empty;
+        var classes = UnlockClasses(s);
+        var key = string.Join(",", classes);
+        if (_dingLevelMemo != level || _dingClassesMemo != key)
+        {
+            _dingLevelMemo = level;
+            _dingClassesMemo = key;
+            _dingUnlocks = LevelUnlocks.UnlocksAt(classes, level);
+        }
+        return _dingUnlocks;
+    }
+
+    /// <summary>Classes for level-unlock filtering: the Quest Tracker's picked classes,
+    /// falling back to the combat-inferred class — the Gear Locker rule (#104).</summary>
+    private IReadOnlyList<string> UnlockClasses(StatsSnapshot s)
+    {
+        var picked = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
+        if (picked.Count == 0 && s.InferredClass is { Length: > 0 } inf)
+            picked = [inf];
+        return picked;
+    }
+
+    /// <summary>Unlock rows for FillList: the AA group in its category order, then
+    /// the Spells grouping — same list, rows told apart by their value column.</summary>
+    private static IEnumerable<(string Name, string Value)> UnlockRows(LevelUnlockSet set) =>
+        set.Aas.Select(a => (a.Name, LevelUnlockText.RowValue(a)))
+            .Concat(set.Spells.Select(sp => (sp.Name, LevelUnlockText.SpellRowValue(sp))));
+
+    /// <summary>Tooltip lookup for a merged unlock list: spell rows show which classes
+    /// get the spell and when (catalog facts, never invented effect text); AA rows keep
+    /// the wiki effect prose. Resolved per set, since only it knows which group a name
+    /// came from.</summary>
+    private static Func<string, string?> UnlockTooltip(LevelUnlockSet set) =>
+        name => set.Spells.Any(sp => sp.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            ? LevelUnlockText.SpellTooltip(SpellLevelCatalog.Default.Find(name))
+            : AaCatalog.Find(name)?.Effect;
+
     private void OnOpenWebsite(object sender, RoutedEventArgs e) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
             "https://github.com/DranakCorps-bot/EQBuddy") { UseShellExecute = true });
@@ -1869,8 +1926,19 @@ public partial class MainWindow : Window
         UpdateGearChecklist(s);
         UpdateEpicQuestChecklist(s);
         MoneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
+        // Remember the announced level per character — the "At N:" preview must survive
+        // restarts and log truncation, and the log only says the number at the ding.
+        if (s.LastLevel is { } announced && QuestLedger is { } lg && QuestCharacterKey.Length > 0
+            && lg.LevelFor(QuestCharacterKey) != announced)
+            lg.SetLevel(QuestCharacterKey, announced);
         ProgressHeader.Text = $"{s.XpPercent:0.0}% xp"
-            + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "")
+            + (s.Levels.Count > 0
+                ? $", +{s.Levels.Count} lvl"
+                  // The ding's cue, visible while the card is closed: the header is the
+                  // only Progress surface that always shows, and clicking it opens the
+                  // card where the "New at level N" list waits (never a popup).
+                  + (DingUnlocks(s).Count > 0 ? $" ({DingUnlocks(s).Count} new)" : "")
+                : "")
             + (s.AaGained > 0 ? $", +{s.AaGained} aa" : "");
         FactionHeader.Text = s.Faction.Count > 0 ? $"{s.Faction.Count} factions" : "—";
         MiscHeader.Text = $"{s.Deaths.Count} death{(s.Deaths.Count == 1 ? "" : "s")}";
@@ -2118,6 +2186,39 @@ public partial class MainWindow : Window
                         return $"{l.Text} at {l.Time:h:mm tt} ({mins}m)";
                     }))
                     : "");
+            // The ding's answer: what just became available at the session's latest
+            // level, always shown while the level-up is on the card — same idiom as
+            // "AA learned this session". AA class rows lead; Archetype rows are
+            // labeled, not guessed (the wiki doesn't say which classes they cover);
+            // the Spells grouping follows, its rows marked "… spell".
+            var ding = DingUnlocks(s);
+            LevelUnlocksLabel.Visibility = ding.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            LevelUnlocksList.Visibility = LevelUnlocksLabel.Visibility;
+            if (ding.Count > 0 && s.LastLevel is { } dingLevel)
+            {
+                LevelUnlocksLabel.Text = LevelUnlockText.NewAtLevelLabel(dingLevel);
+                FillList(LevelUnlocksList, UnlockRows(ding), tooltip: UnlockTooltip(ding));
+            }
+
+            // "What do I get at N?" without waiting for a ding — the next milestone
+            // that unlocks anything, anchored to the last level the log ever announced
+            // (persisted per character, so it works across restarts). Hidden until a
+            // level is known: previewing from an unknown level would be a guess.
+            int? knownLevel = s.LastLevel;
+            if (knownLevel is null && QuestLedger?.LevelFor(QuestCharacterKey) is > 0 and var stored)
+                knownLevel = stored;
+            var next = knownLevel is { } kl ? LevelUnlocks.Next(UnlockClasses(s), kl) : null;
+            NextUnlocksLabel.Visibility = next is not null ? Visibility.Visible : Visibility.Collapsed;
+            if (next is { } nx)
+            {
+                NextUnlocksLabel.Text = LevelUnlockText.NextLabel(
+                    nx.Level, nx.Unlocks.Aas.Count, nx.Unlocks.Spells.Count, _settings.ShowNextUnlocks);
+                NextUnlocksList.Visibility = _settings.ShowNextUnlocks ? Visibility.Visible : Visibility.Collapsed;
+                if (_settings.ShowNextUnlocks)
+                    FillList(NextUnlocksList, UnlockRows(nx.Unlocks), tooltip: UnlockTooltip(nx.Unlocks));
+            }
+            else NextUnlocksList.Visibility = Visibility.Collapsed;
+
             FillList(SkillList, s.SkillUps.Select(k => (k.Skill, $"{k.Value} (+{k.Ups})")));
             // AA display, rethought (Reddit, 2026-08-11: "is it supposed to just show
             // newly learned this session?" — yes, now it is): session-new AAs lead,

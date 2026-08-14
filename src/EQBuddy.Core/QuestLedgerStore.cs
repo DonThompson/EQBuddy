@@ -48,6 +48,10 @@ public sealed class QuestLedgerStore
         /// three active classes (David, 2026-08-07), and a character's classes don't
         /// change per session, so the selection belongs to the character.</summary>
         public List<string> Classes { get; set; } = [];
+        /// <summary>Last level the log announced ("Welcome to level N!"), 0 = never
+        /// seen. The log states the number only at the ding itself, so the level-unlock
+        /// preview needs this to survive restarts (and log truncation).</summary>
+        public int Level { get; set; }
     }
 
     private readonly string _path;
@@ -114,7 +118,7 @@ public sealed class QuestLedgerStore
                 if (stored.Count > 0
                     && stored.Values.All(c => c.Items.Count == 0 && c.Tracked.Count == 0
                                               && c.Hidden.Count == 0 && c.Completed.Count == 0
-                                              && c.Classes.Count == 0))
+                                              && c.Classes.Count == 0 && c.Level == 0))
                 {
                     try
                     {
@@ -141,6 +145,7 @@ public sealed class QuestLedgerStore
                         Hidden = kv.Value.Hidden,
                         Completed = new Dictionary<string, int>(kv.Value.Completed, StringComparer.OrdinalIgnoreCase),
                         Classes = kv.Value.Classes,
+                        Level = kv.Value.Level,
                     }),
                 StringComparer.OrdinalIgnoreCase);
     }
@@ -317,6 +322,28 @@ public sealed class QuestLedgerStore
         {
             CharacterFor(characterKey).Classes =
                 classes.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            Save();
+        }
+    }
+
+    /// <summary>Last announced level for this character (0 = unknown).</summary>
+    public int LevelFor(string characterKey)
+    {
+        lock (_lock)
+            return _byCharacter.TryGetValue(characterKey, out var c) ? c.Level : 0;
+    }
+
+    /// <summary>Record the level the log just announced. Stores what the log said, not
+    /// a max — the announcement line only fires on gains, so it's already monotonic
+    /// per character. Idempotent on the same level (launch replay re-offers dings).</summary>
+    public void SetLevel(string characterKey, int level)
+    {
+        if (characterKey.Length == 0 || level <= 0) return;
+        lock (_lock)
+        {
+            var c = CharacterFor(characterKey);
+            if (c.Level == level) return;
+            c.Level = level;
             Save();
         }
     }
