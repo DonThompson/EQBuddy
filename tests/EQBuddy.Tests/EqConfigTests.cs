@@ -107,6 +107,30 @@ public class EqConfigTests : IDisposable
     }
 
     [Fact]
+    public void AFailedTruncateDoesNotReArchiveTheSameContentNextSweep()
+    {
+        // Audit finding 11a: a sweep whose copy succeeded but whose SetLength lost
+        // the file-lock race retries next sweep with the log unchanged — same stamp,
+        // same length — and used to stack an identical -2 copy every pass until the
+        // lock cleared. Simulated by planting the prior sweep's copy exactly where
+        // ArchiveCopy left it.
+        var stale = Path.Combine(LogsDir, "eqlog_Dranak_legends.txt");
+        File.WriteAllText(stale, "a whole session of lines");
+        File.SetLastWriteTime(stale, new DateTime(2026, 6, 7, 14, 32, 19));
+        var archiveDir = Path.Combine(LogsDir, "archive");
+        Directory.CreateDirectory(archiveDir);
+        File.WriteAllText(Path.Combine(archiveDir, "eqlog_Dranak_legends_20260607143219.txt"),
+            "a whole session of lines");
+
+        var count = EqConfig.TruncateStaleLogs(LogsDir, TimeSpan.FromMinutes(60),
+            ignoreGameCheck: true, archive: true);
+
+        Assert.Equal(1, count);                           // the truncate retry lands this time
+        Assert.Equal(0, new FileInfo(stale).Length);
+        Assert.Single(Directory.GetFiles(archiveDir));    // and no -2 duplicate appeared
+    }
+
+    [Fact]
     public void SplitLogArchivesContentAndStartsFresh()
     {
         var live = Path.Combine(LogsDir, "eqlog_Dranak_legends.txt");

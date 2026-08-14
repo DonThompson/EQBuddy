@@ -178,6 +178,14 @@ public sealed class SessionStats
     /// way — its own time high-water mark keeps the startup replay idempotent.</summary>
     public StackingLedgerStore? StackingStore { get; set; }
 
+    /// <summary>Review replay is a window onto the past, not a new session (#74):
+    /// while set, the durable per-character ledgers above ignore this run's events —
+    /// an archived log replayed under review recorded its facts when it was live,
+    /// and (before the FromPath stamp fix) wrote them again under phantom keys
+    /// (audit finding 4). MainWindow sets this for the duration of review; snapshots
+    /// still READ the stores.</summary>
+    public bool StoresSuppressed { get; set; }
+
     /// <summary>The per-character ledger key ("dranak_legends") the stores are written
     /// under — the Quest Tracker window queries the ledger with this.</summary>
     public string LedgerCharacterKey => AaCharacterKey;
@@ -744,7 +752,7 @@ public sealed class SessionStats
                             _charmCandidate = null;
                         // A blocker-less line still counts above; only a NAMED pair is
                         // a stacking fact the ledger can hold.
-                        if (blk.BlockedBy.Length > 0)
+                        if (blk.BlockedBy.Length > 0 && !StoresSuppressed)
                             StackingStore?.Record(AaCharacterKey, blkKey, blk.BlockedBy, blk.Time);
                     }
                     break;
@@ -1024,18 +1032,23 @@ public sealed class SessionStats
                     // became one, so possession didn't change (David, 2026-08-07 —
                     // "ready ×17" was counting every merge-consumed belt).
                     if (l.UpgradeResult is null)
-                        QuestStore?.RecordLoot(AaCharacterKey, l.Item, l.Count, l.Time);
+                    {
+                        if (!StoresSuppressed)
+                            QuestStore?.RecordLoot(AaCharacterKey, l.Item, l.Count, l.Time);
+                    }
                     else
                         Bump(_upgraded, l.UpgradeResult);   // the created "+N" form
                     break;
                 case CraftEvent c:
                     Bump(_crafted, c.Item);
                     // A manual merge turned two held items into one.
-                    QuestStore?.RecordConsumed(AaCharacterKey, c.Item, 1, c.Time);
+                    if (!StoresSuppressed)
+                        QuestStore?.RecordConsumed(AaCharacterKey, c.Item, 1, c.Time);
                     break;
                 case ItemDestroyedEvent d:
                     _lastDestroyed = (d.Item, d.Count, d.Time);
-                    QuestStore?.RecordConsumed(AaCharacterKey, d.Item, d.Count, d.Time);
+                    if (!StoresSuppressed)
+                        QuestStore?.RecordConsumed(AaCharacterKey, d.Item, d.Count, d.Time);
                     break;
                 case MoneyEvent { Vendor: true } m:
                     _vendorCopper += m.Copper; _salesCount++;
@@ -1050,7 +1063,7 @@ public sealed class SessionStats
                     // A NAMED sale is a held item leaving. Nameless loot-window sales
                     // already subtracted via their preceding "successfully destroyed"
                     // line — subtracting here too would double-count the exit.
-                    if (m.Item is { } soldItem)
+                    if (m.Item is { } soldItem && !StoresSuppressed)
                         QuestStore?.RecordConsumed(AaCharacterKey, soldItem, 1, m.Time);
                     break;
                 case MoneyEvent m:
@@ -1083,7 +1096,8 @@ public sealed class SessionStats
                     // "gained" after an "improved" (log replay) must not regress the ledger.
                     if (!_aaAbilities.TryGetValue(ap.Ability, out var known) || ap.Rank > known.Rank)
                         _aaAbilities[ap.Ability] = (ap.Rank, ap.Time);
-                    AaStore?.Record(AaCharacterKey, ap.Ability, ap.Rank, ap.Time);
+                    if (!StoresSuppressed)
+                        AaStore?.Record(AaCharacterKey, ap.Ability, ap.Rank, ap.Time);
                     break;
                 case StanceEvent stc:
                     // Close the open combat window under the OLD stance before switching,

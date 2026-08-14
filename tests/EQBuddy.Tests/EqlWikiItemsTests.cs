@@ -135,4 +135,15 @@ public class EqlWikiItemsTests
         }
         finally { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
     }
+
+    [Fact]
+    public void TheWikiClientNamesTheTool()
+    {
+        // Audit finding 13: the framework's blank default agent says nothing about
+        // who is asking, and wiki operators rate and block by agent string. Both
+        // wiki services share this client shape (same idiom as UpdateChecker's).
+        using var c = EqlWikiText.CreateClient();
+        Assert.Equal("EQBuddy-WikiLookup", c.DefaultRequestHeaders.UserAgent.ToString());
+        Assert.Equal(TimeSpan.FromSeconds(12), c.Timeout);
+    }
 }

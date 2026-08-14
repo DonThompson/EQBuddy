@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Text.RegularExpressions;
 
 namespace EQBuddy.Core;
@@ -5,6 +6,17 @@ namespace EQBuddy.Core;
 /// <summary>Wikitext plumbing shared by the eqlwiki item and mob services.</summary>
 internal static partial class EqlWikiText
 {
+    /// <summary>The wiki services' HTTP client: bounded timeout, and a User-Agent
+    /// that names the tool (same idiom as UpdateChecker's client — wiki operators
+    /// rate and block by agent string, and the framework default says nothing about
+    /// who is asking).</summary>
+    internal static HttpClient CreateClient()
+    {
+        var c = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
+        c.DefaultRequestHeaders.UserAgent.ParseAdd("EQBuddy-WikiLookup");
+        return c;
+    }
+
     [GeneratedRegex(@"\[\[:?(?:[^\]|]*\|)?([^\]]*)\]\]")]
     private static partial Regex WikiLinkRx();
 

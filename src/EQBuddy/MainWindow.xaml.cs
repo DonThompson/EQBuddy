@@ -1648,6 +1648,13 @@ public partial class MainWindow : Window
         // then the archiver stands down until we're back.
         _archiver.FinalizeActive(_stats.Snapshot(), "ReviewingArchive");
         _reviewPath = path;
+        // Review is read-only (finding 4): the per-character ledgers stand down and
+        // the two persisting watcher consumers detach — an archive replay must not
+        // mint spawn timers or raid kills. The spawn-point ledger stays attached:
+        // its per-zone archive carries no character identity and is replay-gated.
+        _stats.StoresSuppressed = true;
+        _watcher.Spawns = null;
+        _watcher.Raids = null;
         _targetResults.Clear();
         _skyQuestLootSeen.Clear();
         _epicQuestLootSeen.Clear();
@@ -1665,25 +1672,34 @@ public partial class MainWindow : Window
 
     private void ExitReview()
     {
-        _reviewPath = null;
         ReviewLogItem.Header = "Review an archived log…";
         CharLabel.Foreground = (Brush)FindResource("DimBrush");
         CharLabel.Cursor = null;
         CharLabel.ToolTip = "Follows whoever is actively playing (log file growth)";
+        // Reattach the persistent consumers BEFORE the live Select, so its replay
+        // rebuilds their state; their own high-water marks keep it idempotent.
+        _stats.StoresSuppressed = false;
+        _watcher.Spawns = _spawnTimers;
+        _watcher.Raids = _raidLedger;
         // No finalize here: the reviewed session is already history. Follow just
         // re-selects whoever is live; the switch path sees review's CurrentPath but
-        // _reviewPath is null again, so guard by handing follow a clean slate.
+        // _reviewPath clears below, so guard by handing follow a clean slate.
         _lastCharScan = DateTime.MinValue;
         if (_settings.LogFolder is { } lf && LogWatcher.MostRecentlyActive(lf) is { } active)
         {
+            // Identity before Select, same as the switch path (audit finding 7).
+            _archiver.SetIdentity(active.Server, active.Character);
             _watcher.Select(active.FilePath);
-            _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
             CharLabel.Text = active.Display;
         }
         else
         {
             CharLabel.Text = "waiting for a character to log in…";
         }
+        // Cleared only AFTER Select returns (finding 5): the SessionEnding guard
+        // must stay armed while the archive replay can still roll a session over —
+        // clearing first let those rollovers mint duplicate history rows.
+        _reviewPath = null;
     }
 
     // Mouse DOWN, and handled: the title bar's OnDrag starts a DragMove on the same
@@ -1717,8 +1733,12 @@ public partial class MainWindow : Window
             // (SESSION-004: switches never merge data).
             if (_watcher.CurrentPath is not null)
                 _archiver.FinalizeActive(_stats.Snapshot(), "CharacterChanged");
+            // Identity BEFORE Select (audit finding 7): Select's background ingest can
+            // hit a 60-minute-gap rollover before control returns here, and that
+            // finalize must already carry the NEW character's name — the old ordering
+            // archived the new character's first session under the old identity.
+            _archiver.SetIdentity(active.Server, active.Character);
             _watcher.Select(active.FilePath);
-            _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
             CharLabel.Text = active.Display;
             // Perf audit #9: these were session-lifetime by intent but PROCESS-lifetime
             // in fact — with review mode switching logs freely now, clear them with the
@@ -4862,6 +4882,11 @@ public partial class MainWindow : Window
 
     private void OnReset(object sender, RoutedEventArgs e)
     {
+        // History first (audit finding 1): without the finalize, the archiver's row id
+        // survived the reset and later checkpoints overwrote the pre-reset session's
+        // row with post-reset numbers. Snapshot before the split task and the reset,
+        // so what goes to history is exactly what the click saw.
+        _archiver.FinalizeActive(_stats.Snapshot(), "ManualReset");
         // With archiving on, reset also splits the log: what's parsed so far moves to
         // Logs\archive and a fresh file begins — the second half of #52's ask.
         if (_settings.ArchiveLogs && _watcher.CurrentPath is { } path)

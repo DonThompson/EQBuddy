@@ -102,15 +102,18 @@ public sealed class RaidBossRecord
 
 /// <summary>
 /// Per-character raid-kill ledger, fed the parsed event stream like every tracker
-/// (replay-safe: a time high-water mark keeps the startup replay from double-counting
-/// kills already recorded). A kill counts when the log SEES the boss die — you were
-/// there; who landed the blow is a raid's business, not a scoreboard's.
+/// (replay-safe: each record's own LastKill is its high-water mark, so the startup
+/// replay never double-counts kills already recorded). A kill counts when the log
+/// SEES the boss die — you were there; who landed the blow is a raid's business,
+/// not a scoreboard's.
 /// </summary>
 public sealed class RaidKillLedger
 {
     private readonly RaidTargetCatalog _catalog;
     private readonly string? _path;
     private Dictionary<string, RaidBossRecord> _records = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Written for downgrade safety only (older builds gate on it); the
+    /// guard itself is per record — see <see cref="Apply"/> (audit finding 2).</summary>
     private DateTime _highWater = DateTime.MinValue;
     /// <summary>Difficulty of the zone the log is currently inside, from the last
     /// zone-enter line — <see cref="InstanceTier.Unknown"/> until one is seen.
@@ -209,9 +212,18 @@ public sealed class RaidKillLedger
         var key = Key(boss);
         lock (_lock)
         {
-            if (kill.Time <= _highWater) return;   // replayed history, already counted
-            _highWater = kill.Time;
-            var rec = _records.TryGetValue(key, out var r) ? r : _records[key] = new RaidBossRecord();
+            // Replay gate PER character-and-boss record, not one global timestamp
+            // (audit finding 2): the global mark dropped a second character's older
+            // replayed kills after a switch, and the second of two catalog bosses
+            // dying in the same log second even live. This record's own LastKill is
+            // exactly "the newest kill of THIS boss THIS ledger already holds" —
+            // idempotent under any number of replays. (The one kill it can't tell
+            // apart is the same boss dying twice within one log second.) A null
+            // LastKill — an achievement-only import row — gates nothing.
+            var rec = _records.TryGetValue(key, out var r) ? r : null;
+            if (rec is not null && kill.Time <= rec.LastKill) return;   // replayed history
+            if (kill.Time > _highWater) _highWater = kill.Time;
+            rec ??= _records[key] = new RaidBossRecord();
             rec.Kills++;
             rec.FirstKill ??= kill.Time;
             rec.LastKill = kill.Time;

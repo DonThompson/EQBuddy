@@ -129,7 +129,28 @@ public static class EqConfig
         return truncated;
     }
 
-    private static void ArchiveCopy(FileInfo log) => log.CopyTo(ArchiveDest(log));
+    private static void ArchiveCopy(FileInfo log)
+    {
+        // A sweep whose copy succeeded but whose truncate lost the file-lock race
+        // retries next sweep with the log unchanged — same stamp, same length — and
+        // stacked a -2/-3 duplicate of the identical content every pass until the
+        // lock cleared (audit finding 11a). Same stamp + same length is identity
+        // here: the stamp IS the content's own last write. A same-stamp archive of
+        // a DIFFERENT length still gets its dedup copy (the documented
+        // same-second-twice case).
+        if (AlreadyArchived(log)) return;
+        log.CopyTo(ArchiveDest(log));
+    }
+
+    /// <summary>An archive copy of exactly this content already exists.</summary>
+    private static bool AlreadyArchived(FileInfo log)
+    {
+        var dir = Path.Combine(log.DirectoryName!, "archive");
+        if (!Directory.Exists(dir)) return false;
+        var stem = $"{Path.GetFileNameWithoutExtension(log.Name)}_{log.LastWriteTime:yyyyMMddHHmmss}";
+        return Directory.EnumerateFiles(dir, stem + "*.txt")
+            .Any(f => new FileInfo(f).Length == log.Length);
+    }
 
     /// <summary>Pick Logs\archive\eqlog_name_server_STAMP.txt, stamp = the log's last
     /// write (when the session actually ended), creating the folder if needed.</summary>

@@ -10,7 +10,14 @@ public sealed record CharacterLog(string FilePath, string Character, string Serv
     public string Display => $"{Character} ({Server})";
     public static CharacterLog? FromPath(string path)
     {
-        var m = Regex.Match(Path.GetFileName(path), @"^eqlog_(?<char>[^_]+)_(?<server>.+)\.txt$",
+        // Archive filenames carry a _yyyyMMddHHmmss stamp, optionally a -N dedup
+        // suffix (EqConfig.ArchiveDest); without stripping it, reviewing an archive
+        // parsed server="server_20260813120000" and every per-character store wrote
+        // under phantom keys (audit finding 4). The stamp is exactly 14 trailing
+        // digits; the server group can't be empty, so a genuine two-segment name
+        // whose server IS 14 digits still reads them as the server, not a stamp.
+        var m = Regex.Match(Path.GetFileName(path),
+            @"^eqlog_(?<char>[^_]+)_(?<server>.+?)(?:_\d{14}(?:-\d+)?)?\.txt$",
             RegexOptions.IgnoreCase);
         if (!m.Success) return null;
         return new CharacterLog(path, m.Groups["char"].Value, m.Groups["server"].Value);
@@ -33,6 +40,11 @@ public sealed class LogWatcher : IDisposable
     /// <summary>Read cap for session-range review (#74): Poll never reads past this.
     /// long.MaxValue = live tailing, the normal state.</summary>
     private long _endOffset = long.MaxValue;
+    /// <summary>Bumped by every Select (audit finding 5): the ingest task captures
+    /// its generation, and only the LATEST one may declare ingest done and start the
+    /// tail timer — a superseded Select's completion used to flip InitialIngestDone
+    /// mid-way through its successor's ingest and let historical lines fire alerts.</summary>
+    private long _selectGen;
     private readonly StringBuilder _remainder = new();
 
     public DateTime? LastGrowth { get; private set; }
@@ -232,9 +244,11 @@ public sealed class LogWatcher : IDisposable
     /// (LogSessions.Scan guarantees it); live tailing is the (0, MaxValue) case.</summary>
     public void Select(string path, long startOffset, long endOffset)
     {
+        long gen;
         lock (_lock)
         {
             _timer.Stop();
+            gen = ++_selectGen;
             _path = path;
             var charInfo = CharacterLog.FromPath(path);
             _stats.CharacterName = charInfo?.Character;
@@ -246,14 +260,36 @@ public sealed class LogWatcher : IDisposable
             InitialIngestDone = false;
             _stats.ClearCharacterState();
             _stats.Reset();
+            // Every Select is a replay starting over; the ledger's boundary-second
+            // counters must not carry over from the previous pass (finding 3).
+            SpawnPoints?.ReplayStarting();
         }
-        Task.Run(() =>
-        {
-            Poll(); // full-file ingest
-            lock (_lock) InitialIngestDone = true;
-            _timer.Start();
-        });
+        if (!DeferIngestForTests) Task.Run(() => FinishInitialIngest(gen));
+        // Note (finding 5, scoped out): Select still blocks its caller only for the
+        // state reset above, but the ingest itself stays a background task — making
+        // Select fully non-blocking end-to-end is a bigger change than this pass.
     }
+
+    /// <summary>The queued half of Select: full-file ingest, then the live-tail
+    /// handoff — which belongs only to the latest Select. Internal so tests can
+    /// replay the overlapping-Select interleaving Task.Run won't order on demand.</summary>
+    internal void FinishInitialIngest(long gen)
+    {
+        Poll(); // full-file ingest
+        lock (_lock)
+        {
+            if (gen != _selectGen) return;   // a newer Select owns the watcher now
+            InitialIngestDone = true;
+            _timer.Start();   // under the lock: a Select racing in can't be un-stopped
+        }
+    }
+
+    /// <summary>Tests only: suppress Select's background ingest task so the
+    /// generation handoff runs deterministically via <see cref="FinishInitialIngest"/>.</summary>
+    internal bool DeferIngestForTests;
+
+    /// <summary>Tests only: the generation the most recent Select minted.</summary>
+    internal long SelectGeneration { get { lock (_lock) return _selectGen; } }
 
     private void Poll()
     {

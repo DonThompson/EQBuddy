@@ -44,7 +44,7 @@ public sealed partial class EqlWikiMobService
     private readonly string _cacheDir;
     private readonly Func<string, Task<string?>> _fetch;
     private readonly Func<string, Task<List<string>>> _search;
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(12) };
+    private static readonly HttpClient Http = EqlWikiText.CreateClient();
 
     public EqlWikiMobService(string cacheDir, Func<string, Task<string?>>? fetchOverride = null,
         Func<string, Task<List<string>>>? searchOverride = null)
