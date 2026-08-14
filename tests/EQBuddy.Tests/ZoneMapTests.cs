@@ -153,9 +153,9 @@ public class ZoneMapTests : IDisposable
     public void WikiLocationFieldsParseIntoCoordinates()
     {
         var svc = new EqlWikiMobService(Path.Combine(_dir, "mobcache"),
-            _ => Task.FromResult<string?>(
+            title => Task.FromResult<WikiPageText?>(new WikiPageText(title,
                 "{{Namedmobpage\n| name = Lord Gimblox\n| zone = [[Solusek's Eye]]\n" +
-                "| location = -565, 30 (tower, third floor)\n| known_loot = {{:Runed Cloak}}\n}}"));
+                "| location = -565, 30 (tower, third floor)\n| known_loot = {{:Runed Cloak}}\n}}")));
         var result = svc.LookupAsync("Lord Gimblox").GetAwaiter().GetResult();
         Assert.Equal("-565, 30 (tower, third floor)", result.Mob!.Location);
         Assert.Equal((-565.0, 30.0), result.Mob.LocYX!.Value);

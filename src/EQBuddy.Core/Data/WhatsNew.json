@@ -1,5 +1,15 @@
 [
  {
+  "version": "1.82.0",
+  "date": "2026-08-14",
+  "highlights": [
+   "FIXED (discussion #152, thanks Snagglefern) - MEZ AND SPAWN CHIPS CREPT UP THE SCREEN, one chip's height every time the stack emptied and came back, if you use \"grow upwards\". A grow-up stack has to remember its BOTTOM edge, since its top moves with the chip count - but that was being measured as the window closed, when its height already reads as zero, so what got saved was really the TOP edge. Next time it opened it subtracted a chip from that and landed one row higher. Fixed at the source, and the spawn stack had the identical bug waiting.",
+   "FIXED (discussion #120, thanks Frankthetankk) - THE BUFF SET CLASS PICKER only offered the class EQBuddy had guessed for you, so a character read as one class could only ever build that class's set - which is exactly the per-class assembly the feature exists for. Your detected classes still come first; every other class is now selectable behind them.",
+   "FIXED (discussion #65, thanks Frankthetankk, who caught two of these twice) - THREE WIKI CONTRIBUTION PACK BUGS. A new-page template took the zone you were STANDING in rather than the zone the creature died in, so an Innoruuk killed in Plane of Hate was filed under Nagafen's Lair while the rest of the same entry said Hate. Creature names lost their leading article again (\"The Spiroc Lord\" became \"Spiroc Lord\" in headers, edit links and page links) - the lookup was resolving correctly but recording the name it ASKED for instead of the page it LANDED on. And a god named with an epithet (\"Innoruuk, the Prince of Hate\") no longer offers to create a duplicate page when the wiki already documents it under its plain name. All three now have tests holding them down.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.81.0",
   "date": "2026-08-14",
   "highlights": [

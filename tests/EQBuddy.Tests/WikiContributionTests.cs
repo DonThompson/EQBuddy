@@ -268,4 +268,34 @@ public class WikiContributionTests
         Assert.Contains("Not checked against the wiki yet", text);
         Assert.Contains("Emperor Crush", text);
     }
+
+    // ---- #65 round five (Frankthetankk) ----
+
+    /// <summary>The new-page template must name the zone the creature was KILLED in, not
+    /// wherever the player is standing when the pack is generated. Frankthetankk caught an
+    /// Innoruuk killed in Plane of Hate whose {{Namedmobpage}} zone and Category both said
+    /// Nagafen's Lair, while the cross-references in the SAME entry said Hate — two code
+    /// paths reading two sources for one fact, and the template's would have published a
+    /// wrong zone if pasted as-is.</summary>
+    [Fact]
+    public void TheNewPageTemplateUsesTheKillZoneNotWhereYouAreStandingNow()
+    {
+        var mob = new MobSummary("Innoruuk, the Prince of Hate", 3, 3, 40, 0, 0,
+            [new MobLoot("Hate Cloak", 1, 33)])
+        { Zone = "The Plane of Hate - Solo 1 (Awakened)" };
+
+        // NotFound (not null) is what "the wiki has no such page" looks like — a null
+        // lookup means we never asked, which is Unknown and prints nothing.
+        var missing = new MobLookupResult(null, ItemLookupState.NotFound, null);
+        var export = WikiContribution.BuildExport(
+            [new WikiContribution.MobObservation(mob, missing)],
+            "Dranak", "legends",
+            currentZone: "Nagafen's Lair - Solo 4 (Refined)",
+            now: new DateTime(2026, 8, 14, 20, 0, 0));
+
+        Assert.Contains("| zone          = [[The Plane of Hate - Solo 1 (Awakened)]]", export);
+        Assert.Contains("[[Category:The Plane of Hate - Solo 1 (Awakened)]]", export);
+        // And the zone the player happens to be in never appears anywhere in the entry.
+        Assert.DoesNotContain("Nagafen", export);
+    }
 }

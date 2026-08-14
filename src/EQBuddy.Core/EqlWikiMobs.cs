@@ -26,6 +26,12 @@ public sealed class MobInfo
 
 public sealed record MobLookupResult(MobInfo? Mob, ItemLookupState State, DateTime? FetchedAt);
 
+/// <summary>A page as the wiki actually served it: the title AFTER redirect and
+/// normalization, plus its wikitext. The title is the point — the API's redirects=1
+/// means a request for one name can land on another, and the page's own title is the
+/// only one safe to print in a [[link]] or an edit URL.</summary>
+public sealed record WikiPageText(string Title, string Wikitext);
+
 /// <summary>
 /// On-demand mob lookups against eqlwiki.com for the Loot card's target-drops block
 /// (David, 2026-08-06): the log names what you're fighting, the wiki knows what it can
@@ -42,11 +48,11 @@ public sealed partial class EqlWikiMobService
     public static readonly TimeSpan CacheLifetime = TimeSpan.FromDays(7);
 
     private readonly string _cacheDir;
-    private readonly Func<string, Task<string?>> _fetch;
+    private readonly Func<string, Task<WikiPageText?>> _fetch;
     private readonly Func<string, Task<List<string>>> _search;
     private static readonly HttpClient Http = EqlWikiText.CreateClient();
 
-    public EqlWikiMobService(string cacheDir, Func<string, Task<string?>>? fetchOverride = null,
+    public EqlWikiMobService(string cacheDir, Func<string, Task<WikiPageText?>>? fetchOverride = null,
         Func<string, Task<List<string>>>? searchOverride = null)
     {
         _cacheDir = cacheDir;
@@ -65,17 +71,21 @@ public sealed partial class EqlWikiMobService
 
         foreach (var candidate in Candidates(title))
         {
-            string? wikitext;
-            try { wikitext = await _fetch(candidate).ConfigureAwait(false); }
+            WikiPageText? page;
+            try { page = await _fetch(candidate).ConfigureAwait(false); }
             catch
             {
                 return cached is { } stale
                     ? new MobLookupResult(Parse(stale.Wikitext, stale.Title), ItemLookupState.StaleCache, stale.FetchedAt)
                     : new MobLookupResult(null, ItemLookupState.Offline, null);
             }
-            if (wikitext is null) continue;
-            WriteCache(title, candidate, wikitext);
-            return new MobLookupResult(Parse(wikitext, candidate), ItemLookupState.Live, DateTime.UtcNow);
+            if (page is null) continue;
+            // page.Title, never `candidate`: the API follows redirects, so asking for the
+            // article-stripped "Spiroc Lord" succeeds and hands back "The Spiroc Lord".
+            // Recording the request is what put stripped names into contribution packs
+            // even though the lookup had resolved perfectly (#65, Frankthetankk).
+            WriteCache(title, page.Title, page.Wikitext);
+            return new MobLookupResult(Parse(page.Wikitext, page.Title), ItemLookupState.Live, DateTime.UtcNow);
         }
 
         // Every exact form missed: ask the wiki's own search, and accept its top hits
@@ -97,10 +107,10 @@ public sealed partial class EqlWikiMobService
                     : 1);
             foreach (var found in hits)
             {
-                var wikitext = await _fetch(found).ConfigureAwait(false);
-                if (wikitext is null) continue;
-                WriteCache(title, found, wikitext);
-                return new MobLookupResult(Parse(wikitext, found), ItemLookupState.Live, DateTime.UtcNow);
+                var page = await _fetch(found).ConfigureAwait(false);
+                if (page is null) continue;
+                WriteCache(title, page.Title, page.Wikitext);
+                return new MobLookupResult(Parse(page.Wikitext, page.Title), ItemLookupState.Live, DateTime.UtcNow);
             }
         }
         catch
@@ -160,6 +170,18 @@ public sealed partial class EqlWikiMobService
             yield return titleCase;
             yield return "A " + titleCase;
             yield return "The " + titleCase;
+            // "Innoruuk, the Prince of Hate" is filed as "Innoruuk (God)" — EQ gives gods
+            // and bosses an epithet the wiki drops. Trying the base name lets the wiki's
+            // own redirect do the rest, instead of EQBuddy proposing a duplicate page for
+            // a boss it already documents (#65, Frankthetankk).
+            var comma = title.IndexOf(", the ", StringComparison.OrdinalIgnoreCase);
+            if (comma > 0)
+            {
+                var baseName = title[..comma].Trim();
+                yield return baseName;
+                yield return System.Globalization.CultureInfo.InvariantCulture.TextInfo
+                    .ToTitleCase(baseName.ToLowerInvariant());
+            }
             var noBacktick = title.Replace("`", "");
             if (noBacktick != title)
             {
@@ -169,7 +191,7 @@ public sealed partial class EqlWikiMobService
         }
     }
 
-    private async Task<string?> FetchFromApi(string title)
+    private async Task<WikiPageText?> FetchFromApi(string title)
     {
         var url = "https://eqlwiki.com/api.php?action=query&prop=revisions&rvprop=content&format=json&redirects=1&titles="
             + Uri.EscapeDataString(title);
@@ -180,7 +202,13 @@ public sealed partial class EqlWikiMobService
             if (page.Value.TryGetProperty("missing", out _)) return null;
             if (page.Value.TryGetProperty("revisions", out var revs) && revs.GetArrayLength() > 0
                 && revs[0].TryGetProperty("*", out var content))
-                return content.GetString();
+            {
+                // redirects=1 means this title is the page we LANDED on, which is not
+                // necessarily the one we asked for.
+                var served = page.Value.TryGetProperty("title", out var t) ? t.GetString() : null;
+                return new WikiPageText(
+                    served is { Length: > 0 } ? served : title, content.GetString() ?? "");
+            }
         }
         return null;
     }

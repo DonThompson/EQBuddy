@@ -8,6 +8,12 @@ namespace EQBuddy.Tests;
 /// {{Namedmobpage}}, regular ones at article-titled pages ("A Spite Golem").</summary>
 public class EqlWikiMobsTests
 {
+    /// <summary>A stubbed fetch answering as the wiki does: the page's own title beside
+    /// its wikitext. Tests that care about redirects pass a title different from the one
+    /// requested — which is the whole point of WikiPageText.</summary>
+    private static Task<WikiPageText?> Served(string title, string? wikitext) =>
+        Task.FromResult<WikiPageText?>(wikitext is null ? null : new WikiPageText(title, wikitext));
+
     private static string Fixture(string name) =>
         File.ReadAllText(Path.Combine(AppContext.BaseDirectory,
             "..", "..", "..", "..", "fixtures", "wiki", name + ".txt"));
@@ -39,7 +45,7 @@ public class EqlWikiMobsTests
             title =>
             {
                 requested.Add(title);
-                return Task.FromResult<string?>(title == "A Spite Golem"
+                return Served(title, title == "A Spite Golem"
                     ? "{{Namedmobpage\n| name = A Spite Golem\n| known_loot = \n{{:Apothic Crown}}\n}}"
                     : null);
             });
@@ -63,7 +69,7 @@ public class EqlWikiMobsTests
             title =>
             {
                 fetched.Add(title);
-                return Task.FromResult<string?>(title switch
+                return Served(title, title switch
                 {
                     "Orc Legionnaire (Crushbone)" =>
                         "{{Namedmobpage\n| name = Orc Legionnaire\n| known_loot = \n{{:Crushbone Belt}}\n}}",
@@ -95,7 +101,7 @@ public class EqlWikiMobsTests
         // showing no drops). The ladder must try the "The" forms.
         var svc = new EqlWikiMobService(
             Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
-            title => Task.FromResult<string?>(title == "The Prophet"
+            title => Served(title, title == "The Prophet"
                 ? "{{Namedmobpage\n| name = The Prophet\n| known_loot = \n{{:Prophet Skull}}\n}}"
                 : null));
         var result = await svc.LookupAsync("Prophet");
@@ -111,7 +117,7 @@ public class EqlWikiMobsTests
     {
         var svc = new EqlWikiMobService(
             Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
-            title => Task.FromResult<string?>(title == "Emperor Crushbone"
+            title => Served(title, title == "Emperor Crushbone"
                 ? "{{Namedmobpage\n| name = Emperor Crushbone\n| known_loot = \n{{:Crown of the Emperor}}\n}}"
                 : null),
             _ => Task.FromResult<List<string>>(["Emperor Crushbone"]));
@@ -123,7 +129,7 @@ public class EqlWikiMobsTests
         // A dissimilar search hit is rejected: better no answer than a wrong creature.
         var strict = new EqlWikiMobService(
             Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
-            _ => Task.FromResult<string?>(null),
+            _ => Task.FromResult<WikiPageText?>(null),
             _ => Task.FromResult<List<string>>(["Crushbone (Zone)"]));
         Assert.Equal(ItemLookupState.NotFound,
             (await strict.LookupAsync("Emperor Crushbon")).State);
@@ -134,7 +140,7 @@ public class EqlWikiMobsTests
     {
         var svc = new EqlWikiMobService(
             Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
-            _ => Task.FromResult<string?>(null),
+            _ => Task.FromResult<WikiPageText?>(null),
             _ => Task.FromResult<List<string>>([]));   // stubbed: no network from a unit test
         var result = await svc.LookupAsync("Utterly Fictional");
         Assert.Equal(ItemLookupState.NotFound, result.State);
@@ -143,5 +149,56 @@ public class EqlWikiMobsTests
                 Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
                 _ => throw new HttpRequestException("no network"))
                 .LookupAsync("Anything")).State);
+    }
+
+    // ---- #65 round five (Frankthetankk): the article-drop, caught a SECOND time ----
+
+    /// <summary>The wiki API is asked with redirects=1, so a request for the
+    /// article-stripped name SUCCEEDS by landing on the real page. v1.57.1 fixed the
+    /// packs to print the resolved title — but the resolver was recording the title it
+    /// ASKED for, so the resolved title was the stripped one and every link kept the
+    /// wrong name. This pins the page's own title as the answer, which is the thing
+    /// contribution packs print.</summary>
+    [Fact]
+    public async Task ARedirectedLookupKeepsThePagesOwnTitleNotTheOneWeAskedFor()
+    {
+        var svc = new EqlWikiMobService(
+            Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
+            // The log normalizer strips "The", so EQBuddy asks for "Spiroc Lord" — and
+            // the wiki redirects that to the real page, exactly as it does live.
+            title => Task.FromResult<WikiPageText?>(title == "Spiroc Lord"
+                ? new WikiPageText("The Spiroc Lord",
+                    "{{Namedmobpage\n| name = The Spiroc Lord\n| known_loot = \n{{:Spiroc Feather}}\n}}")
+                : null));
+
+        var result = await svc.LookupAsync("Spiroc Lord");
+        Assert.Equal(ItemLookupState.Live, result.State);
+        Assert.Equal("The Spiroc Lord", result.Mob!.PageTitle);
+    }
+
+    /// <summary>EQ names its gods with an epithet ("Innoruuk, the Prince of Hate") that
+    /// the wiki files without ("Innoruuk (God)"). Without the base name in the ladder,
+    /// EQBuddy offered to CREATE a page for a boss the wiki already documents.</summary>
+    [Fact]
+    public async Task AnEpithetFallsBackToTheBaseNameRatherThanProposingADuplicatePage()
+    {
+        var asked = new List<string>();
+        var svc = new EqlWikiMobService(
+            Path.Combine(Path.GetTempPath(), $"mobcache-{Guid.NewGuid():N}"),
+            title =>
+            {
+                asked.Add(title);
+                return Task.FromResult<WikiPageText?>(title == "Innoruuk"
+                    ? new WikiPageText("Innoruuk (God)",
+                        "{{Namedmobpage\n| name = Innoruuk\n| known_loot = \n{{:Hate Cloak}}\n}}")
+                    : null);
+            },
+            _ => Task.FromResult<List<string>>([]));
+
+        var result = await svc.LookupAsync("Innoruuk, the Prince of Hate");
+        Assert.Contains("Innoruuk", asked);
+        Assert.Equal(ItemLookupState.Live, result.State);
+        // Landed on the wiki's own title, so the pack links the existing page.
+        Assert.Equal("Innoruuk (God)", result.Mob!.PageTitle);
     }
 }

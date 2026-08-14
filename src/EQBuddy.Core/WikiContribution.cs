@@ -146,6 +146,11 @@ public static class WikiContribution
         // answered, "(Zone)" suffix and all); a missing page is created at the
         // observed name — named mobs live at bare names per the wiki's own habit.
         var pageTitle = lookup?.Mob?.PageTitle is { Length: > 0 } t ? t : mob.Name;
+        // Where this creature was actually killed — NOT where the player happens to be
+        // standing when the pack is generated. The new-page template used currentZone
+        // while the cross-references and stat block used this, so one entry could claim
+        // two different zones and publish the wrong one (#65, Frankthetankk).
+        var killZone = mob.Zone.Length > 0 ? mob.Zone : currentZone;
 
         sb.AppendLine();
         // The section headline wears the WIKI'S title when the page resolved — the
@@ -180,7 +185,7 @@ public static class WikiContribution
             case WikiDropStatus.PageMissing:
                 sb.AppendLine("Paste as the whole new page:");
                 sb.AppendLine();
-                sb.AppendLine(PageSkeleton(mob, news.Select(n => n.Loot), currentZone));
+                sb.AppendLine(PageSkeleton(mob, news.Select(n => n.Loot), killZone));
                 break;
         }
         sb.AppendLine();
@@ -204,7 +209,6 @@ public static class WikiContribution
         // The other half of the loop (#65 test report): each item's own page carries a
         // dropsfrom list that may not name this creature. No lookup is made here — the
         // contributor eyeballs the page the link opens and pastes only if it's missing.
-        var killZone = mob.Zone.Length > 0 ? mob.Zone : currentZone;
         sb.AppendLine();
         sb.AppendLine("Each item's own page has a \"Drops from\" list — if this creature is missing");
         sb.AppendLine("there, add the line under the dropsfrom field" +
