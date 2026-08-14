@@ -1897,7 +1897,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             RefreshExpandedSections(s);
         }
         RenderTracked(s);   // per-tick: live ⏳ cue countdowns and "last: … ago" ages
-        RenderBuffs();      // per-tick: the countdowns ARE the content
+        RenderBuffs(s);     // per-tick: the countdowns ARE the content
         if (fullRender) RenderRaids();   // changes on kills and imports only
         UpdatePerfStats();  // #112: self-measurement, every few seconds, off by default
     }
@@ -1949,7 +1949,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         ApplySessionSubsections();
         RefreshExpandedSections(s);
         RenderTracked(s, dueByRule);
-        RenderBuffs();
+        RenderBuffs(s);
         RenderRaids();
     }
 
@@ -2636,8 +2636,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     /// landings show the line itself and the longest candidate duration — honest
     /// range, never a guess.
     /// </summary>
-    private void RenderBuffs() => RenderBuffs(CurrentSnapshot());
-
     private void RenderBuffs(StatsSnapshot snap)
     {
         if (_settings.HiddenSections.Contains("buffs")) return;   // layout collapsed it
