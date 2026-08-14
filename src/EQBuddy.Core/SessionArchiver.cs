@@ -10,6 +10,13 @@ public sealed class SessionArchiver : IDisposable
     private readonly SessionRepository _repo;
     private readonly object _lock = new();
     private long _activeId;
+    /// <summary>Monotonic session generation, bumped by every finalize (audit
+    /// finding 6). The bare "_activeId == id" install test let a queued FIRST
+    /// checkpoint (captured id 0) that completed after a finalize reset _activeId
+    /// to 0 hand the OLD session's row id to the NEW session — every later
+    /// checkpoint then overwrote finalized history. A stale generation's work is
+    /// dead on arrival instead.</summary>
+    private long _sessionGen;
     private string _server = "";
     private string _character = "";
 
@@ -32,25 +39,32 @@ public sealed class SessionArchiver : IDisposable
     public void Checkpoint(StatsSnapshot s)
     {
         if (!SessionRepository.IsMeaningful(s)) return;
-        long id; string server, character;
-        lock (_lock) { id = _activeId; server = _server; character = _character; }
+        long id, gen; string server, character;
+        lock (_lock) { id = _activeId; gen = _sessionGen; server = _server; character = _character; }
         if (server.Length == 0 || character.Length == 0) return;
         Task.Run(() =>
         {
-            try
-            {
-                var newId = _repo.Checkpoint(id, s, server, character, "Active");
-                lock (_lock) { if (_activeId == id) _activeId = newId; }
-            }
+            try { RunCheckpoint(gen, id, s, server, character); }
             catch (Exception ex) { CoreLog.Error(ex); }
         });
+    }
+
+    /// <summary>The queued half of <see cref="Checkpoint"/> — internal so tests can
+    /// replay the delayed-completion interleaving Task.Run won't order on demand
+    /// (finding 6: a checkpoint born in an earlier session must neither write nor
+    /// install its row id once a finalize has moved the generation on).</summary>
+    internal void RunCheckpoint(long gen, long id, StatsSnapshot s, string server, string character)
+    {
+        lock (_lock) { if (_sessionGen != gen) return; }   // session already finalized — stale work
+        var newId = _repo.Checkpoint(id, s, server, character, "Active");
+        lock (_lock) { if (_sessionGen == gen && _activeId == id) _activeId = newId; }
     }
 
     /// <summary>Finalize the active session with an end reason and start a fresh one.</summary>
     public void FinalizeActive(StatsSnapshot s, string endReason)
     {
         long id; string server, character;
-        lock (_lock) { id = _activeId; server = _server; character = _character; _activeId = 0; }
+        lock (_lock) { id = _activeId; server = _server; character = _character; _activeId = 0; _sessionGen++; }
         if (!SessionRepository.IsMeaningful(s) || server.Length == 0 || character.Length == 0)
             return;
         Task.Run(() =>
@@ -64,14 +78,10 @@ public sealed class SessionArchiver : IDisposable
     public void CheckpointSync(StatsSnapshot s)
     {
         if (!SessionRepository.IsMeaningful(s)) return;
-        long id; string server, character;
-        lock (_lock) { id = _activeId; server = _server; character = _character; }
+        long id, gen; string server, character;
+        lock (_lock) { id = _activeId; gen = _sessionGen; server = _server; character = _character; }
         if (server.Length == 0 || character.Length == 0) return;
-        try
-        {
-            var newId = _repo.Checkpoint(id, s, server, character, "Active");
-            lock (_lock) { if (_activeId == id) _activeId = newId; }
-        }
+        try { RunCheckpoint(gen, id, s, server, character); }
         catch (Exception ex) { CoreLog.Error(ex); }
     }
 
@@ -79,7 +89,7 @@ public sealed class SessionArchiver : IDisposable
     public void FinalizeActiveSync(StatsSnapshot s, string endReason)
     {
         long id; string server, character;
-        lock (_lock) { id = _activeId; server = _server; character = _character; _activeId = 0; }
+        lock (_lock) { id = _activeId; server = _server; character = _character; _activeId = 0; _sessionGen++; }
         if (!SessionRepository.IsMeaningful(s) || server.Length == 0 || character.Length == 0)
             return;
         try { _repo.Checkpoint(id, s, server, character, endReason); }

@@ -1676,8 +1676,9 @@ public partial class MainWindow : Window
         _lastCharScan = DateTime.MinValue;
         if (_settings.LogFolder is { } lf && LogWatcher.MostRecentlyActive(lf) is { } active)
         {
+            // Identity before Select, same as the switch path (audit finding 7).
+            _archiver.SetIdentity(active.Server, active.Character);
             _watcher.Select(active.FilePath);
-            _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
             CharLabel.Text = active.Display;
         }
         else
@@ -1717,8 +1718,12 @@ public partial class MainWindow : Window
             // (SESSION-004: switches never merge data).
             if (_watcher.CurrentPath is not null)
                 _archiver.FinalizeActive(_stats.Snapshot(), "CharacterChanged");
+            // Identity BEFORE Select (audit finding 7): Select's background ingest can
+            // hit a 60-minute-gap rollover before control returns here, and that
+            // finalize must already carry the NEW character's name — the old ordering
+            // archived the new character's first session under the old identity.
+            _archiver.SetIdentity(active.Server, active.Character);
             _watcher.Select(active.FilePath);
-            _archiver.SetIdentity(_stats.ServerName, _stats.CharacterName);
             CharLabel.Text = active.Display;
             // Perf audit #9: these were session-lifetime by intent but PROCESS-lifetime
             // in fact — with review mode switching logs freely now, clear them with the
@@ -4858,6 +4863,11 @@ public partial class MainWindow : Window
 
     private void OnReset(object sender, RoutedEventArgs e)
     {
+        // History first (audit finding 1): without the finalize, the archiver's row id
+        // survived the reset and later checkpoints overwrote the pre-reset session's
+        // row with post-reset numbers. Snapshot before the split task and the reset,
+        // so what goes to history is exactly what the click saw.
+        _archiver.FinalizeActive(_stats.Snapshot(), "ManualReset");
         // With archiving on, reset also splits the log: what's parsed so far moves to
         // Logs\archive and a fresh file begins — the second half of #52's ask.
         if (_settings.ArchiveLogs && _watcher.CurrentPath is { } path)
