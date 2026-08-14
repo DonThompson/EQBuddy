@@ -17,9 +17,18 @@ Write-Host "Releasing EQBuddy $version"
 # The in-app "What's new" popup reads embedded notes; a release without an entry
 # would show users nothing. Refuse rather than rot.
 $whatsNew = Get-Content "$repo\src\EQBuddy.Core\Data\WhatsNew.json" -Raw | ConvertFrom-Json
-if (-not ($whatsNew | Where-Object { $_.version -eq $version })) {
+$entry = $whatsNew | Where-Object { $_.version -eq $version } | Select-Object -First 1
+if (-not $entry) {
     throw "No What's-new entry for $version in src\EQBuddy.Core\Data\WhatsNew.json — add one before releasing."
 }
+
+# The SAME words go on the GitHub release page. --generate-notes produced an empty body
+# for v1.80.0 (a merge with no PR behind it has nothing to generate FROM), so anyone who
+# hadn't installed yet — the people deciding whether to — landed on a bare changelog
+# link. The in-app popup can only reach players who already have EQBuddy and updated;
+# this is the same announcement for everyone who doesn't.
+$releaseNotes = ($entry.highlights | ForEach-Object { "- $_" }) -join "`n"
+$releaseNotes = "## What's new in $version`n`n$releaseNotes`n"
 
 # The kill is loud on purpose (v1.39.0 shipped mid-fight and the widget just
 # vanished); the /SILENT install at the end brings the app back — on the NEW build.
@@ -84,8 +93,13 @@ if ($Tag) {
     if ($tagProps -notmatch [regex]::Escape("<Version>$version</Version>")) {
         throw "Tag $Tag does not contain <Version>$version</Version> - refusing to release a mismatched build"
     }
+    # --notes-file rather than --generate-notes: the player-facing highlights beat a list
+    # of commit subjects, which read as in-jokes to anyone who didn't write them.
+    $notesFile = Join-Path ([System.IO.Path]::GetTempPath()) "eqbuddy-notes-$version.md"
+    Set-Content -Path $notesFile -Value $releaseNotes -Encoding UTF8
     gh release create $Tag "$repo\dist\EQBuddySetup.exe" "$repo\dist\EQBuddySetup.exe.sha256" "$repo\dist\EQBuddy-portable.zip" "$repo\dist\EQBuddy-portable.zip.sha256" `
-        --title "EQBuddy $Tag" --generate-notes
+        --title "EQBuddy $Tag" --notes-file $notesFile
+    Remove-Item $notesFile -ErrorAction SilentlyContinue
     if ($LASTEXITCODE -ne 0) { throw 'gh release failed' }
     Write-Host "GitHub release $Tag published"
 }
