@@ -89,6 +89,11 @@ public sealed class CompanionServer : IDisposable
     /// settings while the UI is reading them.</summary>
     public event Action<CompanionAction>? ActionReceived;
 
+    /// <summary>Raised (on a socket thread) when a device curates a spawn point. Same
+    /// contract as <see cref="ActionReceived"/>: the host queues it and applies it on
+    /// the desktop's own tick, never on this thread.</summary>
+    public event Action<CompanionMapAction>? MapActionReceived;
+
     /// <summary>The machine's LAN IPv4s: up interfaces, skipping loopback and
     /// link-local (169.254 — an address that means "no network"). Order: private
     /// ranges first, so BoundAddresses[0] is the one to print on the QR.</summary>
@@ -173,6 +178,18 @@ public sealed class CompanionServer : IDisposable
             if (!Wants(client.Subscriptions, changed)) continue;
             _ = SendTextAsync(client, ForClient(client, snapshot));
         }
+    }
+
+    /// <summary>Tell every connected device what an edit did. Broadcast rather than
+    /// answered to the sender alone, and deliberately: two devices can be showing the
+    /// same map, and the one that didn't do the removing still deserves to know why a
+    /// dot vanished under it. Text only — a notice carries no player data the device
+    /// wasn't already being sent.</summary>
+    public void Notify(string text)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new { kind = "notice", text }, CompanionSnapshot.JsonOpts);
+        foreach (var client in _clients.Values) _ = SendTextAsync(client, json);
     }
 
     /// <summary>Does this device care about anything in the change set? A device that
@@ -502,7 +519,7 @@ public sealed class CompanionServer : IDisposable
         }
     }
 
-    /// <summary>The two things a device may say.
+    /// <summary>The things a device may say.
     ///
     /// {"kind":"subscribe","surfaces":["spawns", …]} — the ⚙ Screens choice arriving
     /// mid-connection: swaps the subscription and immediately re-projects the latest
@@ -512,8 +529,12 @@ public sealed class CompanionServer : IDisposable
     /// {"kind":"tick","surface":"epics","id":"…","done":true} — a checklist row
     /// tapped. Handed to the host as an event; it applies it on the desktop tick.
     ///
+    /// {"kind":"curate","edit":"confirm|unconfirm|remove|resetZone","zone":"…",
+    /// "locY":…,"locX":…} — the desktop map's right-click, arriving from a tablet.
+    /// Same deal: an event for the host, applied on the tick, never on this thread.
+    ///
     /// Anything else, or anything unparseable, is ignored: a companion page bug must
-    /// not kill the link, and the phone has no other writes to make.</summary>
+    /// not kill the link.</summary>
     private async Task HandleClientMessageAsync(WsClient client, byte[] payload)
     {
         try
@@ -547,6 +568,27 @@ public sealed class CompanionServer : IDisposable
                     var done = doc.RootElement.TryGetProperty("done", out var d)
                         && d.ValueKind == System.Text.Json.JsonValueKind.True;
                     ActionReceived?.Invoke(new CompanionAction(surfaceName, rowId, done));
+                    return;
+                }
+                case "curate":
+                {
+                    if (!doc.RootElement.TryGetProperty("edit", out var editEl) ||
+                        !Enum.TryParse<CompanionMapEdit>(editEl.GetString(), ignoreCase: true, out var edit) ||
+                        !doc.RootElement.TryGetProperty("zone", out var zoneEl) ||
+                        zoneEl.GetString() is not { Length: > 0 and < 200 } zone)
+                        return;
+                    // A zone reset names no point; the others must, and a coordinate
+                    // that isn't a finite number is not a point.
+                    double locY = 0, locX = 0;
+                    if (edit != CompanionMapEdit.ResetZone)
+                    {
+                        if (!doc.RootElement.TryGetProperty("locY", out var y) ||
+                            !doc.RootElement.TryGetProperty("locX", out var x) ||
+                            !y.TryGetDouble(out locY) || !x.TryGetDouble(out locX) ||
+                            !double.IsFinite(locY) || !double.IsFinite(locX))
+                            return;
+                    }
+                    MapActionReceived?.Invoke(new CompanionMapAction(edit, zone, locY, locX));
                     return;
                 }
             }

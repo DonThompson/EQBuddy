@@ -23,6 +23,12 @@ public sealed record CompanionSources
     /// <summary>Zone → hops from here, for the gear checklist's by-zone view.</summary>
     public Func<string, int?>? HopsFromHere { get; init; }
     public Func<(int? Level, LevelUnlockSet Unlocks)>? Progress { get; init; }
+
+    /// <summary>Where a running timer's named camps, and whether that came from the
+    /// wiki rather than your own /loc at kill time. The desktop owns this because the
+    /// wiki fallback runs through its memoized, polite lookup — the map window asks the
+    /// same question the same way.</summary>
+    public Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? CampFor { get; init; }
 }
 
 /// <summary>
@@ -44,6 +50,7 @@ public sealed class CompanionHost : IDisposable
     private readonly CompanionSources _sources;
     private readonly CompanionMapSource _maps;
     private readonly ConcurrentQueue<CompanionAction> _actions = new();
+    private readonly ConcurrentQueue<CompanionMapAction> _mapActions = new();
     private CompanionServer? _server;
     private CompanionThemeSection? _theme;
     private Dictionary<string, string> _lastSections = [];
@@ -147,6 +154,7 @@ public sealed class CompanionHost : IDisposable
             });
             server.ClientsChanged += () => ClientsChanged?.Invoke();
             server.ActionReceived += action => _actions.Enqueue(action);
+            server.MapActionReceived += action => _mapActions.Enqueue(action);
             server.Start();
             _server = server;
         }
@@ -175,6 +183,7 @@ public sealed class CompanionHost : IDisposable
         // Taps a device made before it wandered off still land: draining is a field
         // read when the queue is empty, which is every tick but a handful.
         if (!_actions.IsEmpty) DrainActions();
+        if (!_mapActions.IsEmpty) DrainMapActions();
         if (_server is not { ClientCount: > 0 } server) return; // zero cost while idle
 
         var offered = OfferedSurfaces;
@@ -199,9 +208,18 @@ public sealed class CompanionHost : IDisposable
             BuffLosses = On(CompanionSurfaces.Buffs) ? _sources.BuffLosses?.Invoke() ?? [] : [],
             HopsFromHere = _sources.HopsFromHere,
             Map = On(CompanionSurfaces.Map)
-                ? _maps.Build(stats?.CurrentZone ?? "", timerZone, _sources.SpawnPoints,
-                    timers.Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase)).ToList(),
-                    stats?.LastLocation, now)
+                ? _maps.Build(new CompanionMapRequest
+                {
+                    MapZone = stats?.CurrentZone ?? "",
+                    TimerZone = timerZone,
+                    Points = _sources.SpawnPoints,
+                    Timers = timers
+                        .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
+                        .ToList(),
+                    Location = stats?.LastLocation,
+                    Trail = stats?.LocationTrail,
+                    CampFor = _sources.CampFor,
+                }, now)
                 : null,
             Level = progress?.Level,
             Unlocks = progress?.Unlocks,
@@ -249,6 +267,42 @@ public sealed class CompanionHost : IDisposable
         if (edited.Count == 0) return;
         _settings.Save();
         foreach (var surface in edited) SurfaceEdited?.Invoke(surface);
+    }
+
+    /// <summary>Apply the spawn-point curation devices asked for. On the tick thread,
+    /// the same place the desktop map's own right-click lands, so the ledger is never
+    /// edited underneath a card that is mid-render.
+    ///
+    /// Every edit answers — including the ones that changed nothing. A tap that goes
+    /// quiet is indistinguishable from a tap that didn't work, and the map's own
+    /// repaint can't tell the difference between "removed" and "wasn't there".</summary>
+    private void DrainMapActions()
+    {
+        var touched = false;
+        while (_mapActions.TryDequeue(out var action))
+        {
+            try
+            {
+                if (_sources.SpawnPoints is not { } points)
+                {
+                    _server?.Notify("This copy of EQBuddy isn't tracking spawn points, so there was nothing to edit.");
+                    continue;
+                }
+                if (CompanionActions.Apply(points, action) is { } said)
+                {
+                    _server?.Notify(said);
+                    touched = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                CoreLog.Error(ex);
+                _server?.Notify("That edit hit an error on the PC and was not applied.");
+            }
+        }
+        // The ledger owns its own persistence; what the desktop needs is the cue to
+        // repaint the map card, exactly as a checklist tap gets one.
+        if (touched) SurfaceEdited?.Invoke(CompanionSurfaces.Map);
     }
 
     /// <summary>128 crypto-random bits as lowercase hex — long enough that guessing

@@ -640,14 +640,9 @@ public sealed class MapWindow : Window
         var resolved = new List<(SpawnTimerState T, (double Y, double X)? Camp, bool FromWiki)>(timers.Count);
         foreach (var t in timers)
         {
-            (double Y, double X)? camp = t is { CampLocY: { } cy, CampLocX: { } cx } ? (cy, cx) : null;
-            var fromWiki = false;
-            if (camp is null)
-            {
-                _main.EnsureMobLookup(t.Name);
-                if (_main.WikiMobResult(t.Name)?.Mob?.LocYX is { } wl) { camp = wl; fromWiki = true; }
-            }
-            resolved.Add((t, camp, fromWiki));
+            var camp = EQBuddy.UI.Shared.CampLocations.Resolve(
+                t, _main.EnsureMobLookup, n => _main.WikiMobResult(n)?.Mob?.LocYX);
+            resolved.Add((t, camp is { } c ? (c.Y, c.X) : null, camp?.FromWiki ?? false));
         }
 
         var signature = $"{zone}§{pinsAllowedNow}§" + string.Join("¦", resolved.Select(r =>

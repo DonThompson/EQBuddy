@@ -39,11 +39,17 @@ public sealed record CompanionSessionSection(
 /// </summary>
 public sealed record CompanionMapSection(
     string Zone,
+    /// <summary>The catalog zone the spawn archive lives under — what a curation edit
+    /// must name. Not the same string as <see cref="Zone"/> in tiered zones, and
+    /// aiming an edit at the wrong one would quietly curate a different archive.</summary>
+    string TimerZone,
     string GeometryStamp,
     CompanionMapGeometry? Geometry,
     string? Missing,
     CompanionMapMarker? You,
-    IReadOnlyList<CompanionMapCircle> Circles);
+    IReadOnlyList<CompanionMapCircle> Circles,
+    IReadOnlyList<CompanionMapCrumb> Trail,
+    IReadOnlyList<CompanionMapNamed> Named);
 
 /// <summary>Map-space geometry. Coordinates are rounded to whole map units (roughly
 /// game feet) — the pack's sub-unit precision is invisible on a phone and doubles the
@@ -64,10 +70,45 @@ public sealed record CompanionMapPoi(int X, int Y, string Color, string Label);
 /// <summary>Where the player's last /loc put them, in map space.</summary>
 public sealed record CompanionMapMarker(double X, double Y, double AgeSeconds);
 
+/// <summary>One breadcrumb of the /loc trail, in map space, oldest first — the same
+/// list the desktop map draws its comet tail from (thinned to 25 map units apart by
+/// SessionStats, so the tail spans real ground rather than one corridor).
+///
+/// The AGE rides the wire, not an alpha: the page fades locally against
+/// <see cref="EQBuddy.UI.Shared.TrailFade"/>'s curve every second, so the tail keeps
+/// burning down smoothly between pushes exactly as it does on the desktop — and a
+/// crumb merely fading never counts as a change worth waking a device for.</summary>
+public sealed record CompanionMapCrumb(double X, double Y, double AgeSeconds);
+
+/// <summary>One running spawn timer in the shown zone — the row the desktop map's named
+/// panel draws, and the camp pin it plants, from a single answer. They are the same
+/// question asked twice on the desktop too (UpdateNamedPanel builds both from one
+/// resolved list), and splitting them here would let a pin and its row disagree.
+///
+/// <see cref="X"/>/<see cref="Y"/> are the camp in map space, null when no camp is known
+/// yet — those named still get a ROW (with the desktop's "/loc during the fight" nudge),
+/// they just get no pin. <see cref="FromWiki"/> is the desktop's "~": approximate,
+/// and said out loud rather than passed off as your own observation.
+///
+/// <see cref="DueSeconds"/> is the countdown at send time; the page ticks it locally like
+/// every other clock, so a running timer doesn't wake a device once a second.</summary>
+public sealed record CompanionMapNamed(
+    string Name,
+    double? DueSeconds,
+    bool Due,
+    double? DurationSeconds,
+    double? X, double? Y,
+    bool FromWiki);
+
 /// <summary>An archived spawn point. <see cref="Named"/> points wear the accent and
 /// carry a <see cref="Label"/>; ordinary ones sit dim. <see cref="DueSeconds"/> is the
 /// countdown at send time (negative = already due), <see cref="Projected"/> marks the
-/// ordinary-point estimate the desktop prints with a "~".</summary>
+/// ordinary-point estimate the desktop prints with a "~".
+///
+/// <see cref="LocY"/>/<see cref="LocX"/> are the point's own game coordinates, carried
+/// so a device curating this circle echoes them back verbatim. The page must never
+/// derive them from <see cref="X"/>/<see cref="Y"/>: getting that inversion subtly
+/// wrong would aim a removal at the wrong dot, and nothing on screen would say so.</summary>
 public sealed record CompanionMapCircle(
     double X, double Y,
     bool Named,
@@ -77,7 +118,8 @@ public sealed record CompanionMapCircle(
     bool Imminent,
     bool Projected,
     int Kills,
-    string Mobs);
+    string Mobs,
+    double LocY, double LocX);
 
 // ---------------- mez ----------------
 

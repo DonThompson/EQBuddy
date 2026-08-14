@@ -5,6 +5,33 @@ using EQBuddy.UI.Shared;
 namespace EQBuddy.Companion;
 
 /// <summary>
+/// One tick's map inputs. A bundle rather than a parameter list, for the same reason
+/// <see cref="CompanionInputs"/> is one: the map is the surface still growing towards
+/// the desktop's, and every new layer would otherwise rewrite every call site.
+/// </summary>
+public sealed record CompanionMapRequest
+{
+    /// <summary>The log's zone name, which is what names the map FILE.</summary>
+    public string MapZone { get; init; } = "";
+
+    /// <summary>The catalog zone the spawn archive and timers live under. Kept apart
+    /// from <see cref="MapZone"/> exactly as the desktop keeps them apart — "Befallen 4
+    /// (Refined)" has no map file of its own.</summary>
+    public string TimerZone { get; init; } = "";
+
+    public SpawnPointLedger? Points { get; init; }
+    public IReadOnlyList<SpawnTimerState> Timers { get; init; } = [];
+
+    /// <summary>Your last /loc, and the crumbs behind it.</summary>
+    public LocationEvent? Location { get; init; }
+    public IReadOnlyList<LocationEvent>? Trail { get; init; }
+
+    /// <summary>Camp resolution, owned by the desktop — see CompanionSources.CampFor.
+    /// Null simply means no pins, which is what a host that can't answer should get.</summary>
+    public Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? CampFor { get; init; }
+}
+
+/// <summary>
 /// The map surface's builder, and its cache. The zone's PICTURE is static — thousands
 /// of segments parsed off disk — so it is loaded once per zone and then handed out by
 /// reference; only the marker and the spawn-point circles are rebuilt per tick, and
@@ -54,41 +81,102 @@ public sealed class CompanionMapSource
         return folders;
     }
 
-    /// <summary>Build the section. <paramref name="mapZone"/> is the log's zone name
-    /// (which names the map FILE); <paramref name="timerZone"/> is the catalog zone the
-    /// spawn archive and timers live under — the desktop keeps them apart for the same
-    /// reason ("Befallen 4 (Refined)" has no map file of its own).</summary>
-    public CompanionMapSection Build(
-        string mapZone,
-        string timerZone,
-        SpawnPointLedger? points,
-        IReadOnlyList<SpawnTimerState> timers,
-        LocationEvent? location,
-        DateTime now)
+    /// <summary>Build the section from one tick's worth of map inputs. Everything the
+    /// map layer needs arrives in <see cref="CompanionMapRequest"/> rather than as a
+    /// parameter list — the same reason <see cref="CompanionInputs"/> exists, learned
+    /// the hard way when the trail and the camp pins each rewrote every call site.</summary>
+    public CompanionMapSection Build(CompanionMapRequest request, DateTime now)
     {
-        EnsureGeometry(mapZone);
+        EnsureGeometry(request.MapZone);
 
-        var circles = points is null || timerZone.Length == 0
+        var circles = request.Points is null || request.TimerZone.Length == 0
             ? []
-            : BuildCircles(points, timerZone, timers, now);
+            : BuildCircles(request.Points, request.TimerZone, request.Timers, now);
 
-        CompanionMapMarker? you = location is { } loc
+        CompanionMapMarker? you = request.Location is { } loc
             ? Marker(loc, now)
             : null;
 
         return new CompanionMapSection(
-            Zone: mapZone,
+            Zone: request.MapZone,
+            TimerZone: request.TimerZone,
             GeometryStamp: _geometry?.Stamp ?? "",
             Geometry: _geometry,
             Missing: _missing,
             You: you,
-            Circles: circles);
+            Circles: circles,
+            Trail: BuildTrail(request.Trail, now),
+            Named: BuildNamed(request.Timers, request.CampFor, now));
+    }
+
+    /// <summary>The zone's running named: the desktop map's side panel in list form,
+    /// with the camp coordinates that also plant its pins. EVERY running timer gets a
+    /// row — a named with no camp yet is exactly the one you want to see, because it is
+    /// the one asking you to /loc during the fight.
+    ///
+    /// Camp resolution stays on the desktop side of the delegate: the wiki fallback is a
+    /// memoized, rate-limited lookup the app already owns, and the companion has no
+    /// business starting a second one. A host that hasn't wired it still gets rows and
+    /// countdowns, just no camps.</summary>
+    private static List<CompanionMapNamed> BuildNamed(
+        IReadOnlyList<SpawnTimerState> timers,
+        Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? campFor,
+        DateTime now)
+    {
+        var rows = new List<CompanionMapNamed>(timers.Count);
+        foreach (var t in timers)
+        {
+            var camp = campFor?.Invoke(t);
+            var plotted = camp is { } c ? ZoneMap.FromLoc(c.Y, c.X) : ((double X, double Y)?)null;
+            rows.Add(new CompanionMapNamed(
+                t.Name,
+                DueSeconds: t.DueAt is { } due ? (due - now).TotalSeconds : null,
+                Due: t.IsDue(now),
+                DurationSeconds: t.DurationSeconds,
+                X: plotted?.X, Y: plotted?.Y,
+                FromWiki: camp?.FromWiki ?? false));
+        }
+        // Soonest first, unknown durations last — the desktop's own reading order, and
+        // the order a side panel has to be in to be glanceable.
+        rows.Sort((a, b) => (a.DueSeconds ?? double.MaxValue).CompareTo(b.DueSeconds ?? double.MaxValue));
+        return rows;
     }
 
     private static CompanionMapMarker Marker(LocationEvent loc, DateTime now)
     {
         var (x, y) = ZoneMap.FromLoc(loc.LocY, loc.LocX);
         return new CompanionMapMarker(x, y, Math.Max(0, (now - loc.Time).TotalSeconds));
+    }
+
+    /// <summary>The breadcrumb trail, oldest first — the wire form of what the desktop
+    /// map draws in UpdateTrail. A segment takes the alpha of its NEWER end, so the
+    /// oldest crumb still inside the horizon needs its predecessor to anchor the
+    /// leading segment: shipping only unfaded crumbs would drop that segment and make
+    /// the phone's tail one crumb shorter than the PC's. Ages decrease along the list,
+    /// so the shipped run is always a suffix.</summary>
+    private static List<CompanionMapCrumb> BuildTrail(IReadOnlyList<LocationEvent>? trail, DateTime now)
+    {
+        if (trail is null || trail.Count < 2) return [];
+        var horizon = TrailFade.Horizon.TotalSeconds;
+        var first = -1;
+        for (var i = 0; i < trail.Count; i++)
+        {
+            if ((now - trail[i].Time).TotalSeconds >= horizon) continue;
+            first = i;
+            break;
+        }
+        if (first < 0) return [];   // every crumb has faded out — no tail, same as the desktop
+
+        // The anchor is the crumb before the oldest unfaded one; a wholly fresh trail
+        // (first == 0) has none and needs none.
+        var start = Math.Max(0, first - 1);
+        var crumbs = new List<CompanionMapCrumb>(trail.Count - start);
+        for (var i = start; i < trail.Count; i++)
+        {
+            var (x, y) = ZoneMap.FromLoc(trail[i].LocY, trail[i].LocX);
+            crumbs.Add(new CompanionMapCrumb(x, y, Math.Max(0, (now - trail[i].Time).TotalSeconds)));
+        }
+        return crumbs;
     }
 
     private void EnsureGeometry(string zone)
@@ -221,7 +309,8 @@ public sealed class CompanionMapSource
                 Mobs: string.Join(", ", p.Mobs
                     .OrderByDescending(kv => kv.Value.Kills)
                     .Take(4)
-                    .Select(kv => $"{kv.Key} ×{kv.Value.Kills}"))));
+                    .Select(kv => $"{kv.Key} ×{kv.Value.Kills}")),
+                LocY: p.LocY, LocX: p.LocX));
         }
         return circles;
     }

@@ -63,6 +63,17 @@
     padding:8px 16px; font-size:14px; position:sticky; top:0; z-index:5;
   }
   #banner.show { display:block; }
+  /* What an edit did, in the PC's own words. Its own element, not the staleness
+     banner: "point removed" and "reconnecting" are different kinds of news and must
+     never overwrite one another. Fixed to the bottom so it can't shove the map
+     around mid-tap, and it fades itself out. */
+  #notice {
+    position:fixed; left:50%; transform:translateX(-50%); bottom:16px; z-index:9;
+    background:var(--popup); color:var(--text); border:1px solid var(--accent);
+    border-radius:10px; padding:9px 14px; font-size:12.5px; max-width:min(92vw,460px);
+    opacity:0; pointer-events:none; transition:opacity .18s ease;
+  }
+  #notice.show { opacity:.97; }
   main { padding:10px 12px 24px; max-width:640px; margin:0 auto; }
 
   /* ---- screens (per-device surface picker) ---- */
@@ -187,8 +198,11 @@
   .rows li.done .rn { color:var(--dim); text-decoration:line-through; }
 
   /* ---- map ---- */
+  /* The map and its named list, side by side, as the desktop map window docks them.
+     On a phone the row wraps to a column and the list simply follows the map. */
+  .maprow { display:flex; gap:10px; min-height:0; flex:1 1 auto; }
   .mapwrap { position:relative; background:var(--popup); border:1px solid var(--hairline);
-             border-radius:12px; overflow:hidden; height:min(60dvh,420px); }
+             border-radius:12px; overflow:hidden; height:min(60dvh,420px); flex:1 1 auto; min-width:0; }
   /* On a tablet the map is the panel worth the room: the section claims a tall slot
      and the map fills whatever the header leaves. */
   @media (min-width:900px) {
@@ -209,6 +223,61 @@
             background:var(--popup); border-radius:8px; padding:4px 8px; opacity:.9; z-index:2;
             overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   text.poi { font-size:11px; }
+
+  /* ---- the named list beside the map ----
+     A portrait zone fitted into a landscape panel uses about a third of its width; the
+     rest was dead band. The desktop map window spends exactly that space on this list,
+     so the tablet does too — and because the map is height-constrained there, the list
+     costs the drawing nothing. Hidden below the tablet breakpoint, where there is no
+     spare width to spend and the phone can pick the Spawn timers screen instead. */
+  .mapside { display:none; }
+  @media (min-width:900px) {
+    .mapside { display:flex; flex-direction:column; width:clamp(190px,26%,300px);
+               background:var(--panel); border:1px solid var(--hairline);
+               border-radius:12px; overflow:hidden; }
+    .mapside h3 { font-size:11px; color:var(--accent); text-transform:uppercase;
+                  letter-spacing:.07em; padding:8px 10px 6px; }
+    .mapside .rows { overflow:auto; padding:0 8px 8px; flex:1 1 auto; min-height:0; }
+    .mapside .none { color:var(--dim); font-size:11.5px; padding:0 2px 8px; line-height:1.45; }
+    .mapside .row { border:1px solid var(--hairline); border-radius:9px;
+                    padding:7px 9px; margin-bottom:6px; background:var(--popup); }
+    .mapside .row.due { border-color:var(--bad); }
+    .mapside .mob { font-size:11.5px; font-weight:600; overflow:hidden;
+                    text-overflow:ellipsis; white-space:nowrap; }
+    .mapside .row.due .mob { color:var(--warn); }
+    .mapside .camp { font-size:9.5px; color:var(--dim); margin-top:1px;
+                     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .mapside .gauge { display:flex; align-items:center; gap:7px; margin-top:5px; }
+    .mapside .pill { font-size:10.5px; font-weight:700; color:var(--accent);
+                     background:var(--track,var(--hairline)); border-radius:4px; padding:1px 7px 2px; }
+    .mapside .row.due .pill { color:#fff; background:var(--bad); }
+    .mapside .track { flex:1 1 auto; height:3px; border-radius:2px;
+                      background:var(--track,var(--hairline)); overflow:hidden; }
+    .mapside .fill { height:100%; background:var(--accent); border-radius:2px; }
+    .mapside .row.due .fill { background:var(--bad); }
+  }
+  /* Curation: a tapped spawn point raises an action bar along the bottom of the map.
+     Tap-to-select rather than long-press — a long press is invisible until you have
+     already discovered it, and it gives you nothing to back out of. This bar names
+     what you picked, offers what the desktop's right-click offers, and its ✕ is the
+     way out. It sits ABOVE the zoom row rather than over it — being unable to zoom
+     while a point is selected would make the bar something to dismiss rather than
+     something to use. */
+  .mapsel { position:absolute; left:8px; right:8px; bottom:56px; z-index:3;
+            background:var(--popup); border:1px solid var(--border); border-radius:10px;
+            padding:8px 10px; display:none; }
+  .mapsel.show { display:block; }
+  .mapsel .who { font-size:12px; color:var(--text); margin-bottom:7px;
+                 overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mapsel .who b { color:var(--accent); }
+  .mapsel .acts { display:flex; gap:6px; flex-wrap:wrap; }
+  .mapsel button { background:var(--panel); border:1px solid var(--border); color:var(--text);
+                   border-radius:8px; padding:8px 12px; font-size:12px; cursor:pointer;
+                   min-height:38px; }
+  .mapsel button.danger { color:var(--bad); border-color:var(--bad); }
+  .mapsel button.confirmstep { color:var(--warn); border-color:var(--warn); }
+  /* The selected dot, so it is obvious WHICH point the bar is talking about. */
+  circle.picked { stroke:var(--text); }
   #pair { display:none; padding:40px 24px; text-align:center; }
   #pair.show { display:block; }
   #pair h1 { color:var(--accent); font-size:22px; margin-bottom:14px; }
@@ -218,6 +287,7 @@
 </head>
 <body>
 <div id="banner"></div>
+<div id="notice" role="status" aria-live="polite"></div>
 <header>
   <div id="dot"></div>
   <div style="min-width:0">
@@ -357,6 +427,7 @@ function boot() {
       lastMsgAt = Date.now();
       let msg; try { msg = JSON.parse(e.data); } catch { return; }
       if (msg.kind === "heartbeat") { refreshStale(); return; }
+      if (msg.kind === "notice") { notice(msg.text); return; }
       if (msg.kind !== "snapshot" || msg.protocol !== PROTOCOL) return;
       // Sticky sections: the server sends theme and map geometry once and then stops.
       // Carry forward what it withheld so the page never blanks between pushes.
@@ -398,6 +469,14 @@ function boot() {
     if (ws && ws.readyState === 1)
       ws.send(JSON.stringify({ kind: "tick", surface: surface, id: id, done: done }));
   }
+  // Spawn-point curation. locY/locX are echoed back exactly as the PC sent them — the
+  // page never converts map space back into game coordinates, because a subtly wrong
+  // inversion would aim the edit at a different dot and nothing would look wrong.
+  // A dropped link says so instead of swallowing the tap.
+  function sendCurate(edit, zone, locY, locX) {
+    if (!ws || ws.readyState !== 1) { notice("Not connected to the PC — that edit didn't go through."); return; }
+    ws.send(JSON.stringify({ kind: "curate", edit: edit, zone: zone, locY: locY, locX: locX }));
+  }
   connect();
 
   // ---------- theme ----------
@@ -411,6 +490,19 @@ function boot() {
       root.style.setProperty("--" + key.replace(/[A-Z]/g, c => "-" + c.toLowerCase()), theme.colors[key]);
     if (theme.colors.bg) $("themeColor").setAttribute("content", theme.colors.bg);
     map.retheme();
+  }
+
+  // ---------- what an edit did ----------
+  // Every write the tablet makes gets an answer, including "nothing changed" — the PC
+  // composes the sentence, so the phone and the desktop status bar say the same thing.
+  let noticeTimer = 0;
+  function notice(text) {
+    if (!text) return;
+    const el = $("notice");
+    el.textContent = text;
+    el.classList.add("show");
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => el.classList.remove("show"), 5000);
   }
 
   // ---------- staleness banner ----------
@@ -749,18 +841,36 @@ function boot() {
   // Pinch to zoom, drag to pan — pointer events only, which covers touch and mouse.
   const map = (function () {
     const SVG = "http://www.w3.org/2000/svg";
-    let svg = null, layer = null, dyn = null, wrap = null, tip = null;
+    // The comet tail's curve, mirroring EQBuddy.UI.Shared.TrailFade so the tablet burns
+    // down exactly as the PC map does: full strength the moment a crumb lands, straight
+    // line to nothing at the horizon, no plateau. CompanionMapSourceTests pins both
+    // numbers to the C# constants, so changing them there fails the build here.
+    const TRAIL_FULL_ALPHA = 200, TRAIL_HORIZON = 60;
+    // A tap that travels further than this, or lasts longer, was a pan — not a pick.
+    const TAP_SLOP_PX = 12, TAP_MS = 600;
+    // How close a thumb has to land to claim a spawn point. Generous: a fingertip is
+    // about this wide, and the circles are drawn at 5-7px.
+    const TAP_REACH_PX = 26;
+    let svg = null, layer = null, trailG = null, dyn = null, wrap = null, tip = null, selBar = null;
+    let row = null, side = null, sideHead = null, sideRows = null;
     let stamp = "", bounds = null, dynKey = "";
     let k = 1, tx = 0, ty = 0, fitted = false;
     const pointers = new Map();
-    let pinch = null, panFrom = null;
+    let pinch = null, panFrom = null, tapFrom = null;
+    // The picked point, remembered by LOCATION so it survives a repaint: the circle
+    // objects are rebuilt from every push, and holding a reference would pin a stale one.
+    let pickedLoc = null, resetArmed = false;
 
     function make() {
+      row = el("div", "maprow");
       wrap = el("div", "mapwrap");
       svg = document.createElementNS(SVG, "svg");
       layer = document.createElementNS(SVG, "g");
+      // The tail sits between the pack's lines and the live layer: it must not hide a
+      // corridor, and the circles and your marker must not hide it.
+      trailG = document.createElementNS(SVG, "g");
       dyn = document.createElementNS(SVG, "g");
-      svg.append(layer, dyn);
+      svg.append(layer, trailG, dyn);
       tip = el("div", "maptip");
       const ctl = el("div", "mapctl");
       const b = (label, title, fn) => {
@@ -771,14 +881,182 @@ function boot() {
       b("－", "Zoom out", () => zoomBy(1 / 1.3));
       b("⌖", "Centre on your last /loc", centreOnMe);
       b("⤢", "Fit the whole zone", () => { fitted = false; fit(); });
-      wrap.append(svg, tip, ctl);
+      b("⋯", "Zone actions", () => pick(null, true));
+      selBar = el("div", "mapsel");
+      wrap.append(svg, tip, ctl, selBar);
+      side = el("div", "mapside");
+      sideHead = el("h3");
+      sideRows = el("div", "rows");
+      side.append(sideHead, sideRows);
+      row.append(wrap, side);
       bindGestures();
-      return wrap;
+      // Refit when the box changes shape — rotating a tablet, entering fullscreen, or
+      // the named list appearing beside the map. The desktop map window does the same
+      // on SizeChanged; without it the picture keeps the scale of a box that is gone.
+      // Not while a finger is down: refitting mid-pan would fight the hand.
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => {
+          if (pointers.size) return;
+          fitted = false;
+          fit();
+        }).observe(wrap);
+      }
+      return row;
     }
 
+    // The named list, rebuilt only when the set actually changes — countdowns tick in
+    // place, exactly as the desktop's named panel keeps its rows and updates the pill.
+    let sideKey = "";
+    const sideRowRefs = [];
+    function drawSide(data) {
+      const named = data.named || [];
+      const key = JSON.stringify(named.map(n => [n.name, n.due, n.x, n.y, n.fromWiki]));
+      sideHead.textContent = "Named — " + (data.timerZone || data.zone || "");
+      if (key !== sideKey) {
+        sideKey = key;
+        sideRows.replaceChildren();
+        sideRowRefs.length = 0;
+        if (!named.length) {
+          sideRows.appendChild(el("div", "none",
+            "No spawn timers running here — kill a named (or its placeholder) and its "
+            + "countdown appears, pinned to wherever your last /loc put you."));
+        }
+        for (const n of named) {
+          const r = el("div", "row" + (n.due ? " due" : ""));
+          const hasCamp = n.x != null && n.y != null;
+          r.appendChild(el("div", "mob", (hasCamp ? "📍 " : "") + n.name));
+          r.appendChild(el("div", "camp", !hasCamp
+            ? "no camp yet — /loc during the fight"
+            : n.fromWiki ? "camp from the wiki (~)" : "camp from your /loc at kill"));
+          const gauge = el("div", "gauge");
+          const pill = el("div", "pill", "…");
+          gauge.appendChild(pill);
+          let fill = null;
+          if (n.durationSeconds > 0) {
+            const track = el("div", "track");
+            fill = el("div", "fill");
+            fill.style.width = "0%";
+            track.appendChild(fill);
+            gauge.appendChild(track);
+          }
+          r.appendChild(gauge);
+          // Tapping a row centres its camp: the list is how you find a named on a map
+          // you are not already looking at the right part of.
+          if (hasCamp) r.onclick = () => centreOn(n.x, n.y);
+          sideRows.appendChild(r);
+          sideRowRefs.push({ n, pill, fill });
+        }
+      }
+      // The clocks, every second, whether or not the set changed.
+      const elapsed = since();
+      for (const ref of sideRowRefs) {
+        const left = ref.n.dueSeconds == null ? null : ref.n.dueSeconds - elapsed;
+        ref.pill.textContent = left == null ? "?" : left <= 0 ? "DUE" : fmt(left);
+        if (ref.fill && ref.n.durationSeconds > 0) {
+          const frac = left == null || left <= 0
+            ? 1 : Math.min(1, Math.max(0, 1 - left / ref.n.durationSeconds));
+          ref.fill.style.width = (frac * 100).toFixed(1) + "%";
+        }
+      }
+    }
+
+    // ---- curation ----
+    // The desktop offers these on a right-click; here a tap picks the point and this
+    // bar offers the same three things. Rebuilt on every selection AND on every push,
+    // so "Confirm" flips to "Un-confirm" the moment the PC applies it.
+    function circleAt(loc) {
+      const cs = (latest && latest.map && latest.map.circles) || [];
+      return cs.find(c => c.locY === loc[0] && c.locX === loc[1]) || null;
+    }
+    function pick(loc, zoneActions) {
+      pickedLoc = loc;
+      resetArmed = false;
+      if (!loc && !zoneActions) { selBar.classList.remove("show"); drawPickRing(); return; }
+      drawSelBar();
+      drawPickRing();
+    }
+    // No "which mode" argument: pickedLoc IS the mode. A point is selected, or the bar
+    // is showing the zone's own actions.
+    function drawSelBar() {
+      const data = latest && latest.map;
+      if (!data) return;
+      const c = pickedLoc && circleAt(pickedLoc);
+      // The point went away under us — a kill re-clustered it, or the PC removed it.
+      // Say so rather than leaving a bar aimed at nothing.
+      if (pickedLoc && !c) { pick(null); return; }
+
+      selBar.replaceChildren();
+      const who = el("div", "who");
+      if (c) {
+        who.append(el("b", null, c.label || c.mobs || "Spawn point"));
+        who.append(document.createTextNode(
+          c.label ? "" : ` · ${c.kills} kill${c.kills === 1 ? "" : "s"}`));
+      } else {
+        who.textContent = data.timerZone || data.zone;
+      }
+      const acts = el("div", "acts");
+      const act = (label, cls, fn) => {
+        const btn = el("button", cls, label);
+        btn.onclick = fn;
+        acts.appendChild(btn);
+      };
+      if (c) {
+        act(c.confirmed ? "Un-confirm location" : "Confirm location", null, () => {
+          sendCurate(c.confirmed ? "unconfirm" : "confirm", data.timerZone, c.locY, c.locX);
+        });
+        act("Remove point", "danger", () => {
+          sendCurate("remove", data.timerZone, c.locY, c.locX);
+          pick(null);
+        });
+      } else {
+        // Reset wipes a whole zone's archive, so it asks twice — the desktop puts a
+        // MessageBox in the way and a tap deserves the same friction.
+        act(resetArmed
+          ? "Tap again to wipe this zone's points"
+          : "Reset spawn points for this zone…",
+          resetArmed ? "confirmstep" : "danger", () => {
+            if (!resetArmed) { resetArmed = true; drawSelBar(); return; }
+            sendCurate("resetZone", data.timerZone, 0, 0);
+            pick(null);
+          });
+      }
+      act("✕", null, () => pick(null));
+      selBar.append(who, acts);
+      selBar.classList.add("show");
+    }
+    // A ring on the picked dot: the bar must never be ambiguous about which point it
+    // is aimed at, especially where two circles sit close together.
+    function drawPickRing() {
+      for (const e of dyn.querySelectorAll("circle.picked")) e.classList.remove("picked");
+      if (!pickedLoc) return;
+      // Matched on the ring's own stamped location, not by comparing rendered
+      // coordinates — the drawn X/Y are derived and float-compare badly.
+      const ring = dyn.querySelector(`circle[data-loc="${pickedLoc[0]},${pickedLoc[1]}"]`);
+      if (ring) ring.classList.add("picked");
+    }
+    // Which archived point did that thumb mean? Nearest within reach, measured on
+    // SCREEN so the answer doesn't change with zoom.
+    function hitTest(clientX, clientY) {
+      const data = latest && latest.map;
+      if (!data || !data.circles.length) return null;
+      const r = svg.getBoundingClientRect();
+      const px = clientX - r.left, py = clientY - r.top;
+      let best = null, bestD = TAP_REACH_PX;
+      for (const c of data.circles) {
+        const d = Math.hypot(c.x * k + tx - px, c.y * k + ty - py);
+        if (d <= bestD) { bestD = d; best = c; }
+      }
+      return best;
+    }
+
+    // One place that knows which groups ride the view, so a new layer can't be left
+    // behind by a pan.
+    function transform() {
+      const t = `translate(${tx} ${ty}) scale(${k})`;
+      for (const g of [layer, trailG, dyn]) g.setAttribute("transform", t);
+    }
     function apply() {
-      layer.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
-      dyn.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+      transform();
       rescale();
     }
     // Everything that must stay the same SIZE on screen while the picture zooms:
@@ -787,9 +1065,16 @@ function boot() {
     function rescale() {
       for (const e of svg.querySelectorAll("[data-px]")) {
         const px = +e.dataset.px;
-        if (e.tagName === "text") e.setAttribute("font-size", px / k);
+        // Inline style, not the font-size ATTRIBUTE: text.poi sets a font-size in CSS,
+        // and a class rule beats a presentation attribute — which quietly killed this
+        // counter-scaling and let every label balloon as you zoomed in.
+        if (e.tagName === "text") e.style.fontSize = (px / k) + "px";
         else e.setAttribute("r", px / k);
       }
+      // Camp pins are drawn once at the origin and parked on their camp here, counter-
+      // scaled so the pin and its label keep their size and their offset from the spot.
+      for (const e of svg.querySelectorAll("[data-pin]"))
+        e.setAttribute("transform", `translate(${e.dataset.pin}) scale(${1 / k})`);
     }
     function zoomBy(f, cx, cy) {
       const r = svg.getBoundingClientRect();
@@ -812,21 +1097,27 @@ function boot() {
       fitted = true;
       apply();
     }
-    function centreOnMe() {
-      const you = latest && latest.map && latest.map.you;
-      if (!you) return;
+    function centreOn(x, y) {
       const r = svg.getBoundingClientRect();
       k = Math.max(k, 1.4);
-      tx = r.width / 2 - you.x * k;
-      ty = r.height / 2 - you.y * k;
+      tx = r.width / 2 - x * k;
+      ty = r.height / 2 - y * k;
       apply();
+    }
+    function centreOnMe() {
+      const you = latest && latest.map && latest.map.you;
+      if (you) centreOn(you.x, you.y);
     }
     function bindGestures() {
       svg.addEventListener("pointerdown", e => {
         svg.setPointerCapture(e.pointerId);
         pointers.set(e.pointerId, [e.clientX, e.clientY]);
-        if (pointers.size === 1) panFrom = [e.clientX - tx, e.clientY - ty];
-        else if (pointers.size === 2) { pinch = spread(); panFrom = null; }
+        if (pointers.size === 1) {
+          panFrom = [e.clientX - tx, e.clientY - ty];
+          // Candidate tap. A second finger, real travel, or a long hold all cancel it
+          // below — panning and pinching a map must never fire an edit by accident.
+          tapFrom = [e.clientX, e.clientY, Date.now()];
+        } else { pinch = spread(); panFrom = null; tapFrom = null; }
       });
       svg.addEventListener("pointermove", e => {
         if (!pointers.has(e.pointerId)) return;
@@ -839,22 +1130,35 @@ function boot() {
           }
           pinch = now;
         } else if (panFrom) {
+          // Pan skips rescale(): nothing changes SIZE while dragging, and re-walking
+          // every label per pointermove is the one thing that makes a pan stutter.
           tx = e.clientX - panFrom[0];
           ty = e.clientY - panFrom[1];
-          layer.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
-          dyn.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+          transform();
+          if (tapFrom && Math.hypot(e.clientX - tapFrom[0], e.clientY - tapFrom[1]) > TAP_SLOP_PX)
+            tapFrom = null;   // that was a drag
         }
       });
       const up = e => {
+        const wasTap = tapFrom && pointers.size === 1
+          && Math.hypot(e.clientX - tapFrom[0], e.clientY - tapFrom[1]) <= TAP_SLOP_PX
+          && Date.now() - tapFrom[2] <= TAP_MS;
         pointers.delete(e.pointerId);
         if (pointers.size < 2) pinch = null;
         if (pointers.size === 1) {
           const [x, y] = [...pointers.values()][0];
           panFrom = [x - tx, y - ty];
         } else if (pointers.size === 0) panFrom = null;
+        if (wasTap) {
+          const hit = hitTest(e.clientX, e.clientY);
+          // Tapping bare map dismisses, which is the cheapest possible way out of a
+          // selection you didn't mean to make.
+          pick(hit ? [hit.locY, hit.locX] : null);
+        }
+        tapFrom = null;
       };
       svg.addEventListener("pointerup", up);
-      svg.addEventListener("pointercancel", up);
+      svg.addEventListener("pointercancel", e => { tapFrom = null; up(e); });
       svg.addEventListener("wheel", e => {
         e.preventDefault();
         const r = svg.getBoundingClientRect();
@@ -895,6 +1199,32 @@ function boot() {
       fitted = false;
     }
 
+    // The breadcrumb tail. Redrawn on every render — unlike the circles, a tail that
+    // looks the same is a tail that has stopped fading, so this deliberately does NOT
+    // sit behind the dynKey gate. A segment takes the alpha of its NEWER end, exactly
+    // as the desktop's UpdateTrail does, and ages tick locally between pushes.
+    function drawTrail(data) {
+      trailG.replaceChildren();
+      const trail = data.trail;
+      if (!trail || trail.length < 2) return;
+      const elapsed = since();
+      for (let i = 1; i < trail.length; i++) {
+        const alpha = TRAIL_FULL_ALPHA * (1 - (trail[i].ageSeconds + elapsed) / TRAIL_HORIZON);
+        if (alpha <= 0) continue;   // oldest first, so the faded head is skipped and the live tail follows
+        const seg = document.createElementNS(SVG, "line");
+        seg.setAttribute("x1", trail[i - 1].x); seg.setAttribute("y1", trail[i - 1].y);
+        seg.setAttribute("x2", trail[i].x); seg.setAttribute("y2", trail[i].y);
+        seg.setAttribute("stroke", "rgb(255,200,60)");
+        seg.setAttribute("stroke-opacity", (alpha / 255).toFixed(3));
+        // Heavier than the pack's hairlines and non-scaling, so the tail stays
+        // followable at the zoom a tablet actually gets propped up at.
+        seg.setAttribute("stroke-width", "2.5");
+        seg.setAttribute("stroke-linecap", "round");
+        seg.setAttribute("vector-effect", "non-scaling-stroke");
+        trailG.appendChild(seg);
+      }
+    }
+
     function drawDynamic(data) {
       const css = getComputedStyle(document.documentElement);
       const accent = css.getPropertyValue("--accent").trim() || "#e3b341";
@@ -909,6 +1239,9 @@ function boot() {
         ring.setAttribute("stroke-width", c.named ? "2" : "1.4");
         ring.setAttribute("vector-effect", "non-scaling-stroke");
         ring.dataset.px = c.named ? 7 : 5;
+        // Its identity for curation: the game coordinates the PC sent, echoed back
+        // untouched when this point is picked.
+        ring.dataset.loc = `${c.locY},${c.locX}`;
         if (c.imminent) {
           const a = document.createElementNS(SVG, "animate");
           a.setAttribute("attributeName", "opacity");
@@ -932,6 +1265,36 @@ function boot() {
           dyn.appendChild(t);
         }
       }
+      // Camp pins: a triangle at the camp with the named and its countdown beside it,
+      // the same marker the desktop's named panel puts on the map. Drawn after the
+      // circles so a pin sitting on its spawn point stays readable.
+      const bad = css.getPropertyValue("--bad").trim() || "#c8503c";
+      // Pins are the named that have a camp; the ones that don't still get a side row.
+      for (const pin of (data.named || []).filter(n => n.x != null && n.y != null)) {
+        const color = pin.due ? warn : bad;
+        // Pin and label share ONE counter-scaled group parked on the camp, so both keep
+        // their screen size and their screen-space offset from the spot at any zoom —
+        // a pin points AT a place, it doesn't stretch with the picture the way a wall
+        // does. rescale() maintains the group's transform.
+        const g = document.createElementNS(SVG, "g");
+        g.dataset.pin = `${pin.x} ${pin.y}`;
+        const tri = document.createElementNS(SVG, "polygon");
+        tri.setAttribute("points", "0,0 5,-10 -5,-10");
+        tri.setAttribute("fill", color);
+        tri.setAttribute("stroke", css.getPropertyValue("--bg").trim() || "#16130e");
+        tri.setAttribute("stroke-width", "1");
+        const t = document.createElementNS(SVG, "text");
+        // Below the spot, deliberately: a named's spawn circle labels ABOVE, and a camp
+        // pin very often sits on that circle. Splitting the two directions is what
+        // keeps "Lord Bergurgle" from being printed over "Lord Bergurgle".
+        t.setAttribute("x", 8); t.setAttribute("y", 12);
+        t.setAttribute("font-size", 10);
+        t.setAttribute("fill", color); t.setAttribute("class", "poi");
+        t.dataset.pinLabel = pin.name;
+        t.textContent = pin.name + (pin.fromWiki ? " ~" : "");
+        g.append(tri, t);
+        dyn.appendChild(g);
+      }
       if (data.you) {
         const me = document.createElementNS(SVG, "circle");
         me.setAttribute("cx", data.you.x); me.setAttribute("cy", data.you.y);
@@ -942,14 +1305,30 @@ function boot() {
       rescale();
     }
 
+    // The pins' countdowns, ticked locally between pushes exactly as the spawn list
+    // ticks its rows — a pin that only counts down is not worth a push.
+    function tickPins(data) {
+      const elapsed = since();
+      for (const t of dyn.querySelectorAll("[data-pin-label]")) {
+        const pin = (data.named || []).find(n => n.name === t.dataset.pinLabel);
+        if (!pin) continue;
+        const left = pin.dueSeconds == null ? null : pin.dueSeconds - elapsed;
+        const countdown = left == null ? "?" : left <= 0 ? "DUE" : fmt(left);
+        t.textContent = pin.name + (pin.fromWiki ? " ~ " : " ") + countdown;
+      }
+    }
+
     return {
       retheme() { if (latest && latest.map && dyn) { dynKey = ""; drawDynamic(latest.map); } },
       render(p, data) {
-        if (!wrap) p.body.replaceChildren(make());
-        else if (p.body.firstChild !== wrap) p.body.replaceChildren(wrap);
+        if (!row) p.body.replaceChildren(make());
+        else if (p.body.firstChild !== row) p.body.replaceChildren(row);
+        // The named list stands on its own: it is still the answer to "what is up in
+        // this zone" when the map file is missing entirely.
+        drawSide(data);
         if (data.missing && !data.geometry) {
           tip.textContent = data.missing;
-          layer.replaceChildren(); dyn.replaceChildren();
+          layer.replaceChildren(); trailG.replaceChildren(); dyn.replaceChildren();
           stamp = ""; bounds = null; dynKey = "";
           return;
         }
@@ -961,8 +1340,14 @@ function boot() {
         // The map panel repaints every second for its /loc age line, but the circles
         // only when they actually moved — rebuilding them would restart every pulse
         // animation mid-beat.
-        const key = JSON.stringify([data.circles, data.you]);
+        const key = JSON.stringify([data.circles, data.you, data.named]);
         if (key !== dynKey) { dynKey = key; drawDynamic(data); }
+        drawTrail(data);
+        tickPins(data);
+        // The selection follows the data: a confirm applied on the PC flips this
+        // bar's own button, and a point that vanished takes its bar with it.
+        if (selBar.classList.contains("show")) drawSelBar();
+        drawPickRing();
         fit();
         const age = data.you ? Math.round(data.you.ageSeconds + since()) : null;
         tip.textContent = data.zone + (data.you
