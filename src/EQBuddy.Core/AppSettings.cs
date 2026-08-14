@@ -468,7 +468,8 @@ public sealed class AppSettings
                     existing.Qty == item.Qty &&
                     existing.Order == item.Order &&
                     existing.Source == item.Source &&
-                    existing.AvailableInClassic == item.AvailableInClassic)
+                    existing.AvailableInClassic == item.AvailableInClassic &&
+                    existing.ItemNames.SequenceEqual(item.ItemNames, StringComparer.Ordinal))
                     continue;
 
                 existing.QuestName = item.QuestName;
@@ -479,6 +480,7 @@ public sealed class AppSettings
                 existing.Order = item.Order;
                 existing.Source = item.Source;
                 existing.AvailableInClassic = item.AvailableInClassic;
+                existing.ItemNames = [.. item.ItemNames];
                 changed = true;
                 continue;
             }
@@ -559,6 +561,17 @@ public sealed class EpicQuestChecklistItem
     public string Source { get; set; } = "";
     public bool AvailableInClassic { get; set; } = true;
     public bool Acquired { get; set; }
+    /// <summary>The catalog turn-in items this prose step mentions — the loot auto-tick's
+    /// match key (#121), resolved in EpicQuestDefaults from the class's epic quest items.
+    /// Empty when no loot line can prove the step (hails, dialogue, kill-only steps) —
+    /// those rows simply never auto-tick.</summary>
+    public List<string> ItemNames { get; set; } = [];
+    /// <summary>True when the loot auto-tick PLACED this check itself because the
+    /// item is wanted by several classes' epics and none of them passed the class
+    /// lens — same contract as SkyQuestChecklistItem.AcquiredUnassigned (#106).
+    /// Shown as a * so the player can move the tick; any manual toggle clears it —
+    /// the player deciding IS the resolution.</summary>
+    public bool AcquiredUnassigned { get; set; }
 
     public EpicQuestChecklistItem Clone() => new()
     {
@@ -573,5 +586,7 @@ public sealed class EpicQuestChecklistItem
         Source = Source,
         AvailableInClassic = AvailableInClassic,
         Acquired = Acquired,
+        ItemNames = [.. ItemNames],
+        AcquiredUnassigned = AcquiredUnassigned,
     };
 }
