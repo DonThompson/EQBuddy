@@ -198,8 +198,11 @@
   .rows li.done .rn { color:var(--dim); text-decoration:line-through; }
 
   /* ---- map ---- */
+  /* The map and its named list, side by side, as the desktop map window docks them.
+     On a phone the row wraps to a column and the list simply follows the map. */
+  .maprow { display:flex; gap:10px; min-height:0; flex:1 1 auto; }
   .mapwrap { position:relative; background:var(--popup); border:1px solid var(--hairline);
-             border-radius:12px; overflow:hidden; height:min(60dvh,420px); }
+             border-radius:12px; overflow:hidden; height:min(60dvh,420px); flex:1 1 auto; min-width:0; }
   /* On a tablet the map is the panel worth the room: the section claims a tall slot
      and the map fills whatever the header leaves. */
   @media (min-width:900px) {
@@ -220,6 +223,39 @@
             background:var(--popup); border-radius:8px; padding:4px 8px; opacity:.9; z-index:2;
             overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   text.poi { font-size:11px; }
+
+  /* ---- the named list beside the map ----
+     A portrait zone fitted into a landscape panel uses about a third of its width; the
+     rest was dead band. The desktop map window spends exactly that space on this list,
+     so the tablet does too — and because the map is height-constrained there, the list
+     costs the drawing nothing. Hidden below the tablet breakpoint, where there is no
+     spare width to spend and the phone can pick the Spawn timers screen instead. */
+  .mapside { display:none; }
+  @media (min-width:900px) {
+    .mapside { display:flex; flex-direction:column; width:clamp(190px,26%,300px);
+               background:var(--panel); border:1px solid var(--hairline);
+               border-radius:12px; overflow:hidden; }
+    .mapside h3 { font-size:11px; color:var(--accent); text-transform:uppercase;
+                  letter-spacing:.07em; padding:8px 10px 6px; }
+    .mapside .rows { overflow:auto; padding:0 8px 8px; flex:1 1 auto; min-height:0; }
+    .mapside .none { color:var(--dim); font-size:11.5px; padding:0 2px 8px; line-height:1.45; }
+    .mapside .row { border:1px solid var(--hairline); border-radius:9px;
+                    padding:7px 9px; margin-bottom:6px; background:var(--popup); }
+    .mapside .row.due { border-color:var(--bad); }
+    .mapside .mob { font-size:11.5px; font-weight:600; overflow:hidden;
+                    text-overflow:ellipsis; white-space:nowrap; }
+    .mapside .row.due .mob { color:var(--warn); }
+    .mapside .camp { font-size:9.5px; color:var(--dim); margin-top:1px;
+                     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .mapside .gauge { display:flex; align-items:center; gap:7px; margin-top:5px; }
+    .mapside .pill { font-size:10.5px; font-weight:700; color:var(--accent);
+                     background:var(--track,var(--hairline)); border-radius:4px; padding:1px 7px 2px; }
+    .mapside .row.due .pill { color:#fff; background:var(--bad); }
+    .mapside .track { flex:1 1 auto; height:3px; border-radius:2px;
+                      background:var(--track,var(--hairline)); overflow:hidden; }
+    .mapside .fill { height:100%; background:var(--accent); border-radius:2px; }
+    .mapside .row.due .fill { background:var(--bad); }
+  }
   /* Curation: a tapped spawn point raises an action bar along the bottom of the map.
      Tap-to-select rather than long-press — a long press is invisible until you have
      already discovered it, and it gives you nothing to back out of. This bar names
@@ -816,6 +852,7 @@ function boot() {
     // about this wide, and the circles are drawn at 5-7px.
     const TAP_REACH_PX = 26;
     let svg = null, layer = null, trailG = null, dyn = null, wrap = null, tip = null, selBar = null;
+    let row = null, side = null, sideHead = null, sideRows = null;
     let stamp = "", bounds = null, dynKey = "";
     let k = 1, tx = 0, ty = 0, fitted = false;
     const pointers = new Map();
@@ -825,6 +862,7 @@ function boot() {
     let pickedLoc = null, resetArmed = false;
 
     function make() {
+      row = el("div", "maprow");
       wrap = el("div", "mapwrap");
       svg = document.createElementNS(SVG, "svg");
       layer = document.createElementNS(SVG, "g");
@@ -846,8 +884,80 @@ function boot() {
       b("⋯", "Zone actions", () => pick(null, true));
       selBar = el("div", "mapsel");
       wrap.append(svg, tip, ctl, selBar);
+      side = el("div", "mapside");
+      sideHead = el("h3");
+      sideRows = el("div", "rows");
+      side.append(sideHead, sideRows);
+      row.append(wrap, side);
       bindGestures();
-      return wrap;
+      // Refit when the box changes shape — rotating a tablet, entering fullscreen, or
+      // the named list appearing beside the map. The desktop map window does the same
+      // on SizeChanged; without it the picture keeps the scale of a box that is gone.
+      // Not while a finger is down: refitting mid-pan would fight the hand.
+      if (window.ResizeObserver) {
+        new ResizeObserver(() => {
+          if (pointers.size) return;
+          fitted = false;
+          fit();
+        }).observe(wrap);
+      }
+      return row;
+    }
+
+    // The named list, rebuilt only when the set actually changes — countdowns tick in
+    // place, exactly as the desktop's named panel keeps its rows and updates the pill.
+    let sideKey = "";
+    const sideRowRefs = [];
+    function drawSide(data) {
+      const named = data.named || [];
+      const key = JSON.stringify(named.map(n => [n.name, n.due, n.x, n.y, n.fromWiki]));
+      sideHead.textContent = "Named — " + (data.timerZone || data.zone || "");
+      if (key !== sideKey) {
+        sideKey = key;
+        sideRows.replaceChildren();
+        sideRowRefs.length = 0;
+        if (!named.length) {
+          sideRows.appendChild(el("div", "none",
+            "No spawn timers running here — kill a named (or its placeholder) and its "
+            + "countdown appears, pinned to wherever your last /loc put you."));
+        }
+        for (const n of named) {
+          const r = el("div", "row" + (n.due ? " due" : ""));
+          const hasCamp = n.x != null && n.y != null;
+          r.appendChild(el("div", "mob", (hasCamp ? "📍 " : "") + n.name));
+          r.appendChild(el("div", "camp", !hasCamp
+            ? "no camp yet — /loc during the fight"
+            : n.fromWiki ? "camp from the wiki (~)" : "camp from your /loc at kill"));
+          const gauge = el("div", "gauge");
+          const pill = el("div", "pill", "…");
+          gauge.appendChild(pill);
+          let fill = null;
+          if (n.durationSeconds > 0) {
+            const track = el("div", "track");
+            fill = el("div", "fill");
+            fill.style.width = "0%";
+            track.appendChild(fill);
+            gauge.appendChild(track);
+          }
+          r.appendChild(gauge);
+          // Tapping a row centres its camp: the list is how you find a named on a map
+          // you are not already looking at the right part of.
+          if (hasCamp) r.onclick = () => centreOn(n.x, n.y);
+          sideRows.appendChild(r);
+          sideRowRefs.push({ n, pill, fill });
+        }
+      }
+      // The clocks, every second, whether or not the set changed.
+      const elapsed = since();
+      for (const ref of sideRowRefs) {
+        const left = ref.n.dueSeconds == null ? null : ref.n.dueSeconds - elapsed;
+        ref.pill.textContent = left == null ? "?" : left <= 0 ? "DUE" : fmt(left);
+        if (ref.fill && ref.n.durationSeconds > 0) {
+          const frac = left == null || left <= 0
+            ? 1 : Math.min(1, Math.max(0, 1 - left / ref.n.durationSeconds));
+          ref.fill.style.width = (frac * 100).toFixed(1) + "%";
+        }
+      }
     }
 
     // ---- curation ----
@@ -987,14 +1097,16 @@ function boot() {
       fitted = true;
       apply();
     }
-    function centreOnMe() {
-      const you = latest && latest.map && latest.map.you;
-      if (!you) return;
+    function centreOn(x, y) {
       const r = svg.getBoundingClientRect();
       k = Math.max(k, 1.4);
-      tx = r.width / 2 - you.x * k;
-      ty = r.height / 2 - you.y * k;
+      tx = r.width / 2 - x * k;
+      ty = r.height / 2 - y * k;
       apply();
+    }
+    function centreOnMe() {
+      const you = latest && latest.map && latest.map.you;
+      if (you) centreOn(you.x, you.y);
     }
     function bindGestures() {
       svg.addEventListener("pointerdown", e => {
@@ -1157,7 +1269,8 @@ function boot() {
       // the same marker the desktop's named panel puts on the map. Drawn after the
       // circles so a pin sitting on its spawn point stays readable.
       const bad = css.getPropertyValue("--bad").trim() || "#c8503c";
-      for (const pin of data.pins || []) {
+      // Pins are the named that have a camp; the ones that don't still get a side row.
+      for (const pin of (data.named || []).filter(n => n.x != null && n.y != null)) {
         const color = pin.due ? warn : bad;
         // Pin and label share ONE counter-scaled group parked on the camp, so both keep
         // their screen size and their screen-space offset from the spot at any zoom —
@@ -1177,7 +1290,7 @@ function boot() {
         t.setAttribute("x", 8); t.setAttribute("y", 12);
         t.setAttribute("font-size", 10);
         t.setAttribute("fill", color); t.setAttribute("class", "poi");
-        t.dataset.pinLabel = `${pin.x},${pin.y}`;
+        t.dataset.pinLabel = pin.name;
         t.textContent = pin.name + (pin.fromWiki ? " ~" : "");
         g.append(tri, t);
         dyn.appendChild(g);
@@ -1197,7 +1310,7 @@ function boot() {
     function tickPins(data) {
       const elapsed = since();
       for (const t of dyn.querySelectorAll("[data-pin-label]")) {
-        const pin = (data.pins || []).find(p => `${p.x},${p.y}` === t.dataset.pinLabel);
+        const pin = (data.named || []).find(n => n.name === t.dataset.pinLabel);
         if (!pin) continue;
         const left = pin.dueSeconds == null ? null : pin.dueSeconds - elapsed;
         const countdown = left == null ? "?" : left <= 0 ? "DUE" : fmt(left);
@@ -1208,8 +1321,11 @@ function boot() {
     return {
       retheme() { if (latest && latest.map && dyn) { dynKey = ""; drawDynamic(latest.map); } },
       render(p, data) {
-        if (!wrap) p.body.replaceChildren(make());
-        else if (p.body.firstChild !== wrap) p.body.replaceChildren(wrap);
+        if (!row) p.body.replaceChildren(make());
+        else if (p.body.firstChild !== row) p.body.replaceChildren(row);
+        // The named list stands on its own: it is still the answer to "what is up in
+        // this zone" when the map file is missing entirely.
+        drawSide(data);
         if (data.missing && !data.geometry) {
           tip.textContent = data.missing;
           layer.replaceChildren(); trailG.replaceChildren(); dyn.replaceChildren();
@@ -1224,7 +1340,7 @@ function boot() {
         // The map panel repaints every second for its /loc age line, but the circles
         // only when they actually moved — rebuilding them would restart every pulse
         // animation mid-beat.
-        const key = JSON.stringify([data.circles, data.you, data.pins]);
+        const key = JSON.stringify([data.circles, data.you, data.named]);
         if (key !== dynKey) { dynKey = key; drawDynamic(data); }
         drawTrail(data);
         tickPins(data);

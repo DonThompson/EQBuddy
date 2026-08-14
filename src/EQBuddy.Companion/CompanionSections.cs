@@ -49,7 +49,7 @@ public sealed record CompanionMapSection(
     CompanionMapMarker? You,
     IReadOnlyList<CompanionMapCircle> Circles,
     IReadOnlyList<CompanionMapCrumb> Trail,
-    IReadOnlyList<CompanionMapPin> Pins);
+    IReadOnlyList<CompanionMapNamed> Named);
 
 /// <summary>Map-space geometry. Coordinates are rounded to whole map units (roughly
 /// game feet) — the pack's sub-unit precision is invisible on a phone and doubles the
@@ -80,19 +80,24 @@ public sealed record CompanionMapMarker(double X, double Y, double AgeSeconds);
 /// crumb merely fading never counts as a change worth waking a device for.</summary>
 public sealed record CompanionMapCrumb(double X, double Y, double AgeSeconds);
 
-/// <summary>A camp pin: where a running timer's named actually camps, which is a
-/// different question from where its spawn point was archived. The desktop learns it
-/// from your /loc at kill time and falls back to the wiki's location field — and says
-/// which, because a wiki camp is approximate and the player deserves to know
-/// (<see cref="FromWiki"/> is the desktop's "~").
+/// <summary>One running spawn timer in the shown zone — the row the desktop map's named
+/// panel draws, and the camp pin it plants, from a single answer. They are the same
+/// question asked twice on the desktop too (UpdateNamedPanel builds both from one
+/// resolved list), and splitting them here would let a pin and its row disagree.
 ///
-/// <see cref="DueSeconds"/> is the countdown at send time; the page ticks it locally
-/// like every other clock, so pins don't wake a device once a second.</summary>
-public sealed record CompanionMapPin(
-    double X, double Y,
+/// <see cref="X"/>/<see cref="Y"/> are the camp in map space, null when no camp is known
+/// yet — those named still get a ROW (with the desktop's "/loc during the fight" nudge),
+/// they just get no pin. <see cref="FromWiki"/> is the desktop's "~": approximate,
+/// and said out loud rather than passed off as your own observation.
+///
+/// <see cref="DueSeconds"/> is the countdown at send time; the page ticks it locally like
+/// every other clock, so a running timer doesn't wake a device once a second.</summary>
+public sealed record CompanionMapNamed(
     string Name,
     double? DueSeconds,
     bool Due,
+    double? DurationSeconds,
+    double? X, double? Y,
     bool FromWiki);
 
 /// <summary>An archived spawn point. <see cref="Named"/> points wear the accent and

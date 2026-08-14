@@ -106,32 +106,40 @@ public sealed class CompanionMapSource
             You: you,
             Circles: circles,
             Trail: BuildTrail(request.Trail, now),
-            Pins: BuildPins(request.Timers, request.CampFor, now));
+            Named: BuildNamed(request.Timers, request.CampFor, now));
     }
 
-    /// <summary>Camp pins for the zone's running timers — the desktop's named panel
-    /// puts one on the map for every timer whose camp it can resolve, and so does this.
-    /// Resolution itself stays on the desktop side of the delegate: the wiki fallback
-    /// is a memoized, rate-limited lookup the app already owns, and the companion has
-    /// no business starting a second one.</summary>
-    private static List<CompanionMapPin> BuildPins(
+    /// <summary>The zone's running named: the desktop map's side panel in list form,
+    /// with the camp coordinates that also plant its pins. EVERY running timer gets a
+    /// row — a named with no camp yet is exactly the one you want to see, because it is
+    /// the one asking you to /loc during the fight.
+    ///
+    /// Camp resolution stays on the desktop side of the delegate: the wiki fallback is a
+    /// memoized, rate-limited lookup the app already owns, and the companion has no
+    /// business starting a second one. A host that hasn't wired it still gets rows and
+    /// countdowns, just no camps.</summary>
+    private static List<CompanionMapNamed> BuildNamed(
         IReadOnlyList<SpawnTimerState> timers,
         Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? campFor,
         DateTime now)
     {
-        if (campFor is null) return [];
-        var pins = new List<CompanionMapPin>();
+        var rows = new List<CompanionMapNamed>(timers.Count);
         foreach (var t in timers)
         {
-            if (campFor(t) is not { } camp) continue;
-            var (x, y) = ZoneMap.FromLoc(camp.Y, camp.X);
-            pins.Add(new CompanionMapPin(
-                x, y, t.Name,
+            var camp = campFor?.Invoke(t);
+            var plotted = camp is { } c ? ZoneMap.FromLoc(c.Y, c.X) : ((double X, double Y)?)null;
+            rows.Add(new CompanionMapNamed(
+                t.Name,
                 DueSeconds: t.DueAt is { } due ? (due - now).TotalSeconds : null,
                 Due: t.IsDue(now),
-                FromWiki: camp.FromWiki));
+                DurationSeconds: t.DurationSeconds,
+                X: plotted?.X, Y: plotted?.Y,
+                FromWiki: camp?.FromWiki ?? false));
         }
-        return pins;
+        // Soonest first, unknown durations last — the desktop's own reading order, and
+        // the order a side panel has to be in to be glanceable.
+        rows.Sort((a, b) => (a.DueSeconds ?? double.MaxValue).CompareTo(b.DueSeconds ?? double.MaxValue));
+        return rows;
     }
 
     private static CompanionMapMarker Marker(LocationEvent loc, DateTime now)

@@ -124,9 +124,9 @@ public static partial class CompanionProjection
                 // page burns it down locally on the same curve, and shipping ages here
                 // would wake every map device every single second.
                 Join(m.Trail, c => $"{c.X:0}:{c.Y:0}"),
-                // Pin countdowns tick on the page like every other clock; a pin is news
-                // when it appears, moves, or flips to DUE.
-                Join(m.Pins, p => $"{p.Name}:{p.X:0}:{p.Y:0}:{p.Due}:{p.FromWiki}"));
+                // Named countdowns tick on the page like every other clock; a named is
+                // news when it appears, its camp resolves or moves, or it flips to DUE.
+                Join(m.Named, n => $"{n.Name}:{n.X:0}:{n.Y:0}:{n.Due}:{n.FromWiki}"));
 
         if (snap.Spawns is { } sp)
             map[CompanionSurfaces.Spawns] = Join(sp.Timers,

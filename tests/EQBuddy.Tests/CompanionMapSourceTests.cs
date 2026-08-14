@@ -249,20 +249,44 @@ public class CompanionMapSourceTests : IDisposable
             },
         }, Now);
 
-        Assert.Equal(2, map.Pins.Count);   // a timer with no camp gets no pin
-        var mine = map.Pins.Single(p => p.Name == "Ghoul Assassin");
+        // EVERY running timer gets a row; only the ones with a camp get coordinates.
+        // The desktop's named panel lists all three too — a named with no camp is
+        // precisely the one asking you to /loc during the fight.
+        Assert.Equal(3, map.Named.Count);
+        var mine = map.Named.Single(n => n.Name == "Ghoul Assassin");
         Assert.Equal(-200, mine.X);        // (Y, X) → (-X, -Y), same as everything else
         Assert.Equal(-100, mine.Y);
         Assert.False(mine.FromWiki);
         Assert.Equal(70, mine.DueSeconds!.Value, 1);
         Assert.False(mine.Due);
+        Assert.Equal(100, mine.DurationSeconds);   // the row's elapsed track needs it
 
-        var theirs = map.Pins.Single(p => p.Name == "Sir Rufus");
+        var theirs = map.Named.Single(n => n.Name == "Sir Rufus");
         Assert.True(theirs.FromWiki);      // the desktop's "~": approximate, and says so
+
+        var campless = map.Named.Single(n => n.Name == "Nobody");
+        Assert.Null(campless.X);           // a row, but no pin
+        Assert.Null(campless.Y);
     }
 
     [Fact]
-    public void ADueCampPinSaysSo()
+    public void NamedAreSoonestFirstSoTheSidePanelReadsInOrder()
+    {
+        var map = Source().Build(In() with
+        {
+            Timers =
+            [
+                Timer("Befallen", "Late", 10, 600),      // ~590s left
+                Timer("Befallen", "Soon", 90, 100),      // ~10s left
+                Timer("Befallen", "Middle", 30, 200),    // ~170s left
+            ],
+        }, Now);
+
+        Assert.Equal(["Soon", "Middle", "Late"], map.Named.Select(n => n.Name));
+    }
+
+    [Fact]
+    public void ADueNamedSaysSo()
     {
         var map = Source().Build(In() with
         {
@@ -270,17 +294,20 @@ public class CompanionMapSourceTests : IDisposable
             CampFor = _ => (10.0, 10.0, false),
         }, Now);
 
-        var pin = Assert.Single(map.Pins);
-        Assert.True(pin.Due);
-        Assert.True(pin.DueSeconds < 0);   // already overdue; the page shows DUE
+        var named = Assert.Single(map.Named);
+        Assert.True(named.Due);
+        Assert.True(named.DueSeconds < 0);   // already overdue; the page shows DUE
     }
 
     [Fact]
-    public void AHostThatCannotResolveCampsSimplyGetsNoPins()
+    public void AHostThatCannotResolveCampsStillGetsItsRows()
     {
-        // Avalonia, tests, any host that hasn't wired CampFor: no pins, no crash, and
-        // above all no second wiki lookup started from inside the companion.
+        // Avalonia, tests, any host that hasn't wired CampFor: rows and countdowns
+        // still arrive, they just carry no camp — and above all no second wiki lookup
+        // is started from inside the companion.
         var map = Source().Build(In() with { Timers = [Timer("Befallen", "Ghoul Assassin", 5, 60)] }, Now);
-        Assert.Empty(map.Pins);
+        var named = Assert.Single(map.Named);
+        Assert.Null(named.X);
+        Assert.Equal(55, named.DueSeconds!.Value, 1);
     }
 }
