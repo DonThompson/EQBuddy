@@ -466,7 +466,7 @@ public sealed class MapWindow : Window
                 _status.Text = $"Nothing to reset — {zone} has no archived spawn points yet.";
                 return;
             }
-            var ok = await Confirm("Reset spawn points",
+            var ok = await ConfirmDialog.Ask(this, "Reset spawn points",
                 $"Reset {zone}'s spawn-point archive?\n\n" +
                 $"All {count} archived point{(count == 1 ? "" : "s")} — including confirmed ones — " +
                 "will be removed. The zone starts learning fresh from your next kills; " +
@@ -477,49 +477,6 @@ public sealed class MapWindow : Window
             _status.Text = $"Reset {zone} — {cleared} spawn point{(cleared == 1 ? "" : "s")} cleared; the zone learns fresh from here.";
         }
         catch (Exception ex) { App.LogError(ex); }
-    }
-
-    /// <summary>WPF's MessageBox.Show(…, YesNo, Warning, defaultResult: No), which
-    /// Avalonia has no equivalent for — so it's the SessionPicker's shape instead: a
-    /// small owned dialog, awaited for its answer. Cancel carries BOTH Enter and Esc,
-    /// which is what the WPF default-to-No bought us: nothing that wipes an archive
-    /// is ever one stray keypress away.</summary>
-    private async Task<bool> Confirm(string title, string message, string confirmLabel)
-    {
-        var answer = false;
-        var dialog = new Window
-        {
-            Title = title,
-            CanResize = false,
-            ShowInTaskbar = false,
-            SizeToContent = SizeToContent.WidthAndHeight,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Background = AppTheme.BgBrush,
-        };
-        var text = new TextBlock
-        {
-            Text = message, FontSize = 12, TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 380, Foreground = AppTheme.TextBrush,
-        };
-        var go = ZoneTheming.Button(confirmLabel);
-        go.Click += (_, _) => { answer = true; dialog.Close(); };
-        var cancel = ZoneTheming.Button("Cancel", isDefault: true, isCancel: true);
-        cancel.Margin = new Thickness(8, 0, 0, 0);
-        cancel.Click += (_, _) => dialog.Close();
-        var buttons = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 10, 0, 0),
-        };
-        buttons.Children.Add(go);
-        buttons.Children.Add(cancel);
-        var root = new StackPanel { Margin = new Thickness(12) };
-        root.Children.Add(text);
-        root.Children.Add(buttons);
-        dialog.Content = root;
-        await dialog.ShowDialog(this);
-        return answer;
     }
 
     /// <summary>Right-click on a circle: remove the point from the zone's archive
