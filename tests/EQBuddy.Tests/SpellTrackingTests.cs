@@ -1227,6 +1227,81 @@ public class SpellTrackingTests
         Assert.Contains("held 0:56", tracked.LastItem);
     }
 
+    /// <summary>#135 (bjstrange), the re-charm echo cascade: the pet's attack breaks
+    /// charm A, the player re-charms the SAME creature seconds later, and only then
+    /// does the game print charm A's delayed fade line. That stale line must read as
+    /// the recorded break's echo — announce A's hold, never touch charm B's claim —
+    /// or B's eventual break has no landing to measure and its "held" goes missing.</summary>
+    [Fact]
+    public void AStaleFadeAfterAReCharmIsAnEchoNotABreak()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),                                      // charm A lands 0:04
+            At(1, 0, "A puma hits YOU for 12 points of damage."),            // A breaks — held 0:56
+            At(1, 2, "You begin casting Befriend Animal."),
+            At(1, 6, "a puma blinks."),                                      // charm B lands 1:06
+            At(1, 8, "Your Befriend Animal spell has worn off of a puma."),  // A's DELAYED fade
+            At(1, 20, "A puma hits orc pawn for 30 points of damage."));
+
+        // (b) the stale fade did not drop charm B's claim — pet damage still credits.
+        var s = stats.Snapshot(recentWindow: null, rules: settings.TrackedRules);
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 1, 6), s.CharmedSince);
+        // (a) charm A's fade alert still carries A's hold (0:04 → 1:00).
+        var tracked = Assert.Single(s.Tracked);
+        Assert.Equal(1, tracked.TotalQuantity);
+        Assert.Contains("held 0:56", tracked.LastItem);
+
+        // (c) charm B's real break later announces its OWN held time (1:06 → 5:00).
+        stats.Apply(LogParser.Parse(At(5, 0, "Your Befriend Animal spell has worn off of a puma."))!);
+        var after = Assert.Single(stats.Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
+        Assert.Equal(2, after.TotalQuantity);
+        Assert.Contains("held 3:54", after.LastItem);
+    }
+
+    /// <summary>#135: the targetless Befriend Animal break line can be a stale echo
+    /// too — same cascade, and the re-charm's claim must survive it the same way.</summary>
+    [Fact]
+    public void ATargetlessStaleFadeIsAnEchoToo()
+    {
+        var s = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(1, 0, "A puma hits YOU for 12 points of damage."),
+            At(1, 2, "You begin casting Befriend Animal."),
+            At(1, 6, "a puma blinks."),
+            At(1, 8, "Your charm spell has worn off."),                      // stale, targetless
+            At(1, 20, "A puma hits orc pawn for 30 points of damage.")).Snapshot();
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 1, 6), s.CharmedSince);
+    }
+
+    /// <summary>The echo guard must not eat REAL breaks: a fade beyond the skew
+    /// window of the last recorded break is a new break — the claim drops and its
+    /// own hold is measured from the re-charm's landing.</summary>
+    [Fact]
+    public void AGenuineFadeBeyondTheSkewWindowStillDropsTheClaim()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(1, 0, "A puma hits YOU for 12 points of damage."),            // first break recorded
+            At(1, 2, "You begin casting Befriend Animal."),
+            At(1, 6, "a puma blinks."),                                      // re-charm
+            At(1, 30, "Your Befriend Animal spell has worn off of a puma."), // 30s clear: real break
+            At(1, 34, "A puma hits orc pawn for 50 points of damage."));     // creature's own swing
+
+        var s = stats.Snapshot(recentWindow: null, rules: settings.TrackedRules);
+        Assert.Null(s.CharmedSince);                                         // claim dropped
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+        Assert.Contains("held 0:24", Assert.Single(s.Tracked).LastItem);     // 1:06 → 1:30
+    }
+
     /// <summary>#130: a summoned pet claimed via the Master tell has no charm to
     /// hold — the clock must stay off.</summary>
     [Fact]

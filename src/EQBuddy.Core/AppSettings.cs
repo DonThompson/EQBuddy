@@ -182,6 +182,12 @@ public sealed class AppSettings
     public List<EpicQuestChecklistItem> EpicQuestChecklist { get; set; } = [];
     public string EpicQuestClass { get; set; } = "";
     public List<string> EpicQuestCompleted { get; set; } = [];
+    /// <summary>Per-class snapshot of which epic rows were already acquired when the
+    /// "Epic complete" master check bulk-flipped the rest (#138, aodgizmo): unchecking
+    /// the master restores this instead of leaving every row checked. Persisted so the
+    /// undo survives a restart; a class completed before the snapshot existed has no
+    /// key here and unchecking falls back to clearing just the completed flag.</summary>
+    public Dictionary<string, List<string>> EpicQuestPreCompleteAcquired { get; set; } = [];
     public bool EpicQuestClassicOnly { get; set; }
     /// <summary>Color theme key (see EQBuddy.UI.Shared.ThemeCatalog); defaults to the
     /// original parchment-and-brass look so existing installs don't change on upgrade.</summary>
