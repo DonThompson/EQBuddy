@@ -31,38 +31,55 @@ public static partial class GearChecklistImporter
             var body = slot.Groups["body"].Value;
             if (heading.Length == 0) continue;
 
-            // The export nests a "Socketed Exaltations" block inside the same slot
-            // card, and each socketed entry carries its own item-link and source
-            // lines. The equipped item's entry always precedes that block, so cut
-            // the body there — otherwise an exaltation's drop sources get joined
-            // into the gear piece's source text.
-            var socketed = body.IndexOf("socketed-block", StringComparison.OrdinalIgnoreCase);
-            if (socketed >= 0) body = body[..socketed];
-
-            var itemMatch = ItemLinkRegex().Match(body);
-            if (!itemMatch.Success) continue;
-
-            var item = Clean(itemMatch.Groups["item"].Value);
-            if (item.Length == 0) continue;
-
-            var url = WebUtility.HtmlDecode(itemMatch.Groups["href"].Value).Trim();
-            var source = string.Join(" | ", SourceLineRegex().Matches(body)
-                .Select(m => Clean(m.Groups["source"].Value))
-                .Where(s => s.Length > 0)
-                .Distinct(StringComparer.OrdinalIgnoreCase));
-            var key = $"{heading}|{item}";
-            if (!seen.Add(key)) continue;
-
-            result.Items.Add(new GearChecklistItem
+            var foundEntry = false;
+            foreach (Match entry in ShoppingEntryRegex().Matches(body))
             {
-                Slot = TitleSlot(heading),
-                Item = item,
-                Source = source,
-                Url = url,
-            });
+                foundEntry = true;
+                AddItem(result, seen, heading, entry.Groups["open"].Value, entry.Groups["body"].Value);
+            }
+
+            // Older exports did not wrap equipped gear in a shopping-entry. Keep
+            // accepting them, while excluding nested socketed rows from its sources.
+            if (!foundEntry)
+            {
+                var socketed = body.IndexOf("socketed-block", StringComparison.OrdinalIgnoreCase);
+                AddItem(result, seen, heading, "", socketed >= 0 ? body[..socketed] : body);
+            }
         }
 
         return result;
+    }
+
+    private static void AddItem(GearChecklistImportResult result, HashSet<string> seen,
+        string heading, string openTag, string body)
+    {
+        var itemMatch = ItemLinkRegex().Match(body);
+        if (!itemMatch.Success) return;
+
+        var item = Clean(itemMatch.Groups["item"].Value);
+        if (item.Length == 0) return;
+
+        var isExaltation = openTag.Contains("socketed-entry", StringComparison.OrdinalIgnoreCase);
+        var key = $"{heading}|{isExaltation}|{item}";
+        if (!seen.Add(key)) return;
+
+        var source = string.Join(" | ", SourceLineRegex().Matches(body)
+            .Select(m => Clean(m.Groups["source"].Value))
+            .Where(s => s.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+        result.Items.Add(new GearChecklistItem
+        {
+            Slot = TitleSlot(heading),
+            IsExaltation = isExaltation,
+            Item = item,
+            ExaltationEffect = isExaltation
+                ? Clean(EffectNameRegex().Match(body).Groups["effect"].Value)
+                : "",
+            Source = source,
+            Url = WebUtility.HtmlDecode(itemMatch.Groups["href"].Value).Trim(),
+            Acquired = openTag.Contains("is-collected", StringComparison.OrdinalIgnoreCase)
+                || CheckedCheckboxRegex().IsMatch(body),
+        });
     }
 
     private static string PageTitle(string html)
@@ -100,6 +117,15 @@ public static partial class GearChecklistImporter
 
     [GeneratedRegex("<a\\s+class=[\"']item-link[\"'][^>]*href=[\"'](?<href>[^\"']*)[\"'][^>]*>(?<item>.*?)</a>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex ItemLinkRegex();
+
+    [GeneratedRegex("(?<open><div\\s+class=[\"'][^\"']*\\bshopping-entry\\b[^\"']*[\"'][^>]*>)(?<body>.*?)(?=<div\\s+class=[\"'][^\"']*\\b(?:shopping-entry|socketed-entry)\\b[^\"']*[\"'][^>]*>|</section>|<section\\s+class=[\"'][^\"']*\\bslot-card\\b|$)", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    private static partial Regex ShoppingEntryRegex();
+
+    [GeneratedRegex("<input\\b[^>]*\\bclass=[\"'][^\"']*\\bcollected-checkbox\\b[^\"']*[\"'][^>]*\\bchecked(?:\\s*=\\s*(?:[\"'][^\"']*[\"']|[^\\s>]+))?", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    private static partial Regex CheckedCheckboxRegex();
+
+    [GeneratedRegex("<div\\s+class=[\"']effect-name[\"'][^>]*>(?<effect>.*?)</div>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    private static partial Regex EffectNameRegex();
 
     [GeneratedRegex("<div\\s+class=[\"']source-line[\"'][^>]*>(?<source>.*?)</div>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
     private static partial Regex SourceLineRegex();

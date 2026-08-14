@@ -2231,52 +2231,68 @@ public partial class MainWindow : Window
             return;
         }
 
-        var done = _settings.GearChecklist.Count(i => i.Acquired);
-        GearListName.Text = _settings.GearChecklistName.Length > 0
-            ? $"{_settings.GearChecklistName} - {done}/{total}"
-            : $"{done}/{total} imported gear pieces";
+        GearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
+            _settings.GearChecklistName, _settings.GearChecklist);
 
-        foreach (var item in _settings.GearChecklist)
+        foreach (var group in EQBuddy.UI.Shared.GearChecklistPresentation.BuildGroups(_settings.GearChecklist))
         {
-            var text = new StackPanel();
-            text.Children.Add(new TextBlock
+            GearChecklistList.Items.Add(new TextBlock
             {
-                Text = item.Slot,
-                FontSize = 10,
-                Foreground = (Brush)FindResource("DimBrush"),
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                Text = group.Heading,
+                FontSize = 11,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)FindResource("AccentBrush"),
+                Margin = new Thickness(0, 8, 0, 2),
             });
-            text.Children.Add(new TextBlock
+            foreach (var item in group.Items)
             {
-                Text = item.Item,
-                FontSize = 12,
-                Foreground = (Brush)FindResource("TextBrush"),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            if (item.Source.Length > 0)
-            {
+                var text = new StackPanel();
                 text.Children.Add(new TextBlock
                 {
-                    Text = item.Source,
+                    Text = item.Slot,
                     FontSize = 10,
                     Foreground = (Brush)FindResource("DimBrush"),
                     TextTrimming = TextTrimming.CharacterEllipsis,
                 });
-            }
+                var itemName = new TextBlock
+                {
+                    FontSize = 12,
+                    Foreground = (Brush)FindResource("TextBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                };
+                var itemText = EQBuddy.UI.Shared.GearChecklistPresentation.TextFor(item);
+                itemName.Inlines.Add(itemText.Name);
+                if (itemText.EffectSuffix.Length > 0)
+                {
+                    itemName.Inlines.Add(new System.Windows.Documents.Run(itemText.EffectSuffix)
+                    {
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                    });
+                }
+                text.Children.Add(itemName);
+                if (item.Source.Length > 0)
+                {
+                    text.Children.Add(new TextBlock
+                    {
+                        Text = item.Source,
+                        FontSize = 10,
+                        Foreground = (Brush)FindResource("DimBrush"),
+                        TextTrimming = TextTrimming.CharacterEllipsis,
+                    });
+                }
 
-            var tip = $"{item.Slot}: {item.Item}";
-            if (item.Source.Length > 0) tip += "\n" + item.Source;
-            if (item.Url.Length > 0) tip += "\n" + item.Url;
-            var check = new CheckBox
-            {
-                IsChecked = item.Acquired,
-                Content = text,
-                Margin = new Thickness(0, 2, 0, 2),
-                ToolTip = tip,
-            };
-            check.Checked += (_, _) => OnGearToggled(item, true);
-            check.Unchecked += (_, _) => OnGearToggled(item, false);
-            GearChecklistList.Items.Add(check);
+                var check = new CheckBox
+                {
+                    IsChecked = item.Acquired,
+                    Content = text,
+                    Margin = new Thickness(0, 2, 0, 2),
+                    ToolTip = EQBuddy.UI.Shared.GearChecklistPresentation.Tooltip(item),
+                };
+                check.Checked += (_, _) => OnGearToggled(item, true);
+                check.Unchecked += (_, _) => OnGearToggled(item, false);
+                GearChecklistList.Items.Add(check);
+            }
         }
 
         UpdateGearHeaderOnly();
@@ -2287,11 +2303,8 @@ public partial class MainWindow : Window
         item.Acquired = acquired;
         _settings.Save();
         UpdateGearHeaderOnly();
-        var total = _settings.GearChecklist.Count;
-        var done = _settings.GearChecklist.Count(i => i.Acquired);
-        GearListName.Text = _settings.GearChecklistName.Length > 0
-            ? $"{_settings.GearChecklistName} - {done}/{total}"
-            : $"{done}/{total} imported gear pieces";
+        GearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
+            _settings.GearChecklistName, _settings.GearChecklist);
     }
 
     private void UpdateGearHeaderOnly()

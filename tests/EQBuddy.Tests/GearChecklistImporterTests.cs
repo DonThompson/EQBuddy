@@ -90,4 +90,25 @@ public sealed class GearChecklistImporterTests
         Assert.Equal("Fine Breastplate", item.Item);
         Assert.Equal("Drops From: Permafrost: an ice goblin", item.Source);
     }
+
+    [Fact]
+    public void ImportsGearAndExaltationsWithTheirCheckedState()
+    {
+        const string html = """
+            <section class="slot-card"><div class="slot-heading">HEAD</div>
+              <div class="entry shopping-entry"><input class="collected-checkbox" type="checkbox" checked><a class="item-link" href="/helm">Steel Helm</a><div class="source-line">Drops From: Blackburrow</div></div>
+              <div class="socketed-block"><div class="socketed-head">Socketed Exaltations</div>
+                <div class="entry socketed-entry shopping-entry focus"><div class="effect-name">Enhancement Haste I</div><input class="collected-checkbox" type="checkbox"><a class="item-link" href="/gem">Haste Gem</a><div class="source-line">Drops From: Solusek's Eye</div></div>
+                <div class="entry socketed-entry shopping-entry worn is-collected"><input class="collected-checkbox" type="checkbox"><a class="item-link" href="/eye">See Invisible Eye</a></div>
+              </div>
+            </section>
+            """;
+
+        var result = GearChecklistImporter.ImportHtml(html);
+
+        Assert.Collection(result.Items,
+            item => { Assert.False(item.IsExaltation); Assert.True(item.Acquired); Assert.Equal("Steel Helm", item.Item); },
+            item => { Assert.True(item.IsExaltation); Assert.False(item.Acquired); Assert.Equal("Haste Gem", item.Item); Assert.Equal("Enhancement Haste I", item.ExaltationEffect); },
+            item => { Assert.True(item.IsExaltation); Assert.True(item.Acquired); Assert.Equal("See Invisible Eye", item.Item); });
+    }
 }
