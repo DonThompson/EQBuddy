@@ -2037,6 +2037,10 @@ public partial class MainWindow : Window
     // Keyed by TrackedRule.Id — a display name can be shared by two rules, and keying
     // on it made same-named rules share baselines and cooldowns.
     private readonly Dictionary<string, int> _ruleBaseline = new(StringComparer.Ordinal);
+    // #137 (bjstrange): last-seen per-item counts per rule, so a burst catching several
+    // distinct items names each one instead of "{last} ×N". Written and reset in
+    // lock-step with _ruleBaseline — the two must never disagree about "last seen".
+    private readonly Dictionary<string, Dictionary<string, int>> _ruleItemBaseline = new(StringComparer.Ordinal);
     private readonly EQBuddy.UI.Shared.AlertCooldowns _ruleCooldowns = new();
     private readonly EQBuddy.UI.Shared.SoundGate _soundGate = new();
     private string? _alertBaselinePath;
@@ -3384,7 +3388,12 @@ public partial class MainWindow : Window
             var switchedCharacter = _alertBaselinePath is not null;
             _alertBaselinePath = _watcher.CurrentPath;
             _ruleBaseline.Clear();
-            foreach (var r in s.Tracked) _ruleBaseline[r.Id] = r.TotalQuantity;
+            _ruleItemBaseline.Clear();
+            foreach (var r in s.Tracked)
+            {
+                _ruleBaseline[r.Id] = r.TotalQuantity;
+                _ruleItemBaseline[r.Id] = EQBuddy.UI.Shared.WatchAlertText.ItemCounts(r);
+            }
             if (switchedCharacter) _delayedAlerts.CancelAll();   // cues belonged to who we left
             _knownDeaths = s.Deaths.Count;
             return;
@@ -3397,10 +3406,13 @@ public partial class MainWindow : Window
             if (r.TotalQuantity <= baseline)
             {
                 _ruleBaseline[r.Id] = r.TotalQuantity;
+                _ruleItemBaseline[r.Id] = EQBuddy.UI.Shared.WatchAlertText.ItemCounts(r);
                 continue;
             }
             var delta = r.TotalQuantity - baseline;
+            var previousItems = _ruleItemBaseline.TryGetValue(r.Id, out var prevItems) ? prevItems : null;
             _ruleBaseline[r.Id] = r.TotalQuantity;
+            _ruleItemBaseline[r.Id] = EQBuddy.UI.Shared.WatchAlertText.ItemCounts(r);
 
             var rule = _settings.TrackedRules.FirstOrDefault(x => x.Id == r.Id);
             if (rule is null) continue;
@@ -3409,7 +3421,8 @@ public partial class MainWindow : Window
             // doesn't look like a fresh burst later.
             if (rule.Kind == WatchKind.Text) continue;
 
-            AlertOrCue(rule, r.Name, EQBuddy.UI.Shared.WatchAlertText.MatchLabel(rule, r, delta),
+            AlertOrCue(rule, r.Name,
+                EQBuddy.UI.Shared.WatchAlertText.MatchLabel(rule, r, delta, previousItems),
                 TimeSpan.FromSeconds(5));   // ALERT-008 cooldown
         }
     }
