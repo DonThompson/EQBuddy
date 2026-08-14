@@ -479,6 +479,7 @@ public partial class BreakoutWindow : Window
     {
         TitleText.Text = "🎒 Loot";
         List<(string Name, string Value)> rows;
+        List<(string Name, string Value)> crafted = [];
         string emptyText;
         if (_fightScope)   // = Target scope for this kind
         {
@@ -492,15 +493,21 @@ public partial class BreakoutWindow : Window
         }
         else
         {
-            SubText.Text = $"Session · {s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")} looted";
+            // "+N made" echoes the card header, so the two views agree at a glance (#131).
+            SubText.Text = $"Session · {s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")} looted"
+                + (s.CraftedTotal > 0 ? $" · +{s.CraftedTotal} made" : "");
             var loot = _settings.LootSort == "name"
                 ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
                 : s.Loot;
             rows = loot.Take(12).Select(l => (l.Item, $"×{l.Count}")).ToList();
+            // Made items ride the Session scope only: crafts are session-cumulative, and
+            // Target scope is a different axis entirely — what a creature can drop —
+            // where an item nobody drops would misstate the view (#131, TropicMike).
+            crafted = s.Crafted.Take(12).Select(c => (c.Name, $"×{c.Count}")).ToList();
             emptyText = "No loot seen yet.";
         }
 
-        var empty = rows.Count == 0;
+        var empty = rows.Count == 0 && crafted.Count == 0;
         EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
         if (empty)
         {
@@ -510,7 +517,8 @@ public partial class BreakoutWindow : Window
             return;
         }
 
-        var sig = $"loot|{_fightScope}|{SubText.Text}|{string.Join(",", rows.Select(r => r.Name + r.Value))}";
+        var sig = $"loot|{_fightScope}|{SubText.Text}|{string.Join(",", rows.Select(r => r.Name + r.Value))}"
+            + $"|made:{string.Join(",", crafted.Select(c => c.Name + c.Value))}";
         if (sig == _signature) return;
         _signature = sig;
 
@@ -518,6 +526,17 @@ public partial class BreakoutWindow : Window
         var barBrush = BreakdownRows.BarBrush(this);
         foreach (var (name, value) in rows)
             Rows.Items.Add(BuildItemRow(name, value, barBrush));
+        if (crafted.Count > 0)
+        {
+            // Same label text as the Loot card — one vocabulary for merges everywhere.
+            var label = new TextBlock { Text = "Created by merging" };
+            label.Style = (Style)FindResource("SectionLabel");
+            Rows.Items.Add(label);
+            // Crafted items are real items with wiki pages, so they get the same
+            // hover/click affordances as loot rows.
+            foreach (var (name, value) in crafted)
+                Rows.Items.Add(BuildItemRow(name, value, barBrush));
+        }
     }
 
     /// <summary>An item row wired the way David specced the breakout: hover = the eqlwiki
