@@ -505,6 +505,11 @@ public partial class MainWindow : Window
     {
         _settings.UiScale = Math.Clamp(scale, 0.5, 2.0);
         ApplyUiScale(_settings.UiScale);
+        // The section cap is expressed in pre-scale units, so it has to be re-derived
+        // whenever the scale moves — otherwise the list keeps the previous scale's
+        // allowance and the bottom card is clipped or short until something else
+        // happens to recompute it (discussion #144).
+        ApplySectionMaxHeight();
         _settings.Save();
     }
 
@@ -880,9 +885,19 @@ public partial class MainWindow : Window
     private void ApplySectionMaxHeight(double? autoCap = null)
     {
         if (autoCap is { } cap) _sectionAutoCap = cap;
+        // SectionScroll sits UNDER the UI-scale LayoutTransform, so its MaxHeight is in
+        // pre-scale units — but the monitor cap arrives in screen pixels, and
+        // ContentHeight is deliberately stored pre-scale ("survives scale changes").
+        // Feeding the screen figure straight in made the usable height track the scale
+        // instead of the monitor: past 1.0 the viewer believed it had more room than the
+        // window could show, so the last card was clipped with no scrollbar to reach it
+        // (discussion #144, n3cr0nk1tt3n). OnHeightGripDelta already divides by scale for
+        // exactly this reason; this is the same conversion, in the place that sets it.
+        var scale = Math.Max(0.25, _settings.UiScale);
+        var capInLayoutUnits = _sectionAutoCap / scale;
         SectionScroll.MaxHeight = double.IsNaN(_settings.ContentHeight)
-            ? _sectionAutoCap
-            : Math.Clamp(_settings.ContentHeight, 120, _sectionAutoCap);
+            ? capInLayoutUnits
+            : Math.Clamp(_settings.ContentHeight, 120, capInLayoutUnits);
     }
 
     // Same absolute-cursor discipline as the scale grip: the window resizes under the

@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.81.0",
+  "date": "2026-08-14",
+  "highlights": [
+   "FIXED (discussion #144, thanks n3cr0nk1tt3n) - THE BOTTOM CARD COULD BE CUT OFF with no way to scroll to the rest of it, and whether it happened depended on your widget size slider - the Epics card showed it first, being the longest. The card list lives under the size transform, so the limit it gets is measured in different units than the screen figure it was being handed; the two only agreed at 100%. Away from that, the list's idea of its own room drifted from what the window could show, and once it thought it had more room than existed the last card was simply clipped. Now converted properly, and re-derived whenever you move the slider. Spotting that it changed WITH the scaling is what made this findable.",
+   "NEW - EQBUDDY NOW RENDERS UNDER WINE (PR #148, contributed by liminalwarmth - this one is entirely their work): players running the Windows build through Wine on Linux or CrossOver on macOS got empty boxes instead of every icon. Wine prefixes ship no Segoe fonts, and Wine's text engine only ever looks at the app's PRIMARY font - so EQBuddy now bundles one font containing everything it draws, text and icons alike, and switches to it only when it detects Wine. On real Windows nothing changes at all. They also added a test that fails the build if anyone adds an icon the bundled font doesn't cover, so it can't quietly rot.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.80.1",
   "date": "2026-08-14",
   "highlights": [
