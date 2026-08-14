@@ -27,7 +27,12 @@ public sealed record HistoryDetail(
     IReadOnlyList<HistoryBreakdownRow> HealRows,
     string RestText,
     IReadOnlyList<TimelinePoint> Timeline,
-    IReadOnlyList<PullInfo> Fights);
+    IReadOnlyList<PullInfo> Fights)
+{
+    /// <summary>Session deaths (time + killer), so the per-pull Discord copy can say
+    /// you died without each view reloading the snapshot it was built from.</summary>
+    public IReadOnlyList<TimedDetail> Deaths { get; init; } = [];
+}
 
 /// <summary>DPS-over-time graph geometry, normalized to a drawing surface: X spans the
 /// session minutes, Y is inverted (0 = top) so views can feed the points straight into a
@@ -183,7 +188,8 @@ public static class HistoryPresentation
             // (newest first — flip to chronological) keeps older sessions reviewable.
             EncounterGrouping.Group(snapshot.Encounters.Count > 0
                 ? snapshot.Encounters
-                : [.. snapshot.RecentEncounters.AsEnumerable().Reverse()]));
+                : [.. snapshot.RecentEncounters.AsEnumerable().Reverse()]))
+        { Deaths = snapshot.Deaths };
     }
 
     /// <summary>One pull's collapsed header line in the History fight review. Leads

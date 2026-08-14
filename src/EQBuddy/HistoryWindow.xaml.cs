@@ -104,9 +104,43 @@ public partial class HistoryWindow : Window
                 built = true;
                 BuildFightDetail(body, fight);
             };
-            FightsPanel.Children.Add(header);
+            // #89 for reviewed fights: the same Discord-ready block the Combat card
+            // copies, built from this pull — your numbers only, from your log.
+            var copy = new System.Windows.Controls.Button
+            {
+                Style = (Style)FindResource("IconButton"),
+                FontSize = 11,
+                Content = "⧉",
+                Margin = new Thickness(6, 0, 0, 0),
+                Foreground = (System.Windows.Media.Brush)FindResource("DimBrush"),
+                ToolTip = "Copy this encounter as Discord-ready text (a monospace block — " +
+                    "the official Discord blocks images). Your numbers only, from your log.",
+            };
+            copy.Click += (_, _) => OnCopyEncounter(copy, fight);
+            var row = new System.Windows.Controls.StackPanel
+            { Orientation = Orientation.Horizontal };
+            row.Children.Add(header);
+            row.Children.Add(copy);
+            FightsPanel.Children.Add(row);
             FightsPanel.Children.Add(body);
         }
+    }
+
+    private void OnCopyEncounter(System.Windows.Controls.Button copy, Core.PullInfo fight)
+    {
+        try
+        {
+            Clipboard.SetText(FightExport.ToText(
+                fight, _vm.SelectedRow?.Character ?? "", $"v{UpdateChecker.CurrentVersion}",
+                FightExport.DeathsDuring(fight.Start, fight.DurationSeconds,
+                    _vm.SelectedDetail?.Deaths ?? [])));
+            copy.Content = "✓";
+            var t = new System.Windows.Threading.DispatcherTimer
+                { Interval = TimeSpan.FromSeconds(1.5) };
+            t.Tick += (_, _) => { copy.Content = "⧉"; t.Stop(); };
+            t.Start();
+        }
+        catch (Exception ex) { App.LogError(ex); }
     }
 
     private void BuildFightDetail(System.Windows.Controls.StackPanel body, Core.PullInfo p)
