@@ -79,6 +79,9 @@ public partial class App : Application
         // ever used.
         System.Windows.Media.RenderOptions.ProcessRenderMode =
             System.Windows.Interop.RenderMode.SoftwareOnly;
+        // Under Wine only: swap in the bundled icon font so section icons render
+        // instead of boxing — the whole story lives in WineFonts.cs.
+        WineFonts.ApplyIfNeeded(Resources);
         Core.CoreLog.Sink = LogError;
         if (!ClaimSingleInstance())
         {

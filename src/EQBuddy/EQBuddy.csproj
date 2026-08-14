@@ -27,6 +27,9 @@
 
   <ItemGroup>
     <Resource Include="Assets\tutorial\*.png" />
+    <!-- The app font for Wine, where no Segoe font exists and DirectWrite reads
+         only the primary font — see WineFonts.cs; rebuilt by scripts/build-icon-font.py. -->
+    <Resource Include="Fonts\EQBuddySans.ttf" />
   </ItemGroup>
 
   <!-- WinForms' implicit global usings would make Application/Brush/Point ambiguous
