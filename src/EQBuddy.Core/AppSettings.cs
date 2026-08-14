@@ -176,6 +176,10 @@ public sealed class AppSettings
     /// toggles persist until the next import or clear.</summary>
     public List<GearChecklistItem> GearChecklist { get; set; } = [];
     public string GearChecklistName { get; set; } = "";
+    /// <summary>Gear card grouped by farm zone (the "where to go" pivot) instead of
+    /// by slot. Persisted like the Epics classic-only lens — a view choice survives
+    /// a restart.</summary>
+    public bool GearGroupByZone { get; set; }
     /// <summary>Persistent Epic 1.0 checklist shown in the overlay. Seeded from the
     /// shipped quest catalog; manual checkboxes for now, with room for log/inventory
     /// auto-checking later.</summary>
