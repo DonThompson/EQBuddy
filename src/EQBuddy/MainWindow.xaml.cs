@@ -2536,7 +2536,14 @@ public partial class MainWindow : Window
                     $"zones={ZoneList.Items.Count} deaths={DeathList.Items.Count} " +
                     $"killsTotal={s.YourKillCount} lootTotal={s.LootTotal} " +
                     $"tracked={s.Tracked.Sum(t => t.TotalQuantity)} " +
-                    $"actualH={ActualHeight:0} actualW={ActualWidth:0}";
+                    $"actualH={ActualHeight:0} actualW={ActualWidth:0} " +
+                    // Geometry, for the E2E wiring check. WidgetMetrics is unit-tested,
+                    // but only a launched app can show that its answer actually reaches
+                    // the control — which is the half of #144 a unit test cannot see.
+                    // uiScale is ×100 because the dump carries integers.
+                    $"uiScale100={_settings.UiScale * 100:0} " +
+                    $"sectionCapScreen={_sectionAutoCap:0} " +
+                    $"sectionMaxH={SectionScroll.MaxHeight:0}";
                 System.IO.File.WriteAllText(Core.AppPaths.File("debug.txt"), dump);
             }
             catch { }

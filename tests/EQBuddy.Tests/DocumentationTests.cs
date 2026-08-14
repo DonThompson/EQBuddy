@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -72,8 +71,17 @@ public class DocumentationTests
         // The Held-by column cites test classes. A renamed or deleted suite silently
         // turns a documented guarantee into a fiction, which is the exact failure this
         // file exists to prevent.
-        var known = Assembly.GetExecutingAssembly().GetTypes()
-            .Select(t => t.Name)
+        //
+        // Scanned from SOURCE across every test project rather than by reflection over
+        // this assembly: the plan legitimately cites suites in EQBuddy.Avalonia.Tests and
+        // EQBuddy.E2E, which this project does not reference and should not. (Caught by
+        // this very test on the day E2E scenarios were first cited here.)
+        var known = Directory
+            .EnumerateFiles(Path.Combine(Repo, "tests"), "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(p => Regex.Matches(File.ReadAllText(p), @"\bclass\s+([A-Za-z0-9_]+Tests)\b")
+                .Select(m => m.Groups[1].Value))
             .ToHashSet(StringComparer.Ordinal);
 
         var cited = Regex.Matches(Read("docs/TestPlan.md"), @"`([A-Za-z0-9_]+Tests)`")
@@ -86,7 +94,7 @@ public class DocumentationTests
             .OrderBy(n => n, StringComparer.Ordinal).ToList();
 
         Assert.True(gone.Count == 0,
-            "docs/TestPlan.md cites test classes that do not exist in this assembly. "
+            "docs/TestPlan.md cites test classes that exist in no test project. "
             + "Either the plan is stale or a guarantee lost its test:\n  " + string.Join("\n  ", gone));
     }
 

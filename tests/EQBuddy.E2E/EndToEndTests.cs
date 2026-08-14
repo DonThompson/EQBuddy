@@ -97,4 +97,51 @@ public sealed class EndToEndTests
         Assert.Equal(kills + 1, row.Kills);
         Assert.Equal("ApplicationExit", row.EndReason);
     }
+
+    /// <summary>
+    /// The half of #144 that a unit test cannot reach.
+    ///
+    /// `WidgetMetrics.SectionMaxHeight` is unit-tested, but the bug that reached players
+    /// was not the arithmetic being wrong in isolation — it was a screen-pixel figure
+    /// being handed to a control that measures in pre-scale units. Only a launched app
+    /// can show that the conversion happens at the point of assignment, with the real
+    /// monitor cap and the real scale. So: launch at a scale where the two units
+    /// disagree, and check that the card list's cap covers the monitor exactly once.
+    ///
+    /// Deliberately run at 1.6 rather than 1.0, because at 1.0 the buggy and the correct
+    /// code produce the same number — which is precisely why this shipped.
+    /// </summary>
+    [Fact]
+    public void TheCardListsCapIsConvertedForTheUiScale()
+    {
+        using var app = new AppHarness(s => s.UiScale = 1.6);
+        app.Launch();
+
+        var scale = app.DumpValue("uiScale100") / 100.0;
+        var screenCap = app.DumpValue("sectionCapScreen");
+        var assigned = app.DumpValue("sectionMaxH");
+
+        Assert.Equal(1.6, scale, 2);
+        Assert.True(screenCap > 0, "monitor-derived cap should be set; dump was: " + app.Artifacts());
+
+        // The assigned value is in pre-scale units, so scaling it back must land on the
+        // monitor's own ceiling. The pre-fix code assigned screenCap unconverted, which
+        // would come back 1.6x too large here.
+        Assert.Equal(screenCap, assigned * scale, 1);
+    }
+
+    /// <summary>The same check at 100%, where the units coincide — a guard against
+    /// "fixing" the conversion in a way that only works when it is needed.</summary>
+    [Fact]
+    public void TheCapIsUnchangedAtFullScale()
+    {
+        using var app = new AppHarness(s => s.UiScale = 1.0);
+        app.Launch();
+
+        var screenCap = app.DumpValue("sectionCapScreen");
+        // Guard against passing on two missing keys: DumpValue answers -1 for absent,
+        // and -1 == -1 would make this test agree with a dump that says nothing at all.
+        Assert.True(screenCap > 0, "monitor-derived cap should be set; dump was: " + app.Artifacts());
+        Assert.Equal(screenCap, app.DumpValue("sectionMaxH"));
+    }
 }

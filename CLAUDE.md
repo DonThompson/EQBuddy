@@ -114,11 +114,17 @@ the game's own map files. This harness found trap 6 above; unit tests could not 
 
 ## Before you finish
 
-- Run the gates. `scripts/check.ps1` is the whole set.
+- Run the gates. `scripts/check.ps1` is the whole set (E2E is separate — it launches the
+  real app and needs a desktop session: `dotnet test tests/EQBuddy.E2E/EQBuddy.E2E.csproj -c Release`,
+  after `dotnet build`, since it runs the BUILD output and not `dist/publish`).
 - Player-visible change? `WhatsNew.json` entry, reporter credited.
 - Behaviour change? Update [docs/TestPlan.md](docs/TestPlan.md) — that file is the
   contract for what EQBuddy is expected to do, and it is only useful if it stays true.
 - New trap discovered the hard way? Add it above. That is the whole point of this file.
+
+**To cover a piece of window behaviour**, add the fact to the `EQBUDDY_EXPAND` dump in
+`MainWindow` and assert it from `tests/EQBuddy.E2E`. That is how the WPF layer — which
+has no unit tests — gets covered at all beyond pure arithmetic.
 
 **And the standing move for window bugs:** if the bug is a *sum* rather than a pixel,
 extract it into `UI.Shared` and unit-test it there instead of fixing it in place. Both

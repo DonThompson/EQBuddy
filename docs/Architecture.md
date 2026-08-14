@@ -58,8 +58,16 @@ Break one of these and something quietly goes wrong rather than failing loudly.
 
 ## 3. Where the risk is concentrated
 
-**`src/EQBuddy` — 14,432 lines with no automated coverage at all.** No test project
-references it. `EQBuddy.Tests` covers Core, UI.Shared and Companion; Avalonia has its
+**`src/EQBuddy` — 14,432 lines, and no test project references it.** Two routes now
+reach into it anyway, and neither is a unit test:
+
+- **Pure arithmetic extracted to `UI.Shared`** (`WidgetMetrics`, `ChipStackAnchor`) —
+  ordinary unit tests, because sums do not need a window.
+- **The `EQBUDDY_EXPAND` dump read by E2E** — the real app, launched, reporting facts
+  about itself. This is the only thing that sees whether the arithmetic is *wired* to
+  the controls. To cover a piece of window behaviour: dump the fact, assert it from E2E.
+
+What remains uncovered is genuine rendering and input. `EQBuddy.Tests` covers Core, UI.Shared and Companion; Avalonia has its
 own render tests; the WPF UI has none.
 
 This is not academic. Both bugs reported by players on 2026-08-14 — the clipped card

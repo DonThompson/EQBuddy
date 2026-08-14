@@ -5,7 +5,7 @@ contract. When behaviour changes, this file changes in the same commit — a tes
 that has drifted from the product is worse than none, because it teaches confidently
 wrong things.
 
-Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 4 E2E, all green.
+Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green.
 
 **How to read the Held-by column**
 
@@ -84,7 +84,8 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 4 E2E, all green
 | A grow-up chip stack holds its bottom edge as chips come and go | **Auto** — `ChipStackAnchorTests` (#122) |
 | A closing window (height 0) cannot move the anchor; the stack returns to the same spot across repeated empty/refill cycles | **Auto** — `ChipStackAnchorTests` (#152) |
 | A drag moves the anchor; a grow-down stack is never repositioned | **Auto** — `ChipStackAnchorTests` |
-| Those conversions are actually wired to the window's events | **Manual** — §6 items 1–3 |
+| The card list's cap is converted at the point of assignment, in the real app at a real scale | **Auto** — `EndToEndTests` (E2E; #144's other half) |
+| The chip anchor is actually wired to the window's events | **Manual** — §6 items 2–3 |
 
 ## 5. The gap — read this before trusting the suite
 
@@ -121,7 +122,16 @@ bugs of the kind a small pure helper *could* pin.
    proves the approach works on this codebase. Would cover placement, scaling and chip
    layout properly.
 3. **Extend E2E** past its four scenarios into what the widget *shows*, not just what it
-   ingests.
+   ingests. **Started 2026-08-14**: the `EQBUDDY_EXPAND` dump now carries `uiScale100`,
+   `sectionCapScreen` and `sectionMaxH`, and two scenarios assert the conversion in the
+   launched app at 1.6x and at 1.0x. The pattern generalises — **to cover a piece of
+   window behaviour, dump the fact and assert it from E2E.** It is cheaper than it looks
+   and it is the only route that sees real WPF layout.
+
+   *Note on the road not taken:* a WPF unit-test project (recommendation 2) is harder
+   than the Avalonia precedent suggests, because Avalonia ships a headless platform for
+   exactly this and WPF does not. E2E already launches the real app; extending it beats
+   building a second harness that would fight the desktop.
 
 ## 6. Manual pass
 
@@ -135,7 +145,9 @@ EQBUDDY_EXPAND=1            # all sections expanded + a state dump
 Fixture logs: see [FeatureGuide.md](FeatureGuide.md) §"Testing without playing".
 
 1. **Scale** — drag the size grip from 80% to 160%. Every card stays reachable by
-   scrolling at *every* scale; the bottom card is never clipped. (#144)
+   scrolling at *every* scale; the bottom card is never clipped. (#144 — the cap's
+   arithmetic and its wiring are now both automated; this pass is for what neither can
+   see: whether it *looks* right.)
 2. **Chips, grow-up** — enable grow-upwards, let a mez stack empty completely, mez
    again. The stack returns to the same spot. Repeat five times; it must not walk. (#152)
 3. **Chips, grow-down** — same, unmoved.
