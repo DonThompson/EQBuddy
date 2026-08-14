@@ -131,6 +131,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     };
     private readonly StackPanel _skySearchResults = new();
     private readonly TabControl _skyQuestTabs = new() { Margin = new Thickness(0, 2, 0, 0), Padding = new Thickness(0) };
+    // ---- the Epics card (#121/#138) ----
+    private readonly TextBlock _epicHeader = AppTheme.StatValue("0/0");
+    private readonly TabControl _epicTabs = new() { Margin = new Thickness(0, 2, 0, 0), Padding = new Thickness(0) };
+    private readonly CheckBox _epicClassicOnlyCheck = new() { Content = "Classic-doable only" };
+    private readonly Dictionary<string, int> _epicQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    private bool _epicQuestDirty = true;
     private readonly TextBlock _kpiDps = Kpi(accent: true);
     private readonly TextBlock _kpiKills = Kpi();
     private readonly TextBlock _kpiLoot = Kpi();
@@ -858,6 +864,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         AddSection("motes", "motes", "Motes", _motesHeader, BuildMotesSection(), "Show motes in mini dashboard");
         _sections["sky"] = AppTheme.Section(Header("☁ Sky Quest", _skyQuestHeader), BuildSkyQuestSection());
         _sections["gear"] = AppTheme.Section(Header("🛡 Gear", _gearHeader), BuildGearSection());
+        _sections["epic"] = AppTheme.Section(Header("⚔ Epics", _epicHeader), BuildEpicSection());
         _sections["tracked"] = AppTheme.Section(Header("Watch", _trackedHeader), _trackedPanel);
         _sections["buffs"] = AppTheme.Section(Header("⏳ Buffs", _buffsHeader), _buffsPanel);
         _sections["raids"] = AppTheme.Section(Header("🐉 Raids", _raidsHeader), _raidsPanel);
@@ -902,6 +909,25 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         panel.Children.Add(_skySearchScroll);
         _skyQuestTabs.SelectionChanged += OnSkyQuestTabChanged;
         panel.Children.Add(_skyQuestTabs);
+        return panel;
+    }
+
+    private Control BuildEpicSection()
+    {
+        var panel = new StackPanel();
+        // #71d21ea: an epic's later steps need expansions this server may not have.
+        // The lens is honest about it rather than listing steps you cannot start.
+        _epicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
+        _epicClassicOnlyCheck.FontSize = 10;
+        _epicClassicOnlyCheck.Margin = new Thickness(0, 2, 0, 4);
+        _epicClassicOnlyCheck.Foreground = AppTheme.DimBrush;
+        ToolTip.SetTip(_epicClassicOnlyCheck,
+            "Show only the steps doable on a classic-era server — the rest are hidden "
+            + "from both the list and the counts, so the score means what it says.");
+        _epicClassicOnlyCheck.IsCheckedChanged += OnEpicClassicOnlyToggled;
+        panel.Children.Add(_epicClassicOnlyCheck);
+        _epicTabs.SelectionChanged += OnEpicQuestTabChanged;
+        panel.Children.Add(_epicTabs);
         return panel;
     }
 
@@ -1515,6 +1541,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _reviewPath = path;
         _targetResults.Clear();
         _skyQuestLootSeen.Clear();
+        _epicQuestLootSeen.Clear();
         ClearGearAutoCheckSeen();
         if (pick is not null) _watcher.Select(path, pick.StartOffset, pick.EndOffset);
         else _watcher.Select(path);
@@ -1587,6 +1614,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             // rest of the character state.
             _targetResults.Clear();
             _skyQuestLootSeen.Clear();
+            _epicQuestLootSeen.Clear();
             ClearGearAutoCheckSeen();
         }
     }
@@ -1881,10 +1909,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         {
             _autoCheckSessionStart = s.SessionStart;
             _skyQuestLootSeen.Clear();
+            _epicQuestLootSeen.Clear();
             ClearGearAutoCheckSeen();
         }
         UpdateSkyQuestChecklist(s);
         UpdateGearChecklist(s);
+        UpdateEpicQuestChecklist(s);
         _moneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         _progressHeader.Text = $"{s.XpPercent:0.0}% xp" + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "") + (s.AaGained > 0 ? $", +{s.AaGained} aa" : "");
         _factionHeader.Text = s.Faction.Count > 0 ? $"{s.Faction.Count} factions" : "-";
@@ -2053,6 +2083,11 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         {
             RenderSkyQuestChecklist();
             _skyQuestDirty = false;
+        }
+        if (_sections["epic"].IsExpanded && _epicQuestDirty)
+        {
+            RenderEpicQuestChecklist();
+            _epicQuestDirty = false;
         }
         if (_sections["gear"].IsExpanded && _gearChecklistDirty)
         {
@@ -3569,6 +3604,337 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             if (count <= seen) continue;
             changed |= SkyLootAutoCheck.Apply(_settings.SkyQuestChecklist, name,
                 count - seen, myClasses, _settings.SkyQuestClass);
+        }
+
+        return changed;
+    }
+
+    // ---- the Epics card (#121/#138) ----
+
+    private void RenderEpicQuestChecklist()
+    {
+        var selectedClass = (_epicTabs.SelectedItem as TabItem)?.Tag as string
+            ?? (_settings.EpicQuestClass.Length > 0 ? _settings.EpicQuestClass : null);
+        _epicTabs.Items.Clear();
+
+        foreach (var className in QuestClassFilter.Classes)
+        {
+            var allClassItems = _settings.EpicQuestChecklist
+                .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
+                .OrderBy(i => i.Order)
+                .ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var classItems = FilterEpicQuestRows(allClassItems).ToList();
+            var done = classItems.Count(i => i.Acquired);
+            var total = classItems.Count;
+            var quest = EpicQuestDefaults.FindQuest(QuestCatalog, className);
+            var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+
+            if (quest is null || allClassItems.Count == 0)
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = "No Epic 1.0 quest found in the catalog for this class yet.",
+                    FontSize = 11,
+                    Foreground = AppTheme.DimBrush,
+                    TextWrapping = TextWrapping.Wrap,
+                });
+            }
+            else
+            {
+                panel.Children.Add(new TextBlock
+                {
+                    Text = quest.Name,
+                    FontSize = 11,
+                    FontWeight = FontWeight.SemiBold,
+                    Foreground = AppTheme.AccentBrush,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                });
+                if (classItems.Count > 0 && classItems[0].Reward.Length > 0)
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "Reward: " + classItems[0].Reward,
+                        FontSize = 10,
+                        Foreground = AppTheme.DimBrush,
+                        TextWrapping = TextWrapping.Wrap,
+                    });
+                var source = EpicQuestDefaults.SourceLine(quest);
+                if (source.Length > 0)
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = source,
+                        FontSize = 10,
+                        Foreground = AppTheme.DimBrush,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 1, 0, 4),
+                    });
+
+                if (classItems.Count == 0)
+                    panel.Children.Add(new TextBlock
+                    {
+                        Text = "No classic-doable steps are tagged for this class yet.",
+                        FontSize = 11,
+                        Foreground = AppTheme.DimBrush,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(0, 8, 0, 4),
+                    });
+
+                var completed = IsEpicQuestCompleted(className);
+                var completeCheck = new CheckBox
+                {
+                    IsChecked = completed,
+                    Margin = new Thickness(0, 8, 0, 4),
+                    Content = new TextBlock
+                    {
+                        Text = completed ? "Complete" : "Epic complete",
+                        FontSize = 11,
+                        FontWeight = FontWeight.SemiBold,
+                        Foreground = AppTheme.AccentBrush,
+                    },
+                };
+                ToolTip.SetTip(completeCheck, "Check when the final epic turn-in is finished.");
+                completeCheck.IsCheckedChanged += (box, _) => OnEpicQuestCompletedToggled(
+                    className, allClassItems, ((CheckBox)box!).IsChecked == true, completeCheck);
+                panel.Children.Add(completeCheck);
+
+                foreach (var sectionGroup in classItems.GroupBy(i => i.Section.Length > 0 ? i.Section : "Checklist"))
+                {
+                    if (!sectionGroup.Key.Equals("Checklist", StringComparison.OrdinalIgnoreCase)
+                        || classItems.Select(i => i.Section).Distinct().Count() > 1)
+                        panel.Children.Add(new TextBlock
+                        {
+                            Text = sectionGroup.Key,
+                            FontSize = 12,
+                            FontWeight = FontWeight.SemiBold,
+                            Foreground = AppTheme.AccentBrush,
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(0, 8, 0, 2),
+                        });
+
+                    foreach (var item in sectionGroup)
+                        panel.Children.Add(EpicItemCheckBox(item, completed));
+                }
+            }
+
+            var tab = new TabItem
+            {
+                Header = total > 0 ? $"{ClassAbbrev(className)} {done}/{total}" : $"{ClassAbbrev(className)} -",
+                Tag = className,
+                FontSize = 11,
+                Content = new ScrollViewer
+                {
+                    Content = panel,
+                    MaxHeight = SkyQuestListMaxHeight(),
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                    Padding = new Thickness(0, 0, 4, 0),
+                },
+            };
+            ToolTip.SetTip(tab, className);
+            _epicTabs.Items.Add(tab);
+            if (string.Equals(selectedClass, className, StringComparison.Ordinal))
+                _epicTabs.SelectedItem = tab;
+        }
+
+        if (_epicTabs.SelectedIndex < 0 && _epicTabs.Items.Count > 0)
+            _epicTabs.SelectedIndex = 0;
+    }
+
+    private CheckBox EpicItemCheckBox(EpicQuestChecklistItem item, bool completed)
+    {
+        // * = the auto-tick parked a multi-class item here because no class lens
+        // claimed it (the Sky #106 contract) — the player decides where it belongs.
+        var text = new TextBlock
+        {
+            Text = item.AcquiredUnassigned ? item.QuestItem + " *" : item.QuestItem,
+            FontSize = 11,
+            Foreground = AppTheme.TextBrush,
+            TextWrapping = TextWrapping.Wrap,
+        };
+
+        var tip = $"{item.QuestName}: {item.QuestItem}";
+        if (item.AcquiredUnassigned)
+        {
+            var others = _settings.EpicQuestChecklist
+                .Where(i => !i.ClassName.Equals(item.ClassName, StringComparison.OrdinalIgnoreCase)
+                         && i.ItemNames.Any(n => item.ItemNames.Contains(n, StringComparer.OrdinalIgnoreCase)))
+                .Select(i => i.ClassName).Distinct().ToList();
+            tip += "\n* Auto-ticked here, but the looted item is also wanted by: "
+                + string.Join(", ", others)
+                + ". Untick it and tick the right class if this guess is wrong.";
+        }
+
+        var check = new CheckBox
+        {
+            IsChecked = item.Acquired,
+            Content = text,
+            Margin = new Thickness(0, 2, 0, 2),
+            IsEnabled = !completed,
+            Opacity = completed ? 0.55 : 1.0,
+        };
+        ToolTip.SetTip(check, tip);
+        check.IsCheckedChanged += (box, _) => OnEpicQuestToggled(item, ((CheckBox)box!).IsChecked == true);
+        return check;
+    }
+
+    private bool IsEpicQuestCompleted(string className) =>
+        _settings.EpicQuestCompleted.Contains(className, StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<EpicQuestChecklistItem> FilterEpicQuestRows(IEnumerable<EpicQuestChecklistItem> items) =>
+        _settings.EpicQuestClassicOnly ? items.Where(i => i.AvailableInClassic) : items;
+
+    private void OnEpicClassicOnlyToggled(object? sender, RoutedEventArgs e)
+    {
+        var value = _epicClassicOnlyCheck.IsChecked == true;
+        if (_settings.EpicQuestClassicOnly == value) return;
+
+        _settings.EpicQuestClassicOnly = value;
+        _settings.Save();
+        UpdateEpicQuestHeaderOnly();
+        RepaintEpicCard();
+    }
+
+    /// <summary>True while a cancelled master check is being flipped back in code —
+    /// the resulting change event is not a toggle and must not restore anything.</summary>
+    private bool _epicCompleteReverting;
+
+    private async void OnEpicQuestCompletedToggled(string className, List<EpicQuestChecklistItem> items,
+        bool done, CheckBox master)
+    {
+        if (_epicCompleteReverting) return;
+        try
+        {
+            if (done)
+            {
+                // One stray click here flips every unchecked row (#138, aodgizmo) — bulk
+                // enough to warrant the one confirmation this card has. All rows already
+                // checked by hand means nothing gets overwritten: no dialog.
+                var remaining = EQBuddy.UI.Shared.EpicCompleteToggle.CountUnchecked(items);
+                if (remaining > 0 && !await ConfirmDialog.Ask(this, "Epic complete",
+                        $"Mark all {remaining} remaining {className} steps complete?",
+                        "Mark complete"))
+                {
+                    _epicCompleteReverting = true;
+                    master.IsChecked = false;
+                    _epicCompleteReverting = false;
+                    return;
+                }
+                if (!_settings.EpicQuestCompleted.Contains(className, StringComparer.OrdinalIgnoreCase))
+                    _settings.EpicQuestCompleted.Add(className);
+                // Snapshot what the bulk check overwrites, so unchecking can undo it.
+                _settings.EpicQuestPreCompleteAcquired[className] =
+                    EQBuddy.UI.Shared.EpicCompleteToggle.Snapshot(items);
+                EQBuddy.UI.Shared.EpicCompleteToggle.CheckAll(items);
+            }
+            else
+            {
+                _settings.EpicQuestCompleted.RemoveAll(k =>
+                    string.Equals(k, className, StringComparison.OrdinalIgnoreCase));
+                // Restore what the bulk check overwrote. No snapshot (completed before
+                // the undo existed) leaves the rows as they are — the old behavior.
+                if (_settings.EpicQuestPreCompleteAcquired.Remove(className, out var acquiredIds))
+                    EQBuddy.UI.Shared.EpicCompleteToggle.Restore(items, acquiredIds);
+            }
+
+            _settings.Save();
+            UpdateEpicQuestHeaderOnly();
+            RepaintEpicCard();
+        }
+        catch (Exception ex) { App.LogError(ex); }
+    }
+
+    private void OnEpicQuestToggled(EpicQuestChecklistItem item, bool acquired)
+    {
+        item.Acquired = acquired;
+        // The player deciding IS the resolution of an auto-parked tick (#106) —
+        // whichever way they toggled, the * has served its purpose.
+        item.AcquiredUnassigned = false;
+        _settings.Save();
+        UpdateEpicQuestHeaderOnly();
+        UpdateEpicQuestTabHeader(item.ClassName);
+    }
+
+    private void OnEpicQuestTabChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if ((_epicTabs.SelectedItem as TabItem)?.Tag is string cls
+            && !string.Equals(_settings.EpicQuestClass, cls, StringComparison.Ordinal))
+        {
+            _settings.EpicQuestClass = cls;
+            _settings.Save();
+        }
+    }
+
+    /// <summary>Repaint now if the card is open, otherwise mark it for the next
+    /// expand — the same dirty-render gate the Sky and Gear cards use.</summary>
+    private void RepaintEpicCard()
+    {
+        if (_sections["epic"].IsExpanded)
+        {
+            RenderEpicQuestChecklist();
+            _epicQuestDirty = false;
+        }
+        else
+        {
+            _epicQuestDirty = true;
+        }
+    }
+
+    private void UpdateEpicQuestTabHeader(string className)
+    {
+        foreach (var tab in _epicTabs.Items.OfType<TabItem>())
+            if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
+            {
+                var classItems = FilterEpicQuestRows(_settings.EpicQuestChecklist
+                    .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal)))
+                    .ToList();
+                var done = classItems.Count(i => i.Acquired);
+                var total = classItems.Count;
+                tab.Header = total > 0
+                    ? $"{ClassAbbrev(className)} {done}/{total}"
+                    : $"{ClassAbbrev(className)} -";
+            }
+    }
+
+    private void UpdateEpicQuestHeaderOnly()
+    {
+        var items = FilterEpicQuestRows(_settings.EpicQuestChecklist).ToList();
+        _epicHeader.Text = $"{items.Count(i => i.Acquired)}/{items.Count}";
+    }
+
+    private void UpdateEpicQuestChecklist(StatsSnapshot s)
+    {
+        var changed = AutoCheckEpicQuestLoot(s);
+        UpdateEpicQuestHeaderOnly();
+        if (changed)
+        {
+            _epicQuestDirty = true;
+            _settings.Save();
+        }
+    }
+
+    private bool AutoCheckEpicQuestLoot(StatsSnapshot s)
+    {
+        var changed = false;
+        // The class-scoping rules live in Core (EpicLootAutoCheck) where they are
+        // tested — the Sky rules (#98/#106) over prose steps keyed by the catalog
+        // items their text mentions (#121). Same high-water diff as Sky: only the
+        // newly-looted delta ticks steps, so a re-render never double-counts.
+        var myClasses = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [];
+        var lootByName = s.Loot
+            .GroupBy(l => l.Item, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Sum(l => l.Count), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var key in _epicQuestLootSeen.Keys.ToList())
+            if (!lootByName.ContainsKey(key))
+                _epicQuestLootSeen[key] = 0;
+
+        foreach (var (name, count) in lootByName)
+        {
+            _epicQuestLootSeen.TryGetValue(name, out var seen);
+            _epicQuestLootSeen[name] = count;
+            if (count <= seen) continue;
+            changed |= EpicLootAutoCheck.Apply(_settings.EpicQuestChecklist, name,
+                count - seen, myClasses, _settings.EpicQuestClass);
         }
 
         return changed;
