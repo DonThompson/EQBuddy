@@ -4629,15 +4629,14 @@ public partial class MainWindow : Window
     /// <summary>One dump, one pass: what the character verifiably OWNS ticks gear
     /// wishes — the raw Entries carry "+N" tiers (Counts folds them off), so the
     /// at-or-above rule holds here too. The stamp keeps a re-scan of the same file
-    /// from re-fighting a box the player deliberately unchecked.</summary>
-    private string _gearInventoryApplied = "";
-
+    /// from re-fighting a box the player deliberately unchecked — PERSISTED, so the
+    /// truce survives a restart; only a genuinely new dump re-opens the question.</summary>
     private void AutoCheckGearFromInventory(InventoryFile.Snapshot? dump)
     {
         if (dump is null) return;
         var stamp = $"{dump.Path}|{dump.WrittenAt:O}";
-        if (stamp == _gearInventoryApplied) return;
-        _gearInventoryApplied = stamp;
+        if (stamp == _settings.GearInventoryAppliedStamp) return;
+        _settings.GearInventoryAppliedStamp = stamp;
         if (GearLootAutoCheck.ApplyInventory(_settings.GearChecklist, dump.Entries))
         {
             _gearChecklistDirty = true;

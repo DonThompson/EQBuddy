@@ -27,9 +27,12 @@ public static partial class GearLootAutoCheck
     /// The base half matches <see cref="QuestCatalog.BaseItemName"/>'s folding.</summary>
     public static (string BaseName, int Tier) SplitTier(string itemName)
     {
+        // TryParse, not Parse: wish names arrive from an imported HTML export and
+        // obtained names from dump rows — a "+" tail of absurd digits must read as
+        // no-tier, not throw on the UI tick that evaluates every row.
         var m = TierSuffixRegex().Match(itemName.Trim());
-        return m.Success
-            ? (m.Groups["base"].Value, int.Parse(m.Groups["tier"].Value))
+        return m.Success && int.TryParse(m.Groups["tier"].Value, out var tier)
+            ? (m.Groups["base"].Value, tier)
             : (itemName.Trim(), 0);
     }
 

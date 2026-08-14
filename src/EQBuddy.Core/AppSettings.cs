@@ -202,6 +202,10 @@ public sealed class AppSettings
     /// by slot. Persisted like the Epics classic-only lens — a view choice survives
     /// a restart.</summary>
     public bool GearGroupByZone { get; set; }
+    /// <summary>Path|timestamp of the last inventory dump the gear auto-done pass
+    /// consumed. Persisted so a box the player deliberately unchecked is not
+    /// re-fought on restart by the SAME dump; a new dump re-opens the question.</summary>
+    public string GearInventoryAppliedStamp { get; set; } = "";
     /// <summary>Persistent Epic 1.0 checklist shown in the overlay. Seeded from the
     /// shipped quest catalog; manual checkboxes for now, with room for log/inventory
     /// auto-checking later.</summary>
