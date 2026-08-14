@@ -3,6 +3,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
@@ -521,6 +522,70 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("▾ All AA abilities", text);
         Assert.Contains("Natural Durability", text);
         window.Close();
+    }
+
+    /// <summary>The ⏳ Buff set breakout (#120 stage 2): per-class sections with each
+    /// pick's honesty state, and the ✕ that removes from THAT bucket only. Without a
+    /// named character the whole surface degrades to its honest locked state, so both
+    /// halves are asserted here.</summary>
+    [AvaloniaFact]
+    public void BuffSetBreakoutShowsPerClassSectionsAndRemovesFromOneBucket()
+    {
+        var main = new MainWindow();
+        main.BuffSetIdentityForTests = () => ("tester_p1999", "Tester", ["Shaman"], true);
+        main.Show();
+        BuffSetStore.Add(main.Settings.BuffSetsByClass, "tester_p1999", "Shaman", "Spirit of Wolf");
+        BuffSetStore.Add(main.Settings.BuffSetsByClass, "tester_p1999", BuffSetStore.AnyClass, "Strength");
+
+        var window = new BreakoutWindow(main.Settings, BreakoutKind.Buffs) { BuffHost = main };
+        window.Show();
+        window.Update(main.CurrentSnapshot());
+        Dispatcher.UIThread.RunJobs();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("⏳ Buff set", text);
+        Assert.Contains("Spirit of Wolf", text);
+        Assert.Contains("Strength", text);
+        // The class combination is named, and says it was picked rather than inferred.
+        Assert.Contains(text, t => t.StartsWith("Tester ·") && !t.Contains("inferred"));
+        // Neither has landed this session, so both read as the honest "not seen" state
+        // rather than being claimed active.
+        Assert.Contains("not seen", text);
+
+        // ✕ on the Shaman row takes it out of that bucket only — (any class) survives.
+        var remove = window.GetVisualDescendants().OfType<Button>()
+            .First(b => ToolTip.GetTip(b) is string tip && tip == "Remove Spirit of Wolf from Shaman");
+        remove.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        var stored = main.Settings.BuffSetsByClass["tester_p1999"];
+        Assert.DoesNotContain("Spirit of Wolf", BuffSetStore.SpellsFor(stored, "Shaman"));
+        Assert.Contains("Strength", BuffSetStore.SpellsFor(stored, BuffSetStore.AnyClass));
+        window.Close();
+        main.Close();
+    }
+
+    /// <summary>No character named yet: the set can't be keyed, so the window says so
+    /// and locks its editor instead of showing an empty set that looks configurable.</summary>
+    [AvaloniaFact]
+    public void BuffSetBreakoutLocksItselfUntilTheLogNamesACharacter()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var window = new BreakoutWindow(main.Settings, BreakoutKind.Buffs) { BuffHost = main };
+        window.Show();
+        window.Update(main.CurrentSnapshot());
+        Dispatcher.UIThread.RunJobs();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("No character detected yet", text);
+        var addBox = window.GetVisualDescendants().OfType<TextBox>()
+            .Single(b => b.Watermark == "add a buff…");
+        Assert.False(addBox.IsEnabled);
+        window.Close();
+        main.Close();
     }
 
     [AvaloniaFact]

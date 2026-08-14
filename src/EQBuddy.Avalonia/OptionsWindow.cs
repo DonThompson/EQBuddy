@@ -65,6 +65,20 @@ public sealed class OptionsWindow : Window
     private CheckBox _spawnGrowUpCheck = null!;
     private CheckBox _mezGrowUpCheck = null!;
 
+    // ---- Buff set (#120, Frankthetankk — the missing line's editor) ----
+    private readonly TextBlock _buffSetCharNote = AppTheme.DimText("", new Thickness(0, 2, 0, 0));
+    private readonly StackPanel _buffSetPanel = new() { Margin = new Thickness(0, 4, 0, 0) };
+    private readonly ComboBox _buffSetClassBox = new()
+    {
+        MinWidth = 110,
+        FontSize = 12,
+        Margin = new Thickness(0, 0, 6, 0),
+        VerticalAlignment = VerticalAlignment.Center,
+    };
+    private readonly TextBox _buffSetAddBox;
+    private readonly ListBox _buffSetMatches = new() { MaxHeight = 240, MaxWidth = 480, FontSize = 11.5 };
+    private readonly Popup _buffSetPopup;
+
     // ---- Watch rules ----
     private readonly StackPanel _rulesPanel = new() { Margin = new Thickness(0, 4, 0, 0) };
     private readonly Button _guideToggle = AppTheme.IconButton("▸ Show examples", "Worked examples for every rule kind");
@@ -178,6 +192,18 @@ public sealed class OptionsWindow : Window
         {
             Placement = PlacementMode.Top,
             IsLightDismissEnabled = true,
+        };
+        _buffSetAddBox = DarkBox("",
+            "Type a few letters of a buff's name — buffs you've been seen casting list first, then the whole buff catalog");
+        // Light dismiss (WPF's StaysOpen="False"): the matches are a suggestion, so a click
+        // anywhere else is an answer of "none of these". It costs the search box nothing —
+        // an Avalonia popup host is shown without activation, so typing keeps flowing into
+        // the box behind it.
+        _buffSetPopup = new Popup
+        {
+            Placement = PlacementMode.Bottom,
+            IsLightDismissEnabled = true,
+            PlacementTarget = _buffSetAddBox,
         };
 
         _contentScroll.Content = BuildTabsBody();
@@ -608,6 +634,8 @@ public sealed class OptionsWindow : Window
             "Unticked, the Buffs card counts down everything that's running. Ticked, it stays quiet (with an honest count) until a buff is inside the warning window — tell me when it matters. Your own casts already include your Spell Casting Reinforcement rank; a buff's first natural fade teaches its exact duration either way.",
             new Thickness(20, 2, 0, 0)));
 
+        InitBuffSet(panel);
+
         _mezChipsCheck = Check("Mez countdown chips (who's asleep, wake-up timers)",
             _main.Settings.MezChipsEnabled, on =>
             {
@@ -705,6 +733,226 @@ public sealed class OptionsWindow : Window
             _main.Settings.BuffWarnSeconds = Math.Clamp(seconds, 10, 3600);
         _buffWarnBox.Text = _main.Settings.BuffWarnSeconds.ToString("0");   // shows any clamp
         _main.PersistSettings();
+    }
+
+    // ---------------------------------------------------------------- Buff set (#120)
+    //
+    // Frankthetankk's missing line, stage 2: the set lives PER CLASS in
+    // Settings.BuffSetsByClass (BuffSetStore owns the shape) and assembles from the
+    // active class combination plus the "(any class)" bucket, so swapping Warrior for
+    // Rogue keeps the other classes' picks untouched. This editor shows every bucket —
+    // active or parked — because it is the one place a stored pick can always be
+    // removed. Every edit repaints the card and the breakout through BuffSetEdited.
+
+    private void InitBuffSet(Panel panel)
+    {
+        panel.Children.Add(Heading("Buff set — the missing line", new Thickness(0, 14, 0, 2)));
+        panel.Children.Add(AppTheme.DimText(
+            "Pick the buffs this character never camps without — per class: each pick lands in a class bucket, and the live set assembles from the classes you're running plus (any class), so swapping one class keeps the other classes' picks. The ⏳ Buffs card grows one line ONLY when something's off: missing (seen fading, or its timer ran out), expiring (inside the warn window above), or not seen (no landing line this session — it may be up from before EQBuddy was watching; the log can't tell, so it's shown as its own honest state). Everything up = no line at all. You build the list yourself; nothing is ever added for you."));
+        panel.Children.Add(_buffSetCharNote);
+        panel.Children.Add(_buffSetPanel);
+
+        // The add box targets a class bucket. The FULL class list is offered here (unlike
+        // the breakout's active-only list) so a swap can be configured in advance.
+        var addRow = new Grid { Margin = new Thickness(0, 4, 0, 0) };
+        addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        ToolTip.SetTip(_buffSetClassBox,
+            "Which class bucket the next pick goes into — (any class) applies whatever combination you run");
+        addRow.Children.Add(_buffSetClassBox);
+        Grid.SetColumn(_buffSetAddBox, 1);
+        addRow.Children.Add(_buffSetAddBox);
+        panel.Children.Add(addRow);
+        panel.Children.Add(_buffSetPopup);
+
+        // Same chrome as the recent-log-lines picker: a bordered popup over a ListBox, so
+        // both "box with a dropdown of matches" in this window look and dismiss alike.
+        _buffSetMatches.Background = AppTheme.PopupBrush;
+        _buffSetMatches.Foreground = AppTheme.TextBrush;
+        _buffSetMatches.SelectionChanged += OnBuffSetMatchPicked;
+        _buffSetPopup.Child = new Border
+        {
+            Background = AppTheme.PopupBrush,
+            BorderBrush = AppTheme.AccentBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(2),
+            Child = _buffSetMatches,
+        };
+        // The property change, not TextBox.TextChanged: that one only fires for edits the
+        // user typed, and the pick handler clears the box in code — the popup would be left
+        // hanging open over the panel it just repainted.
+        _buffSetAddBox.PropertyChanged += (_, args) =>
+        {
+            if (args.Property == TextBox.TextProperty) OnBuffSetSearchChanged();
+        };
+
+        BuildBuffSetPanel();
+    }
+
+    /// <summary>The breakout editor writes the same storage; MainWindow calls this so its
+    /// edits appear here immediately too.</summary>
+    internal void RefreshBuffSetEditor() => BuildBuffSetPanel();
+
+    private void BuildBuffSetPanel()
+    {
+        var (key, character, classes, picked) = BuffSetWho();
+        _buffSetCharNote.Text = key.Length > 0
+            ? $"Saved for {character}, per class — the live set is (any class) plus "
+              + (classes.Count > 0
+                  ? $"{string.Join(", ", classes.Select(QuestClassFilter.Abbrev))} "
+                    + (picked
+                        ? "(picked in the Quest Tracker)."
+                        : "(inferred from your combat log — pick classes in the Quest Tracker to override).")
+                  : "your classes — none known yet: pick them in the Quest Tracker, or use (any class).")
+            : "No character detected yet — once today's log names one, reopen Options and the editor unlocks.";
+        _buffSetAddBox.IsEnabled = key.Length > 0;
+        _buffSetClassBox.IsEnabled = key.Length > 0;
+        RefreshBuffSetClassChoices();
+        _buffSetPanel.Children.Clear();
+        if (key.Length == 0) return;
+
+        var stored = _main.Settings.BuffSetsByClass.GetValueOrDefault(key);
+        // Active buckets first, in assembly order; then parked ones (stored picks whose
+        // class isn't in the current combination) — visible and editable, so a swap never
+        // strands a pick out of reach. That parked picks SURVIVE the swap is the
+        // requester's whole design, and hiding them would make it look like a lie.
+        var active = BuffSetStore.Sections(stored, classes);
+        var sections = active
+            .Where(sec => sec.Spells.Count > 0)
+            .Select(sec => (sec.Class, Spells: sec.Spells, Parked: false))
+            .ToList();
+        var activeNames = active.Select(sec => sec.Class).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        sections.AddRange(BuffSetStore.StoredClasses(stored)
+            .Where(c => !activeNames.Contains(c))
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .Select(c => (Class: c, Spells: (IReadOnlyList<string>)BuffSetStore.SpellsFor(stored, c),
+                Parked: true)));
+        if (sections.Count == 0)
+        {
+            _buffSetPanel.Children.Add(AppTheme.DimText(
+                "Nothing picked yet — pick a class bucket and search below to build the set.",
+                new Thickness(0, 2, 0, 0)));
+            return;
+        }
+
+        foreach (var (cls, spells, parked) in sections)
+        {
+            _buffSetPanel.Children.Add(new TextBlock
+            {
+                Text = cls + (parked ? "  · not in your current classes — kept for the swap back" : ""),
+                FontSize = 11,
+                FontWeight = FontWeight.SemiBold,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 4, 0, 0),
+                Foreground = parked ? AppTheme.DimBrush : AppTheme.AccentBrush,
+            });
+            foreach (var spell in spells)
+            {
+                var row = new Grid { Margin = new Thickness(6, 2, 0, 0) };
+                row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+                row.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+                row.Children.Add(new TextBlock
+                {
+                    Text = spell,
+                    FontSize = 12,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Foreground = parked ? AppTheme.DimBrush : AppTheme.TextBrush,
+                });
+                var remove = AppTheme.IconButton("✕", $"Remove {spell} from {cls}");
+                remove.FontSize = 11;
+                remove.Margin = new Thickness(4, 0, 0, 0);
+                var (doomedClass, doomed) = (cls, spell);
+                remove.Click += (_, _) =>
+                {
+                    BuffSetStore.Remove(_main.Settings.BuffSetsByClass, key, doomedClass, doomed);
+                    SaveBuffSetEdit();
+                };
+                Grid.SetColumn(remove, 1);
+                row.Children.Add(remove);
+                _buffSetPanel.Children.Add(row);
+            }
+        }
+    }
+
+    /// <summary>Add-target buckets: "(any class)" plus the FULL class list — unlike the
+    /// breakout's active-only list, so a coming swap can be configured here in advance.
+    /// Selection survives rebuilds.</summary>
+    private void RefreshBuffSetClassChoices()
+    {
+        var keep = _buffSetClassBox.SelectedItem as string;
+        if (_buffSetClassBox.Items.Count == 0)
+        {
+            _buffSetClassBox.Items.Add(BuffSetStore.AnyClass);
+            foreach (var cls in QuestClassFilter.Classes) _buffSetClassBox.Items.Add(cls);
+        }
+        _buffSetClassBox.SelectedItem = keep ?? BuffSetStore.AnyClass;
+    }
+
+    private string SelectedBuffSetClass =>
+        _buffSetClassBox.SelectedItem as string ?? BuffSetStore.AnyClass;
+
+    /// <summary>WPF's MainWindow.BuffSetKey/BuffSetCharacterName/BuffSetClassSource, read
+    /// off the surface MainWindow already publishes: the Quest Tracker's picked classes,
+    /// falling back to the combat-inferred one — the Gear Locker rule (#104). No /who
+    /// parsing exists in the log pipeline, so this is the honest signal the app already
+    /// has, and the note above says which of the two it came from.</summary>
+    /// Reads MainWindow's own answer rather than recomputing one: all three surfaces
+    /// (this editor, the Buffs card, the ⏳ breakout) must agree on one combination,
+    /// and two implementations of "which classes" is how they'd stop agreeing.
+    private (string Key, string Character, IReadOnlyList<string> Classes, bool Picked) BuffSetWho()
+    {
+        var (classes, picked) = _main.BuffSetClassSource(_main.CurrentSnapshot());
+        return (_main.BuffSetKey, _main.BuffSetCharacterName, classes, picked);
+    }
+
+    private void SaveBuffSetEdit()
+    {
+        _main.PersistSettings();
+        BuildBuffSetPanel();
+        _main.OnBuffSetEdited();   // card + breakout; calls RefreshBuffSetEditor back, harmlessly
+    }
+
+    private void OnBuffSetSearchChanged()
+    {
+        if (!_ready) return;
+        var query = (_buffSetAddBox.Text ?? "").Trim();
+        if (query.Length < 2) { _buffSetPopup.IsOpen = false; return; }
+        _buffSetMatches.Items.Clear();
+
+        // Seen first (the buffs this player demonstrably casts), then the whole buff
+        // catalog — BuffSetSearch, shared with WPF and the breakout editor. Both draw from
+        // BuffDurationCatalog's attributable spells, so nothing can be added that would sit
+        // at "not seen" forever. Only the TARGET bucket's picks are excluded: the same buff
+        // under another class is a legitimate pick, and assembly dedups it anyway.
+        var inBucket = BuffSetStore.SpellsFor(
+            _main.Settings.BuffSetsByClass.GetValueOrDefault(BuffSetWho().Key), SelectedBuffSetClass);
+        foreach (var (spell, seen) in BuffSetSearch.Rank(query, _main.SeenBuffCasts(),
+                     inBucket, BuffDurationCatalog.Default.SpellNames))
+            _buffSetMatches.Items.Add(new ListBoxItem
+            {
+                Content = seen ? spell + "   · seen this session" : spell,
+                Tag = spell,
+            });
+        if (_buffSetMatches.Items.Count == 0)
+            _buffSetMatches.Items.Add(new ListBoxItem
+            {
+                Content = "No buff in the catalog matches — check the spelling?",
+                IsEnabled = false,
+            });
+        _buffSetPopup.IsOpen = true;
+    }
+
+    private void OnBuffSetMatchPicked(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_ready || _buffSetMatches.SelectedItem is not ListBoxItem { Tag: string spell }) return;
+        _buffSetPopup.IsOpen = false;
+        _buffSetMatches.SelectedItem = null;
+        if (BuffSetWho().Key is not { Length: > 0 } key) return;
+        BuffSetStore.Add(_main.Settings.BuffSetsByClass, key, SelectedBuffSetClass, spell);
+        _buffSetAddBox.Text = "";   // TextChanged with an empty box closes the popup
+        SaveBuffSetEdit();
     }
 
     // ---------------------------------------------------------------- Watch rules

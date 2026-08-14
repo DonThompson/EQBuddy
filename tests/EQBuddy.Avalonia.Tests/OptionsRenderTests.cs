@@ -571,6 +571,148 @@ public class OptionsRenderTests : IDisposable
         main.Close();
     }
 
+    // ---- buff set (#120, Frankthetankk) ----
+
+    private const string BuffSetKey = "tester_p1999";
+
+    /// <summary>The editor needs a named character and a class combination. The headless
+    /// log pipeline never names one, so MainWindow's test identity seam supplies it —
+    /// the same answer the card and the ⏳ breakout read, so all three agree here too.
+    /// </summary>
+    private static (MainWindow Main, OptionsWindow Options) OpenWithBuffSet(
+        IReadOnlyList<string> classes, params (string Class, string Spell)[] stored)
+    {
+        var main = new MainWindow();
+        main.BuffSetIdentityForTests = () => (BuffSetKey, "Tester", classes, true);
+        main.Show();
+        foreach (var (cls, spell) in stored)
+            BuffSetStore.Add(main.Settings.BuffSetsByClass, BuffSetKey, cls, spell);
+        var options = new OptionsWindow(main);
+        options.Show();
+        options.RefreshBuffSetEditor();
+        return (main, options);
+    }
+
+    /// <summary>The search popup's list. It hangs off the Popup rather than the window's
+    /// visual tree, because an open popup lives in its own top level — and it is picked out
+    /// by its content, since every templated ComboBox brings a Popup of its own.</summary>
+    private static ListBox BuffSetMatches(OptionsWindow options) =>
+        options.GetVisualDescendants().OfType<global::Avalonia.Controls.Primitives.Popup>()
+            .Select(p => (p.Child as Border)?.Child as ListBox)
+            .Single(list => list is { MaxWidth: 480 })!;
+
+    private static TextBox BuffSetAddBox(OptionsWindow options) =>
+        options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => ToolTip.GetTip(t) is string tip && tip.Contains("seen casting"));
+
+    /// <summary>Stage 2's honesty rule: a bucket whose class isn't in the current
+    /// combination is still shown — parked, dimmed and labelled — because this editor is
+    /// the one place a parked pick can be removed. Hiding it would make the picks look
+    /// lost when they are only waiting for the swap back.</summary>
+    [AvaloniaFact]
+    public void ParkedClassBucketsStayVisibleAndAreMarkedAsParked()
+    {
+        var (main, options) = OpenWithBuffSet(["Shaman"],
+            (BuffSetStore.AnyClass, "Talisman of the Cat"),
+            ("Shaman", "Talisman of the Beast"),
+            ("Rogue", "Talisman of the Brute"));
+
+        var headers = options.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.FontWeight == global::Avalonia.Media.FontWeight.SemiBold
+                && t.FontSize == 11 && t.Text is not null)
+            .Select(t => (t.Text!, t.Foreground))
+            .ToList();
+        Assert.Contains((BuffSetStore.AnyClass, (global::Avalonia.Media.IBrush)AppTheme.AccentBrush), headers);
+        Assert.Contains(("Shaman", (global::Avalonia.Media.IBrush)AppTheme.AccentBrush), headers);
+        var parked = Assert.Single(headers, h => h.Item1.StartsWith("Rogue"));
+        Assert.Contains("kept for the swap back", parked.Item1);
+        Assert.Same(AppTheme.DimBrush, parked.Item2);   // dimmed, not silently dropped
+
+        // Every stored pick has a row, active or parked.
+        var rows = options.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text).ToList();
+        Assert.Contains("Talisman of the Cat", rows);
+        Assert.Contains("Talisman of the Beast", rows);
+        Assert.Contains("Talisman of the Brute", rows);
+        // The note names the character and the combination it assembles from.
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text?.Contains("Saved for Tester") == true && t.Text.Contains("SHM"));
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Typing in the add box ranks the catalog into the popup, and picking a match
+    /// writes it into the selected class bucket and saves.</summary>
+    [AvaloniaFact]
+    public void AddingABuffThroughTheSearchWritesItToTheSelectedBucket()
+    {
+        var (main, options) = OpenWithBuffSet(["Shaman"]);
+        var classBox = options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(BuffSetStore.AnyClass));
+        // The full class list is offered, not just the active one, so a coming swap can be
+        // configured in advance.
+        Assert.Equal(QuestClassFilter.Classes.Length + 1, classBox.Items.Count);
+        Assert.Equal(BuffSetStore.AnyClass, classBox.SelectedItem);
+        classBox.SelectedItem = "Shaman";
+
+        BuffSetAddBox(options).Text = "of the Cat";
+
+        var matches = BuffSetMatches(options);
+        var pick = matches.Items.Cast<ListBoxItem>().Single(i => Equals(i.Tag, "Talisman of the Cat"));
+        matches.SelectedItem = pick;
+
+        Assert.Equal(["Talisman of the Cat"], main.Settings.BuffSetsByClass[BuffSetKey]["Shaman"]);
+        Assert.Contains("Talisman of the Cat",
+            File.ReadAllText(Path.Combine(_profile, "settings.json")));
+        Assert.Equal("", BuffSetAddBox(options).Text);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text == "Talisman of the Cat");   // the panel repainted at once
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>A row's ✕ removes that one pick from that one bucket and saves.</summary>
+    [AvaloniaFact]
+    public void RemovingARowWritesThrough()
+    {
+        var (main, options) = OpenWithBuffSet(["Shaman"],
+            (BuffSetStore.AnyClass, "Talisman of the Cat"),
+            ("Shaman", "Talisman of the Beast"));
+
+        var remove = options.GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(ToolTip.GetTip(b), "Remove Talisman of the Beast from Shaman"));
+        remove.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // Emptied buckets are pruned, so settings JSON never accumulates hollow entries.
+        Assert.False(main.Settings.BuffSetsByClass[BuffSetKey].ContainsKey("Shaman"));
+        Assert.Equal(["Talisman of the Cat"],
+            main.Settings.BuffSetsByClass[BuffSetKey][BuffSetStore.AnyClass]);
+        Assert.DoesNotContain(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text == "Talisman of the Beast");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Without a character there is nowhere to save: the editor says so and stays
+    /// disabled rather than quietly writing into a nameless key.</summary>
+    [AvaloniaFact]
+    public void WithNoCharacterTheBuffSetEditorSaysSoAndStaysDisabled()
+    {
+        var (main, options) = Open();
+
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text?.StartsWith("No character detected yet") == true);
+        Assert.False(BuffSetAddBox(options).IsEnabled);
+        Assert.False(options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(BuffSetStore.AnyClass)).IsEnabled);
+
+        options.Close();
+        main.Close();
+    }
+
     /// <summary>The grips must not also start a window move — the press is theirs alone,
     /// or the window walks off with the pointer instead of resizing.</summary>
     [AvaloniaFact]
