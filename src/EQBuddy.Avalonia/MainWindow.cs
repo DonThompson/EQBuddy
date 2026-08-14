@@ -260,6 +260,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     {
         Header = "Review an archived log…",
     };
+    private readonly MenuItem _chooseLogFolderItem = new()
+    {
+        Header = "Choose log folder…",
+    };
     private readonly MenuItem _clickThroughItem = new()
     {
         Header = "Click-through (game clicks pass through)",
@@ -604,7 +608,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     {
         _scaleRoot.Child = _root;
         _root.CornerRadius = new CornerRadius(10);
-        _root.BorderBrush = AppTheme.BorderBrush;
+        // Hairline, not the full border tone (the 2026-08-11 modernization):
+        // the widget's edge should whisper.
+        _root.BorderBrush = AppTheme.HairlineBrush;
         _root.BorderThickness = new Thickness(1);
         _root.ContextMenu = BuildContextMenu();
         _root.PointerPressed += OnDrag;
@@ -1240,9 +1246,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         ToolTip.SetTip(_reviewLogItem,
             "Replay a saved log read-only — Drops by Creature and ✦ Copy for wiki work against that session");
         data.Items.Add(_reviewLogItem);
-        var choose = new MenuItem { Header = "Choose log folder…" };
-        choose.Click += OnChooseLogFolder;
-        data.Items.Add(choose);
+        _chooseLogFolderItem.Click += OnChooseLogFolder;
+        data.Items.Add(_chooseLogFolderItem);
         data.Items.Add(Item("Auto-detect log folder", (_, _) =>
         {
             _settings.LogFolder = LogWatcher.FindDefaultLogFolder();
@@ -1495,6 +1500,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private void FollowActiveCharacter()
     {
         if (_reviewPath is not null) return;   // reviewing an archive — stay put (#74)
+        ToolTip.SetTip(_chooseLogFolderItem, _settings.LogFolder ?? "(no folder found)");
         if (_settings.LogFolder is null)
         {
             _charLabel.Text = "logs not found - right-click, Choose log folder";
@@ -3806,7 +3812,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         if (on && !ClickThrough.Set(this, enabled: true)) return;
         if (!on) ClickThrough.Set(this, enabled: false);
         _clickThrough = on;
-        _root.BorderBrush = on ? AppTheme.WarnBrush : AppTheme.BorderBrush;
+        _root.BorderBrush = on ? AppTheme.WarnBrush : AppTheme.HairlineBrush;
         ToolTip.SetTip(_root, on ? "Click-through ON — click the \U0001F512 chip to interact again" : null);
         _clickThroughItem.Header = (on ? "✓ " : "") + "Click-through (game clicks pass through)";
         if (on)

@@ -59,6 +59,9 @@ public sealed class TravelWindow : Window
         root.Children.Add(pickRow);
         root.Children.Add(_route);
         Content = root;
+        // Ctrl+wheel zoom, persisted per window — possible now that the shared
+        // adapter exists (it didn't when this window was first ported).
+        WindowZoom.Attach(this, "travel", host.Settings);
         RenderRoute();
     }
 
