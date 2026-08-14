@@ -361,19 +361,13 @@ public partial class QuestsWindow : Window
                     var b = new Button
                     {
                         Style = (Style)FindResource("ActionButton"), FontSize = 11,
-                        Content = "⧉ copy  /outputfile inventory",
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Margin = new Thickness(0, 4, 0, 6),
                         ToolTip = "Copies the command — paste it into the game's chat and the " +
                             "game writes your inventory file; this tab reads it. Re-run any " +
                             "time your bags change.",
                     };
-                    b.Click += (_, _) =>
-                    {
-                        try { Clipboard.SetText("/outputfile inventory"); b.Content = "✓ copied — paste in game chat"; }
-                        catch { /* clipboard momentarily held by another app */ }
-                    };
-                    return b;
+                    return Theming.WireCopyCommand(b, EQBuddy.UI.Shared.GameCommands.OutputfileInventory);
                 }
                 if (snap is null)
                 {

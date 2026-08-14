@@ -1048,12 +1048,28 @@ public partial class MainWindow : Window
         var catalog = RaidTargetCatalog.Default;
         RaidsHeader.Text = $"{defeated} / {catalog.BossCount}";
         if (!RaidsSection.IsExpanded) return;
+        // Wherever the card names the command, the command is one click (David,
+        // 2026-08-14) — copy, paste in game chat, then Import achievements… reads
+        // the file the game wrote.
+        Button CopyAchievementsCmd()
+        {
+            var b = Theming.WireCopyCommand(Theming.Button(""),
+                EQBuddy.UI.Shared.GameCommands.OutputfileAchievements);
+            b.FontSize = 10.5;
+            b.HorizontalAlignment = HorizontalAlignment.Left;
+            b.Margin = new Thickness(0, 3, 0, 0);
+            b.ToolTip = "Copies the command — paste it into the game's chat and the game " +
+                "writes its achievements dump beside its own folders; right-click → " +
+                "Data & imports → Import achievements… reads it.";
+            return b;
+        }
         if (defeated == 0)
         {
             RaidsPanel.Children.Clear();
             RaidsPanel.Children.Add(EmptyCardLine(
                 "Nothing defeated yet — kills your log witnesses land here, and importing " +
-                "/outputfile achievements marks clears from before EQBuddy."));
+                $"{EQBuddy.UI.Shared.GameCommands.OutputfileAchievements} marks clears from before EQBuddy."));
+            RaidsPanel.Children.Add(CopyAchievementsCmd());
             return;
         }
 
@@ -1103,10 +1119,11 @@ public partial class MainWindow : Window
         }
         RaidsPanel.Children.Add(new TextBlock
         {
-            Text = "Kills count when your log sees the boss die; import /outputfile achievements to mark older clears.",
+            Text = $"Kills count when your log sees the boss die; import {EQBuddy.UI.Shared.GameCommands.OutputfileAchievements} to mark older clears.",
             FontSize = 10, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0),
             Foreground = (Brush)FindResource("DimBrush"),
         });
+        RaidsPanel.Children.Add(CopyAchievementsCmd());
     }
 
     /// <summary>
@@ -2969,7 +2986,7 @@ public partial class MainWindow : Window
     {
         var dlg = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Pick the game's achievements dump (/outputfile achievements)",
+            Title = $"Pick the game's achievements dump ({EQBuddy.UI.Shared.GameCommands.OutputfileAchievements})",
             Filter = "Achievements dump (*.txt)|*.txt|All files (*.*)|*.*",
         };
         // /outputfile writes beside eqgame.exe — the Logs folder's parent.
@@ -2994,6 +3011,16 @@ public partial class MainWindow : Window
             App.LogError(ex);
             MessageBox.Show(this, $"Couldn't read that file — {ex.Message}", "Import achievements");
         }
+    }
+
+    /// <summary>The import needs the dump to exist first, and the Raids card (which
+    /// carries the ⧉ button) hides itself on a fresh character — so the menu that
+    /// offers the import offers the command too (David, 2026-08-14). A closed menu
+    /// can't flip to ✓; the header says exactly what the click does instead.</summary>
+    private void OnCopyAchievementsCommand(object sender, RoutedEventArgs e)
+    {
+        try { Clipboard.SetText(EQBuddy.UI.Shared.GameCommands.OutputfileAchievements); }
+        catch { /* clipboard momentarily held by another app */ }
     }
 
     private void ShowAchievementsPreview(List<SkyRewardMatch> matches, List<string> unmatched,

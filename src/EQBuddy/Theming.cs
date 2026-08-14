@@ -27,4 +27,26 @@ internal static class Theming
         b.SetResourceReference(Control.BorderBrushProperty, "AccentBrush");
         return b;
     }
+
+    /// <summary>The ⧉ command-copy wiring (David, 2026-08-14: every "run this in
+    /// game" surface offers its command as one click): the click puts EXACTLY the
+    /// command on the clipboard and the label flips to confirm — clipboard only,
+    /// never focus, never the game itself. Wired here so the label, the ✓ flip,
+    /// and the clipboard call behave identically on every surface; the caller
+    /// styles the button to fit its own layout.</summary>
+    public static Button WireCopyCommand(Button b, string command,
+        string? label = null, string? copied = null)
+    {
+        b.Content = label ?? $"⧉ copy  {command}";
+        b.Click += (_, _) =>
+        {
+            try
+            {
+                Clipboard.SetText(command);
+                b.Content = copied ?? "✓ copied — paste in game chat";
+            }
+            catch { /* clipboard momentarily held by another app */ }
+        };
+        return b;
+    }
 }
