@@ -68,6 +68,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
     private readonly Dictionary<string, int> _skyQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    // #01d10c4: three streams tick gear wishes — drops, manual merges (exaltations),
+    // and loot-merge results. Each keeps its own high-water mark, same as Sky's.
+    private readonly Dictionary<string, int> _gearLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _gearCraftSeen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _gearUpgradeSeen = new(StringComparer.OrdinalIgnoreCase);
+    private DateTime? _autoCheckSessionStart;
     // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
     // does elsewhere — the checklist re-renders only when a box actually changed.
     private bool _skyQuestDirty = true;
@@ -1480,6 +1486,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _reviewPath = path;
         _targetResults.Clear();
         _skyQuestLootSeen.Clear();
+        ClearGearAutoCheckSeen();
         if (pick is not null) _watcher.Select(path, pick.StartOffset, pick.EndOffset);
         else _watcher.Select(path);
         _reviewLogItem.Header = "✓ Reviewing an archive — return to live log";
@@ -1551,6 +1558,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             // rest of the character state.
             _targetResults.Clear();
             _skyQuestLootSeen.Clear();
+            ClearGearAutoCheckSeen();
         }
     }
 
@@ -1648,7 +1656,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     public InventoryFile.Snapshot? LatestInventory(bool refresh = false)
     {
         if (refresh || _inventory is null)
+        {
             _inventory = InventoryFile.FindLatest(_settings.LogFolder, Identity.Character);
+            // This is where dumps enter the app (the ⟳ buttons, the quests held tab)
+            // — the Gear card's auto-done rides the same load.
+            AutoCheckGearFromInventory(_inventory);
+        }
         return _inventory?.WithChanges(_stats.ItemsGainedSince(_inventory.WrittenAt));
     }
 
@@ -1831,8 +1844,18 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _lootHeader.Text = s.CraftedTotal > 0 ? $"{s.LootTotal} items (+{s.CraftedTotal} made)" : $"{s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")}";
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         _motesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
+        // A session rollover empties the loot lists lazily, inside the same batch
+        // that may carry the new session's first loot — inferring the reset from
+        // emptied lists can miss that first same-name drop. The session identity
+        // is the honest reset signal for every auto-check high-water mark.
+        if (s.SessionStart != _autoCheckSessionStart)
+        {
+            _autoCheckSessionStart = s.SessionStart;
+            _skyQuestLootSeen.Clear();
+            ClearGearAutoCheckSeen();
+        }
         UpdateSkyQuestChecklist(s);
-        UpdateGearHeaderOnly();
+        UpdateGearChecklist(s);
         _moneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         _progressHeader.Text = $"{s.XpPercent:0.0}% xp" + (s.Levels.Count > 0 ? $", +{s.Levels.Count} lvl" : "") + (s.AaGained > 0 ? $", +{s.AaGained} aa" : "");
         _factionHeader.Text = s.Faction.Count > 0 ? $"{s.Faction.Count} factions" : "-";
@@ -3489,6 +3512,84 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         }
 
         return changed;
+    }
+
+    private void UpdateGearChecklist(StatsSnapshot s)
+    {
+        var changed = AutoCheckGearLoot(s);
+        UpdateGearHeaderOnly();
+        if (changed)
+        {
+            _gearChecklistDirty = true;   // rebuild next tick: checked box, list-name count
+            _settings.Save();
+        }
+    }
+
+    private bool AutoCheckGearLoot(StatsSnapshot s)
+    {
+        // Most installs have no imported list; skip the per-tick grouping for them.
+        if (_settings.GearChecklist.Count == 0) return false;
+        // The matching rules live in Core (GearLootAutoCheck) where they are tested:
+        // single-owner list, so a name match ticks — no class lens, no * machinery
+        // (an auto-ticked row is indistinguishable from a hand-ticked one, by design).
+        // Three streams feed it: drops, manual merges (exaltations), and loot-merge
+        // results (the "+N" tier a wish usually names). Same high-water diff as
+        // Sky/Epic — only the newly-obtained delta ticks, so a re-render never
+        // double-counts.
+        var changed = ApplyGearHighWater(_gearLootSeen,
+            s.Loot.Select(l => new NameCount(l.Item, l.Count)));
+        changed |= ApplyGearHighWater(_gearCraftSeen, s.Crafted);
+        changed |= ApplyGearHighWater(_gearUpgradeSeen, s.Upgraded);
+        return changed;
+    }
+
+    private bool ApplyGearHighWater(Dictionary<string, int> seen, IEnumerable<NameCount> counts)
+    {
+        var byName = counts
+            .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Sum(c => c.Count), StringComparer.OrdinalIgnoreCase);
+
+        // A session reset empties the snapshot's lists; drop the marks with it so the
+        // next session's first loot still reads as new (the Sky perf-audit #9 contract).
+        foreach (var key in seen.Keys.ToList())
+            if (!byName.ContainsKey(key))
+                seen[key] = 0;
+
+        var changed = false;
+        foreach (var (name, count) in byName)
+        {
+            seen.TryGetValue(name, out var prior);
+            seen[name] = count;
+            if (count <= prior) continue;
+            changed |= GearLootAutoCheck.Apply(_settings.GearChecklist, name, count - prior);
+        }
+        return changed;
+    }
+
+    private void ClearGearAutoCheckSeen()
+    {
+        _gearLootSeen.Clear();
+        _gearCraftSeen.Clear();
+        _gearUpgradeSeen.Clear();
+    }
+
+    /// <summary>One dump, one pass: what the character verifiably OWNS ticks gear
+    /// wishes — the raw Entries carry "+N" tiers (Counts folds them off), so the
+    /// at-or-above rule holds here too. The stamp keeps a re-scan of the same file
+    /// from re-fighting a box the player deliberately unchecked — PERSISTED, so the
+    /// truce survives a restart; only a genuinely new dump re-opens the question.</summary>
+    private void AutoCheckGearFromInventory(InventoryFile.Snapshot? dump)
+    {
+        if (dump is null) return;
+        var stamp = $"{dump.Path}|{dump.WrittenAt:O}";
+        if (stamp == _settings.GearInventoryAppliedStamp) return;
+        _settings.GearInventoryAppliedStamp = stamp;
+        if (GearLootAutoCheck.ApplyInventory(_settings.GearChecklist, dump.Entries))
+        {
+            _gearChecklistDirty = true;
+            _settings.Save();
+            UpdateGearHeaderOnly();
+        }
     }
 
     /// <summary>Sky state lens (David, 2026-08-11): same vocabulary as the quest
