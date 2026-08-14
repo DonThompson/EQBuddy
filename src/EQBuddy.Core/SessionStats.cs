@@ -1144,19 +1144,29 @@ public sealed class SessionStats
     }
 
     /// <summary>Journal label for a fade row/alert — a charm break gets its hold
-    /// duration appended (#130).</summary>
+    /// duration appended (#130). The lookup tolerates ordering skew (#135,
+    /// bjstrange: "doesn't always trigger the time"): when the pet turning on you
+    /// is what breaks the charm, the hold gets recorded at the ATTACK's timestamp
+    /// and the fade line prints a few seconds later — so an exact-time miss falls
+    /// back to the most recent hold recorded within the previous ten seconds.</summary>
     private string FadeLabel(SpellWornOffEvent wo)
     {
         var label = wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell;
-        if (_charmHoldByBreak.TryGetValue(wo.Time, out var held))
+        if (!_charmHoldByBreak.TryGetValue(wo.Time, out var held))
         {
-            var t = TimeSpan.FromSeconds(held);
-            var text = t.TotalHours >= 1
-                ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}"
-                : $"{t.Minutes}:{t.Seconds:00}";
-            label += $" — held {text}";
+            var near = _charmHoldByBreak.Keys
+                .Where(k => k <= wo.Time && (wo.Time - k).TotalSeconds <= 10)
+                .OrderByDescending(k => k)
+                .Cast<DateTime?>()
+                .FirstOrDefault();
+            if (near is not { } n) return label;
+            held = _charmHoldByBreak[n];
         }
-        return label;
+        var t = TimeSpan.FromSeconds(held);
+        var text = t.TotalHours >= 1
+            ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}"
+            : $"{t.Minutes}:{t.Seconds:00}";
+        return label + $" — held {text}";
     }
 
     /// <summary>The filters that mean "my crowd control of a MOB ended" — the ones a

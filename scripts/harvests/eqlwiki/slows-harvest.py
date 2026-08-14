@@ -98,6 +98,14 @@ def main():
         if s.get("beneficial") is True:
             excluded.append((name, "beneficial — a self-chosen tradeoff buff, not an attack"))
             continue
+        # The Torpor family (#132, bjstrange): Stoicism/Nonchalance/Impassivity
+        # leave the wiki's beneficial field BLANK, so the guard above missed them
+        # and a shaman buffing you fired "you are slowed!". A "slow" that also
+        # HEALS its target is a tradeoff buff whatever the field says.
+        if any(re.search(r"increase (current )?hit ?points", e.get("effect") or "", re.IGNORECASE)
+               for e in s.get("slot_effects") or []):
+            excluded.append((name, "heals its target — a Torpor-family tradeoff buff, not an attack"))
+            continue
         msg = (s.get("msg_cast_on_you") or "").strip()
         if not msg:
             excluded.append((name, "no cast-on-you message on the wiki page — nothing to match"))

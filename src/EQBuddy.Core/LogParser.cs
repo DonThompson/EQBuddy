@@ -99,6 +99,13 @@ public static partial class LogParser
     [GeneratedRegex(@"^YOU are (?<how>.+?) for (?<dmg>\d+) points? of non-melee damage!$")]
     private static partial Regex NonMeleeInRx();
 
+    // The creature inside the "how" phrase: "pierced by The Spiroc Lord's thorns"
+    // → "The Spiroc Lord" (#133, bjstrange: the whole phrase used to become the
+    // attacker, opening a phantom fight the Loot card then showed as a mob).
+    // Greedy attacker so the LAST possessive wins for names that contain one.
+    [GeneratedRegex(@"^\w+ by (?<attacker>.+)'s \w+$")]
+    private static partial Regex DamageShieldOwnerRx();
+
     // You healed Kaybek for 10 hit points by Lifespike. / You healed Kaybek for 7 (10) hit points by Lifespike.
     // Heal-over-time ticks say "healed X over time for N" (eqlog_Hugzee: "Xephira healed
     // Spamwagon over time for 11 hit points by Budding Heal.") — same event, one extra phrase.
@@ -444,8 +451,16 @@ public static partial class LogParser
                 Ability: ThirdVerbToSkill(r.Groups["verb"].Value));
 
         if ((r = NonMeleeInRx().Match(msg)).Success)
-            return new DamageTakenEvent(ts, Normalize(r.Groups["how"].Value),
+        {
+            // The capture is HOW you were hurt; the creature is the possessive
+            // owner inside it. Falls back to the whole phrase for ownerless
+            // forms — same as before, but named forms now credit the real mob.
+            var how = r.Groups["how"].Value;
+            var owner = DamageShieldOwnerRx().Match(how);
+            return new DamageTakenEvent(ts,
+                Normalize(owner.Success ? owner.Groups["attacker"].Value : how),
                 int.Parse(r.Groups["dmg"].Value), Melee: false);
+        }
 
         if ((r = SchoolHitInRx().Match(msg)).Success)
             return new DamageTakenEvent(ts, Normalize(r.Groups["attacker"].Value),

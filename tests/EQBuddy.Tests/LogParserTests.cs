@@ -84,7 +84,11 @@ public class LogParserTests
     [InlineData("Orc centurion hits YOU for 4 points of damage.", "Orc centurion", 4, true)]
     [InlineData("A puma slashes YOU for 7 points of damage.", "Puma", 7, true)]
     [InlineData("ice boned skeleton hit you for 20 points of cold damage by Ice Bone Frost Burst.", "Ice boned skeleton", 20, false)]
-    [InlineData("YOU are burned by orc centurion's flames for 6 points of non-melee damage!", "Burned by orc centurion's flames", 6, false)]
+    // #133 (bjstrange): the damage-shield owner is the attacker, not the whole
+    // "how it hurt you" phrase — that phrase was opening phantom fights the
+    // Loot card then listed as mobs ("Pierced by The Spiroc Lord's thorns").
+    [InlineData("YOU are burned by orc centurion's flames for 6 points of non-melee damage!", "Orc centurion", 6, false)]
+    [InlineData("YOU are pierced by The Spiroc Lord's thorns for 12 points of non-melee damage!", "Spiroc Lord", 12, false)]
     [InlineData("You have taken 1 damage from Rabies by Gynok Moltor.", "Gynok Moltor", 1, false)]
     public void DamageTaken(string msg, string attacker, int amount, bool melee)
     {

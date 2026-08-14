@@ -1210,6 +1210,23 @@ public class SpellTrackingTests
         Assert.Null(stats.Snapshot().CharmedSince);
     }
 
+    /// <summary>#135 (bjstrange): when the pet turning on you breaks the charm
+    /// BEFORE the fade line prints, the hold is recorded at the attack's time —
+    /// the fade alert a few seconds later must still carry it.</summary>
+    [Fact]
+    public void TheHoldSurvivesAnAttackFirstBreakOrdering()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(1, 0, "A puma hits YOU for 12 points of damage."),          // the break
+            At(1, 4, "Your Befriend Animal spell has worn off of a puma.")) // the announcement
+            .Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
+        Assert.Contains("held 0:56", tracked.LastItem);
+    }
+
     /// <summary>#130: a summoned pet claimed via the Master tell has no charm to
     /// hold — the clock must stay off.</summary>
     [Fact]

@@ -146,51 +146,6 @@
    ]
   },
   {
-   "message": "You fall into a state of impassivity.",
-   "label": "Impassivity",
-   "spells": [
-    {
-     "name": "Impassivity",
-     "pctMin": 30,
-     "pctMax": 30,
-     "counterType": "",
-     "counterMin": 0,
-     "counterMax": 0,
-     "durationSeconds": 24.0
-    }
-   ]
-  },
-  {
-   "message": "You fall into a state of nonchalance.",
-   "label": "Nonchalance",
-   "spells": [
-    {
-     "name": "Nonchalance",
-     "pctMin": 30,
-     "pctMax": 30,
-     "counterType": "",
-     "counterMin": 0,
-     "counterMax": 0,
-     "durationSeconds": 24.0
-    }
-   ]
-  },
-  {
-   "message": "You fall into a state of stoicism.",
-   "label": "Stoicism",
-   "spells": [
-    {
-     "name": "Stoicism",
-     "pctMin": 30,
-     "pctMax": 30,
-     "counterType": "",
-     "counterMin": 0,
-     "counterMax": 0,
-     "durationSeconds": 24.0
-    }
-   ]
-  },
-  {
    "message": "You feel drowsy.",
    "label": "Slow",
    "spells": [

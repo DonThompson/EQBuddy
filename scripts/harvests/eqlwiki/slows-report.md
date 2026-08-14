@@ -1,6 +1,6 @@
 # Slow-debuff catalog report
 
-- 34 slow spells across 23 landing lines (4 lines shared by several spells)
+- 31 slow spells across 20 landing lines (4 lines shared by several spells)
 - cures: Curse ×3, Disease ×7, Poison ×8
 - AA cures: Purify Soul, Purify Body, Purge Poison
 
@@ -14,9 +14,12 @@
 ## Excluded
 
 - Aura of Marr: beneficial — a self-chosen tradeoff buff, not an attack
+- Impassivity: heals its target — a Torpor-family tradeoff buff, not an attack
+- Nonchalance: heals its target — a Torpor-family tradeoff buff, not an attack
 - Rejuvenation: beneficial — a self-chosen tradeoff buff, not an attack
 - Shackle of Bone: no cast-on-you message on the wiki page — nothing to match
 - Shackle of Spirit: no cast-on-you message on the wiki page — nothing to match
+- Stoicism: heals its target — a Torpor-family tradeoff buff, not an attack
 - Torpor: beneficial — a self-chosen tradeoff buff, not an attack
 
 ## Verification notes

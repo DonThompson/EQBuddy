@@ -5,6 +5,10 @@
   "highlights": [
    "FIXED - the OTHER half of the Selo's false slow alert (#116's group-member case, diagnosed live in a two-bard group): other players' songs never log at all, so your only witnesses are the song's own pulse landing on you (\"Your feet move faster.\", every 12-18s while a bard twists) and the cluster of first-person fades when the twist lapses. A \"You slow down.\" within a minute of a pulse - or within seconds of other song fades - is now read as the haste ending, in both directions: no chip raised, and a chip that already appeared takes itself back. Every one of the 29 false alerts in the diagnosing log is covered.",
    "NEW - slow chips are DISMISSIBLE: right-click one and it's gone. For the stragglers no heuristic can catch - you know whether you're actually slowed.",
+   "NEW - Gear checklist imports now carry SOCKETED EXALTATIONS (contributed by theFlammHammer, closing the honest limit stated when the importer first shipped): grouped under their own heading, each with its effect in small text beside the item name, older gear-only exports untouched.",
+   "FIXED (discussion #132, thanks bjstrange): the shaman Torpor-family HoTs (Stoicism/Nonchalance/Impassivity) no longer trigger the slow alert - their wiki pages leave the beneficial field blank, so the old exclusion missed them. New rule: a slow that also HEALS its target is a buff, whatever the field says.",
+   "FIXED (discussion #133, thanks bjstrange): a damage-shield hit (\"YOU are pierced by The Spiroc Lord's thorns...\") no longer invents a phantom mob named after the whole phrase - the real creature is extracted from the possessive, so the Loot card's target pool and your damage-taken numbers now name The Spiroc Lord itself.",
+   "FIXED (discussion #135, thanks bjstrange - third catch of the night): the charm-break announcement now carries its \"held M:SS\" time even when the pet turning on you is what broke the charm and the fade line printed a few seconds later.",
    "EQBuddy is a BETA - if a chip lies to you, tell us: ⚙ → Help → Send feedback."
   ]
  },
