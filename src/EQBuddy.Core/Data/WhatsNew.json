@@ -1,5 +1,21 @@
 [
  {
+  "version": "1.78.0",
+  "date": "2026-08-14",
+  "highlights": [
+   "NEW - BUFF SETS (discussion #120, thanks Frankthetankk - you wrote half the design, and #64's skulldugger planted the seed): tell EQBuddy which buffs you never want to camp without (Options → Alerts & chips → a search over every buff it knows), and the ⏳ Buffs card grows a line that exists ONLY when something's wrong - \"⚠ missing: Temperance · expiring: Haste · not seen: Aegolism\". The honesty state is the point: \"not seen\" means no landing line this session - it may be up from before the log was watched; the app says what it can't know instead of guessing. Stage 1 of your spec; class-combination sets and the breakout window are the committed next stages.",
+   "NEW - LEVEL-UP UNLOCKS: ding, and the Progress card answers \"what did I just get?\" - new spells AND AA abilities at your level, for your classes, with a fold showing what's coming at the next milestone. Powered by a new embedded catalog of 1,427 spells with per-class levels, refreshed weekly from the community wiki like everything else.",
+   "NEW - the game tells us what BLOCKS your buffs, and EQBuddy finally listens: \"Your X spell did not take hold. (Blocked by Y.)\" now counts per spell on the Combat card and spells breakdowns (\"· 2 blocked\", tooltip names the blocker), never starts a false buff countdown, and quietly builds a per-character stacking ledger for the buff features ahead. Also closes a subtle charm bug: a blocked charm cast can no longer let a bystander's pet blink claim a pet that was never yours.",
+   "NEW - the GEAR SHOPPING LIST works itself: wishes tick automatically from your loot, your merges, and your inventory dump - tier-aware, so looting a base item never silently satisfies a +5 wish, but owning a +7 satisfies both. Re-importing a list no longer wipes the boxes you ticked in the app.",
+   "NEW - \"Group by farm zone\" on the Gear card: the same wishes pivoted to WHERE TO GO, nearest zone first, with items listed under every zone that drops them - one tick clears them everywhere. Quest-reward and crafted-only items get their own honest buckets.",
+   "NEW - COPY FIGHT AS TEXT, everywhere (discussion #89, thanks jeremycranfill): the Discord-ready fight block now carries incoming damage, heals, and deaths - and the ⧉ button reached Session History's encounter rows on both Windows and Linux. Your numbers and your pet's only, as always.",
+   "NEW - VOICE CONTROL: pick the voice EQBuddy speaks with, set its rate and volume, and give any watch rule a custom spoken phrase (\"Cast now\") - all in Options, applied instantly, with a ▶ test button. Shared rules carry phrases to friends who have them; older versions simply ignore them.",
+   "FIXED - ZONE MAPS: some zones showed nothing (David hit it in Qeynos Hills) - the map only ever looked in your custom pack folder, and packs skip connector zones the game itself ships maps for. It now falls back to the game's own maps folder, 33 zone-name aliases were corrected (several resolved to the WRONG map - Neriak Commons, the Qeynos Aqueducts, Old Paineel), a blank map now names the exact file it looked for, and a permanent test asserts every zone EQBuddy knows resolves to its real map.",
+   "IMPROVED - every place EQBuddy reads a game command's output now has a ⧉ copy button: the Gear Locker, the Raids card (/outputfile achievements), the zone map's /loc social recipe (both lines, ready for the social editor), and a Data & imports menu fallback for fresh characters. Click, paste in game, done.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.77.0",
   "date": "2026-08-14",
   "highlights": [

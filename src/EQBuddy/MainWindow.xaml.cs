@@ -1901,6 +1901,10 @@ public partial class MainWindow : Window
         if (_hiddenForFocus) return;
 
         ZoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "—";
+        // The by-zone gear view bakes "you're here"/hop counts into its headings —
+        // zoning must repaint it or the card keeps claiming the old zone.
+        if (_settings.GearGroupByZone && CurrentZoneName != s.CurrentZone)
+            _gearChecklistDirty = true;
         CurrentZoneName = s.CurrentZone;
         var active = TimeSpan.FromSeconds(s.ActiveSeconds);
         SessionText.Text = s.SessionStart is { } start
@@ -2644,6 +2648,8 @@ public partial class MainWindow : Window
 
     private bool AutoCheckGearLoot(StatsSnapshot s)
     {
+        // Most installs have no imported list; skip the per-tick grouping for them.
+        if (_settings.GearChecklist.Count == 0) return false;
         // The matching rules live in Core (GearLootAutoCheck) where they are tested:
         // single-owner list, so a name match ticks — no class lens, no * machinery
         // (an auto-ticked row is indistinguishable from a hand-ticked one, by design).

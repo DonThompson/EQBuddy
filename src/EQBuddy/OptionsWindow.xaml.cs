@@ -238,7 +238,7 @@ public partial class OptionsWindow : Window
         var key = _main.BuffSetKey;
         BuffSetCharNote.Text = key.Length > 0
             ? $"Saved for {_main.BuffSetCharacterName} — each character keeps their own set."
-            : "No character detected yet — play (or let today's log load) and the editor unlocks for them.";
+            : "No character detected yet — once today's log names one, reopen Options and the editor unlocks.";
         BuffSetAddBox.IsEnabled = key.Length > 0;
         BuffSetPanel.Children.Clear();
         var set = key.Length > 0 ? _main.Settings.BuffSets.GetValueOrDefault(key) : null;

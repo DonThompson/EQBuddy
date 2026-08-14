@@ -276,6 +276,9 @@ public sealed class MapWindow : Window
     {
         var zone = _main.CurrentZoneName;
         var folders = MapFolders;
+        // A forced refresh re-reads the folders too — the dropdown must learn the
+        // stems of a pack unzipped since the window was built.
+        if (force) PopulateZoneList();
         if (folders.Count == 0)
         {
             _status.Text = "No maps folder found. EQBuddy looks for the game's own \"maps\" folder " +

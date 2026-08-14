@@ -34,16 +34,27 @@ internal static class Theming
     /// never focus, never the game itself. Wired here so the label, the ✓ flip,
     /// and the clipboard call behave identically on every surface; the caller
     /// styles the button to fit its own layout.</summary>
+    /// <summary>When the last copy happened, per command — surfaces that rebuild
+    /// their buttons every render (the Raids card) consult this so the ✓ survives
+    /// the rebuild instead of blinking out on the next tick.</summary>
+    private static readonly Dictionary<string, DateTime> _copiedAt = new();
+    private static readonly TimeSpan CopiedLinger = TimeSpan.FromSeconds(2.5);
+
     public static Button WireCopyCommand(Button b, string command,
         string? label = null, string? copied = null)
     {
-        b.Content = label ?? $"⧉ copy  {command}";
+        var copiedText = copied ?? "✓ copied — paste in game chat";
+        b.Content = _copiedAt.TryGetValue(command, out var at)
+            && DateTime.Now - at < CopiedLinger
+            ? copiedText
+            : label ?? $"⧉ copy  {command}";
         b.Click += (_, _) =>
         {
             try
             {
                 Clipboard.SetText(command);
-                b.Content = copied ?? "✓ copied — paste in game chat";
+                b.Content = copiedText;
+                _copiedAt[command] = DateTime.Now;
             }
             catch { /* clipboard momentarily held by another app */ }
         };
