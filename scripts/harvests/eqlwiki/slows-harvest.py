@@ -138,6 +138,7 @@ def main():
             wearoff_by_msg.setdefault(w.lower(), set()).add(canonical(s["name"]))
 
     messages = []
+    haste_landings = set()
     for msg, group in sorted(by_message.items()):
         cands = sorted(group.values(), key=lambda r: r["name"])
         label = cands[0]["name"] if len(cands) == 1 else "Slow"
@@ -145,6 +146,16 @@ def main():
         fade_of = sorted(wearoff_by_msg.get(msg.lower(), set()) - set(group))
         if fade_of:
             entry["fadeOf"] = fade_of
+            # The colliding songs' LANDING lines (David, 2026-08-13: "Your feet
+            # move faster." = a Selo's pulse on a groupmate, the only witness a
+            # bard's songs leave in another player's log). The tracker reads a
+            # shared slow line soon after one as the haste lapsing.
+            fade_lower = {f.lower() for f in fade_of}
+            for s in spells:
+                if canonical(s["name"]).lower() in fade_lower:
+                    on_you = (s.get("msg_cast_on_you") or "").strip()
+                    if on_you:
+                        haste_landings.add(on_you)
         entry["spells"] = cands
         messages.append(entry)
 
@@ -194,6 +205,7 @@ def main():
         "messages": messages,
         "cures": cure_list,
         "aaCures": aa_cures,
+        "hasteLandings": sorted(haste_landings),
     }
     OUT.write_text(json.dumps(catalog, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
 

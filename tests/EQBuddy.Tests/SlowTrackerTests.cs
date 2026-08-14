@@ -64,6 +64,39 @@ public class SlowTrackerTests
     }
 
     [Fact]
+    public void ASlowLineAfterASelosPulseIsTheSongLapsing()
+    {
+        // David's suggestion, verified against Hugzee's two-bard log: every false
+        // "You slow down." arrived 12–44s after a "Your feet move faster." pulse.
+        var t = Replay(
+            Ev(0, "Your feet move faster."),
+            Ev(44, "You slow down."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(45)));
+    }
+
+    [Fact]
+    public void AFreshPulseAfterTheChipRetroClearsIt()
+    {
+        // Re-twist ordering: the shared line prints, then the next pulse lands —
+        // proof it was song churn.
+        var t = Replay(Ev(30, "You slow down."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(31)));
+        t.Apply(Ev(40, "Your feet move faster."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(41)));
+    }
+
+    [Fact]
+    public void ASlowLineLongAfterTheLastPulseStillLands()
+    {
+        // The bard left the group ten minutes ago; a real Deeds-line slow must
+        // still announce.
+        var t = Replay(
+            Ev(0, "Your feet move faster."),
+            Ev(600, "You slow down."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(601)));
+    }
+
+    [Fact]
     public void DismissDropsTheChipImmediately()
     {
         var t = Replay(Ev(0, "You feel lethargic."));

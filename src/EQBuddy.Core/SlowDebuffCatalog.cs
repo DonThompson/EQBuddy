@@ -78,21 +78,31 @@ public sealed class SlowDebuffCatalog
         public List<Entry> Messages { get; set; } = [];
         public List<CureGroup> Cures { get; set; } = [];
         public List<AaCure> AaCures { get; set; } = [];
+        public List<string> HasteLandings { get; set; } = [];
     }
 
     private readonly Dictionary<string, Entry> _byMessage;
     private readonly Dictionary<string, CureGroup> _cures;
+    private readonly HashSet<string> _hasteLandings;
 
     public IReadOnlyList<AaCure> AaCures { get; }
 
     public SlowDebuffCatalog(IEnumerable<Entry> entries,
-        IEnumerable<CureGroup>? cures = null, IEnumerable<AaCure>? aaCures = null)
+        IEnumerable<CureGroup>? cures = null, IEnumerable<AaCure>? aaCures = null,
+        IEnumerable<string>? hasteLandings = null)
     {
         _byMessage = entries.Where(e => e.Message.Length > 0 && e.Spells.Length > 0)
             .ToDictionary(e => e.Message, e => e, StringComparer.OrdinalIgnoreCase);
         _cures = (cures ?? []).ToDictionary(c => c.CounterType, c => c, StringComparer.OrdinalIgnoreCase);
         AaCures = (aaCures ?? []).ToList();
+        _hasteLandings = new HashSet<string>(hasteLandings ?? [], StringComparer.OrdinalIgnoreCase);
     }
+
+    /// <summary>True for the LANDING line of a haste song whose wear-off collides
+    /// with a slow line (David, 2026-08-13: "Your feet move faster." = a Selo's
+    /// pulse; a "You slow down." soon after is that song lapsing). Data-driven so
+    /// future song lines flow in through the weekly harvest, not code edits.</summary>
+    public bool IsHasteLanding(string message) => _hasteLandings.Contains(message);
 
     public int Count => _byMessage.Count;
 
@@ -113,7 +123,7 @@ public sealed class SlowDebuffCatalog
             ?? throw new InvalidOperationException("SlowSpells.json missing from resources");
         var root = JsonSerializer.Deserialize<Root>(stream, JsonOpts)
             ?? throw new InvalidOperationException("SlowSpells.json unreadable");
-        return new SlowDebuffCatalog(root.Messages, root.Cures, root.AaCures);
+        return new SlowDebuffCatalog(root.Messages, root.Cures, root.AaCures, root.HasteLandings);
     }
 
     /// <summary>Shared instance for the parser's per-line lookups.</summary>

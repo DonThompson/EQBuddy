@@ -591,5 +591,8 @@
    "class": "Rogue",
    "note": "1200 counters, 72 min refresh"
   }
+ ],
+ "hasteLandings": [
+  "Your feet move faster."
  ]
 }

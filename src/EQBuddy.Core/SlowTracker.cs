@@ -63,11 +63,21 @@ public sealed class SlowTracker
     /// stragglers.</summary>
     public static readonly TimeSpan FadeClusterWindow = TimeSpan.FromSeconds(10);
 
+    /// <summary>The strongest signal of the three (David's own suggestion): a
+    /// Selo's pulse landing on you ("Your feet move faster.") means any "You slow
+    /// down." within this window is the song lapsing, full stop. Pulses repeat
+    /// every 12–18s while a bard twists, and the diagnosing log's 29 false alerts
+    /// all arrived 12–44s after a landing — 60s covers with margin. Alone among
+    /// the guards this one is CAUSAL, not circumstantial; the fade-cluster and
+    /// forget-line rules stay as backstops.</summary>
+    public static readonly TimeSpan HasteSongWindow = TimeSpan.FromSeconds(60);
+
     private readonly SlowDebuffCatalog _catalog;
     private readonly Dictionary<string, SlowState> _active = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _forgottenSongs = new(StringComparer.OrdinalIgnoreCase);
     private DateTime? _lastRaidChatter;
     private DateTime? _lastFlavorFade;
+    private DateTime? _lastHasteLanding;
     private readonly object _lock = new();
 
     /// <summary>Raised when the set of active slows changes.</summary>
@@ -96,8 +106,13 @@ public sealed class SlowTracker
                     if (entry.FadeOf.Any(song => _forgottenSongs.TryGetValue(Fold(song), out var at)
                             && evt.Time >= at && evt.Time - at <= HasteForgetWindow))
                         break;
-                    // Group-member case: the line landed amid other songs' fades —
-                    // a bard's twist lapsing, not a slow (see FadeClusterWindow).
+                    // Group-member case, causal form (David): a Selo's pulse landed
+                    // on you recently — this shared line is that song lapsing.
+                    if (entry.FadeOf.Length > 0 && _lastHasteLanding is { } hl
+                            && evt.Time >= hl && evt.Time - hl <= HasteSongWindow)
+                        break;
+                    // Group-member case, circumstantial form: the line landed amid
+                    // other songs' fades — a twist lapsing (see FadeClusterWindow).
                     if (entry.FadeOf.Length > 0 && _lastFlavorFade is { } ff
                             && evt.Time >= ff && evt.Time - ff <= FadeClusterWindow)
                         break;
@@ -136,6 +151,15 @@ public sealed class SlowTracker
 
                 case SongForgottenEvent forgot:
                     _forgottenSongs[Fold(forgot.Song)] = evt.Time;
+                    break;
+
+                case HasteSongLandedEvent:
+                    _lastHasteLanding = evt.Time;
+                    // A fresh pulse right after a shared slow line proves that line
+                    // was song churn (re-twist) — take the chip back.
+                    changed = RemoveWhere(s => s.SharedWithHaste
+                        && evt.Time >= s.LandedAt
+                        && evt.Time - s.LandedAt <= HasteSongWindow);
                     break;
 
                 case RaidChatterEvent:

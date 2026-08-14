@@ -601,6 +601,13 @@ public static partial class LogParser
         if (msg.StartsWith("You forget ", StringComparison.Ordinal) && msg.EndsWith('.'))
             return new SongForgottenEvent(ts, msg["You forget ".Length..^1]);
 
+        // A colliding haste song's pulse landing on you — the group-member
+        // disambiguator (a bard's songs never log in a groupmate's file; this
+        // line is the only witness). Catalog-driven: the harvest keeps the set of
+        // landing lines current as the wiki documents new songs.
+        if (SlowDebuffCatalog.Default.IsHasteLanding(msg))
+            return new HasteSongLandedEvent(ts);
+
         // Buff landing lines — third exact-match catalog, same disjointness guarantee.
         if (BuffDurationCatalog.Default.Find(msg) is not null)
             return new BuffLandedEvent(ts, msg);

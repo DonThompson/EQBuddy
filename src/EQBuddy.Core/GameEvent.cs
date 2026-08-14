@@ -83,6 +83,12 @@ public record SlowLandedEvent(DateTime Time, string Message) : GameEvent(Time);
 /// line ("You slow down."), and a recent forget of the named song is the signal that
 /// the line was the haste ending, not a slow arriving.</summary>
 public record SongForgottenEvent(DateTime Time, string Song) : GameEvent(Time);
+/// <summary>"Your feet move faster." — Selo's landing on YOU (every pulse, ~12–18s
+/// apart while a bard twists). The clean witness for the group-member Selo's case
+/// (David, 2026-08-13): a "You slow down." following one of these is the song
+/// lapsing, never an incoming slow — 29/29 in the diagnosing two-bard log arrived
+/// 12–44s after a landing.</summary>
+public record HasteSongLandedEvent(DateTime Time) : GameEvent(Time);
 /// <summary>A raid-channel chat line — the only signal in the log that you are in a
 /// raid, used by the slow alert's raid-only mode. Carries nothing: the content is chat.</summary>
 public record RaidChatterEvent(DateTime Time) : GameEvent(Time);
