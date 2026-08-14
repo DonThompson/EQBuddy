@@ -123,7 +123,10 @@ public static partial class CompanionProjection
                 // Crumb POSITIONS only. A trail that is merely fading is not news — the
                 // page burns it down locally on the same curve, and shipping ages here
                 // would wake every map device every single second.
-                Join(m.Trail, c => $"{c.X:0}:{c.Y:0}"));
+                Join(m.Trail, c => $"{c.X:0}:{c.Y:0}"),
+                // Pin countdowns tick on the page like every other clock; a pin is news
+                // when it appears, moves, or flips to DUE.
+                Join(m.Pins, p => $"{p.Name}:{p.X:0}:{p.Y:0}:{p.Due}:{p.FromWiki}"));
 
         if (snap.Spawns is { } sp)
             map[CompanionSurfaces.Spawns] = Join(sp.Timers,

@@ -23,6 +23,12 @@ public sealed record CompanionSources
     /// <summary>Zone → hops from here, for the gear checklist's by-zone view.</summary>
     public Func<string, int?>? HopsFromHere { get; init; }
     public Func<(int? Level, LevelUnlockSet Unlocks)>? Progress { get; init; }
+
+    /// <summary>Where a running timer's named camps, and whether that came from the
+    /// wiki rather than your own /loc at kill time. The desktop owns this because the
+    /// wiki fallback runs through its memoized, polite lookup — the map window asks the
+    /// same question the same way.</summary>
+    public Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? CampFor { get; init; }
 }
 
 /// <summary>
@@ -199,9 +205,18 @@ public sealed class CompanionHost : IDisposable
             BuffLosses = On(CompanionSurfaces.Buffs) ? _sources.BuffLosses?.Invoke() ?? [] : [],
             HopsFromHere = _sources.HopsFromHere,
             Map = On(CompanionSurfaces.Map)
-                ? _maps.Build(stats?.CurrentZone ?? "", timerZone, _sources.SpawnPoints,
-                    timers.Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase)).ToList(),
-                    stats?.LastLocation, stats?.LocationTrail, now)
+                ? _maps.Build(new CompanionMapRequest
+                {
+                    MapZone = stats?.CurrentZone ?? "",
+                    TimerZone = timerZone,
+                    Points = _sources.SpawnPoints,
+                    Timers = timers
+                        .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
+                        .ToList(),
+                    Location = stats?.LastLocation,
+                    Trail = stats?.LocationTrail,
+                    CampFor = _sources.CampFor,
+                }, now)
                 : null,
             Level = progress?.Level,
             Unlocks = progress?.Unlocks,

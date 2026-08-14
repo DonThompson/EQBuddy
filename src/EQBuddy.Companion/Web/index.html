@@ -800,9 +800,16 @@ function boot() {
     function rescale() {
       for (const e of svg.querySelectorAll("[data-px]")) {
         const px = +e.dataset.px;
-        if (e.tagName === "text") e.setAttribute("font-size", px / k);
+        // Inline style, not the font-size ATTRIBUTE: text.poi sets a font-size in CSS,
+        // and a class rule beats a presentation attribute — which quietly killed this
+        // counter-scaling and let every label balloon as you zoomed in.
+        if (e.tagName === "text") e.style.fontSize = (px / k) + "px";
         else e.setAttribute("r", px / k);
       }
+      // Camp pins are drawn once at the origin and parked on their camp here, counter-
+      // scaled so the pin and its label keep their size and their offset from the spot.
+      for (const e of svg.querySelectorAll("[data-pin]"))
+        e.setAttribute("transform", `translate(${e.dataset.pin}) scale(${1 / k})`);
     }
     function zoomBy(f, cx, cy) {
       const r = svg.getBoundingClientRect();
@@ -972,6 +979,35 @@ function boot() {
           dyn.appendChild(t);
         }
       }
+      // Camp pins: a triangle at the camp with the named and its countdown beside it,
+      // the same marker the desktop's named panel puts on the map. Drawn after the
+      // circles so a pin sitting on its spawn point stays readable.
+      const bad = css.getPropertyValue("--bad").trim() || "#c8503c";
+      for (const pin of data.pins || []) {
+        const color = pin.due ? warn : bad;
+        // Pin and label share ONE counter-scaled group parked on the camp, so both keep
+        // their screen size and their screen-space offset from the spot at any zoom —
+        // a pin points AT a place, it doesn't stretch with the picture the way a wall
+        // does. rescale() maintains the group's transform.
+        const g = document.createElementNS(SVG, "g");
+        g.dataset.pin = `${pin.x} ${pin.y}`;
+        const tri = document.createElementNS(SVG, "polygon");
+        tri.setAttribute("points", "0,0 5,-10 -5,-10");
+        tri.setAttribute("fill", color);
+        tri.setAttribute("stroke", css.getPropertyValue("--bg").trim() || "#16130e");
+        tri.setAttribute("stroke-width", "1");
+        const t = document.createElementNS(SVG, "text");
+        // Below the spot, deliberately: a named's spawn circle labels ABOVE, and a camp
+        // pin very often sits on that circle. Splitting the two directions is what
+        // keeps "Lord Bergurgle" from being printed over "Lord Bergurgle".
+        t.setAttribute("x", 8); t.setAttribute("y", 12);
+        t.setAttribute("font-size", 10);
+        t.setAttribute("fill", color); t.setAttribute("class", "poi");
+        t.dataset.pinLabel = `${pin.x},${pin.y}`;
+        t.textContent = pin.name + (pin.fromWiki ? " ~" : "");
+        g.append(tri, t);
+        dyn.appendChild(g);
+      }
       if (data.you) {
         const me = document.createElementNS(SVG, "circle");
         me.setAttribute("cx", data.you.x); me.setAttribute("cy", data.you.y);
@@ -980,6 +1016,19 @@ function boot() {
         dyn.appendChild(me);
       }
       rescale();
+    }
+
+    // The pins' countdowns, ticked locally between pushes exactly as the spawn list
+    // ticks its rows — a pin that only counts down is not worth a push.
+    function tickPins(data) {
+      const elapsed = since();
+      for (const t of dyn.querySelectorAll("[data-pin-label]")) {
+        const pin = (data.pins || []).find(p => `${p.x},${p.y}` === t.dataset.pinLabel);
+        if (!pin) continue;
+        const left = pin.dueSeconds == null ? null : pin.dueSeconds - elapsed;
+        const countdown = left == null ? "?" : left <= 0 ? "DUE" : fmt(left);
+        t.textContent = pin.name + (pin.fromWiki ? " ~ " : " ") + countdown;
+      }
     }
 
     return {
@@ -1001,9 +1050,10 @@ function boot() {
         // The map panel repaints every second for its /loc age line, but the circles
         // only when they actually moved — rebuilding them would restart every pulse
         // animation mid-beat.
-        const key = JSON.stringify([data.circles, data.you]);
+        const key = JSON.stringify([data.circles, data.you, data.pins]);
         if (key !== dynKey) { dynKey = key; drawDynamic(data); }
         drawTrail(data);
+        tickPins(data);
         fit();
         const age = data.you ? Math.round(data.you.ageSeconds + since()) : null;
         tip.textContent = data.zone + (data.you

@@ -44,7 +44,8 @@ public sealed record CompanionMapSection(
     string? Missing,
     CompanionMapMarker? You,
     IReadOnlyList<CompanionMapCircle> Circles,
-    IReadOnlyList<CompanionMapCrumb> Trail);
+    IReadOnlyList<CompanionMapCrumb> Trail,
+    IReadOnlyList<CompanionMapPin> Pins);
 
 /// <summary>Map-space geometry. Coordinates are rounded to whole map units (roughly
 /// game feet) — the pack's sub-unit precision is invisible on a phone and doubles the
@@ -74,6 +75,21 @@ public sealed record CompanionMapMarker(double X, double Y, double AgeSeconds);
 /// burning down smoothly between pushes exactly as it does on the desktop — and a
 /// crumb merely fading never counts as a change worth waking a device for.</summary>
 public sealed record CompanionMapCrumb(double X, double Y, double AgeSeconds);
+
+/// <summary>A camp pin: where a running timer's named actually camps, which is a
+/// different question from where its spawn point was archived. The desktop learns it
+/// from your /loc at kill time and falls back to the wiki's location field — and says
+/// which, because a wiki camp is approximate and the player deserves to know
+/// (<see cref="FromWiki"/> is the desktop's "~").
+///
+/// <see cref="DueSeconds"/> is the countdown at send time; the page ticks it locally
+/// like every other clock, so pins don't wake a device once a second.</summary>
+public sealed record CompanionMapPin(
+    double X, double Y,
+    string Name,
+    double? DueSeconds,
+    bool Due,
+    bool FromWiki);
 
 /// <summary>An archived spawn point. <see cref="Named"/> points wear the accent and
 /// carry a <see cref="Label"/>; ordinary ones sit dim. <see cref="DueSeconds"/> is the

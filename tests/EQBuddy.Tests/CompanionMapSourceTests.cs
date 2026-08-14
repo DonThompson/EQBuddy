@@ -34,10 +34,15 @@ public class CompanionMapSourceTests : IDisposable
     private CompanionMapSource Source() =>
         new(new AppSettings { MapFolder = _dir });
 
+    /// <summary>A request with just the zone filled in — every test names only the
+    /// layer it is about, which is the point of the bundle.</summary>
+    private static CompanionMapRequest In(string mapZone = "Befallen", string? timerZone = null) =>
+        new() { MapZone = mapZone, TimerZone = timerZone ?? mapZone };
+
     [Fact]
     public void LoadsTheZonesPictureAndStampsIt()
     {
-        var map = Source().Build("Befallen", "Befallen", null, [], null, null, Now);
+        var map = Source().Build(In(), Now);
 
         Assert.Equal("Befallen", map.Zone);
         Assert.Null(map.Missing);
@@ -60,8 +65,8 @@ public class CompanionMapSourceTests : IDisposable
     public void GeometryIsParsedOncePerZoneAndTheStampHoldsStill()
     {
         var source = Source();
-        var first = source.Build("Befallen", "Befallen", null, [], null, null, Now);
-        var second = source.Build("Befallen", "Befallen", null, [], null, null, Now.AddSeconds(1));
+        var first = source.Build(In(), Now);
+        var second = source.Build(In(), Now.AddSeconds(1));
 
         // The same object, not a re-parse — this is the "never re-serialized per tick"
         // promise the wire's sticky-geometry rule depends on.
@@ -72,7 +77,7 @@ public class CompanionMapSourceTests : IDisposable
     [Fact]
     public void AMissingMapNamesTheFileItWanted()
     {
-        var map = Source().Build("Plane of Sky", "Plane of Sky", null, [], null, null, Now);
+        var map = Source().Build(In("Plane of Sky"), Now);
         Assert.Null(map.Geometry);
         Assert.NotNull(map.Missing);
         Assert.Contains("airplane.txt", map.Missing);
@@ -84,7 +89,7 @@ public class CompanionMapSourceTests : IDisposable
     {
         // The game prints /loc as (Y, X); a position plots at map (-X, -Y).
         var loc = new LocationEvent(Now.AddSeconds(-45), 30, 20, 0);
-        var map = Source().Build("Befallen", "Befallen", null, [], loc, null, Now);
+        var map = Source().Build(In() with { Location = loc }, Now);
 
         Assert.NotNull(map.You);
         Assert.Equal(-20, map.You!.X);
@@ -111,7 +116,7 @@ public class CompanionMapSourceTests : IDisposable
         {
             new("legends", zone.Zone, named, Now.AddSeconds(-55), 60),
         };
-        var map = Source().Build("Befallen", zone.Zone, ledger, timers, null, null, Now);
+        var map = Source().Build(In(timerZone: zone.Zone) with { Points = ledger, Timers = timers }, Now);
 
         var circle = Assert.Single(map.Circles);
         Assert.True(circle.Named);
@@ -137,8 +142,7 @@ public class CompanionMapSourceTests : IDisposable
     [Fact]
     public void TheTrailRidesTheWireInMapSpaceOldestFirst()
     {
-        var map = Source().Build("Befallen", "Befallen", null, [], null,
-            [Crumb(30, 10, 20), Crumb(20, 30, 40), Crumb(5, 50, 60)], Now);
+        var map = Source().Build(In() with { Trail = [Crumb(30, 10, 20), Crumb(20, 30, 40), Crumb(5, 50, 60)] }, Now);
 
         Assert.Equal(3, map.Trail.Count);
         // Same (Y, X) → (-X, -Y) plot the marker and the circles use.
@@ -152,10 +156,10 @@ public class CompanionMapSourceTests : IDisposable
     [Fact]
     public void ASingleCrumbIsNotATail()
     {
-        var one = Source().Build("Befallen", "Befallen", null, [], null, [Crumb(5, 10, 20)], Now);
+        var one = Source().Build(In() with { Trail = [Crumb(5, 10, 20)] }, Now);
         Assert.Empty(one.Trail);
 
-        var none = Source().Build("Befallen", "Befallen", null, [], null, null, Now);
+        var none = Source().Build(In(), Now);
         Assert.Empty(none.Trail);
     }
 
@@ -165,10 +169,9 @@ public class CompanionMapSourceTests : IDisposable
         // Two crumbs well past the fade horizon, two inside it. The desktop still draws
         // the segment INTO the oldest live crumb, so its predecessor has to ride along
         // as an anchor — otherwise the phone's tail is a segment shorter than the PC's.
-        var map = Source().Build("Befallen", "Befallen", null, [], null,
-        [
+        var map = Source().Build(In() with { Trail = [
             Crumb(300, 10, 10), Crumb(120, 20, 20), Crumb(40, 30, 30), Crumb(2, 40, 40),
-        ], Now);
+        ] }, Now);
 
         Assert.Equal(3, map.Trail.Count);
         Assert.Equal([120d, 40d, 2d], map.Trail.Select(c => Math.Round(c.AgeSeconds)));
@@ -177,8 +180,7 @@ public class CompanionMapSourceTests : IDisposable
     [Fact]
     public void AWhollyFadedTrailShipsNothing()
     {
-        var map = Source().Build("Befallen", "Befallen", null, [], null,
-            [Crumb(600, 10, 10), Crumb(300, 20, 20)], Now);
+        var map = Source().Build(In() with { Trail = [Crumb(600, 10, 10), Crumb(300, 20, 20)] }, Now);
         Assert.Empty(map.Trail);
     }
 
@@ -197,12 +199,12 @@ public class CompanionMapSourceTests : IDisposable
 
         var source = Source();
         var trail = new List<LocationEvent> { Crumb(20, 10, 20), Crumb(5, 30, 40) };
-        var first = source.Build("Befallen", "Befallen", null, [], null, trail, Now);
-        var older = source.Build("Befallen", "Befallen", null, [], null, trail, Now.AddSeconds(10));
+        var first = source.Build(In() with { Trail = trail }, Now);
+        var older = source.Build(In() with { Trail = trail }, Now.AddSeconds(10));
         Assert.Equal(Print(first), Print(older));
 
         trail.Add(Crumb(-15, 50, 60));   // a fresh /loc, 15s after "now"
-        var moved = source.Build("Befallen", "Befallen", null, [], null, trail, Now.AddSeconds(15));
+        var moved = source.Build(In() with { Trail = trail }, Now.AddSeconds(15));
         Assert.NotEqual(Print(first), Print(moved));
     }
 
@@ -218,5 +220,67 @@ public class CompanionMapSourceTests : IDisposable
         Assert.True(declared.Success, "The phone page no longer declares its trail-fade constants.");
         Assert.Equal(EQBuddy.UI.Shared.TrailFade.FullAlpha, byte.Parse(declared.Groups[1].Value));
         Assert.Equal(EQBuddy.UI.Shared.TrailFade.Horizon.TotalSeconds, double.Parse(declared.Groups[2].Value));
+    }
+
+    // ---- camp pins ----
+    // The desktop's named panel pins every running timer whose camp it can resolve;
+    // the tablet draws the same pins from the same resolution.
+
+    private static SpawnTimerState Timer(string zone, string name, double ageSeconds, double duration) =>
+        new("legends", zone, name, Now.AddSeconds(-ageSeconds), duration);
+
+    [Fact]
+    public void CampPinsCarryTheCountdownAndOwnUpToAWikiCamp()
+    {
+        var yours = Timer("Befallen", "Ghoul Assassin", 30, 100);
+        var wiki = Timer("Befallen", "Sir Rufus", 10, 100);
+        var unknown = Timer("Befallen", "Nobody", 10, 100);
+
+        var map = Source().Build(In() with
+        {
+            Timers = [yours, wiki, unknown],
+            // /loc at kill for the first, the wiki's location field for the second,
+            // and nothing at all for the third.
+            CampFor = t => t.Name switch
+            {
+                "Ghoul Assassin" => (100.0, 200.0, false),
+                "Sir Rufus" => (-50.0, 25.0, true),
+                _ => null,
+            },
+        }, Now);
+
+        Assert.Equal(2, map.Pins.Count);   // a timer with no camp gets no pin
+        var mine = map.Pins.Single(p => p.Name == "Ghoul Assassin");
+        Assert.Equal(-200, mine.X);        // (Y, X) → (-X, -Y), same as everything else
+        Assert.Equal(-100, mine.Y);
+        Assert.False(mine.FromWiki);
+        Assert.Equal(70, mine.DueSeconds!.Value, 1);
+        Assert.False(mine.Due);
+
+        var theirs = map.Pins.Single(p => p.Name == "Sir Rufus");
+        Assert.True(theirs.FromWiki);      // the desktop's "~": approximate, and says so
+    }
+
+    [Fact]
+    public void ADueCampPinSaysSo()
+    {
+        var map = Source().Build(In() with
+        {
+            Timers = [Timer("Befallen", "Ghoul Assassin", 120, 60)],
+            CampFor = _ => (10.0, 10.0, false),
+        }, Now);
+
+        var pin = Assert.Single(map.Pins);
+        Assert.True(pin.Due);
+        Assert.True(pin.DueSeconds < 0);   // already overdue; the page shows DUE
+    }
+
+    [Fact]
+    public void AHostThatCannotResolveCampsSimplyGetsNoPins()
+    {
+        // Avalonia, tests, any host that hasn't wired CampFor: no pins, no crash, and
+        // above all no second wiki lookup started from inside the companion.
+        var map = Source().Build(In() with { Timers = [Timer("Befallen", "Ghoul Assassin", 5, 60)] }, Now);
+        Assert.Empty(map.Pins);
     }
 }

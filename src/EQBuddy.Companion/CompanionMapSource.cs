@@ -5,6 +5,33 @@ using EQBuddy.UI.Shared;
 namespace EQBuddy.Companion;
 
 /// <summary>
+/// One tick's map inputs. A bundle rather than a parameter list, for the same reason
+/// <see cref="CompanionInputs"/> is one: the map is the surface still growing towards
+/// the desktop's, and every new layer would otherwise rewrite every call site.
+/// </summary>
+public sealed record CompanionMapRequest
+{
+    /// <summary>The log's zone name, which is what names the map FILE.</summary>
+    public string MapZone { get; init; } = "";
+
+    /// <summary>The catalog zone the spawn archive and timers live under. Kept apart
+    /// from <see cref="MapZone"/> exactly as the desktop keeps them apart — "Befallen 4
+    /// (Refined)" has no map file of its own.</summary>
+    public string TimerZone { get; init; } = "";
+
+    public SpawnPointLedger? Points { get; init; }
+    public IReadOnlyList<SpawnTimerState> Timers { get; init; } = [];
+
+    /// <summary>Your last /loc, and the crumbs behind it.</summary>
+    public LocationEvent? Location { get; init; }
+    public IReadOnlyList<LocationEvent>? Trail { get; init; }
+
+    /// <summary>Camp resolution, owned by the desktop — see CompanionSources.CampFor.
+    /// Null simply means no pins, which is what a host that can't answer should get.</summary>
+    public Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? CampFor { get; init; }
+}
+
+/// <summary>
 /// The map surface's builder, and its cache. The zone's PICTURE is static — thousands
 /// of segments parsed off disk — so it is loaded once per zone and then handed out by
 /// reference; only the marker and the spawn-point circles are rebuilt per tick, and
@@ -54,37 +81,56 @@ public sealed class CompanionMapSource
         return folders;
     }
 
-    /// <summary>Build the section. <paramref name="mapZone"/> is the log's zone name
-    /// (which names the map FILE); <paramref name="timerZone"/> is the catalog zone the
-    /// spawn archive and timers live under — the desktop keeps them apart for the same
-    /// reason ("Befallen 4 (Refined)" has no map file of its own).</summary>
-    public CompanionMapSection Build(
-        string mapZone,
-        string timerZone,
-        SpawnPointLedger? points,
-        IReadOnlyList<SpawnTimerState> timers,
-        LocationEvent? location,
-        IReadOnlyList<LocationEvent>? trail,
-        DateTime now)
+    /// <summary>Build the section from one tick's worth of map inputs. Everything the
+    /// map layer needs arrives in <see cref="CompanionMapRequest"/> rather than as a
+    /// parameter list — the same reason <see cref="CompanionInputs"/> exists, learned
+    /// the hard way when the trail and the camp pins each rewrote every call site.</summary>
+    public CompanionMapSection Build(CompanionMapRequest request, DateTime now)
     {
-        EnsureGeometry(mapZone);
+        EnsureGeometry(request.MapZone);
 
-        var circles = points is null || timerZone.Length == 0
+        var circles = request.Points is null || request.TimerZone.Length == 0
             ? []
-            : BuildCircles(points, timerZone, timers, now);
+            : BuildCircles(request.Points, request.TimerZone, request.Timers, now);
 
-        CompanionMapMarker? you = location is { } loc
+        CompanionMapMarker? you = request.Location is { } loc
             ? Marker(loc, now)
             : null;
 
         return new CompanionMapSection(
-            Zone: mapZone,
+            Zone: request.MapZone,
             GeometryStamp: _geometry?.Stamp ?? "",
             Geometry: _geometry,
             Missing: _missing,
             You: you,
             Circles: circles,
-            Trail: BuildTrail(trail, now));
+            Trail: BuildTrail(request.Trail, now),
+            Pins: BuildPins(request.Timers, request.CampFor, now));
+    }
+
+    /// <summary>Camp pins for the zone's running timers — the desktop's named panel
+    /// puts one on the map for every timer whose camp it can resolve, and so does this.
+    /// Resolution itself stays on the desktop side of the delegate: the wiki fallback
+    /// is a memoized, rate-limited lookup the app already owns, and the companion has
+    /// no business starting a second one.</summary>
+    private static List<CompanionMapPin> BuildPins(
+        IReadOnlyList<SpawnTimerState> timers,
+        Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? campFor,
+        DateTime now)
+    {
+        if (campFor is null) return [];
+        var pins = new List<CompanionMapPin>();
+        foreach (var t in timers)
+        {
+            if (campFor(t) is not { } camp) continue;
+            var (x, y) = ZoneMap.FromLoc(camp.Y, camp.X);
+            pins.Add(new CompanionMapPin(
+                x, y, t.Name,
+                DueSeconds: t.DueAt is { } due ? (due - now).TotalSeconds : null,
+                Due: t.IsDue(now),
+                FromWiki: camp.FromWiki));
+        }
+        return pins;
     }
 
     private static CompanionMapMarker Marker(LocationEvent loc, DateTime now)

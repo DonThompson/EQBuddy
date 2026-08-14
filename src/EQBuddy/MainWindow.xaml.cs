@@ -136,6 +136,8 @@ public partial class MainWindow : Window
                 BuffLosses = () => _buffLossLog.Snapshot(),
                 HopsFromHere = zone => ZoneGraph.Distance(CurrentZoneName, zone)?.Hops,
                 Progress = () => (CurrentSnapshot().LastLevel, DingUnlocks(CurrentSnapshot())),
+                CampFor = t => UI.Shared.CampLocations.Resolve(
+                    t, EnsureMobLookup, n => WikiMobResult(n)?.Mob?.LocYX),
             });
         ThemeManager.PaletteApplied += _companion.SetTheme;
         _companion.SurfaceEdited += OnCompanionSurfaceEdited;
