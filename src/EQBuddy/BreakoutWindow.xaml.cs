@@ -7,9 +7,9 @@ using EQBuddy.Core;
 namespace EQBuddy;
 
 /// <summary>Which stat a breakout window tracks. Each kind is one singleton window with its
-/// own remembered position and Fight/Session scope (Watch and Loot have no scope — their
-/// content is session/target shaped, so the toggle is hidden).</summary>
-public enum BreakoutKind { Damage, Healing, Pet, Watch, Loot }
+/// own remembered position and Fight/Session scope (Watch, Loot and Buffs have no scope —
+/// their content is session/target/class shaped, so the toggle is hidden).</summary>
+public enum BreakoutKind { Damage, Healing, Pet, Watch, Loot, Buffs }
 
 /// <summary>
 /// A small floating bar-chart window for one stat — your damage, your healing, or the pet's
@@ -57,7 +57,7 @@ public partial class BreakoutWindow : Window
         EmptyText.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
 
         // Sort links only make sense for ability-stat rows.
-        SortBar.Visibility = _kind is BreakoutKind.Watch or BreakoutKind.Loot
+        SortBar.Visibility = _kind is BreakoutKind.Watch or BreakoutKind.Loot or BreakoutKind.Buffs
             ? Visibility.Collapsed : Visibility.Visible;
         if (_kind == BreakoutKind.Healing) SortRate.Text = "hps";
         _sort = ParseSort(SortSetting());
@@ -94,6 +94,14 @@ public partial class BreakoutWindow : Window
             OpenTimeline.Visibility = Visibility.Visible;
         }
         if (_kind == BreakoutKind.Watch) ScopeBorder.Visibility = Visibility.Collapsed;
+        if (_kind == BreakoutKind.Buffs)
+        {
+            // No Fight/Session axis here — the axis is the class combination, named
+            // in the subheader. The in-place editor is this kind's whole point
+            // (#120 stage 2): configuring the set never requires Options.
+            ScopeBorder.Visibility = Visibility.Collapsed;
+            BuffEditor.Visibility = Visibility.Visible;
+        }
         if (_kind == BreakoutKind.Loot)
         {
             // Same toggle chrome, different axis: what the TARGET can drop vs what the
@@ -131,6 +139,7 @@ public partial class BreakoutWindow : Window
         BreakoutKind.Healing => (_settings.BreakoutHealingLeft, _settings.BreakoutHealingTop),
         BreakoutKind.Pet => (_settings.BreakoutPetLeft, _settings.BreakoutPetTop),
         BreakoutKind.Watch => (_settings.BreakoutWatchLeft, _settings.BreakoutWatchTop),
+        BreakoutKind.Buffs => (_settings.BreakoutBuffsLeft, _settings.BreakoutBuffsTop),
         _ => (_settings.BreakoutLootLeft, _settings.BreakoutLootTop),
     };
 
@@ -182,6 +191,7 @@ public partial class BreakoutWindow : Window
         BreakoutKind.Healing => (_settings.BreakoutHealingWidth, _settings.BreakoutHealingHeight),
         BreakoutKind.Pet => (_settings.BreakoutPetWidth, _settings.BreakoutPetHeight),
         BreakoutKind.Watch => (_settings.BreakoutWatchWidth, _settings.BreakoutWatchHeight),
+        BreakoutKind.Buffs => (_settings.BreakoutBuffsWidth, _settings.BreakoutBuffsHeight),
         _ => (_settings.BreakoutLootWidth, _settings.BreakoutLootHeight),
     };
 
@@ -197,6 +207,8 @@ public partial class BreakoutWindow : Window
                 _settings.BreakoutPetWidth = w; _settings.BreakoutPetHeight = h; break;
             case BreakoutKind.Watch:
                 _settings.BreakoutWatchWidth = w; _settings.BreakoutWatchHeight = h; break;
+            case BreakoutKind.Buffs:
+                _settings.BreakoutBuffsWidth = w; _settings.BreakoutBuffsHeight = h; break;
             default:
                 _settings.BreakoutLootWidth = w; _settings.BreakoutLootHeight = h; break;
         }
@@ -306,6 +318,8 @@ public partial class BreakoutWindow : Window
                 _settings.BreakoutPetLeft = Left; _settings.BreakoutPetTop = Top; break;
             case BreakoutKind.Watch:
                 _settings.BreakoutWatchLeft = Left; _settings.BreakoutWatchTop = Top; break;
+            case BreakoutKind.Buffs:
+                _settings.BreakoutBuffsLeft = Left; _settings.BreakoutBuffsTop = Top; break;
             default:
                 _settings.BreakoutLootLeft = Left; _settings.BreakoutLootTop = Top; break;
         }
@@ -335,6 +349,7 @@ public partial class BreakoutWindow : Window
         ApplyBackgroundOpacity();
         if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
         if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
+        if (_kind == BreakoutKind.Buffs) { UpdateBuffs(s); return; }
         _lastFight = s.LastFight;
         _deaths = s.Deaths;
         _resists = MainWindow.SpellResistLookup(s);
@@ -600,6 +615,346 @@ public partial class BreakoutWindow : Window
         row.MouseLeftButtonDown += (_, e) => e.Handled = true;   // don't start a window drag
         row.MouseLeftButtonUp += (_, _) => MainWindow.OpenWikiPage(name);
         return row;
+    }
+
+    // ---- the Buff Set breakout (#120 stage 2, Frankthetankk) ----
+
+    /// <summary>Per-tick in-place clocks for the buff rows (the Buffs card's idiom):
+    /// an unchanged set of spells+statuses updates countdown text without rebuilding.</summary>
+    private readonly List<TextBlock> _buffSetClocks = [];
+    private string _buffBucketsMemo = "";
+
+    /// <summary>
+    /// The requester's window, "in line with the other breakout windows": the ASSEMBLED
+    /// buff set, one section per class in the active combination with the "(any class)"
+    /// bucket first, each entry wearing the card's live honesty brush (Active/Expiring/
+    /// Missing/NotSeen), and add/remove in place so configuration never requires
+    /// Options. Both editors write the same per-class storage; every edit routes
+    /// through MainWindow.OnBuffSetEdited so card, Options and this window repaint at
+    /// once — a change that waits for the next tick reads as a silent no-op.
+    /// </summary>
+    private void UpdateBuffs(StatsSnapshot s)
+    {
+        TitleText.Text = "⏳ Buff set";
+        if (Main is not { } main || main.BuffSetKey is not { Length: > 0 } key)
+        {
+            SubText.Text = "No character detected yet";
+            EmptyText.Text = "Once today's log names your character,\nthe set unlocks here.";
+            EmptyText.Visibility = Visibility.Visible;
+            Rows.Items.Clear();
+            _buffSetClocks.Clear();
+            BuffAddBox.IsEnabled = false;
+            BuffClassBox.IsEnabled = false;
+            _signature = "";
+            return;
+        }
+        BuffAddBox.IsEnabled = true;
+        BuffClassBox.IsEnabled = true;
+
+        var now = DateTime.Now;
+        var (classes, picked) = main.BuffSetClassSource(s);
+        // The class filter, visible: the combination this set is assembled for, its
+        // source named honestly — the log has no /who or loadout-change line to read.
+        SubText.Text = main.BuffSetCharacterName + " · " + (classes.Count > 0
+            ? string.Join("/", classes.Select(QuestClassFilter.Abbrev)) + (picked ? "" : " (inferred)")
+            : "no classes known yet");
+        SubText.ToolTip = "Classes come from your Quest Tracker picks, falling back to the class "
+            + "inferred from your combat log — EQ Legends logs announce no loadout changes, so "
+            + "this is the signal EQBuddy honestly has. (any class) picks always apply. "
+            + "Swap a class and the other classes' picks stay put.";
+        RefreshBuffClassChoices(classes);
+
+        var sections = main.BuffSetSectionStates(s, now);
+        // Stage 3 (#120): the card's suggestion rows mirror here, and the lost-buff
+        // history folds at the bottom — both live content, both in the signature.
+        var suggestions = main.BuffSuggestionsFor(s, main.AssembledBuffSet(classes));
+        var losses = main.BuffLosses.Snapshot();
+        if (sections.All(sec => sec.Entries.Count == 0) && suggestions.Count == 0 && losses.Count == 0)
+        {
+            EmptyText.Text = "Nothing picked yet — choose a class bucket below\nand type a buff to build the set.";
+            EmptyText.Visibility = Visibility.Visible;
+            Rows.Items.Clear();
+            _buffSetClocks.Clear();
+            _signature = "";
+            return;
+        }
+        EmptyText.Visibility = Visibility.Collapsed;
+
+        // Signature covers spells and STATUSES, not countdown text — clocks update in
+        // place on a match, so a ticking timer never forces a rebuild. Losses key on
+        // the newest entry too: at the cap the count alone stops moving.
+        var flat = sections.SelectMany(sec => sec.Entries).ToList();
+        var sig = "buffs|" + SubText.Text + "|" + string.Join(";", sections.Select(sec =>
+                sec.Class + ":" + string.Join(",", sec.Entries.Select(e => $"{e.Spell}·{e.Status}"))))
+            + "|sug:" + string.Join(",", suggestions.Select(x => x.Spell + "@" + x.Class))
+            + "|loss:" + losses.Count + (_lossesOpen ? "▾" : "▸")
+            + (losses.Count > 0 ? losses[0].Time.Ticks + losses[0].Spell : "");
+        if (sig == _signature)
+        {
+            for (var i = 0; i < _buffSetClocks.Count && i < flat.Count; i++)
+                _buffSetClocks[i].Text = BuffStatusText(flat[i]);
+            return;
+        }
+        _signature = sig;
+        _buffSetClocks.Clear();
+
+        Rows.Items.Clear();
+        foreach (var (cls, entries) in sections)
+        {
+            var header = new TextBlock { Text = cls };
+            header.Style = (Style)FindResource("SectionLabel");
+            Rows.Items.Add(header);
+            if (entries.Count == 0)
+            {
+                // The empty section is deliberate furniture: it shows the bucket a
+                // freshly swapped-in class gets, right where adding happens.
+                var none = new TextBlock
+                {
+                    Text = "nothing picked for this class yet", FontSize = 11,
+                    FontStyle = FontStyles.Italic, Margin = new Thickness(4, 0, 0, 2),
+                };
+                none.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+                Rows.Items.Add(none);
+                continue;
+            }
+            foreach (var entry in entries) Rows.Items.Add(BuffSetRow(main, key, cls, entry));
+        }
+        foreach (var sug in suggestions) Rows.Items.Add(BuffSuggestionRow(main, sug));
+        AddBuffLossFold(main, losses);
+    }
+
+    /// <summary>The card's suggestion row, mirrored (#120 stage 3): dim, ✓ add to the
+    /// gaining class's bucket / ✕ dismiss for good — never auto-added.</summary>
+    private Grid BuffSuggestionRow(MainWindow main, BuffSuggestion sug)
+    {
+        var row = new Grid { Margin = new Thickness(4, 3, 0, 1) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var text = new TextBlock
+        {
+            Text = $"new at your level — add {sug.Spell} to {sug.Class}?",
+            FontSize = 11, FontStyle = FontStyles.Italic,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = "Your level-up made this buff available. ✓ adds it to that class's "
+                + "bucket; ✕ never asks again for this character. A new RANK of a set "
+                + "buff folds into the same slot and is never suggested.",
+        };
+        text.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        row.Children.Add(text);
+        var add = new Button
+        {
+            Style = (Style)FindResource("IconButton"), Content = "✓", FontSize = 11,
+            Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Add {sug.Spell} to your {sug.Class} set",
+        };
+        add.Click += (_, _) => main.AcceptBuffSuggestion(sug);
+        Grid.SetColumn(add, 1);
+        row.Children.Add(add);
+        var dismiss = new Button
+        {
+            Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+            Margin = new Thickness(4, 0, 0, 0),
+            ToolTip = "Dismiss — never suggest this buff for this character again",
+        };
+        dismiss.Click += (_, _) => main.DismissBuffSuggestion(sug);
+        Grid.SetColumn(dismiss, 2);
+        row.Children.Add(dismiss);
+        return row;
+    }
+
+    private bool _lossesOpen;
+
+    /// <summary>The lost-buff history fold (#120 stage 3, Frankthetankk): "▸ lost this
+    /// session (N)" at the bottom of the breakout — time · buff · cause per row, the
+    /// AA-list fold idiom. ⧉ on the header copies the list as plain text: the
+    /// requester's dev-report evidence ("Buff X was active, NPC Y cast debuff Z,
+    /// Buff X was gone"), same content-copy style as the fight export.</summary>
+    private void AddBuffLossFold(MainWindow main, List<BuffLossEntry> losses)
+    {
+        if (losses.Count == 0) return;
+        var head = new Grid { Margin = new Thickness(0, 5, 0, 0) };
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var label = new TextBlock
+        {
+            Text = $"{(_lossesOpen ? "▾" : "▸")} lost this session ({losses.Count})",
+            FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+            ToolTip = "Every set buff that went missing this session, newest first, with "
+                + "the best cause the log names: expired (the countdown ran out; est = "
+                + "the duration was still the wiki-base estimate), faded (the wear-off "
+                + "line), \"lost as X landed\" (a hostile spell landed on you within "
+                + "2 s before the fade), lost on death.",
+        };
+        label.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        label.MouseLeftButtonDown += (_, e) =>
+        {
+            e.Handled = true;
+            _lossesOpen = !_lossesOpen;
+            if (Main is { } m) RefreshBuffSet(m.CurrentSnapshot());   // repaint now, not next tick
+        };
+        head.Children.Add(label);
+        var copy = new TextBlock
+        {
+            Text = "⧉", FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+            Padding = new Thickness(4, 0, 0, 0),
+            ToolTip = "Copy the list as plain text — evidence for a bug report to the game devs.",
+        };
+        copy.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        copy.MouseLeftButtonDown += (_, e) =>
+        {
+            e.Handled = true;
+            try
+            {
+                Clipboard.SetText(main.BuffLosses.ExportText(main.BuffSetCharacterName));
+                copy.Text = "✓";
+                var t = new System.Windows.Threading.DispatcherTimer
+                    { Interval = TimeSpan.FromSeconds(1.5) };
+                t.Tick += (_, _) => { copy.Text = "⧉"; t.Stop(); };
+                t.Start();
+            }
+            catch (Exception ex) { App.LogError(ex); }
+        };
+        Grid.SetColumn(copy, 1);
+        head.Children.Add(copy);
+        Rows.Items.Add(head);
+        if (!_lossesOpen) return;
+        foreach (var loss in losses)
+        {
+            var row = new TextBlock
+            {
+                Text = $"{loss.Time:h:mm:ss tt}  {loss.Spell} — {loss.Cause}",
+                FontSize = 10.5, Margin = new Thickness(8, 0, 0, 1),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = $"{loss.Spell} — {loss.Cause} at {loss.Time:h:mm:ss tt}",
+            };
+            row.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            Rows.Items.Add(row);
+        }
+    }
+
+    /// <summary>One set entry: name and clock in the stage-1 state brushes (Active =
+    /// good, Expiring = accent, Missing = warn, NotSeen = dim italic), ✕ = remove
+    /// from THIS class bucket only.</summary>
+    private Grid BuffSetRow(MainWindow main, string key, string cls, BuffSetEntryState entry)
+    {
+        var row = new Grid { Margin = new Thickness(4, 1, 0, 1) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var (brush, italic) = entry.Status switch
+        {
+            BuffSetStatus.Active => ("GoodBrush", false),
+            BuffSetStatus.Expiring => ("AccentBrush", false),
+            BuffSetStatus.Missing => ("WarnBrush", false),
+            _ => ("DimBrush", true),
+        };
+        var name = new TextBlock
+        {
+            Text = entry.Spell, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        if (italic) name.FontStyle = FontStyles.Italic;
+        name.SetResourceReference(TextBlock.ForegroundProperty, brush);
+        row.Children.Add(name);
+        var clock = new TextBlock
+        {
+            Text = BuffStatusText(entry), FontSize = 11, Margin = new Thickness(6, 0, 0, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = entry.Status switch
+            {
+                BuffSetStatus.Missing => "Seen fading this session, or its timer ran out — rebuff.",
+                BuffSetStatus.Expiring => "Still up, but inside the warn window.",
+                BuffSetStatus.NotSeen => "No landing line this session — it may be up from before "
+                    + "EQBuddy was watching; the log can't tell, so this stays its own honest state.",
+                _ => "Up, counting down.",
+            },
+        };
+        clock.SetResourceReference(TextBlock.ForegroundProperty, brush);
+        Grid.SetColumn(clock, 1);
+        row.Children.Add(clock);
+        _buffSetClocks.Add(clock);
+        var remove = new Button
+        {
+            Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+            Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Remove {entry.Spell} from {cls}",
+        };
+        remove.Click += (_, _) =>
+        {
+            BuffSetStore.Remove(_settings.BuffSetsByClass, key, cls, entry.Spell);
+            _settings.Save();
+            main.OnBuffSetEdited();
+        };
+        Grid.SetColumn(remove, 2);
+        row.Children.Add(remove);
+        return row;
+    }
+
+    private static string BuffStatusText(BuffSetEntryState entry) => entry.Status switch
+    {
+        BuffSetStatus.Missing => "missing",
+        BuffSetStatus.NotSeen => "not seen",
+        _ => entry.RemainingSeconds is { } r ? $"{(int)r / 60}:{(int)r % 60:00}" : "up",
+    };
+
+    /// <summary>The add-target buckets: "(any class)" plus the active combination.
+    /// Parked classes (stored, not active) are the Options editor's business — this
+    /// window shows the assembled set.</summary>
+    private void RefreshBuffClassChoices(IReadOnlyList<string> classes)
+    {
+        var memo = string.Join("|", classes);
+        if (memo == _buffBucketsMemo && BuffClassBox.Items.Count > 0) return;
+        _buffBucketsMemo = memo;
+        var keep = BuffClassBox.SelectedItem as string;
+        BuffClassBox.Items.Clear();
+        BuffClassBox.Items.Add(BuffSetStore.AnyClass);
+        foreach (var cls in classes) BuffClassBox.Items.Add(cls);
+        BuffClassBox.SelectedItem = keep is not null && BuffClassBox.Items.Contains(keep)
+            ? keep : BuffSetStore.AnyClass;
+    }
+
+    private string SelectedBuffBucket => BuffClassBox.SelectedItem as string ?? BuffSetStore.AnyClass;
+
+    private void OnBuffSearchChanged(object sender, TextChangedEventArgs e)
+    {
+        if (Main is not { } main || main.BuffSetKey is not { Length: > 0 } key) return;
+        var query = BuffAddBox.Text.Trim();
+        if (query.Length < 2) { BuffPopup.IsOpen = false; return; }
+        BuffPopupChrome.SetResourceReference(Border.BackgroundProperty, "PopupBrush");
+        BuffPopupChrome.SetResourceReference(Border.BorderBrushProperty, "AccentBrush");
+        BuffMatches.SetResourceReference(Control.BackgroundProperty, "PopupBrush");
+        BuffMatches.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+        BuffMatches.Items.Clear();
+        var inBucket = BuffSetStore.SpellsFor(
+            _settings.BuffSetsByClass.GetValueOrDefault(key), SelectedBuffBucket);
+        foreach (var (spell, seen) in BuffSetSearch.Rank(query, main.SeenBuffCasts(),
+                     inBucket, BuffDurationCatalog.Default.SpellNames))
+            BuffMatches.Items.Add(new ListBoxItem
+                { Content = seen ? spell + "   · seen this session" : spell, Tag = spell });
+        if (BuffMatches.Items.Count == 0)
+            BuffMatches.Items.Add(new ListBoxItem
+                { Content = "No buff in the catalog matches — check the spelling?", IsEnabled = false });
+        BuffPopup.IsOpen = true;
+    }
+
+    private void OnBuffMatchPicked(object sender, SelectionChangedEventArgs e)
+    {
+        if (BuffMatches.SelectedItem is not ListBoxItem { Tag: string spell }) return;
+        BuffPopup.IsOpen = false;
+        BuffMatches.SelectedItem = null;
+        if (Main is not { } main || main.BuffSetKey is not { Length: > 0 } key) return;
+        BuffSetStore.Add(_settings.BuffSetsByClass, key, SelectedBuffBucket, spell);
+        _settings.Save();
+        BuffAddBox.Text = "";   // TextChanged with an empty box closes the popup
+        main.OnBuffSetEdited();
+    }
+
+    /// <summary>An edit arrived from the other editor — repaint now, not next tick.</summary>
+    public void RefreshBuffSet(StatsSnapshot s)
+    {
+        if (_kind != BreakoutKind.Buffs) return;
+        _signature = "";
+        UpdateBuffs(s);
     }
 
     private void ApplyScopeVisual()

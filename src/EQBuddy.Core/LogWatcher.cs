@@ -77,6 +77,11 @@ public sealed class LogWatcher : IDisposable
     /// map's circles) — per-zone high-water marks, same replay discipline.</summary>
     public SpawnPointLedger? SpawnPoints { get; set; }
 
+    /// <summary>Optional eighth consumer: the lost-buff history's evidence intake
+    /// (#120 stage 3) — fades, hostile landings and deaths, buffered with their log
+    /// times; the transition detection itself runs on the UI tick (Observe).</summary>
+    public BuffLossLog? BuffLosses { get; set; }
+
     public LogWatcher(SessionStats stats)
     {
         _stats = stats;
@@ -263,6 +268,15 @@ public sealed class LogWatcher : IDisposable
             // Every Select is a replay starting over; the ledger's boundary-second
             // counters must not carry over from the previous pass (finding 3).
             SpawnPoints?.ReplayStarting();
+            // Buff sights and active buffs are per character/session, and the tracker
+            // used to be process-lifetime — character A's landings leaked into B's
+            // Missing/NotSeen claims (#120 stage-2 fix). The full-file ingest below
+            // re-derives the new character's state.
+            Buffs?.ResetSession();
+            // Same isolation for the loss history (#120 stage 3): its entries are
+            // session claims about ONE character; the reset also re-arms its
+            // first-look rule for the replay below.
+            BuffLosses?.ResetSession();
         }
         if (!DeferIngestForTests) Task.Run(() => FinishInitialIngest(gen));
         // Note (finding 5, scoped out): Select still blocks its caller only for the
@@ -346,6 +360,7 @@ public sealed class LogWatcher : IDisposable
                                 Mez?.Apply(evt);
                                 Slow?.Apply(evt);
                                 Buffs?.Apply(evt);
+                                BuffLosses?.Apply(evt);
                                 Raids?.Apply(evt);
                                 SpawnPoints?.Apply(evt);
                             }

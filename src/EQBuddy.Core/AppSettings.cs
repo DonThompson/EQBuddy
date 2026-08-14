@@ -70,8 +70,26 @@ public sealed class AppSettings
     /// camp without, keyed per character by the same "name_server" key the AA ledger
     /// uses. Player-built only — never auto-populated — and evaluated by
     /// BuffSetEvaluator into the Buffs card's missing line. Names stored as picked;
-    /// rank suffixes fold at match time, so "Temperance" covers "Temperance II".</summary>
+    /// rank suffixes fold at match time, so "Temperance" covers "Temperance II".
+    /// STAGE-1 SHAPE, kept only so older settings files deserialize: Load migrates it
+    /// into <see cref="BuffSetsByClass"/>'s "(any class)" bucket — never dropped —
+    /// and empties it. Nothing writes here anymore.</summary>
     public Dictionary<string, List<string>> BuffSets { get; set; } = new();
+
+    /// <summary>Buff sets stage 2 (#120, Frankthetankk — his design): stored PER CLASS
+    /// underneath and assembled by the active class combination, so swapping Warrior
+    /// for Rogue keeps the other classes' picks. Character "name_server" key → class →
+    /// buff names; the "(any class)" bucket (<see cref="BuffSetStore.AnyClass"/>) is
+    /// always part of the assembled set. Edited through <see cref="BuffSetStore"/>
+    /// only — it owns the case-insensitive identity and the empty-entry pruning.</summary>
+    public Dictionary<string, Dictionary<string, List<string>>> BuffSetsByClass { get; set; } = new();
+
+    /// <summary>Stage 3 (#120, Frankthetankk): new-buff-unlock suggestions the player
+    /// ✕-dismissed — character "name_server" → rank-folded base spell names, edited
+    /// through <see cref="BuffSuggestions"/>. Dismissed = never asked again for that
+    /// character; accepting needs no memory here (the spell joins a bucket and is
+    /// covered from then on).</summary>
+    public Dictionary<string, List<string>> BuffSuggestionDismissed { get; set; } = new();
 
     /// <summary>The Options tab last used — iterating on watch rules shouldn't cost a
     /// click per visit. "look" / "alerts" / "watch" / "cards" / "behavior".</summary>
@@ -342,6 +360,10 @@ public sealed class AppSettings
     /// fighting, session loot between fights, opened by the 🎒 star while minimized.</summary>
     public double BreakoutLootLeft { get; set; } = double.NaN;
     public double BreakoutLootTop { get; set; } = double.NaN;
+    // The Buff Set breakout (#120 stage 2) has no Fight/Session scope — its axis is
+    // the class combination, shown in its own header.
+    public double BreakoutBuffsLeft { get; set; } = double.NaN;
+    public double BreakoutBuffsTop { get; set; } = double.NaN;
     /// <summary>"target" (drops for the creature you're fighting or last /considered) or
     /// "session" (what you've looted).</summary>
     public string BreakoutLootScope { get; set; } = "target";
@@ -358,6 +380,8 @@ public sealed class AppSettings
     public double BreakoutWatchHeight { get; set; } = double.NaN;
     public double BreakoutLootWidth { get; set; } = double.NaN;
     public double BreakoutLootHeight { get; set; } = double.NaN;
+    public double BreakoutBuffsWidth { get; set; } = double.NaN;
+    public double BreakoutBuffsHeight { get; set; } = double.NaN;
     // Per-breakout row sort for the stat kinds: "total" | "hits" | "avg" | "rate".
     public string BreakoutDamageSort { get; set; } = "total";
     public string BreakoutHealingSort { get; set; } = "total";
@@ -401,6 +425,7 @@ public sealed class AppSettings
         changed |= settings.ApplyDefaultEpicQuestSection();
         changed |= settings.ApplyDefaultSkyQuestChecklist();
         changed |= settings.ApplyDefaultEpicQuestChecklist();
+        changed |= settings.MigrateBuffSetsToClassBuckets();
         if (changed | settings.TrackedRules.Any(r => r.IdWasGenerated))
             settings.Save();
         return settings;
@@ -419,6 +444,11 @@ public sealed class AppSettings
     /// Runs once per version — deleting the rule makes it stay deleted.
     /// Returns true when something changed and the settings need saving.
     /// </summary>
+    /// <summary>Stage-1 → stage-2 buff-set migration (#120): flat per-character sets
+    /// move to the "(any class)" bucket the assembled set always includes, so nothing
+    /// anyone configured is lost or demoted. Idempotent — see BuffSetStore.Migrate.</summary>
+    public bool MigrateBuffSetsToClassBuckets() => BuffSetStore.Migrate(BuffSets, BuffSetsByClass);
+
     public bool ApplyDefaultRules()
     {
         if (DefaultRulesVersion >= CurrentDefaultRulesVersion) return false;

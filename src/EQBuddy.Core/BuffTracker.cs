@@ -291,6 +291,26 @@ public sealed class BuffTracker
                 new HashSet<string>(_seenOwnCasts, StringComparer.OrdinalIgnoreCase));
     }
 
+    /// <summary>Log-switch reset (stage 2's fix for a stage-1 flag): active buffs and
+    /// session sights were process-lifetime, so character A's landings leaked into
+    /// character B's Missing/NotSeen claims after a switch. LogWatcher.Select calls
+    /// this alongside the stats reset; the newly selected log is then replayed in
+    /// full, which re-derives everything that belongs to the new character. Learned
+    /// durations stay — their store is install-wide, not session evidence.</summary>
+    public void ResetSession()
+    {
+        lock (_lock)
+        {
+            _active.Clear();
+            _recentCasts.Clear();
+            _lastCastOf.Clear();
+            _seenLandings.Clear();
+            _seenFades.Clear();
+            _seenOwnCasts.Clear();
+        }
+        Changed?.Invoke();
+    }
+
     private int _savePending;
 
     /// <summary>Debounced like StackingLedgerStore.Save (perf audit #13, the #3

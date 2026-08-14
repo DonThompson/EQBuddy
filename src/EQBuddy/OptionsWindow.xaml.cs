@@ -229,64 +229,120 @@ public partial class OptionsWindow : Window
     }
 
     // ---- buff set (#120, Frankthetankk — the missing line's editor) ----
-    // The set itself lives per character in Settings.BuffSets; the Buffs card renders
-    // its states via BuffSetEvaluator. Every edit saves AND repaints the card at once:
-    // an edit whose effect waits for the next tick reads as a silent no-op.
+    // Stage 2: the set lives PER CLASS in Settings.BuffSetsByClass (BuffSetStore owns
+    // the shape) and assembles from the active class combination plus "(any class)".
+    // This editor shows every bucket — active or parked — because it is the one place
+    // a stored pick can always be removed. Every edit routes through
+    // MainWindow.OnBuffSetEdited: card, breakout window and this panel repaint at
+    // once — an edit whose effect waits for the next tick reads as a silent no-op.
+
+    /// <summary>The breakout editor writes the same storage; MainWindow calls this so
+    /// its edits appear here immediately too.</summary>
+    internal void RefreshBuffSetEditor() => BuildBuffSetPanel();
 
     private void BuildBuffSetPanel()
     {
         var key = _main.BuffSetKey;
+        var (classes, picked) = _main.BuffSetClassSource(_main.CurrentSnapshot());
         BuffSetCharNote.Text = key.Length > 0
-            ? $"Saved for {_main.BuffSetCharacterName} — each character keeps their own set."
+            ? $"Saved for {_main.BuffSetCharacterName}, per class — the live set is "
+              + "(any class) plus "
+              + (classes.Count > 0
+                  ? $"{string.Join(", ", classes.Select(QuestClassFilter.Abbrev))} "
+                    + (picked
+                        ? "(picked in the Quest Tracker)."
+                        : "(inferred from your combat log — pick classes in the Quest Tracker to override).")
+                  : "your classes — none known yet: pick them in the Quest Tracker, or use (any class).")
             : "No character detected yet — once today's log names one, reopen Options and the editor unlocks.";
         BuffSetAddBox.IsEnabled = key.Length > 0;
+        BuffSetClassBox.IsEnabled = key.Length > 0;
+        RefreshBuffSetClassChoices();
         BuffSetPanel.Children.Clear();
-        var set = key.Length > 0 ? _main.Settings.BuffSets.GetValueOrDefault(key) : null;
-        if (set is not { Count: > 0 })
+        if (key.Length == 0) return;
+
+        var stored = _main.Settings.BuffSetsByClass.GetValueOrDefault(key);
+        // Active buckets first, in assembly order; then parked ones (stored picks
+        // whose class isn't in the current combination) — visible and editable, so a
+        // swap never strands a pick out of reach. That parked picks SURVIVE the swap
+        // is the requester's whole design.
+        var sections = BuffSetStore.Sections(stored, classes)
+            .Where(sec => sec.Spells.Count > 0)
+            .Select(sec => (sec.Class, Spells: sec.Spells, Parked: false))
+            .ToList();
+        var activeNames = BuffSetStore.Sections(stored, classes)
+            .Select(sec => sec.Class).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        sections.AddRange(BuffSetStore.StoredClasses(stored)
+            .Where(c => !activeNames.Contains(c))
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .Select(c => (Class: c, Spells: (IReadOnlyList<string>)BuffSetStore.SpellsFor(stored, c),
+                Parked: true)));
+        if (sections.Count == 0)
         {
-            if (key.Length > 0)
+            var none = new TextBlock
             {
-                var none = new TextBlock
-                {
-                    Text = "Nothing picked yet — search below to build the set.",
-                    FontSize = 11, Margin = new Thickness(0, 2, 0, 0),
-                };
-                none.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
-                BuffSetPanel.Children.Add(none);
-            }
+                Text = "Nothing picked yet — pick a class bucket and search below to build the set.",
+                FontSize = 11, Margin = new Thickness(0, 2, 0, 0),
+            };
+            none.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            BuffSetPanel.Children.Add(none);
             return;
         }
-        foreach (var spell in set)
+        foreach (var (cls, spells, parked) in sections)
         {
-            var row = new Grid { Margin = new Thickness(0, 2, 0, 0) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var label = new TextBlock
+            var header = new TextBlock
             {
-                Text = spell, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                Text = cls + (parked ? "  · not in your current classes — kept for the swap back" : ""),
+                FontSize = 11, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 4, 0, 0),
             };
-            label.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
-            row.Children.Add(label);
-            var remove = new Button
+            header.SetResourceReference(TextBlock.ForegroundProperty, parked ? "DimBrush" : "AccentBrush");
+            BuffSetPanel.Children.Add(header);
+            foreach (var spell in spells)
             {
-                Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
-                Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Remove {spell} from the set",
-            };
-            var doomed = spell;
-            remove.Click += (_, _) =>
-            {
-                set.Remove(doomed);
-                if (set.Count == 0) _main.Settings.BuffSets.Remove(key);
-                _main.Settings.Save();
-                _main.RepaintBuffs();
-                BuildBuffSetPanel();
-            };
-            Grid.SetColumn(remove, 1);
-            row.Children.Add(remove);
-            BuffSetPanel.Children.Add(row);
+                var row = new Grid { Margin = new Thickness(6, 2, 0, 0) };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var label = new TextBlock
+                {
+                    Text = spell, FontSize = 12, VerticalAlignment = VerticalAlignment.Center,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                };
+                label.SetResourceReference(TextBlock.ForegroundProperty, parked ? "DimBrush" : "TextBrush");
+                row.Children.Add(label);
+                var remove = new Button
+                {
+                    Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+                    Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Remove {spell} from {cls}",
+                };
+                var (doomedClass, doomed) = (cls, spell);
+                remove.Click += (_, _) =>
+                {
+                    BuffSetStore.Remove(_main.Settings.BuffSetsByClass, key, doomedClass, doomed);
+                    _main.Settings.Save();
+                    _main.OnBuffSetEdited();   // repaints card + breakout + this panel
+                };
+                Grid.SetColumn(remove, 1);
+                row.Children.Add(remove);
+                BuffSetPanel.Children.Add(row);
+            }
         }
     }
+
+    /// <summary>Add-target buckets: "(any class)" plus the FULL class list — unlike
+    /// the breakout's active-only list, so a coming swap can be configured here in
+    /// advance. Selection survives rebuilds.</summary>
+    private void RefreshBuffSetClassChoices()
+    {
+        var keep = BuffSetClassBox.SelectedItem as string;
+        if (BuffSetClassBox.Items.Count == 0)
+        {
+            BuffSetClassBox.Items.Add(BuffSetStore.AnyClass);
+            foreach (var cls in QuestClassFilter.Classes) BuffSetClassBox.Items.Add(cls);
+        }
+        BuffSetClassBox.SelectedItem = keep ?? BuffSetStore.AnyClass;
+    }
+
+    private string SelectedBuffSetClass =>
+        BuffSetClassBox.SelectedItem as string ?? BuffSetStore.AnyClass;
 
     private void OnBuffSetSearchChanged(object sender, TextChangedEventArgs e)
     {
@@ -299,24 +355,18 @@ public partial class OptionsWindow : Window
         BuffSetMatches.SetResourceReference(Control.ForegroundProperty, "TextBrush");
         BuffSetMatches.Items.Clear();
 
-        var inSet = new HashSet<string>(
-            _main.Settings.BuffSets.GetValueOrDefault(_main.BuffSetKey) ?? [],
-            StringComparer.OrdinalIgnoreCase);
         // Seen first (the buffs this player demonstrably casts), then the whole buff
-        // catalog. Both draw from BuffDurationCatalog's attributable spells, so nothing
-        // can be added that would sit at "not seen" forever.
-        var seenMatches = _main.SeenBuffCasts()
-            .Where(s => s.Contains(query, StringComparison.OrdinalIgnoreCase) && !inSet.Contains(s))
-            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList();
-        var catalogMatches = BuffDurationCatalog.Default.SpellNames
-            .Where(s => s.Contains(query, StringComparison.OrdinalIgnoreCase)
-                && !inSet.Contains(s) && !seenMatches.Contains(s, StringComparer.OrdinalIgnoreCase))
-            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase);
-        foreach (var s in seenMatches.Concat(catalogMatches).Take(14))
+        // catalog — BuffSetSearch, shared with the breakout editor. Both draw from
+        // BuffDurationCatalog's attributable spells, so nothing can be added that
+        // would sit at "not seen" forever. Only the TARGET bucket's picks are
+        // excluded: the same buff under another class is a legitimate pick.
+        var inBucket = BuffSetStore.SpellsFor(
+            _main.Settings.BuffSetsByClass.GetValueOrDefault(_main.BuffSetKey), SelectedBuffSetClass);
+        foreach (var (s, seen) in BuffSetSearch.Rank(query, _main.SeenBuffCasts(),
+                     inBucket, BuffDurationCatalog.Default.SpellNames))
             BuffSetMatches.Items.Add(new ListBoxItem
             {
-                Content = seenMatches.Contains(s, StringComparer.OrdinalIgnoreCase)
-                    ? s + "   · seen this session" : s,
+                Content = seen ? s + "   · seen this session" : s,
                 Tag = s,
             });
         if (BuffSetMatches.Items.Count == 0)
@@ -335,13 +385,10 @@ public partial class OptionsWindow : Window
         BuffSetMatches.SelectedItem = null;
         var key = _main.BuffSetKey;
         if (key.Length == 0) return;
-        if (!_main.Settings.BuffSets.TryGetValue(key, out var set))
-            _main.Settings.BuffSets[key] = set = [];
-        if (!set.Contains(spell, StringComparer.OrdinalIgnoreCase)) set.Add(spell);
+        BuffSetStore.Add(_main.Settings.BuffSetsByClass, key, SelectedBuffSetClass, spell);
         _main.Settings.Save();
-        _main.RepaintBuffs();
         BuffSetAddBox.Text = "";   // TextChanged with an empty box closes the popup
-        BuildBuffSetPanel();
+        _main.OnBuffSetEdited();   // repaints card + breakout + this panel
     }
 
     // ---- tabs (1.67.0, David: "a wall of options... needs serious reorganization") ----
@@ -507,6 +554,7 @@ public partial class OptionsWindow : Window
                         BreakoutKind.Healing => "⚕ Healing",
                         BreakoutKind.Pet => "🐾 Pet",
                         BreakoutKind.Watch => "🎯 Watch",
+                        BreakoutKind.Buffs => "⏳ Buff set",
                         _ => "🎒 Loot",
                     },
                     FontSize = 12,
