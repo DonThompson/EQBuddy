@@ -245,6 +245,12 @@ public sealed partial class SpellCatalog
         new(StringComparer.OrdinalIgnoreCase);
     private string? _storePath;
 
+    /// <summary>Bumped every time <see cref="Learn"/> actually changes a
+    /// classification — the cheap "did any Classify answer move" signal consumers
+    /// memoizing over classifications key their invalidation on (perf audit #10).
+    /// Store loading counts too: it changes answers the same way.</summary>
+    public int Revision { get; private set; }
+
     /// <summary>
     /// Loads previously learned categories from <paramref name="path"/> and saves after
     /// every new learning, so a charm spell taught once (via its "Master" tell) stays
@@ -261,8 +267,9 @@ public sealed partial class SpellCatalog
                 File.ReadAllText(path));
             if (stored is null) return;
             foreach (var (name, category) in stored)
-                if (category != SpellCategory.Unknown && name.Length > 0 && !Seed.ContainsKey(name))
-                    _learned.TryAdd(name, category);
+                if (category != SpellCategory.Unknown && name.Length > 0 && !Seed.ContainsKey(name)
+                    && _learned.TryAdd(name, category))
+                    Revision++;
         }
         catch
         {
@@ -320,6 +327,7 @@ public sealed partial class SpellCatalog
         if (name.Length == 0 || Seed.ContainsKey(name) || WikiCc.Value.ContainsKey(name)) return false;
         if (_learned.TryGetValue(name, out var existing) && existing == category) return false;
         _learned[name] = category;
+        Revision++;
         SaveStore();
         return true;
     }
