@@ -153,6 +153,10 @@ public partial class MezChipsWindow : Window
             border.SetResourceReference(Border.BackgroundProperty, "BgBrush");
             border.SetResourceReference(Border.BorderBrushProperty, chip.IsDue ? "WarnBrush" : "BorderBrush");
             border.MouseLeftButtonDown += (_, _) => { _userMoved = true; DragMove(); };
+            // Right-click dismisses dismissible chips (David, 2026-08-13: a slow
+            // chip that isn't relevant must not squat for two minutes).
+            if (chip.OnDismiss is { } dismiss)
+                border.MouseRightButtonUp += (_, e) => { e.Handled = true; dismiss(); };
             ChipsPanel.Children.Add(border);
         }
     }

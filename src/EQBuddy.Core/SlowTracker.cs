@@ -1,10 +1,13 @@
 namespace EQBuddy.Core;
 
 /// <summary>A slow currently believed active on YOU, for the chip and the alert.</summary>
+/// <param name="SharedWithHaste">The landing line doubles as a haste song's
+/// wear-off ("You slow down." = Selo's fading) — the states eligible for the
+/// fade-cluster retro-clear.</param>
 public sealed record SlowState(
     string Message, string Label, DateTime LandedAt, DateTime? ExpiresAt,
     int PctMin, int PctMax, string CounterType, int CounterMin, int CounterMax,
-    string[] Spells)
+    string[] Spells, bool SharedWithHaste = false)
 {
     /// <summary>"40%" when the candidates agree, "23–75%" when the landing line
     /// is shared and the log can't tell which rank hit — honest range, never a guess.</summary>
@@ -48,10 +51,23 @@ public sealed class SlowTracker
     /// rare, and the next pulse or re-land alerts normally.</summary>
     public static readonly TimeSpan HasteForgetWindow = TimeSpan.FromSeconds(45);
 
+    /// <summary>The GROUP-MEMBER side of #116 (David's Hugzee session, grouped
+    /// with two bards): other players' songs never log at all — no sing line, no
+    /// forget line — so when a bard's twist lapses, the recipient's log shows only
+    /// a CLUSTER of first-person flavor fades ("Your wounds stop healing.", "Your
+    /// surge of strength fades.") with "You slow down." within seconds of them.
+    /// A shared slow line that close to other song fades is the haste lapsing, in
+    /// either direction: landing after the fades = suppressed; fades printing
+    /// after the chip appeared = the chip retro-clears. 22 of 28 false alerts in
+    /// the diagnosing log sat inside this window; the chip's dismiss handles the
+    /// stragglers.</summary>
+    public static readonly TimeSpan FadeClusterWindow = TimeSpan.FromSeconds(10);
+
     private readonly SlowDebuffCatalog _catalog;
     private readonly Dictionary<string, SlowState> _active = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _forgottenSongs = new(StringComparer.OrdinalIgnoreCase);
     private DateTime? _lastRaidChatter;
+    private DateTime? _lastFlavorFade;
     private readonly object _lock = new();
 
     /// <summary>Raised when the set of active slows changes.</summary>
@@ -80,6 +96,11 @@ public sealed class SlowTracker
                     if (entry.FadeOf.Any(song => _forgottenSongs.TryGetValue(Fold(song), out var at)
                             && evt.Time >= at && evt.Time - at <= HasteForgetWindow))
                         break;
+                    // Group-member case: the line landed amid other songs' fades —
+                    // a bard's twist lapsing, not a slow (see FadeClusterWindow).
+                    if (entry.FadeOf.Length > 0 && _lastFlavorFade is { } ff
+                            && evt.Time >= ff && evt.Time - ff <= FadeClusterWindow)
+                        break;
                     var expires = entry.MaxDurationSeconds is { } d
                         ? evt.Time.AddSeconds(d) : (DateTime?)null;
                     isNew = !_active.TryGetValue(entry.Message, out var prior)
@@ -89,14 +110,22 @@ public sealed class SlowTracker
                     landed = new SlowState(entry.Message, entry.Label, evt.Time, expires,
                         entry.PctMin, entry.PctMax, entry.CounterType,
                         entry.Spells.Min(s => s.CounterMin), entry.Spells.Max(s => s.CounterMax),
-                        [.. entry.Spells.Select(s => s.Name)]);
+                        [.. entry.Spells.Select(s => s.Name)],
+                        SharedWithHaste: entry.FadeOf.Length > 0);
                     _active[entry.Message] = landed;
                     changed = true;
                     break;
 
                 case BuffFadeEvent fade:
+                    _lastFlavorFade = evt.Time;
                     changed = RemoveWhere(s => s.Spells.Intersect(
                         fade.Spells, StringComparer.OrdinalIgnoreCase).Any());
+                    // The fades sometimes print AFTER the shared slow line (6 s
+                    // server ticks): a haste-capable chip that appeared within the
+                    // cluster window was the lapse — take it back.
+                    changed |= RemoveWhere(s => s.SharedWithHaste
+                        && evt.Time >= s.LandedAt
+                        && evt.Time - s.LandedAt <= FadeClusterWindow);
                     break;
 
                 // "Your X spell has worn off." can name a slow directly.
@@ -143,6 +172,16 @@ public sealed class SlowTracker
         var doomed = _active.Where(kv => match(kv.Value)).Select(kv => kv.Key).ToList();
         foreach (var key in doomed) _active.Remove(key);
         return doomed.Count > 0;
+    }
+
+    /// <summary>Player dismissed a chip (David, 2026-08-13: "at least let me
+    /// dismiss it if it's not relevant") — drop that slow now, no questions. A
+    /// re-land of the same debuff starts a fresh chip normally.</summary>
+    public void Dismiss(string message)
+    {
+        bool changed;
+        lock (_lock) changed = _active.Remove(message);
+        if (changed) Changed?.Invoke();
     }
 
     /// <summary>Cheap emptiness probe for per-tick gates — no list, no sort.</summary>

@@ -1240,11 +1240,12 @@ public partial class MainWindow : Window
             return new SpawnChip(
                 Zone: "", Name: EQBuddy.UI.Shared.SlowChipText.Label(s),
                 CountdownText: remaining is { } r ? $"{(int)r / 60}:{(int)r % 60:00}" : "?",
-                IsDue: false, Detail: detail, Icon: "🐌")
+                IsDue: false, Detail: detail + " · right-click to dismiss", Icon: "🐌")
             {
                 Fraction = s.ExpiresAt is { } exp && (exp - s.LandedAt).TotalSeconds is > 0 and var dur
                     ? Math.Clamp((now - s.LandedAt).TotalSeconds / dur, 0, 1)
                     : null,
+                OnDismiss = () => _slowTracker.Dismiss(s.Message),
             };
         }).ToList();
 

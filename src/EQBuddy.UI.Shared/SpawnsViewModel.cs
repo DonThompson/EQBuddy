@@ -13,6 +13,11 @@ public sealed record SpawnChip(string Zone, string Name, string CountdownText, b
     /// track (2026-08-11 modernization): a stack of chips reads as a stack of
     /// gauges. Null when no duration is known (the track hides).</summary>
     public double? Fraction { get; init; }
+
+    /// <summary>Right-click dismisses the chip when set (David, 2026-08-13: a slow
+    /// chip that isn't relevant — a bard's haste lapsing on you — must be
+    /// dismissible instead of squatting for two minutes). Null = not dismissible.</summary>
+    public Action? OnDismiss { get; init; }
 }
 
 /// <summary>One row in the Spawns window, ready to render.</summary>

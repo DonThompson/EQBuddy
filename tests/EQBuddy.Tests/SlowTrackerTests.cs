@@ -23,6 +23,55 @@ public class SlowTrackerTests
         return t;
     }
 
+    // ---- the group-member bard case (David's Hugzee session, 2026-08-13:
+    // grouped with two bards, no sing/forget lines ever log for OTHER players's
+    // songs — the only tell is the cluster of first-person song fades). ----
+
+    [Fact]
+    public void ASlowLineAmidASongFadeClusterIsTheHasteLapsingNotASlow()
+    {
+        // Hugzee's exact shape: four flavor fades, "You slow down." six seconds
+        // later (the next server tick).
+        var t = Replay(
+            Ev(0, "Your wounds stop healing."),
+            Ev(0, "Your surge of strength fades."),
+            Ev(6, "You slow down."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(7)));
+    }
+
+    [Fact]
+    public void FadesArrivingAfterTheChipRetroClearIt()
+    {
+        // Tick alignment sometimes prints the shared line FIRST: the chip appears,
+        // then the cluster betrays it — take it back.
+        var t = Replay(Ev(0, "You slow down."));
+        Assert.Single(t.Snapshot(T0.AddSeconds(1)));
+        t.Apply(Ev(4, "Your surge of strength fades."));
+        Assert.Empty(t.Snapshot(T0.AddSeconds(5)));
+    }
+
+    [Fact]
+    public void ARealSlowAwayFromAnyFadeClusterStillLands()
+    {
+        // "You feel lethargic." shares no line with any haste — the cluster rule
+        // must not touch it even mid-cluster; and "You slow down." far from any
+        // fade still lands as the real slow it may be.
+        var t = Replay(
+            Ev(0, "Your surge of strength fades."),
+            Ev(2, "You feel lethargic."),
+            Ev(60, "You slow down."));
+        Assert.Equal(2, t.Snapshot(T0.AddSeconds(61)).Count);
+    }
+
+    [Fact]
+    public void DismissDropsTheChipImmediately()
+    {
+        var t = Replay(Ev(0, "You feel lethargic."));
+        var s = Assert.Single(t.Snapshot(T0.AddSeconds(1)));
+        t.Dismiss(s.Message);
+        Assert.Empty(t.Snapshot(T0.AddSeconds(2)));
+    }
+
     [Fact]
     public void AKnownSlowLandingRaisesAChipWithTheExactNumbers()
     {

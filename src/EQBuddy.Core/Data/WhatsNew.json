@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.76.0",
+  "date": "2026-08-13",
+  "highlights": [
+   "FIXED - the OTHER half of the Selo's false slow alert (#116's group-member case, found in a real two-bard group): other players' songs never log at all, so when a bard's twist lapses on you, your log shows only a cluster of first-person fades (\"Your surge of strength fades.\") with \"You slow down.\" seconds away. A shared slow line that close to other song fades is now read as the haste lapsing - in both directions: it won't raise a chip, and a chip that already appeared retro-clears when the cluster prints.",
+   "NEW - slow chips are DISMISSIBLE: right-click one and it's gone. For the stragglers no heuristic can catch - you know whether you're actually slowed.",
+   "EQBuddy is a BETA - if a chip lies to you, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.75.0",
   "date": "2026-08-13",
   "highlights": [
