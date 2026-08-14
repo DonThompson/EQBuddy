@@ -3,26 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace EQBuddy.Companion;
 
-/// <summary>The surface registry: every section a snapshot can carry, by wire name.
-/// Phase 1 ships two; mez/buffs/combat/loot/checklists join here as they land.</summary>
-public static class CompanionSurfaces
-{
-    public const string Spawns = "spawns";
-    public const string Session = "session";
-
-    /// <summary>All surfaces this build knows, in default display order.</summary>
-    public static readonly IReadOnlyList<string> All = [Spawns, Session];
-
-    /// <summary>Human label for the desktop gate checkboxes (both UIs share it;
-    /// the phone page carries its own copy in its SURFACE_META table).</summary>
-    public static string Label(string surface) => surface switch
-    {
-        Spawns => "Spawn timers",
-        Session => "Session stats",
-        _ => surface,
-    };
-}
-
 /// <summary>
 /// The versioned wire envelope the phone receives. Lives in the Companion project (not
 /// UI.Shared) because it IS the companion's wire contract: the server serializes it, the
@@ -36,13 +16,21 @@ public static class CompanionSurfaces
 /// are new section properties plus a <see cref="CompanionSurfaces"/> name — the
 /// envelope (kind/protocol/version/identity/offered) never changes shape.
 ///
+/// STICKY sections: <see cref="Theme"/> and the map's geometry are big and change
+/// rarely, so they are withheld from a device that already holds the current stamp
+/// (see <see cref="ForClient"/> and <see cref="CompanionClientState"/>) rather than
+/// re-serialized every push.
+///
 /// Extensibility: every message carries a <see cref="Kind"/> ("snapshot" now,
 /// "heartbeat" for keepalives; deltas bolt on as new kinds) and a
 /// <see cref="Protocol"/> number the page checks before trusting the shape.
 /// </summary>
 public sealed record CompanionSnapshot
 {
-    public const int CurrentProtocol = 1;
+    /// <summary>Bumped to 2 for the Phase 2 surface set: theme, map, mez, buffs,
+    /// combat, loot, progress and the three checklists. A protocol-1 page and a
+    /// protocol-2 server simply don't talk — both refuse rather than half-render.</summary>
+    public const int CurrentProtocol = 2;
 
     public string Kind { get; init; } = "snapshot";
     public int Protocol { get; init; } = CurrentProtocol;
@@ -61,9 +49,22 @@ public sealed record CompanionSnapshot
     /// on the phone rather than silence. Null (omitted) when there are none.</summary>
     public IReadOnlyList<string>? NotOffered { get; init; }
 
+    /// <summary>The desktop's live palette. Not a surface (it can't be gated off —
+    /// a phone with no colors is a broken phone); sent on connect and after a swap.</summary>
+    public CompanionThemeSection? Theme { get; init; }
+
     // ---- sections, one nullable property per surface ----
+    public CompanionMapSection? Map { get; init; }
     public CompanionSpawnSection? Spawns { get; init; }
+    public CompanionMezSection? Mez { get; init; }
+    public CompanionBuffsSection? Buffs { get; init; }
+    public CompanionCombatSection? Combat { get; init; }
     public CompanionSessionSection? Session { get; init; }
+    public CompanionLootSection? Loot { get; init; }
+    public CompanionProgressSection? Progress { get; init; }
+    public CompanionChecklistSection? Epics { get; init; }
+    public CompanionChecklistSection? Sky { get; init; }
+    public CompanionChecklistSection? Gear { get; init; }
 
     /// <summary>This snapshot reduced to what one client subscribed to:
     /// null subscriptions = everything offered. Unknown or gated names land in
@@ -77,10 +78,45 @@ public sealed record CompanionSnapshot
             .ToList();
         return this with
         {
+            Map = wanted.Contains(CompanionSurfaces.Map) ? Map : null,
             Spawns = wanted.Contains(CompanionSurfaces.Spawns) ? Spawns : null,
+            Mez = wanted.Contains(CompanionSurfaces.Mez) ? Mez : null,
+            Buffs = wanted.Contains(CompanionSurfaces.Buffs) ? Buffs : null,
+            Combat = wanted.Contains(CompanionSurfaces.Combat) ? Combat : null,
             Session = wanted.Contains(CompanionSurfaces.Session) ? Session : null,
+            Loot = wanted.Contains(CompanionSurfaces.Loot) ? Loot : null,
+            Progress = wanted.Contains(CompanionSurfaces.Progress) ? Progress : null,
+            Epics = wanted.Contains(CompanionSurfaces.Epics) ? Epics : null,
+            Sky = wanted.Contains(CompanionSurfaces.Sky) ? Sky : null,
+            Gear = wanted.Contains(CompanionSurfaces.Gear) ? Gear : null,
             NotOffered = missing.Count > 0 ? missing : null,
         };
+    }
+
+    /// <summary>Subscription filtering PLUS the sticky payloads this device already
+    /// holds: the theme and the zone's map geometry are dropped when their stamps
+    /// match what was last sent to it, and <paramref name="state"/> advances to what
+    /// this message carries. Called once per client per push; the state object belongs
+    /// to that one connection and nothing else reads it.</summary>
+    public CompanionSnapshot ForClient(IReadOnlyList<string>? surfaces, CompanionClientState state)
+    {
+        var snap = ForSubscription(surfaces);
+
+        if (snap.Theme is { } theme)
+        {
+            if (theme.Stamp == state.ThemeStamp) snap = snap with { Theme = null };
+            else state.ThemeStamp = theme.Stamp;
+        }
+        if (snap.Map is { } map)
+        {
+            if (map.GeometryStamp == state.MapGeometryStamp)
+            {
+                // Same zone, same picture: the device redraws from what it kept.
+                if (map.Geometry is not null) snap = snap with { Map = map with { Geometry = null } };
+            }
+            else state.MapGeometryStamp = map.GeometryStamp;
+        }
+        return snap;
     }
 
     /// <summary>One serializer config for everything that crosses the wire — camelCase,
@@ -94,26 +130,14 @@ public sealed record CompanionSnapshot
     public string ToJson() => JsonSerializer.Serialize(this, JsonOpts);
 }
 
+/// <summary>What one connected device already holds, so the server can stop resending
+/// it. Per connection and thrown away with it — a reconnecting phone is told
+/// everything again, which is exactly right after a restart on either side.</summary>
+public sealed class CompanionClientState
+{
+    public string? ThemeStamp { get; set; }
+    public string? MapGeometryStamp { get; set; }
+}
+
 /// <summary>Who and where the data comes from — the page's header line.</summary>
 public sealed record CompanionIdentity(string Character, string Zone, string AppVersion);
-
-public sealed record CompanionSpawnSection(IReadOnlyList<CompanionSpawnTimer> Timers);
-
-/// <summary>One spawn countdown, pre-chewed for a phone: the page ticks
-/// <see cref="RemainingSeconds"/> down locally between pushes, so it is the remaining
-/// time AT <see cref="CompanionSnapshot.SentAtUtc"/>. Null remaining = the kill was
-/// seen but no respawn duration is known ("killed, duration unknown").</summary>
-public sealed record CompanionSpawnTimer(
-    string Name,
-    string Zone,
-    double? RemainingSeconds,
-    bool Due,
-    bool Imminent,
-    double? DurationSeconds);
-
-/// <summary>Session basics for the footer strip.</summary>
-public sealed record CompanionSessionSection(
-    int Kills,
-    double XpPerHour,
-    double SessionSeconds,
-    double SessionDps);

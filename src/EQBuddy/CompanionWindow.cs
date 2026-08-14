@@ -93,7 +93,10 @@ public sealed class CompanionWindow : Window
         gateHead.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         _pairPanel.Children.Add(gateHead);
         _pairPanel.Children.Add(Dim("Untick anything you'd rather never leave this PC. " +
-            "Each phone then picks its own view (the ⚙ on the page) from what's offered."));
+            "Each device then picks its own screens (the ⚙ on the page) from what's offered."));
+        // The list is long enough now to need its own scroll rather than a window
+        // taller than a laptop screen.
+        var gateList = new StackPanel();
         foreach (var surface in CompanionSurfaces.All)
         {
             var cb = new CheckBox
@@ -101,12 +104,20 @@ public sealed class CompanionWindow : Window
                 Content = new TextBlock { Text = CompanionSurfaces.Label(surface), FontSize = 12 },
                 IsChecked = _host.OfferedSurfaces.Contains(surface),
                 Margin = new Thickness(0, 4, 0, 0),
+                ToolTip = CompanionSurfaces.Describe(surface),
             };
             ((TextBlock)cb.Content).SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
             cb.Checked += (_, _) => _host.SetSurfaceOffered(surface, true);
             cb.Unchecked += (_, _) => _host.SetSurfaceOffered(surface, false);
-            _pairPanel.Children.Add(cb);
+            gateList.Children.Add(cb);
         }
+        _pairPanel.Children.Add(new ScrollViewer
+        {
+            Content = gateList,
+            MaxHeight = 210,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Margin = new Thickness(0, 2, 0, 0),
+        });
 
         // ---- the honest firewall talk (see CompanionServer's header comment) ----
         var fw = Dim(

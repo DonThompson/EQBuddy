@@ -1,32 +1,63 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Companion;
 
 /// <summary>
+/// Where the desktop's live state comes from, as callbacks rather than references, so
+/// the host can ask for a surface's data ONLY when that surface is offered and a device
+/// is actually connected. A null member is a surface this host simply can't serve —
+/// the section comes back empty rather than the app growing a second data path.
+/// </summary>
+public sealed record CompanionSources
+{
+    /// <summary>The catalog zone timers and the spawn archive live under ("Befallen"),
+    /// which is not always the log's zone name ("Befallen 4 (Refined)").</summary>
+    public Func<string>? TimerZone { get; init; }
+    public SpawnPointLedger? SpawnPoints { get; init; }
+    public Func<DateTime, IReadOnlyList<MezState>>? Mezzes { get; init; }
+    public Func<DateTime, IReadOnlyList<(string Class, IReadOnlyList<BuffSetEntryState> Entries)>>? BuffSets { get; init; }
+    public Func<IReadOnlyList<BuffLossEntry>>? BuffLosses { get; init; }
+    /// <summary>Zone → hops from here, for the gear checklist's by-zone view.</summary>
+    public Func<string, int?>? HopsFromHere { get; init; }
+    public Func<(int? Level, LevelUnlockSet Unlocks)>? Progress { get; init; }
+}
+
+/// <summary>
 /// The desktop-side lifecycle glue, UI-toolkit-free so WPF and Avalonia hosts share
 /// it: owns the server per AppSettings (enabled/port/token/surface gate), and turns
-/// the app's once-a-second tick into pushes — only when something moved, and only
-/// when a phone is actually connected. With the feature off or nobody paired, Tick
-/// is two field reads.
+/// the app's once-a-second tick into pushes — only when something moved, only for the
+/// devices whose own screens moved, and only when a phone is actually connected. With
+/// the feature off or nobody paired, Tick is two field reads.
 /// </summary>
 public sealed class CompanionHost : IDisposable
 {
-    /// <summary>Belt-and-braces refresh: even with an unchanged fingerprint, connected
+    /// <summary>Belt-and-braces refresh: even with unchanged fingerprints, connected
     /// phones get a full snapshot this often so slow-drifting numbers (xp/hr, session
     /// length) never stagnate through a quiet camp.</summary>
     private static readonly TimeSpan ForcedPushInterval = TimeSpan.FromSeconds(30);
 
     private readonly AppSettings _settings;
     private readonly string _appVersion;
+    private readonly CompanionSources _sources;
+    private readonly CompanionMapSource _maps;
+    private readonly ConcurrentQueue<CompanionAction> _actions = new();
     private CompanionServer? _server;
-    private string _lastFingerprint = "";
+    private CompanionThemeSection? _theme;
+    private Dictionary<string, string> _lastSections = [];
     private DateTime _lastPush = DateTime.MinValue;
 
-    public CompanionHost(AppSettings settings, string appVersion)
+    public CompanionHost(AppSettings settings, string appVersion, CompanionSources? sources = null)
     {
         _settings = settings;
         _appVersion = appVersion;
+        _sources = sources ?? new CompanionSources();
+        _maps = new CompanionMapSource(settings);
+        // The phone follows the desktop's theme from its very first frame; the WPF app
+        // pushes swaps in afterwards via SetTheme (ThemeManager.PaletteApplied).
+        SetTheme(settings.Theme, CustomTheme.PaletteFor(settings));
         if (settings.CompanionEnabled) Start();
     }
 
@@ -39,6 +70,10 @@ public sealed class CompanionHost : IDisposable
 
     /// <summary>Raised (possibly on a worker thread) when a phone connects/drops.</summary>
     public event Action? ClientsChanged;
+
+    /// <summary>Raised on the TICK thread after a device's checklist tap was applied
+    /// and saved, naming the surface — the desktop's cue to repaint that card.</summary>
+    public event Action<string>? SurfaceEdited;
 
     /// <summary>The address to pair against: http://ip:port/#token. Null while stopped.
     /// The token travels in the FRAGMENT, so it never appears in an HTTP request line —
@@ -54,6 +89,15 @@ public sealed class CompanionHost : IDisposable
         CompanionSurfaces.All
             .Where(s => !_settings.CompanionHiddenSurfaces.Contains(s, StringComparer.OrdinalIgnoreCase))
             .ToList();
+
+    /// <summary>The desktop's palette changed — repaint every paired device without a
+    /// reconnect. Cheap and idempotent: an unchanged palette produces the same stamp
+    /// and is never re-sent.</summary>
+    public void SetTheme(string themeKey, IEnumerable<(string Key, string Hex)> palette)
+    {
+        try { _theme = CompanionTheme.Project(themeKey, palette); }
+        catch (Exception ex) { CoreLog.Error(ex); }   // a bad palette must not stop the app
+    }
 
     public void SetEnabled(bool enabled)
     {
@@ -73,7 +117,7 @@ public sealed class CompanionHost : IDisposable
     }
 
     /// <summary>Flip one surface in the desktop gate; connected phones learn on the
-    /// next tick (the offer list is part of the push fingerprint).</summary>
+    /// next tick (the offer list is part of the envelope's fingerprint).</summary>
     public void SetSurfaceOffered(string surface, bool offered)
     {
         var hidden = _settings.CompanionHiddenSurfaces;
@@ -102,6 +146,7 @@ public sealed class CompanionHost : IDisposable
                 Port = _settings.CompanionPort,
             });
             server.ClientsChanged += () => ClientsChanged?.Invoke();
+            server.ActionReceived += action => _actions.Enqueue(action);
             server.Start();
             _server = server;
         }
@@ -111,7 +156,7 @@ public sealed class CompanionHost : IDisposable
             LastError = $"Couldn't listen on port {_settings.CompanionPort} — {ex.Message} " +
                         "(is another program using it? Change the port and try again.)";
         }
-        _lastFingerprint = "";
+        _lastSections = [];
     }
 
     private void Stop()
@@ -123,18 +168,87 @@ public sealed class CompanionHost : IDisposable
     /// <summary>Once-a-second feed from the app's existing UI tick, handing over the
     /// SAME shared snapshot the desktop cards render from (the perf pass's rule: one
     /// snapshot per tick, no extras built for the companion). Takes SpawnTimers
-    /// itself, not a list, so its Snapshot() isn't even taken while nobody's paired.</summary>
+    /// itself, not a list, so its Snapshot() isn't even taken while nobody's paired,
+    /// and every other source is a callback asked only for offered surfaces.</summary>
     public void Tick(StatsSnapshot? stats, SpawnTimers spawnTimers, string character, DateTime now)
     {
+        // Taps a device made before it wandered off still land: draining is a field
+        // read when the queue is empty, which is every tick but a handful.
+        if (!_actions.IsEmpty) DrainActions();
         if (_server is not { ClientCount: > 0 } server) return; // zero cost while idle
 
-        var snap = CompanionProjection.Build(
-            stats, spawnTimers.Snapshot(now), character, _appVersion, now, OfferedSurfaces);
-        var fingerprint = CompanionProjection.Fingerprint(snap);
-        if (fingerprint == _lastFingerprint && now - _lastPush < ForcedPushInterval) return;
-        _lastFingerprint = fingerprint;
+        var offered = OfferedSurfaces;
+        bool On(string surface) => offered.Contains(surface, StringComparer.OrdinalIgnoreCase);
+
+        var wantTimers = On(CompanionSurfaces.Spawns) || On(CompanionSurfaces.Map);
+        var timers = wantTimers ? spawnTimers.Snapshot(now) : [];
+        var timerZone = _sources.TimerZone?.Invoke() ?? stats?.CurrentZone ?? "";
+        var progress = On(CompanionSurfaces.Progress) ? _sources.Progress?.Invoke() : null;
+
+        var input = new CompanionInputs
+        {
+            Character = character,
+            AppVersion = _appVersion,
+            Offered = offered,
+            Stats = stats,
+            Theme = _theme,
+            Settings = _settings,
+            Timers = On(CompanionSurfaces.Spawns) ? timers : [],
+            Mezzes = On(CompanionSurfaces.Mez) ? _sources.Mezzes?.Invoke(now) ?? [] : [],
+            BuffSets = On(CompanionSurfaces.Buffs) ? _sources.BuffSets?.Invoke(now) ?? [] : [],
+            BuffLosses = On(CompanionSurfaces.Buffs) ? _sources.BuffLosses?.Invoke() ?? [] : [],
+            HopsFromHere = _sources.HopsFromHere,
+            Map = On(CompanionSurfaces.Map)
+                ? _maps.Build(stats?.CurrentZone ?? "", timerZone, _sources.SpawnPoints,
+                    timers.Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase)).ToList(),
+                    stats?.LastLocation, now)
+                : null,
+            Level = progress?.Level,
+            Unlocks = progress?.Unlocks,
+        };
+
+        var snap = CompanionProjection.Build(input, now);
+        var sections = CompanionProjection.SectionFingerprints(snap);
+        var changed = Changed(sections);
+        var forced = now - _lastPush >= ForcedPushInterval;
+        if (changed.Count == 0 && !forced) return;
+
+        _lastSections = sections;
         _lastPush = now;
-        server.Publish(snap);
+        server.Publish(snap, forced ? null : changed);
+    }
+
+    /// <summary>Which sections moved since the last pass. A section that appeared or
+    /// vanished (the owner flipping the gate) counts as moved.</summary>
+    private HashSet<string> Changed(Dictionary<string, string> sections)
+    {
+        var changed = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var (name, print) in sections)
+            if (!_lastSections.TryGetValue(name, out var was) || was != print)
+                changed.Add(name);
+        foreach (var name in _lastSections.Keys)
+            if (!sections.ContainsKey(name))
+                changed.Add(name);
+        return changed;
+    }
+
+    /// <summary>Apply the taps devices made. On the tick thread, so the settings lists
+    /// are touched exactly where the desktop's own toggles touch them; one Save for
+    /// the whole batch, and one repaint cue per surface.</summary>
+    private void DrainActions()
+    {
+        var edited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        while (_actions.TryDequeue(out var action))
+        {
+            try
+            {
+                if (CompanionActions.Apply(_settings, action)) edited.Add(action.Surface);
+            }
+            catch (Exception ex) { CoreLog.Error(ex); }
+        }
+        if (edited.Count == 0) return;
+        _settings.Save();
+        foreach (var surface in edited) SurfaceEdited?.Invoke(surface);
     }
 
     /// <summary>128 crypto-random bits as lowercase hex — long enough that guessing

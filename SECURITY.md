@@ -65,13 +65,21 @@ here is exactly what it does:
 - **Unauthenticated surface = the explainer page only.** A browser hitting the
   address without the token gets a static page that says how to pair. It
   contains no game data; data flows only over the token-checked WebSocket.
-- **You choose what's offered.** The pairing window lists the screens
-  (spawn timers, session stats) the PC is willing to send; untick anything you
-  want to never leave the machine. Each phone then picks its own subset of
-  what's offered — that choice is stored on the phone, not by EQBuddy.
-- **What's actually sent:** character name, current zone, app version, the
-  spawn-timer list, and session basics (kills, xp/hr, session length, dps).
-  Nothing is received from the phone except its screen picks.
+- **You choose what's offered.** The pairing window lists every screen the PC is
+  willing to send — the zone map, spawn timers, mez chips, buffs, the combat
+  breakdowns, session stats, loot and watches, XP/AA, and the Epic, Sky and
+  Gear checklists. Untick anything you want to never leave the machine; a
+  withheld screen is never even assembled, let alone sent. Each device then
+  picks its own subset of what's offered — that choice is stored on the device,
+  not by EQBuddy.
+- **What's actually sent:** character name, current zone, app version, your
+  desktop theme's colors, and whichever of the above screens are both offered
+  and picked. It is the same information the desktop's own cards are showing
+  you; nothing is sent that isn't on a screen you could already see.
+- **What comes back from the device:** its screen picks, and ticks on the Epic,
+  Sky and Gear checklists — the same tick a click on the PC makes. There is no
+  other write: a device cannot change settings, run commands, or touch
+  anything the desktop doesn't already offer as a checkbox.
 - **Windows Firewall** will ask to allow EQBuddy the first time it listens;
   saying no (or missing the prompt) silently blocks phones — the pairing
   window says so and tells you where to fix it. EQBuddy never edits firewall

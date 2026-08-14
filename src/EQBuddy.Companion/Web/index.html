@@ -7,15 +7,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#16130e">
+<meta name="theme-color" content="#16130e" id="themeColor">
 <title>EQBuddy Mobile (Beta)</title>
 <style>
-  /* EQBuddy ParchmentBrass palette (ThemePalettes.cs): bg #16130E, text #EDE4D3,
-     dim #9C927F, accent/gold #E3B341, good #7FBF5F, bad #D9634F, warn #E0A030. */
+  /* The FALLBACK palette only — ParchmentBrass, the desktop default — shown for the
+     handful of frames before the first snapshot arrives. Every value here is replaced
+     by the theme section of that snapshot (CompanionTheme.cs), so a custom desktop
+     theme reaches the phone without this file knowing anything about it. */
   :root {
-    --bg:#16130e; --panel:#26221a; --text:#ede4d3; --dim:#9c927f;
+    --bg:#16130e; --panel:rgba(255,255,255,0.149); --panel-hover:rgba(255,217,140,0.2);
+    --border:rgba(201,162,39,0.4); --text:#ede4d3; --dim:#9c927f;
     --accent:#e3b341; --good:#7fbf5f; --bad:#d9634f; --warn:#e0a030;
-    --hairline:#66c9a227;
+    --popup:#262119; --good-wash:rgba(127,191,95,0.2); --warn-wash:rgba(224,160,48,0.2);
+    --incoming:#6fa8b8; --chart-you:#b4892c; --chart-pet:#5ca352;
+    --chart-incoming:#4796db; --chart-crit:#f0bc55;
+    --hairline:rgba(227,179,65,0.149); --track:rgba(227,179,65,0.118);
+    --raised:rgba(255,255,255,0.224); --accent-deep:#886b26; --accent-wash:rgba(227,179,65,0.2);
   }
   * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; }
@@ -27,7 +34,7 @@
   header {
     display:flex; align-items:center; gap:10px;
     padding:14px 16px 10px; border-bottom:1px solid var(--hairline);
-    position:sticky; top:0; background:var(--bg); z-index:2;
+    position:sticky; top:0; background:var(--bg); z-index:4;
   }
   #dot { width:10px; height:10px; border-radius:50%; background:var(--bad); flex:none; transition:background .3s; }
   #dot.ok { background:var(--good); }
@@ -38,8 +45,8 @@
     color:var(--dim); border-radius:8px; font-size:18px; width:40px; height:40px; cursor:pointer;
   }
   #banner {
-    display:none; background:var(--warn); color:#16130e; font-weight:600;
-    padding:8px 16px; font-size:14px; position:sticky; top:0; z-index:3;
+    display:none; background:var(--warn); color:var(--bg); font-weight:600;
+    padding:8px 16px; font-size:14px; position:sticky; top:0; z-index:5;
   }
   #banner.show { display:block; }
   main { padding:10px 12px 24px; max-width:640px; margin:0 auto; }
@@ -62,38 +69,122 @@
   #screens button.mv:disabled { opacity:.3; }
   #screens .note { color:var(--dim); font-size:12px; margin-top:8px; }
 
-  section.surface { margin-top:14px; }
-  section.surface h2 {
+  section.surface { margin-top:14px; min-width:0; }
+  section.surface > h2 {
     font-size:13px; color:var(--accent); text-transform:uppercase;
-    letter-spacing:.08em; margin:0 2px 6px;
+    letter-spacing:.08em; margin:0 2px 6px; display:flex; gap:8px; align-items:baseline;
+  }
+  section.surface > h2 .count { color:var(--dim); font-size:12px; letter-spacing:0; text-transform:none; }
+  .card { background:var(--panel); border:1px solid var(--hairline); border-radius:12px; }
+
+  /* ---- TABLET: the picked screens become panels side by side ----
+     Same device state, two presentations: below the breakpoint the page is the phone
+     stack it always was; above it, everything picked is on screen at once and each
+     panel scrolls inside itself, so a timer list and a loot list don't fight over one
+     page scroll. The map is the primary panel and takes the extra room. */
+  @media (min-width:900px) {
+    main { max-width:1600px; padding:12px 14px 20px; }
+    #sections {
+      display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px; align-items:start;
+    }
+    section.surface { margin-top:0; display:flex; flex-direction:column; min-height:0;
+                      max-height:calc(100dvh - 140px); }
+    section.surface > .body { overflow:auto; min-height:0; -webkit-overflow-scrolling:touch; }
+    section.surface.wide { grid-column:1 / -1; }
+  }
+  @media (min-width:1280px) {
+    #sections { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    section.surface.wide { grid-column:span 2; grid-row:span 2; max-height:calc(100dvh - 140px); }
   }
 
   /* ---- spawn timers ---- */
-  ul#timers { list-style:none; }
-  #timers li {
+  ul.timers { list-style:none; }
+  .timers li {
     display:flex; align-items:baseline; gap:10px;
     background:var(--panel); border:1px solid var(--hairline);
     border-radius:12px; padding:14px; margin-bottom:8px;
   }
-  #timers .name { flex:1; min-width:0; }
-  #timers .mob { font-size:17px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #timers .tz { font-size:12px; color:var(--dim); }
-  #timers .left { font-size:24px; font-variant-numeric:tabular-nums; font-weight:700; flex:none; }
-  #timers li.due { border-color:var(--accent); background:#332a14; }
-  #timers li.due .left { color:var(--accent); }
-  #timers li.imminent .left { color:var(--warn); animation:pulse 1.1s ease-in-out infinite; }
+  .timers .name { flex:1; min-width:0; }
+  .timers .mob { font-size:17px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .timers .tz { font-size:12px; color:var(--dim); }
+  .timers .left { font-size:24px; font-variant-numeric:tabular-nums; font-weight:700; flex:none; }
+  .timers li.due { border-color:var(--accent); background:var(--accent-wash); }
+  .timers li.due .left { color:var(--accent); }
+  .timers li.imminent .left { color:var(--warn); animation:pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity:.35; } }
-  #timers li.unknown .left { color:var(--dim); font-size:14px; font-weight:400; }
+  .timers li.unknown .left { color:var(--dim); font-size:14px; font-weight:400; }
   .empty { color:var(--dim); text-align:center; padding:28px 10px; font-size:15px; }
   .gated { color:var(--dim); text-align:center; padding:16px 10px; font-size:14px; font-style:italic; }
 
   /* ---- session strip ---- */
-  #session { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  #session .stat { background:var(--panel); border:1px solid var(--hairline); border-radius:12px; padding:10px 4px; text-align:center; }
-  #session .v { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
-  #session .k { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .stats .stat { background:var(--panel); border:1px solid var(--hairline); border-radius:12px; padding:10px 4px; text-align:center; }
+  .stats .v { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .stats .k { font-size:11px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em; }
 
-  /* ---- pairing / explainer ---- */
+  /* ---- mez chips ---- */
+  ul.chips { list-style:none; display:flex; flex-wrap:wrap; gap:8px; }
+  .chips li {
+    background:var(--raised); border:1px solid var(--border); border-radius:10px;
+    padding:8px 12px; min-width:130px; position:relative; overflow:hidden;
+  }
+  .chips li.warn { border-color:var(--warn); }
+  .chips .n { font-size:15px; font-weight:600; }
+  .chips .t { font-size:20px; font-variant-numeric:tabular-nums; color:var(--accent); }
+  .chips li.warn .t { color:var(--warn); }
+  .chips .d { font-size:11px; color:var(--dim); }
+  .chips .gauge { position:absolute; left:0; bottom:0; height:3px; background:var(--accent); }
+  .chips li.warn .gauge { background:var(--warn); }
+
+  /* ---- rows (buffs, combat, loot, unlocks, checklists) ---- */
+  ul.rows { list-style:none; }
+  .rows li {
+    display:flex; align-items:center; gap:10px; padding:9px 12px;
+    border-bottom:1px solid var(--hairline); position:relative;
+  }
+  .rows li:last-child { border-bottom:none; }
+  .rows .rn { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px; }
+  .rows .rv { flex:none; font-size:12px; color:var(--dim); font-variant-numeric:tabular-nums; }
+  .rows .bar { position:absolute; left:0; bottom:0; height:2px; background:var(--chart-you); opacity:.75; }
+  .rows .sub { display:block; font-size:11px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; }
+  .rows li.active .rn { color:var(--good); }
+  .rows li.expiring .rn { color:var(--accent); }
+  .rows li.missing .rn { color:var(--warn); }
+  .rows li.notSeen .rn { color:var(--dim); font-style:italic; }
+  h3.group {
+    font-size:12px; color:var(--dim); text-transform:uppercase; letter-spacing:.05em;
+    padding:10px 12px 4px; display:flex; gap:8px; align-items:baseline;
+  }
+  h3.group .note { color:var(--accent); text-transform:none; letter-spacing:0; font-size:11px; }
+  .scope { display:flex; gap:6px; padding:8px 10px 4px; }
+  .scope button {
+    background:none; border:1px solid var(--hairline); color:var(--dim);
+    border-radius:8px; padding:6px 12px; font-size:13px; cursor:pointer;
+  }
+  .scope button.on { border-color:var(--accent); color:var(--accent); background:var(--accent-wash); }
+  .sub-head { font-size:12px; color:var(--dim); padding:2px 12px 8px; }
+
+  /* ---- checklist ticks ---- */
+  .rows li.tickable { cursor:pointer; }
+  .rows input[type=checkbox] { width:22px; height:22px; flex:none; accent-color:var(--accent); }
+  .rows li.done .rn { color:var(--dim); text-decoration:line-through; }
+
+  /* ---- map ---- */
+  .mapwrap { position:relative; background:var(--popup); border:1px solid var(--hairline);
+             border-radius:12px; overflow:hidden; height:min(60dvh,420px); }
+  section.surface.wide .mapwrap { height:100%; min-height:280px; }
+  @media (min-width:900px) { .mapwrap { height:auto; flex:1; min-height:320px; } }
+  .mapwrap svg { width:100%; height:100%; display:block; touch-action:none; }
+  .mapctl { position:absolute; right:8px; bottom:8px; display:flex; gap:6px; z-index:2; }
+  .mapctl button {
+    background:var(--popup); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; width:40px; height:40px; font-size:15px; cursor:pointer; opacity:.92;
+  }
+  .maptip { position:absolute; left:8px; top:8px; right:56px; font-size:11px; color:var(--dim);
+            background:var(--popup); border-radius:8px; padding:4px 8px; opacity:.9; z-index:2;
+            overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  text.poi { font-size:11px; }
   #pair { display:none; padding:40px 24px; text-align:center; }
   #pair.show { display:block; }
   #pair h1 { color:var(--accent); font-size:22px; margin-bottom:14px; }
@@ -123,7 +214,10 @@
   <div id="screens">
     <h2>Screens on this device</h2>
     <div id="screenRows"></div>
-    <div class="note">Saved on this phone only — every device picks its own. The PC decides which screens are offered at all (EQBuddy → Options).</div>
+    <div class="note">Saved on this phone or tablet only — every device picks its own. On a
+      narrow screen the picks stack down the page; on a tablet they lay out side by side in
+      this order, with the map taking the big panel. The PC decides which screens are
+      offered at all (EQBuddy → Options).</div>
   </div>
   <div id="sections"></div>
 </main>
@@ -133,13 +227,35 @@
 "use strict";
 // ---------- pairing token (URL fragment — never sent in the HTTP request) ----------
 const token = location.hash.replace(/^#/, "");
-const PROTOCOL = 1;
+const PROTOCOL = 2;
 const SURFACE_META = {
-  spawns:  { label: "Spawn timers" },
-  session: { label: "Session stats" },
+  map:      { label: "Zone map", wide: true },
+  spawns:   { label: "Spawn timers" },
+  mez:      { label: "Mez chips" },
+  buffs:    { label: "Buffs" },
+  combat:   { label: "Damage, healing & pet" },
+  session:  { label: "Session stats" },
+  loot:     { label: "Loot & watches" },
+  progress: { label: "XP & AA" },
+  epics:    { label: "Epic checklist" },
+  sky:      { label: "Sky checklist" },
+  gear:     { label: "Gear checklist" },
 };
+// Surfaces whose rows a tap can tick. The desktop refuses anything else anyway; this
+// is what stops the page from drawing a checkbox it has no right to draw.
+const TICKABLE = { epics: 1, sky: 1, gear: 1 };
+// Panels that must repaint every second because a clock is running in them; everything
+// else repaints only when its data actually changed, which is what keeps a scrolled
+// loot list scrolled and a half-ticked checklist from jumping under your thumb.
+const TICKING = { spawns: 1, mez: 1, session: 1, map: 1 };
 
 const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
 if (!token) {
   $("pair").classList.add("show");
 } else {
@@ -159,12 +275,17 @@ function boot() {
   let receivedAt = 0;        // ms clock when latest arrived
   let lastMsgAt = 0;         // any message (heartbeats count as freshness)
   let ws = null, backoff = 1000, everConnected = false;
+  const panels = {};         // surface -> { section, body }
+  const painted = {};        // surface -> JSON of what that panel currently shows
+  const scope = {};          // combat board -> "fight" | "session"
 
   function ensureChoice() {
     if (!choice) choice = { order: [], enabled: {} };
     for (const s of offered) {
       if (!choice.order.includes(s)) choice.order.push(s);
-      if (!(s in choice.enabled)) choice.enabled[s] = true;
+      // Sane first run: the two Phase 1 screens on, the rest a deliberate choice —
+      // a first-time tablet shouldn't open with eleven panels.
+      if (!(s in choice.enabled)) choice.enabled[s] = s === "spawns" || s === "session";
     }
   }
   // What this device picked — the subscribe message deliberately does NOT intersect
@@ -189,7 +310,14 @@ function boot() {
       let msg; try { msg = JSON.parse(e.data); } catch { return; }
       if (msg.kind === "heartbeat") { refreshStale(); return; }
       if (msg.kind !== "snapshot" || msg.protocol !== PROTOCOL) return;
+      // Sticky sections: the server sends theme and map geometry once and then stops.
+      // Carry forward what it withheld so the page never blanks between pushes.
+      if (!msg.theme && latest && latest.theme) msg.theme = latest.theme;
+      if (msg.map && !msg.map.geometry && latest && latest.map
+          && latest.map.geometry && latest.map.geometryStamp === msg.map.geometryStamp)
+        msg.map.geometry = latest.map.geometry;
       latest = msg; receivedAt = Date.now();
+      applyTheme(msg.theme);
       const offerChanged = JSON.stringify(msg.offered) !== JSON.stringify(offered);
       offered = msg.offered || [];
       ensureChoice();
@@ -207,7 +335,24 @@ function boot() {
     if (ws && ws.readyState === 1)
       ws.send(JSON.stringify({ kind: "subscribe", surfaces: picked() }));
   }
+  function sendTick(surface, id, done) {
+    if (ws && ws.readyState === 1)
+      ws.send(JSON.stringify({ kind: "tick", surface: surface, id: id, done: done }));
+  }
   connect();
+
+  // ---------- theme ----------
+  // camelCase wire token -> CSS custom property (--panel-hover, --chart-you, …).
+  let themeStamp = "";
+  function applyTheme(theme) {
+    if (!theme || theme.stamp === themeStamp) return;
+    themeStamp = theme.stamp;
+    const root = document.documentElement;
+    for (const key in theme.colors)
+      root.style.setProperty("--" + key.replace(/[A-Z]/g, c => "-" + c.toLowerCase()), theme.colors[key]);
+    if (theme.colors.bg) $("themeColor").setAttribute("content", theme.colors.bg);
+    map.retheme();
+  }
 
   // ---------- staleness banner ----------
   function refreshStale() {
@@ -232,6 +377,8 @@ function boot() {
     if (h > 0) return h + ":" + String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
     return m + ":" + String(sec).padStart(2, "0");
   };
+  const num = n => (n || 0).toLocaleString();
+  const since = () => (Date.now() - receivedAt) / 1000;
 
   function render() {
     if (!latest) return;
@@ -240,35 +387,60 @@ function boot() {
     $("ver").textContent = "EQBuddy Mobile (Beta) · " + latest.identity.appVersion;
 
     const host = $("sections");
-    host.replaceChildren();
-    for (const name of visibleSurfaces()) {
-      const sec = document.createElement("section");
-      sec.className = "surface";
-      const h = document.createElement("h2");
-      h.textContent = (SURFACE_META[name] || { label: name }).label;
-      sec.appendChild(h);
-      if (latest.notOffered && latest.notOffered.includes(name)) {
-        sec.insertAdjacentHTML("beforeend",
-          "<div class='gated'>Not shared by the PC — enable it in EQBuddy's Options.</div>");
-      } else if (name === "spawns") renderSpawns(sec);
-      else if (name === "session") renderSession(sec);
-      host.appendChild(sec);
+    const wanted = visibleSurfaces();
+    // Panels persist across repaints: rebuilding the DOM every second would throw
+    // away scroll position, the map's pan/zoom, and a checkbox mid-tap.
+    for (const name in panels)
+      if (!wanted.includes(name)) { panels[name].section.remove(); delete panels[name]; delete painted[name]; }
+
+    let previous = null;
+    for (const name of wanted) {
+      let p = panels[name];
+      if (!p) {
+        const section = el("section", "surface" + (SURFACE_META[name] && SURFACE_META[name].wide ? " wide" : ""));
+        const h = el("h2");
+        h.append(el("span", null, (SURFACE_META[name] || {}).label || name), el("span", "count"));
+        const body = el("div", "body");
+        section.append(h, body);
+        p = panels[name] = { section, body, head: h.lastChild };
+      }
+      // Keep DOM order equal to the device's picked order (which IS the grid order).
+      if (previous ? previous.nextSibling !== p.section : host.firstChild !== p.section)
+        host.insertBefore(p.section, previous ? previous.nextSibling : host.firstChild);
+      previous = p.section;
+
+      const refused = latest.notOffered && latest.notOffered.includes(name);
+      const data = refused ? null : latest[name];
+      const key = refused ? "gated" : JSON.stringify(data);
+      if (!TICKING[name] && painted[name] === key) continue;
+      painted[name] = key;
+      p.head.textContent = "";
+      if (refused) {
+        p.body.replaceChildren(el("div", "gated",
+          "Not shared by the PC — enable it in EQBuddy's Options."));
+      } else if (data) {
+        (RENDER[name] || renderUnknown)(p, data);
+      } else {
+        p.body.replaceChildren(el("div", "empty", "Waiting for the PC…"));
+      }
     }
   }
 
-  function renderSpawns(sec) {
-    const data = latest.spawns;
-    if (!data) return;
-    const elapsed = (Date.now() - receivedAt) / 1000; // tick locally between pushes
-    const ul = document.createElement("ul");
-    ul.id = "timers";
+  function renderUnknown(p) {
+    p.body.replaceChildren(el("div", "gated", "This screen needs a newer EQBuddy Mobile page."));
+  }
+
+  // ---------- spawn timers ----------
+  function renderSpawns(p, data) {
     if (!data.timers.length) {
-      sec.insertAdjacentHTML("beforeend",
-        "<div class='empty'>No spawn timers running.<br>Kill a named (or its placeholder) and its countdown appears here.</div>");
+      p.body.replaceChildren(el("div", "empty",
+        "No spawn timers running. Kill a named (or its placeholder) and its countdown appears here."));
       return;
     }
+    const elapsed = since(); // tick locally between pushes
+    const ul = el("ul", "timers card");
     for (const t of data.timers) {
-      const li = document.createElement("li");
+      const li = el("li");
       let leftText, cls = "";
       if (t.remainingSeconds == null) { leftText = "killed — no timer"; cls = "unknown"; }
       else {
@@ -277,36 +449,485 @@ function boot() {
         else { leftText = fmt(left); if (left <= 120) cls = "imminent"; }
       }
       li.className = cls;
-      const name = document.createElement("div"); name.className = "name";
-      const mob = document.createElement("div"); mob.className = "mob"; mob.textContent = t.name;
-      const tz = document.createElement("div"); tz.className = "tz"; tz.textContent = t.zone;
-      name.append(mob, tz);
-      const left = document.createElement("div"); left.className = "left"; left.textContent = leftText;
-      li.append(name, left);
+      const name = el("div", "name");
+      name.append(el("div", "mob", t.name), el("div", "tz", t.zone));
+      li.append(name, el("div", "left", leftText));
       ul.appendChild(li);
     }
-    sec.appendChild(ul);
+    p.head.textContent = data.timers.length + " running";
+    p.body.replaceChildren(ul);
   }
 
-  function renderSession(sec) {
-    const s = latest.session;
-    if (!s) return;
-    const grid = document.createElement("div");
-    grid.id = "session";
+  // ---------- session ----------
+  function renderSession(p, s) {
+    const grid = el("div", "stats");
     const stats = [
-      [s.kills, "kills"],
+      [num(s.kills), "kills"],
       [s.xpPerHour.toFixed(1) + "%", "xp/hr"],
       [Math.round(s.sessionDps), "dps"],
-      [fmt(s.sessionSeconds + (Date.now() - receivedAt) / 1000), "session"],
+      [fmt(s.sessionSeconds + since()), "session"],
     ];
     for (const [v, k] of stats) {
-      const d = document.createElement("div"); d.className = "stat";
-      const dv = document.createElement("div"); dv.className = "v"; dv.textContent = v;
-      const dk = document.createElement("div"); dk.className = "k"; dk.textContent = k;
-      d.append(dv, dk); grid.appendChild(d);
+      const d = el("div", "stat");
+      d.append(el("div", "v", v), el("div", "k", k));
+      grid.appendChild(d);
     }
-    sec.appendChild(grid);
+    p.body.replaceChildren(grid);
   }
+
+  // ---------- mez ----------
+  function renderMez(p, data) {
+    if (!data.chips.length) {
+      p.body.replaceChildren(el("div", "empty", "Nothing mezzed right now."));
+      return;
+    }
+    const elapsed = since();
+    const ul = el("ul", "chips");
+    for (const c of data.chips) {
+      const li = el("li");
+      let left = null, warn = c.warning;
+      if (c.remainingSeconds != null) {
+        left = Math.max(0, c.remainingSeconds - elapsed);
+        warn = left <= 6;
+      }
+      if (warn) li.className = "warn";
+      li.append(el("div", "n", c.name),
+                el("div", "t", left == null ? "?" : fmt(left)),
+                el("div", "d", c.detail));
+      if (c.fraction != null) {
+        const g = el("div", "gauge");
+        g.style.width = Math.round(100 * (1 - Math.min(1, c.fraction))) + "%";
+        li.appendChild(g);
+      }
+      ul.appendChild(li);
+    }
+    p.head.textContent = data.chips.length + " mezzed";
+    p.body.replaceChildren(ul);
+  }
+
+  // ---------- buffs ----------
+  function renderBuffs(p, data) {
+    const wrap = el("div", "card");
+    let missing = 0;
+    for (const g of data.groups) {
+      if (data.groups.length > 1 || g.class) wrap.appendChild(el("h3", "group", g.class));
+      const ul = el("ul", "rows");
+      for (const r of g.rows) {
+        const li = el("li", r.status);
+        const value = r.status === "missing" ? "missing"
+          : r.status === "notSeen" ? "not seen"
+          : r.remainingSeconds == null ? "up"
+          : fmt(r.remainingSeconds) + (r.estimated ? " est" : "");
+        if (r.status === "missing") missing++;
+        li.append(el("div", "rn", r.spell), el("div", "rv", value));
+        ul.appendChild(li);
+      }
+      if (!g.rows.length) {
+        const li = el("li");
+        li.appendChild(el("div", "rn", "— empty set —"));
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+    }
+    if (data.lost.length) {
+      wrap.appendChild(el("h3", "group", "lost this session (" + data.lost.length + ")"));
+      const ul = el("ul", "rows");
+      for (const l of data.lost) {
+        const li = el("li");
+        li.append(el("div", "rn", l.spell), el("div", "rv", l.cause));
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+    }
+    if (!data.groups.length && !data.lost.length)
+      wrap.replaceChildren(el("div", "empty", "No buff set yet — build one on the PC."));
+    p.head.textContent = missing ? missing + " missing" : "";
+    p.body.replaceChildren(wrap);
+  }
+
+  // ---------- combat ----------
+  function renderCombat(p, data) {
+    const wrap = el("div");
+    for (const b of data.boards) {
+      const card = el("div", "card");
+      card.style.marginBottom = "10px";
+      const bar = el("div", "scope");
+      const mode = scope[b.key] || "fight";
+      for (const which of ["fight", "session"]) {
+        const btn = el("button", mode === which ? "on" : null, which === "fight" ? "Last fight" : "Session");
+        btn.onclick = () => { scope[b.key] = which; painted.combat = null; render(); };
+        bar.appendChild(btn);
+      }
+      card.append(el("h3", "group", b.label), bar,
+        el("div", "sub-head", mode === "fight" ? b.fightHeader : b.sessionHeader));
+      const rows = mode === "fight" ? b.fight : b.session;
+      if (!rows.length) card.appendChild(el("div", "empty", "Nothing here yet."));
+      else card.appendChild(rowList(rows, r =>
+        ({ name: r.name, sub: r.value + " · " + Math.round(r.percent) + "%", fraction: r.fraction })));
+      wrap.appendChild(card);
+    }
+    p.body.replaceChildren(wrap);
+  }
+
+  // One row shape for every list: name (+ a dim sub-line), an optional right-hand
+  // value, and an optional share bar drawn along the bottom edge.
+  function rowList(items, of) {
+    const ul = el("ul", "rows");
+    for (const it of items) {
+      const r = of(it);
+      const li = el("li");
+      const rn = el("div", "rn", r.name);
+      if (r.sub) rn.appendChild(el("span", "sub", r.sub));
+      li.appendChild(rn);
+      if (r.right != null) li.appendChild(el("div", "rv", r.right));
+      if (r.fraction != null) {
+        const bar = el("div", "bar");
+        bar.style.width = Math.round(100 * Math.max(0.01, Math.min(1, r.fraction))) + "%";
+        li.appendChild(bar);
+      }
+      ul.appendChild(li);
+    }
+    return ul;
+  }
+
+  // ---------- loot ----------
+  function renderLoot(p, data) {
+    const wrap = el("div", "card");
+    wrap.appendChild(el("div", "sub-head",
+      data.total + " looted" + (data.craftedTotal ? " · +" + data.craftedTotal + " made" : "")));
+    if (data.items.length) wrap.appendChild(countRows(data.items));
+    else wrap.appendChild(el("div", "empty", "Nothing looted yet this session."));
+    if (data.crafted.length) {
+      wrap.appendChild(el("h3", "group", "Created by merging"));
+      wrap.appendChild(countRows(data.crafted));
+    }
+    if (data.watch.length) {
+      wrap.appendChild(el("h3", "group", "Watches"));
+      const ul = el("ul", "rows");
+      for (const w of data.watch) {
+        const li = el("li");
+        const rn = el("div", "rn", w.name);
+        rn.appendChild(el("span", "sub",
+          w.total + " total · " + w.perHour.toFixed(1) + "/hr · " + w.perActiveHour.toFixed(1) + "/active hr"));
+        li.append(rn, el("div", "rv", w.lastItem || ""));
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+    }
+    p.head.textContent = data.total ? data.total + " items" : "";
+    p.body.replaceChildren(wrap);
+  }
+  const countRows = items => rowList(items, i => ({ name: i.name, right: "×" + i.count }));
+
+  // ---------- progress ----------
+  function renderProgress(p, s) {
+    const wrap = el("div");
+    const grid = el("div", "stats");
+    const stats = [
+      [s.xpPercent.toFixed(1) + "%", "xp"],
+      [s.xpPerHour.toFixed(1) + "%", "xp/hr"],
+      [num(s.aaGained) + (s.aaTotal ? " / " + num(s.aaTotal) : ""), "aa"],
+      [s.hoursToLevel == null ? "—" : s.hoursToLevel.toFixed(1) + "h", "to level"],
+    ];
+    for (const [v, k] of stats) {
+      const d = el("div", "stat");
+      d.append(el("div", "v", v), el("div", "k", k));
+      grid.appendChild(d);
+    }
+    wrap.appendChild(grid);
+    if (s.unlocks && s.unlocks.length) {
+      const card = el("div", "card");
+      card.style.marginTop = "10px";
+      card.appendChild(el("h3", "group", s.unlocksLabel || "New at this level"));
+      card.appendChild(rowList(s.unlocks, u => ({ name: u.name, right: u.value })));
+      wrap.appendChild(card);
+    }
+    p.head.textContent = s.level != null ? "level " + s.level : "";
+    p.body.replaceChildren(wrap);
+  }
+
+  // ---------- checklists (epics / sky / gear) ----------
+  function checklist(surface) {
+    return function (p, data) {
+      const wrap = el("div", "card");
+      for (const g of data.groups) {
+        const h = el("h3", "group");
+        h.append(el("span", null, g.heading));
+        if (g.note) h.append(el("span", "note", g.note));
+        wrap.appendChild(h);
+        const ul = el("ul", "rows");
+        for (const r of g.rows) {
+          const li = el("li", (r.done ? "done " : "") + (TICKABLE[surface] ? "tickable" : ""));
+          const rn = el("div", "rn", r.text);
+          if (r.detail) rn.appendChild(el("span", "sub", r.detail));
+          if (TICKABLE[surface]) {
+            const cb = el("input");
+            cb.type = "checkbox"; cb.checked = !!r.done;
+            cb.onchange = () => {
+              // Optimistic: the row moves under the thumb now, the PC confirms on
+              // its next tick (and overrules us if the id was stale).
+              r.done = cb.checked;
+              li.classList.toggle("done", cb.checked);
+              sendTick(surface, r.id, cb.checked);
+            };
+            li.appendChild(cb);
+          }
+          li.appendChild(rn);
+          ul.appendChild(li);
+        }
+        wrap.appendChild(ul);
+      }
+      if (!data.groups.length)
+        wrap.replaceChildren(el("div", "empty", "Nothing on this checklist yet — set it up on the PC."));
+      p.head.textContent = data.total ? data.done + " / " + data.total : "";
+      p.body.replaceChildren(wrap);
+    };
+  }
+
+  // ---------- map ----------
+  // Inline SVG, no library: one path per pack color (non-scaling strokes, so lines stay
+  // hairlines at any zoom), the POIs, the archived spawn circles, and your /loc marker.
+  // Pinch to zoom, drag to pan — pointer events only, which covers touch and mouse.
+  const map = (function () {
+    const SVG = "http://www.w3.org/2000/svg";
+    let svg = null, layer = null, dyn = null, wrap = null, tip = null;
+    let stamp = "", bounds = null, dynKey = "";
+    let k = 1, tx = 0, ty = 0, fitted = false;
+    const pointers = new Map();
+    let pinch = null, panFrom = null;
+
+    function make() {
+      wrap = el("div", "mapwrap");
+      svg = document.createElementNS(SVG, "svg");
+      layer = document.createElementNS(SVG, "g");
+      dyn = document.createElementNS(SVG, "g");
+      svg.append(layer, dyn);
+      tip = el("div", "maptip");
+      const ctl = el("div", "mapctl");
+      const b = (label, title, fn) => {
+        const btn = el("button", null, label);
+        btn.title = title; btn.onclick = fn; ctl.appendChild(btn);
+      };
+      b("＋", "Zoom in", () => zoomBy(1.3));
+      b("－", "Zoom out", () => zoomBy(1 / 1.3));
+      b("⌖", "Centre on your last /loc", centreOnMe);
+      b("⤢", "Fit the whole zone", () => { fitted = false; fit(); });
+      wrap.append(svg, tip, ctl);
+      bindGestures();
+      return wrap;
+    }
+
+    function apply() {
+      layer.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+      dyn.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+      rescale();
+    }
+    // Everything that must stay the same SIZE on screen while the picture zooms:
+    // label text, circle radii, the marker. Stroke widths handle themselves via
+    // vector-effect, which is what SVG has it for.
+    function rescale() {
+      for (const e of svg.querySelectorAll("[data-px]")) {
+        const px = +e.dataset.px;
+        if (e.tagName === "text") e.setAttribute("font-size", px / k);
+        else e.setAttribute("r", px / k);
+      }
+    }
+    function zoomBy(f, cx, cy) {
+      const r = svg.getBoundingClientRect();
+      cx = cx == null ? r.width / 2 : cx;
+      cy = cy == null ? r.height / 2 : cy;
+      const nk = Math.min(60, Math.max(0.02, k * f));
+      tx = cx - (cx - tx) * (nk / k);
+      ty = cy - (cy - ty) * (nk / k);
+      k = nk;
+      apply();
+    }
+    function fit() {
+      if (!bounds || fitted) return;
+      const r = svg.getBoundingClientRect();
+      if (r.width < 20) return;   // not laid out yet; the next tick tries again
+      const w = Math.max(1, bounds.maxX - bounds.minX), h = Math.max(1, bounds.maxY - bounds.minY);
+      k = Math.min(r.width / w, r.height / h) * 0.94;
+      tx = (r.width - w * k) / 2 - bounds.minX * k;
+      ty = (r.height - h * k) / 2 - bounds.minY * k;
+      fitted = true;
+      apply();
+    }
+    function centreOnMe() {
+      const you = latest && latest.map && latest.map.you;
+      if (!you) return;
+      const r = svg.getBoundingClientRect();
+      k = Math.max(k, 1.4);
+      tx = r.width / 2 - you.x * k;
+      ty = r.height / 2 - you.y * k;
+      apply();
+    }
+    function bindGestures() {
+      svg.addEventListener("pointerdown", e => {
+        svg.setPointerCapture(e.pointerId);
+        pointers.set(e.pointerId, [e.clientX, e.clientY]);
+        if (pointers.size === 1) panFrom = [e.clientX - tx, e.clientY - ty];
+        else if (pointers.size === 2) { pinch = spread(); panFrom = null; }
+      });
+      svg.addEventListener("pointermove", e => {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, [e.clientX, e.clientY]);
+        if (pointers.size === 2 && pinch) {
+          const now = spread();
+          if (now.d > 4 && pinch.d > 4) {
+            const r = svg.getBoundingClientRect();
+            zoomBy(now.d / pinch.d, now.x - r.left, now.y - r.top);
+          }
+          pinch = now;
+        } else if (panFrom) {
+          tx = e.clientX - panFrom[0];
+          ty = e.clientY - panFrom[1];
+          layer.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+          dyn.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+        }
+      });
+      const up = e => {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) pinch = null;
+        if (pointers.size === 1) {
+          const [x, y] = [...pointers.values()][0];
+          panFrom = [x - tx, y - ty];
+        } else if (pointers.size === 0) panFrom = null;
+      };
+      svg.addEventListener("pointerup", up);
+      svg.addEventListener("pointercancel", up);
+      svg.addEventListener("wheel", e => {
+        e.preventDefault();
+        const r = svg.getBoundingClientRect();
+        zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX - r.left, e.clientY - r.top);
+      }, { passive: false });
+    }
+    function spread() {
+      const [a, b] = [...pointers.values()];
+      return { d: Math.hypot(a[0] - b[0], a[1] - b[1]), x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2 };
+    }
+
+    function drawGeometry(g) {
+      layer.replaceChildren();
+      bounds = { minX: g.minX, minY: g.minY, maxX: g.maxX, maxY: g.maxY };
+      for (const stroke of g.strokes) {
+        let d = "";
+        const s = stroke.segments;
+        for (let i = 0; i + 3 < s.length; i += 4)
+          d += `M${s[i]} ${s[i + 1]}L${s[i + 2]} ${s[i + 3]}`;
+        const path = document.createElementNS(SVG, "path");
+        path.setAttribute("d", d);
+        path.setAttribute("stroke", stroke.color);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke-width", "1.2");
+        path.setAttribute("vector-effect", "non-scaling-stroke");
+        layer.appendChild(path);
+      }
+      for (const poi of g.pois) {
+        const dot = document.createElementNS(SVG, "circle");
+        dot.setAttribute("cx", poi.x); dot.setAttribute("cy", poi.y);
+        dot.setAttribute("fill", poi.color); dot.dataset.px = 2.5;
+        const t = document.createElementNS(SVG, "text");
+        t.setAttribute("x", poi.x + 5); t.setAttribute("y", poi.y + 4);
+        t.setAttribute("fill", poi.color); t.setAttribute("class", "poi");
+        t.dataset.px = 11; t.textContent = poi.label;
+        layer.append(dot, t);
+      }
+      fitted = false;
+    }
+
+    function drawDynamic(data) {
+      const css = getComputedStyle(document.documentElement);
+      const accent = css.getPropertyValue("--accent").trim() || "#e3b341";
+      const dim = css.getPropertyValue("--dim").trim() || "#9c927f";
+      const warn = css.getPropertyValue("--warn").trim() || "#e0a030";
+      dyn.replaceChildren();
+      for (const c of data.circles) {
+        const color = c.named ? accent : dim;
+        const ring = document.createElementNS(SVG, "circle");
+        ring.setAttribute("cx", c.x); ring.setAttribute("cy", c.y);
+        ring.setAttribute("fill", "none"); ring.setAttribute("stroke", c.imminent ? warn : color);
+        ring.setAttribute("stroke-width", c.named ? "2" : "1.4");
+        ring.setAttribute("vector-effect", "non-scaling-stroke");
+        ring.dataset.px = c.named ? 7 : 5;
+        if (c.imminent) {
+          const a = document.createElementNS(SVG, "animate");
+          a.setAttribute("attributeName", "opacity");
+          a.setAttribute("values", "1;0.25;1");
+          a.setAttribute("dur", "1.1s");
+          a.setAttribute("repeatCount", "indefinite");
+          ring.appendChild(a);
+        }
+        dyn.appendChild(ring);
+        if (c.confirmed) {
+          const d = document.createElementNS(SVG, "circle");
+          d.setAttribute("cx", c.x); d.setAttribute("cy", c.y);
+          d.setAttribute("fill", color); d.dataset.px = 2;
+          dyn.appendChild(d);
+        }
+        if (c.label) {
+          const t = document.createElementNS(SVG, "text");
+          t.setAttribute("x", c.x + 9); t.setAttribute("y", c.y - 5);
+          t.setAttribute("fill", accent); t.setAttribute("class", "poi");
+          t.dataset.px = 11; t.textContent = c.label;
+          dyn.appendChild(t);
+        }
+      }
+      if (data.you) {
+        const me = document.createElementNS(SVG, "circle");
+        me.setAttribute("cx", data.you.x); me.setAttribute("cy", data.you.y);
+        me.setAttribute("fill", warn); me.setAttribute("stroke", "none");
+        me.dataset.px = 5;
+        dyn.appendChild(me);
+      }
+      rescale();
+    }
+
+    return {
+      retheme() { if (latest && latest.map && dyn) { dynKey = ""; drawDynamic(latest.map); } },
+      render(p, data) {
+        if (!wrap) p.body.replaceChildren(make());
+        else if (p.body.firstChild !== wrap) p.body.replaceChildren(wrap);
+        if (data.missing && !data.geometry) {
+          tip.textContent = data.missing;
+          layer.replaceChildren(); dyn.replaceChildren();
+          stamp = ""; bounds = null; dynKey = "";
+          return;
+        }
+        if (data.geometry && data.geometryStamp !== stamp) {
+          stamp = data.geometryStamp;
+          drawGeometry(data.geometry);
+          dynKey = "";
+        }
+        // The map panel repaints every second for its /loc age line, but the circles
+        // only when they actually moved — rebuilding them would restart every pulse
+        // animation mid-beat.
+        const key = JSON.stringify([data.circles, data.you]);
+        if (key !== dynKey) { dynKey = key; drawDynamic(data); }
+        fit();
+        const age = data.you ? Math.round(data.you.ageSeconds + since()) : null;
+        tip.textContent = data.zone + (data.you
+          ? " — your /loc " + (age < 60 ? "just now" : Math.round(age / 60) + "m ago")
+          : " — type /loc in game to place your marker")
+          + (data.geometry && data.geometry.truncated ? " (large map, partly drawn)" : "");
+        p.head.textContent = data.circles.length ? data.circles.length + " spawn points" : "";
+      },
+    };
+  })();
+
+  const RENDER = {
+    map: (p, d) => map.render(p, d),
+    spawns: renderSpawns,
+    session: renderSession,
+    mez: renderMez,
+    buffs: renderBuffs,
+    combat: renderCombat,
+    loot: renderLoot,
+    progress: renderProgress,
+    epics: checklist("epics"),
+    sky: checklist("sky"),
+    gear: checklist("gear"),
+  };
 
   // ---------- ⚙ screens panel ----------
   $("gear").onclick = () => $("screens").classList.toggle("show");
@@ -315,9 +936,9 @@ function boot() {
     rows.replaceChildren();
     choice.order.forEach((name, i) => {
       if (!offered.includes(name)) return;
-      const row = document.createElement("div"); row.className = "row";
+      const row = el("div", "row");
       const label = document.createElement("label");
-      const cb = document.createElement("input");
+      const cb = el("input");
       cb.type = "checkbox"; cb.checked = !!choice.enabled[name];
       cb.onchange = () => { choice.enabled[name] = cb.checked; commitChoice(); };
       label.append(cb, document.createTextNode((SURFACE_META[name] || { label: name }).label));
@@ -328,8 +949,8 @@ function boot() {
     });
   }
   function mkMove(txt, disabled, fn) {
-    const b = document.createElement("button");
-    b.className = "mv"; b.textContent = txt; b.disabled = disabled; b.onclick = fn;
+    const b = el("button", "mv", txt);
+    b.disabled = disabled; b.onclick = fn;
     return b;
   }
   function move(i, delta) {
@@ -341,7 +962,7 @@ function boot() {
 
   // ---------- keep the screen awake, honestly ----------
   // Wake Lock needs a secure context; plain http://<lan-ip> is not one, so on most
-  // phones this fails quietly — say so instead of pretending. (Phase 2: HTTPS or a
+  // devices this fails quietly — say so instead of pretending. (Phase 3: HTTPS or a
   // NoSleep-style fallback.)
   async function wakeLock() {
     try {
@@ -353,7 +974,7 @@ function boot() {
       return lock;
     } catch {
       $("tip").textContent =
-        " — Tip: this page can't keep your screen awake over plain HTTP; bump your phone's screen timeout while camping.";
+        " — Tip: this page can't keep your screen awake over plain HTTP; bump your device's screen timeout while camping.";
     }
   }
   wakeLock();

@@ -111,12 +111,28 @@ public partial class MainWindow : Window
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
         // EQBuddy Mobile, the phone companion (Options -> Behavior). Construction
         // is free; it only listens (LAN-only, token-gated) once CompanionEnabled is on.
-        _companion = new Companion.CompanionHost(_settings, UpdateChecker.CurrentVersion.ToString());
         // The map's spawn-point circles: kills near a fresh /loc accrete into
         // per-zone archives that only refine over time (David's map brief).
         _spawnPoints = new SpawnPointLedger(
             System.IO.Path.Combine(AppPaths.Dir, "zone-spawns"), spawnCatalog);
         _watcher.SpawnPoints = _spawnPoints;
+        // Every phone surface reads through these callbacks, which the host invokes
+        // only for surfaces the owner offers and only while a device is paired — the
+        // point of handing over lambdas rather than a pile of references.
+        _companion = new Companion.CompanionHost(_settings, UpdateChecker.CurrentVersion.ToString(),
+            new Companion.CompanionSources
+            {
+                TimerZone = () => _spawnTimers.CurrentZone?.Zone ?? SpawnCatalog.StripTierVariant(CurrentZoneName),
+                SpawnPoints = _spawnPoints,
+                Mezzes = now => _mezTracker.Snapshot(now),
+                BuffSets = now => [.. BuffSetSectionStates(CurrentSnapshot(), now)
+                    .Select(sec => (sec.Class, (IReadOnlyList<BuffSetEntryState>)sec.Entries))],
+                BuffLosses = () => _buffLossLog.Snapshot(),
+                HopsFromHere = zone => ZoneGraph.Distance(CurrentZoneName, zone)?.Hops,
+                Progress = () => (CurrentSnapshot().LastLevel, DingUnlocks(CurrentSnapshot())),
+            });
+        ThemeManager.PaletteApplied += _companion.SetTheme;
+        _companion.SurfaceEdited += OnCompanionSurfaceEdited;
         _spawnOverrides = spawnOverrides;
         _spawnCatalog = spawnCatalog;
         // Before any tailing: the initial full-log ingest has to know which text rules to
@@ -625,6 +641,19 @@ public partial class MainWindow : Window
         _companionWindow = new CompanionWindow(_companion) { Owner = this };
         _companionWindow.Closed += (_, _) => _companionWindow = null;
         _companionWindow.Show();
+    }
+
+    /// <summary>A paired device ticked a checklist row. The host already wrote it to
+    /// the same settings list a click on the card writes to, and raised this on the
+    /// tick thread — so all that's left is the repaint cue the card's own toggle sets.</summary>
+    private void OnCompanionSurfaceEdited(string surface)
+    {
+        switch (surface)
+        {
+            case EQBuddy.Companion.CompanionSurfaces.Epics: _epicQuestDirty = true; break;
+            case EQBuddy.Companion.CompanionSurfaces.Sky: _skyQuestDirty = true; break;
+            case EQBuddy.Companion.CompanionSurfaces.Gear: _gearChecklistDirty = true; break;
+        }
     }
 
     private void OnGearLocker(object sender, RoutedEventArgs e)
@@ -5169,6 +5198,7 @@ public partial class MainWindow : Window
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();
+        ThemeManager.PaletteApplied -= _companion.SetTheme;
         _companion.Dispose();   // stop the LAN listener with the app, not after it
         _repo.Dispose();
         base.OnClosed(e);
