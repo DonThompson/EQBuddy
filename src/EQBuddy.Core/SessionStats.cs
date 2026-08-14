@@ -149,6 +149,14 @@ public sealed class SessionStats
     /// see the invalidation note above.</summary>
     private int _charmHoldRevision;
 
+    /// <summary>Perf audit #12: the last snapshot built, keyed by everything that can
+    /// change its content — the version (every applied event bumps it), the recent
+    /// window, and the rules fingerprint. Identical inputs return the identical
+    /// instance, so idle ticks rebuild nothing anywhere. Snapshots are immutable
+    /// (init-only properties over freshly built lists), which is what makes sharing
+    /// one instance across consumers safe.</summary>
+    private (long Version, TimeSpan? Window, string RulesFp, StatsSnapshot Snap)? _snapshotMemo;
+
     /// <summary>Player-supplied hp-per-tick for the regen estimate (Options), 0 = unset.
     /// The log can't know instrument resonance or ranks; the player's health bar can —
     /// same "your number wins" rule the spawn timers use.</summary>
@@ -166,14 +174,17 @@ public sealed class SessionStats
     public string? CharacterName
     {
         get { lock (_lock) return _characterName; }
-        set { lock (_lock) _characterName = value; }
+        // The version bump keeps the snapshot memo honest: the character key feeds
+        // the AA ledger a snapshot shows, so identity changes must not serve a
+        // cached snapshot (perf audit #12).
+        set { lock (_lock) { _characterName = value; _version++; } }
     }
 
     private string? _serverName;
     public string? ServerName
     {
         get { lock (_lock) return _serverName; }
-        set { lock (_lock) _serverName = value; }
+        set { lock (_lock) { _serverName = value; _version++; } }
     }
 
     private readonly Dictionary<string, (int Count, string LastSource)> _loot = new(StringComparer.OrdinalIgnoreCase);
@@ -198,8 +209,15 @@ public sealed class SessionStats
     private readonly Dictionary<string, (int Rank, DateTime Time)> _aaAbilities = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Optional durable ledger behind <see cref="_aaAbilities"/> — purchases write
-    /// through to it, and snapshots read the union, so truncated logs can't forget an AA.</summary>
-    public AaLedgerStore? AaStore { get; set; }
+    /// through to it, and snapshots read the union, so truncated logs can't forget an AA.
+    /// Attaching one bumps the version: the store's contents feed snapshots, so the
+    /// memo (perf audit #12) must not keep serving a pre-attach one.</summary>
+    public AaLedgerStore? AaStore
+    {
+        get { lock (_lock) return _aaStore; }
+        set { lock (_lock) { _aaStore = value; _version++; } }
+    }
+    private AaLedgerStore? _aaStore;
 
     /// <summary>Optional quest-item ledger, fed from loot events the same way AaStore
     /// rides AA purchases (QUEST-*; the UI wires catalog + path).</summary>
@@ -1736,6 +1754,7 @@ public sealed class SessionStats
         {
             _aaAbilities.Clear();
             _classEvidence.Clear();   // the next character's swings vote fresh
+            _version++;   // both feed snapshots — the memo must not serve stale ones
         }
     }
 
@@ -1753,6 +1772,7 @@ public sealed class SessionStats
         _healsByHealer.Clear(); _healsBySpell.Clear(); _regenTicks = 0;
         _regenEstimated = 0; _regenSpell = null; _lastRegenCast = null; _lastConsider = null;
         _lastLoc = null; _locTrail.Clear(); _trackedMemo = null;
+        _snapshotMemo = null;   // also frees the ended session's lists for GC
         // The journal is about to be cleared: every place _journal empties or is
         // replaced funnels through here (reset, rollover, character/review switches
         // via LogWatcher.Select), so this is the one invalidation point the
@@ -1839,6 +1859,22 @@ public sealed class SessionStats
     private StatsSnapshot BuildSnapshotLocked(TimeSpan? recentWindow, IReadOnlyList<TrackedRule>? rules)
     {
         {
+            // Perf audit #12: same version + window + rules = the same snapshot —
+            // serve the cached instance instead of rebuilding every list. The one
+            // field that reads the wall clock is CurrentDps ("only advertise a
+            // current DPS while the fight is actually live", below): a cached 0
+            // stays 0 without new events (the combat damage can't move), and a
+            // cached >0 is only served while the live-fight window that produced
+            // it still holds — once it lapses, the rebuild honestly reports 0.
+            var rulesFp = rules is null ? "" : string.Join("", rules.Select(r =>
+                $"{r.Id}|{r.Enabled}|{(int)r.Kind}|{(int)r.SpellFilter}|{r.EffectivePattern}|{r.UseRegex}"));
+            if (_snapshotMemo is { } sm && sm.Version == _version
+                && sm.Window == recentWindow && sm.RulesFp == rulesFp
+                && (sm.Snap.CurrentDps == 0
+                    || (_combatLast is { } liveCl
+                        && DateTime.Now - liveCl <= CombatGap + TimeSpan.FromSeconds(2))))
+                return sm.Snap;
+
             double combatSeconds = _closedCombatSeconds;
             long combatDamage = _closedCombatDamage;
             double currentDps = 0;
@@ -1928,10 +1964,10 @@ public sealed class SessionStats
                 // Perf audit #4: this replay is O(rules × journal) and ran EVERY
                 // second — the one per-tick cost that scales with session length and
                 // rule count. The scan result can only change when an event lands or
-                // the rules themselves change, so it's memoized on exactly that pair;
+                // the rules themselves change, so it's memoized on exactly that pair
+                // (the fingerprint is computed once at the top, shared with the
+                // snapshot memo of perf audit #12);
                 // only the time-derived rates below are recomputed per snapshot.
-                var rulesFp = string.Join("", rules.Select(r =>
-                    $"{r.Id}|{r.Enabled}|{(int)r.Kind}|{(int)r.SpellFilter}|{r.EffectivePattern}|{r.UseRegex}"));
                 if (_trackedMemo is { } memo && memo.Version == _version && memo.Fingerprint == rulesFp)
                 {
                     foreach (var sc in memo.Scans)
@@ -1950,7 +1986,7 @@ public sealed class SessionStats
                 trackedDone: ;
             }
 
-            return new StatsSnapshot
+            var snap = new StatsSnapshot
             {
                 Version = _version,
                 LastLocation = _lastLoc,
@@ -2112,6 +2148,8 @@ public sealed class SessionStats
                         kv.Value.Seconds > 0 ? kv.Value.Damage / kv.Value.Seconds : 0))
                     .OrderByDescending(x => x.CombatSeconds).ToList(),
             };
+            _snapshotMemo = (_version, recentWindow, rulesFp, snap);
+            return snap;
         }
     }
 

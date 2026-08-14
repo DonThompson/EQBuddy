@@ -421,8 +421,18 @@ public partial class MainWindow : Window
     internal (string Character, string Server) Identity =>
         (_stats.CharacterName ?? "", _stats.ServerName ?? "");
 
-    /// <summary>A fresh stats snapshot, for windows that refresh on their own cadence.</summary>
-    internal StatsSnapshot CurrentSnapshot() => _stats.Snapshot();
+    /// <summary>The snapshot RefreshUi built this tick, reused by every satellite
+    /// window on its own cadence (perf audit #12: the map's marker/trail, Drops'
+    /// signature and Quests' inferred-class checks each built their own full
+    /// snapshot per tick). Snapshots are immutable, so sharing one instance is
+    /// safe; it is at most one tick (~1 s) old, which is already the cadence the
+    /// satellites polled at. Null only before the first tick.</summary>
+    private StatsSnapshot? _latestSnapshot;
+
+    /// <summary>The current stats snapshot for windows that refresh on their own
+    /// cadence: this tick's shared instance, or a fresh build when a window opens
+    /// before RefreshUi has ever ticked.</summary>
+    internal StatsSnapshot CurrentSnapshot() => _latestSnapshot ?? _stats.Snapshot();
 
     /// <summary>The 🗺 badge signal: a known quest's turn-in OR a member of the wiki's
     /// Quest Items category (back to the broad set once the loud green retired — a
@@ -1881,6 +1891,7 @@ public partial class MainWindow : Window
 
         var s = _stats.Snapshot(TimeSpan.FromMinutes(Math.Max(1, _settings.RecentWindowMinutes)),
             _settings.TrackedRules);
+        _latestSnapshot = s;   // satellites reuse this tick's snapshot (perf audit #12)
 
         ProcessTrackedAlerts(s);
 
