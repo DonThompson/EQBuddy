@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Input.Platform;
 using Avalonia.Media;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
@@ -64,6 +65,24 @@ public sealed class GearLockerWindow : Window
         _fetch.Click += async (_, _) => await FetchMissing();
         DockPanel.SetDock(_fetch, Dock.Right);
         bar.Children.Add(_fetch);
+        // Same one-click command as the Inventory window and the quest tracker's
+        // held tab (David, 2026-08-14): copy, paste in the game's chat, click ⟳.
+        var copyCmd = AppTheme.IconButton($"⧉ copy  {GameCommands.OutputfileInventory}",
+            "Copies the command — paste it into the game's chat and the game "
+            + "writes your inventory file; the Locker reads it. Re-run any time your bags change.");
+        copyCmd.FontSize = 11;
+        copyCmd.Margin = new Thickness(0, 0, 6, 0);
+        copyCmd.Click += async (_, _) =>
+        {
+            try
+            {
+                await (Clipboard?.SetTextAsync(GameCommands.OutputfileInventory) ?? Task.CompletedTask);
+                copyCmd.Content = "✓ copied — paste in game chat";
+            }
+            catch (Exception ex) { App.LogError(ex); }   // clipboard momentarily held by another app
+        };
+        DockPanel.SetDock(copyCmd, Dock.Right);
+        bar.Children.Add(copyCmd);
         bar.Children.Add(_status);
 
         var root = new DockPanel();
@@ -100,7 +119,7 @@ public sealed class GearLockerWindow : Window
         var snap = _latestInventory(true);
         if (snap is null)
         {
-            _status.Text = "No inventory dump found yet — in game, type  /outputfile inventory  "
+            _status.Text = $"No inventory dump found yet — in game, type  {GameCommands.OutputfileInventory}  "
                 + "and click ⟳. (Hover for the full recipe.)";
             _fetch.IsVisible = false;
             return;

@@ -1248,7 +1248,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
 
         var data = new MenuItem { Header = "Data & imports" };
         data.Items.Add(Item("Import achievements…", OnImportAchievements,
-            "Read the game's /outputfile achievements dump and pre-mark Sky quest rewards (and raid clears) you completed before EQBuddy — preview first, adds only, never unticks"));
+            $"Read the game's {EQBuddy.UI.Shared.GameCommands.OutputfileAchievements} dump and pre-mark Sky quest rewards (and raid clears) you completed before EQBuddy — preview first, adds only, never unticks"));
+        // A closed menu can't flip to ✓, so the header says exactly what the click
+        // does instead (David, 2026-08-14): whatever offers the import offers the
+        // command too.
+        data.Items.Add(Item($"⧉ Copy {EQBuddy.UI.Shared.GameCommands.OutputfileAchievements}",
+            OnCopyAchievementsCommand,
+            "Puts the command on your clipboard — paste it into the game's chat, the game writes its achievements dump, then Import achievements… reads it"));
         _reviewLogItem.Click += (s, _) => OnReviewLog(s, EventArgs.Empty);
         ToolTip.SetTip(_reviewLogItem,
             "Replay a saved log read-only — Drops by Creature and ✦ Copy for wiki work against that session");
@@ -2572,7 +2578,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             _raidsPanel.Children.Clear();
             _raidsPanel.Children.Add(EmptyCardLine(
                 "Nothing defeated yet — kills your log witnesses land here, and importing " +
-                "/outputfile achievements marks clears from before EQBuddy."));
+                $"{EQBuddy.UI.Shared.GameCommands.OutputfileAchievements} marks clears from before EQBuddy."));
+            _raidsPanel.Children.Add(CopyAchievementsCmd());
             return;
         }
 
@@ -2618,10 +2625,40 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         }
         _raidsPanel.Children.Add(new TextBlock
         {
-            Text = "Kills count when your log sees the boss die; import /outputfile achievements to mark older clears.",
+            Text = "Kills count when your log sees the boss die; import " +
+                $"{EQBuddy.UI.Shared.GameCommands.OutputfileAchievements} to mark older clears.",
             FontSize = 10, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 4, 0, 0),
             Foreground = AppTheme.DimBrush,
         });
+        _raidsPanel.Children.Add(CopyAchievementsCmd());
+    }
+
+    /// <summary>The Raids card names the achievements dump in both its empty and its
+    /// populated state, so both offer the one-click copy (David, 2026-08-14) — every
+    /// surface that names a command hands it over without retyping.</summary>
+    private Button CopyAchievementsCmd()
+    {
+        var b = AppTheme.IconButton(
+            $"⧉ copy  {EQBuddy.UI.Shared.GameCommands.OutputfileAchievements}",
+            "Copies the command — paste it into the game's chat and the game " +
+            "writes its achievements dump beside its own folders; right-click → " +
+            "Data & imports → Import achievements… reads it.");
+        b.FontSize = 10.5;
+        b.HorizontalAlignment = HorizontalAlignment.Left;
+        b.Margin = new Thickness(0, 3, 0, 0);
+        b.Click += async (_, _) =>
+        {
+            try
+            {
+                if (TopLevel.GetTopLevel(this)?.Clipboard is { } cb)
+                {
+                    await cb.SetTextAsync(EQBuddy.UI.Shared.GameCommands.OutputfileAchievements);
+                    b.Content = "✓ copied — paste in game chat";
+                }
+            }
+            catch (Exception ex) { App.LogError(ex); }   // clipboard momentarily held by another app
+        };
+        return b;
     }
 
     private void UpdateLoggingStatus()
@@ -3241,6 +3278,18 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         EQBuddy.UI.Shared.SpokenAlerts.Speak($"Slowed {pct}");
     }
 
+    /// <summary>Whatever offers the import offers the command too (David, 2026-08-14).
+    /// A closed menu can't flip to ✓; the header says exactly what the click does.</summary>
+    private async void OnCopyAchievementsCommand(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (TopLevel.GetTopLevel(this)?.Clipboard is { } cb)
+                await cb.SetTextAsync(EQBuddy.UI.Shared.GameCommands.OutputfileAchievements);
+        }
+        catch (Exception ex) { App.LogError(ex); }   // clipboard momentarily held by another app
+    }
+
     /// <summary>#88 (typical-usual-chaos): read the game's own `/outputfile achievements`
     /// dump and pre-mark Sky rewards completed before EQBuddy existed. Preview first,
     /// nothing applies until confirmed, and the import only ever adds — the same
@@ -3256,7 +3305,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             startIn = root;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Pick the game's achievements dump (/outputfile achievements)",
+            Title = $"Pick the game's achievements dump ({EQBuddy.UI.Shared.GameCommands.OutputfileAchievements})",
             AllowMultiple = false,
             SuggestedStartLocation = startIn is null
                 ? null

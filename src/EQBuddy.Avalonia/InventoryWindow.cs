@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Input.Platform;
 using Avalonia.Media;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
@@ -19,7 +20,7 @@ public sealed class InventoryWindow : Window
     /// <summary>The trick, spelled out wherever inventory appears (same treatment as
     /// the map's /loc social tip).</summary>
     internal const string OutputFileTip =
-        "In game, type:   /outputfile inventory\n" +
+        "In game, type:   " + GameCommands.OutputfileInventory + "\n" +
         "\n" +
         "The game writes <name>_<server>-Inventory.txt beside its own folders and\n" +
         "EQBuddy reads it — nothing is scanned or injected. Re-type the command any\n" +
@@ -54,7 +55,7 @@ public sealed class InventoryWindow : Window
         bar.Children.Add(refresh);
         // Same one-click command as the quest tracker's held tab (David's ask,
         // 2026-08-11): copy here, paste in the game's chat, click ⟳.
-        var copyCmd = AppTheme.IconButton("⧉ copy  /outputfile inventory",
+        var copyCmd = AppTheme.IconButton($"⧉ copy  {GameCommands.OutputfileInventory}",
             "Copies the command — paste it into the game's chat and the game " +
             "writes your inventory file; this window reads it. Re-run any time your bags change.");
         copyCmd.FontSize = 11;
@@ -63,7 +64,7 @@ public sealed class InventoryWindow : Window
         {
             try
             {
-                await (Clipboard?.SetTextAsync("/outputfile inventory") ?? Task.CompletedTask);
+                await (Clipboard?.SetTextAsync(GameCommands.OutputfileInventory) ?? Task.CompletedTask);
                 copyCmd.Content = "✓ copied — paste in game chat";
             }
             catch (Exception ex) { App.LogError(ex); }   // clipboard momentarily held by another app
@@ -90,7 +91,7 @@ public sealed class InventoryWindow : Window
         var snap = _latestInventory(true);
         if (snap is null)
         {
-            _status.Text = "No inventory dump found yet — in game, type  /outputfile inventory  " +
+            _status.Text = $"No inventory dump found yet — in game, type  {GameCommands.OutputfileInventory}  " +
                 "and click ⟳. (Hover for the full recipe.)";
             return;
         }
@@ -98,7 +99,7 @@ public sealed class InventoryWindow : Window
         _status.Text = $"{System.IO.Path.GetFileName(snap.Path)} — written " +
             (age.TotalMinutes < 1 ? "just now" : age.TotalHours < 1
                 ? $"{(int)age.TotalMinutes}m ago" : $"{(int)age.TotalHours}h ago") +
-            " (re-type /outputfile inventory in game, then ⟳)";
+            $" (re-type {GameCommands.OutputfileInventory} in game, then ⟳)";
 
         void Header(string text)
         {

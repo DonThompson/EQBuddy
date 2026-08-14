@@ -9,6 +9,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
@@ -266,8 +267,8 @@ public sealed class QuestsWindow : Window
             ("mine", "mine", "Quests matching your items and pins"),
             ("zone", "zone", "Everything you can work on in the zone you're in"),
             ("held", "held", "Quests you could turn in with what your bags already hold — " +
-                "from the game's /outputfile inventory dump. In game, type /outputfile " +
-                "inventory, and this tab reads the file the game writes."),
+                $"from the game's {GameCommands.OutputfileInventory} dump. In game, type " +
+                $"{GameCommands.OutputfileInventory}, and this tab reads the file the game writes."),
             ("done", "done", "Quests you've marked completed — every card has a ✓ done " +
                 "control, so returning players can check off history"),
             ("all", "all", "The whole quest catalog"),
@@ -588,7 +589,7 @@ public sealed class QuestsWindow : Window
                 var snap = _main.LatestInventory(refresh: force);
                 Button CopyCmd()
                 {
-                    var b = ActionButton("⧉ copy  /outputfile inventory");
+                    var b = ActionButton($"⧉ copy  {GameCommands.OutputfileInventory}");
                     b.FontSize = 11;
                     b.HorizontalAlignment = HorizontalAlignment.Left;
                     b.Margin = new Thickness(0, 4, 0, 6);
@@ -602,7 +603,7 @@ public sealed class QuestsWindow : Window
                         {
                             if (Clipboard is { } cb)
                             {
-                                await cb.SetTextAsync("/outputfile inventory");
+                                await cb.SetTextAsync(GameCommands.OutputfileInventory);
                                 b.Content = "✓ copied — paste in game chat";
                             }
                         }

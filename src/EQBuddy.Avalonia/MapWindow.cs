@@ -4,11 +4,13 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 using Path = System.IO.Path;
 
 namespace EQBuddy.Avalonia;
@@ -202,12 +204,39 @@ public sealed class MapWindow : Window
         side.Children.Add(share);
         side.Children.Add(scroll);
 
+        // The /loc social is the map's whole trick, so its two lines are one click
+        // (David, 2026-08-14) — the hover recipe stays the teacher, the button
+        // skips the typing. Both lines land newline-separated; the social editor
+        // takes one per slot, so the paste happens line by line.
+        var copyLoc = AppTheme.IconButton("⧉ copy  /loc social",
+            "Copies both social lines, newline-separated:\n" +
+            "    Line 1:  " + GameCommands.LocSocialLine1 + "\n" +
+            "    Line 2:  " + GameCommands.LocSocialLine2 + "\n" +
+            "The game's social editor takes one line per slot — paste line by line.\n" +
+            "(Hover the status text for the full trick.)");
+        copyLoc.FontSize = 11;
+        copyLoc.Margin = new Thickness(0, 4, 8, 6);
+        copyLoc.VerticalAlignment = VerticalAlignment.Top;
+        copyLoc.Click += async (_, _) =>
+        {
+            try
+            {
+                await (Clipboard?.SetTextAsync(GameCommands.LocSocial) ?? Task.CompletedTask);
+                copyLoc.Content = "✓ copied — one line per social slot";
+            }
+            catch (Exception ex) { App.LogError(ex); }   // clipboard momentarily held by another app
+        };
+        var statusBar = new DockPanel();
+        DockPanel.SetDock(copyLoc, Dock.Right);
+        statusBar.Children.Add(copyLoc);
+        statusBar.Children.Add(_status);
+
         var root = new DockPanel();
         DockPanel.SetDock(bar, Dock.Top);
-        DockPanel.SetDock(_status, Dock.Bottom);
+        DockPanel.SetDock(statusBar, Dock.Bottom);
         DockPanel.SetDock(side, Dock.Right);
         root.Children.Add(bar);
-        root.Children.Add(_status);
+        root.Children.Add(statusBar);
         root.Children.Add(side);
         root.Children.Add(_mapHost);
         Content = root;
@@ -785,8 +814,8 @@ public sealed class MapWindow : Window
         "Make /loc automatic-ish — the old forager's trick, no addons involved:\n" +
         "\n" +
         "In game, open Socials and make a macro:\n" +
-        "    Line 1:  /loc\n" +
-        "    Line 2:  /doability 1   (Forage, Sense Heading, Kick — whatever you already spam)\n" +
+        "    Line 1:  " + GameCommands.LocSocialLine1 + "\n" +
+        "    Line 2:  " + GameCommands.LocSocialLine2 + "   (Forage, Sense Heading, Kick — whatever you already spam)\n" +
         "\n" +
         "Put it on the hotbar key that skill already lives on, and every press drops a\n" +
         "breadcrumb while doing exactly what the key did before.\n" +
