@@ -70,14 +70,24 @@ public partial class SpawnChipsWindow : Window
         else
         {
             for (var i = 0; i < _chips.Count && i < _countdowns.Count; i++)
+            {
                 _countdowns[i].Text = _chips[i].IsDue ? "DUE" : _chips[i].CountdownText;
+                // The filling gauge ticks with the countdown, same as MezChipsWindow's
+                // draining one — the fraction froze at whatever the last REBUILD saw
+                // (audit finding 14: signature-stable ticks skipped it entirely).
+                if (i < _gauges.Count && _gauges[i].Fill is { } fillB && _chips[i].Fraction is { } frac)
+                    fillB.Width = Math.Max(0, _gauges[i].Track.ActualWidth * frac);
+            }
         }
     }
+
+    private readonly List<(Grid Track, Border Fill)> _gauges = [];
 
     private void Rebuild()
     {
         ChipsPanel.Children.Clear();
         _countdowns.Clear();
+        _gauges.Clear();
         foreach (var chip in _chips)
         {
             var row = new Grid { Margin = new Thickness(0, 1, 0, 1) };
@@ -129,6 +139,11 @@ public partial class SpawnChipsWindow : Window
                 track.SizeChanged += (_, se) => fill.Width = Math.Max(0, se.NewSize.Width * frac);
                 Grid.SetRow(track, 1);
                 host.Children.Add(track);
+                _gauges.Add((track, fill));
+            }
+            else
+            {
+                _gauges.Add(default);
             }
             var border = new Border
             {

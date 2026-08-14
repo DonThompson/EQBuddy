@@ -832,6 +832,26 @@ public class SpawnTimerTests
         Assert.Equal("Lady Vox", Assert.Single(vm.Chips(T0.AddSeconds(1620 + 31))).Name);
     }
 
+    /// <summary>Audit finding 14: SpawnChipsWindow only painted the track gauge at
+    /// REBUILD, and rebuilds happen on signature change (zone|name|due) — so the fill
+    /// froze between them. The window's per-tick refresh now reads Fraction every
+    /// second; pinned here on the data side: the fraction advances across two ticks
+    /// the chip signature calls identical. (The WPF width wiring itself mirrors
+    /// MezChipsWindow's and isn't hostable in this suite.)</summary>
+    [Fact]
+    public void ChipFractionAdvancesBetweenSignatureStableTicks()
+    {
+        var (vm, timers, _) = Vm();
+        timers.Apply(new ZoneEvent(T0, "Lower Guk"));
+        timers.Apply(new KillEvent(T0, "froglok ghoul lord", "You"));   // 27-min clock
+
+        var early = Assert.Single(vm.Chips(T0.AddMinutes(2)));
+        var later = Assert.Single(vm.Chips(T0.AddMinutes(20)));
+        Assert.Equal((early.Zone, early.Name, early.IsDue),
+            (later.Zone, later.Name, later.IsDue));                     // same rebuild signature
+        Assert.True(later.Fraction!.Value > early.Fraction!.Value);     // live gauge data
+    }
+
     /// <summary>Per-named due sounds: "Default" maps to Alarm (a camp popping is the
     /// most time-critical thing the app announces — David's call, deliberately NOT the
     /// Options alert sound); "Off" silences one named; anything else is that named's

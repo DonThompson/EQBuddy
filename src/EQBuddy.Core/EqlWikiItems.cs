@@ -47,7 +47,7 @@ public sealed partial class EqlWikiItemService
 
     private readonly string _cacheDir;
     private readonly Func<string, Task<string?>> _fetch;
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(12) };
+    private static readonly HttpClient Http = EqlWikiText.CreateClient();
 
     /// <param name="fetchOverride">Tests inject a fake fetcher; null = real api.php.
     /// The fetcher returns the page's raw wikitext, or null when the page is missing.</param>

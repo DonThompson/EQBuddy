@@ -436,8 +436,12 @@ public sealed class MezTracker
         // duration, and the natural-fade line must still find its entry to learn
         // from — pruning at the linger would make high ranks unlearnable. A stale
         // retained entry also absorbs the next break line first (earliest expiry),
-        // which is the right guess: it's the likeliest-awake one.
-        _active.RemoveAll(m => now - m.LandedAt > UnknownDurationCap);
+        // which is the right guess: it's the likeliest-awake one. The cap only
+        // bounds UNKNOWN durations: a mez KNOWN to run past 120s must outlive it to
+        // ExpiresAt + the linger, or its own fade line finds nothing to teach
+        // (audit finding 8 — the long mez that could never learn).
+        _active.RemoveAll(m => now - m.LandedAt > UnknownDurationCap
+            && (m.ExpiresAt is not { } e || now - e > ExpiryLinger));
     }
 
     private void SaveStore()

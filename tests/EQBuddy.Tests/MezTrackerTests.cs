@@ -462,4 +462,24 @@ public class MezTrackerTests
         t.Apply(Ev(6, "Twiddley slashes an orc pawn for 5 points of damage."));
         Assert.Empty(t.Snapshot(T0.AddSeconds(7)));
     }
+
+    /// <summary>Audit finding 8: the 120s unknown-duration cap pruned by LandedAt
+    /// alone, so a mez KNOWN to run longer was dropped mid-sleep — its chip vanished
+    /// early and its natural fade found no entry to learn from, making long
+    /// durations permanently unlearnable. Known durations now hold their entries to
+    /// ExpiresAt + the linger.</summary>
+    [Fact]
+    public void AKnownLongMezOutlivesTheUnknownDurationCapAndStaysLearnable()
+    {
+        var t = new MezTracker([new MezSpellInfo { Name = "Longsleep", DurationSeconds = 150 }]);
+        t.Apply(Ev(0, "You begin casting Longsleep."));
+        t.Apply(Ev(2, "an orc pawn has been mesmerized."));                  // asleep until 152
+        t.Apply(Ev(130, "You slash a gnoll for 5 points of damage."));       // a prune past the cap
+
+        var m = Assert.Single(t.Snapshot(T0.AddSeconds(140)));               // chip survives the cap
+        Assert.Equal(12, m.RemainingSeconds(T0.AddSeconds(140))!.Value, 0);
+
+        t.Apply(Ev(154, "Your Longsleep spell has worn off of an orc pawn."));
+        Assert.Equal(150, t.LearnedDurations["Longsleep"], 0);               // the fade still taught
+    }
 }
