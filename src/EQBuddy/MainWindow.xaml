@@ -587,6 +587,13 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
+                    <CheckBox x:Name="GearByZoneCheck"
+                              Margin="0,2,0,4"
+                              Checked="OnGearByZoneToggled"
+                              Unchecked="OnGearByZoneToggled"
+                              Content="Group by farm zone"
+                              FontSize="10"
+                              Foreground="{DynamicResource DimBrush}"/>
                     <TextBlock x:Name="GearListName" Style="{StaticResource Dim}"
                                TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <ScrollViewer MaxHeight="320"

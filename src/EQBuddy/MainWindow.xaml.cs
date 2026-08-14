@@ -63,6 +63,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         EpicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
+        GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
         AttachSpellStore();
@@ -2366,6 +2367,8 @@ public partial class MainWindow : Window
     {
         GearChecklistList.Items.Clear();
         var total = _settings.GearChecklist.Count;
+        // No list, no view to pivot — the toggle would be a silent no-op.
+        GearByZoneCheck.Visibility = total > 0 ? Visibility.Visible : Visibility.Collapsed;
         if (total == 0)
         {
             GearListName.Text = "Import an EQ Legends Tools shopping-list HTML in Options.";
@@ -2383,68 +2386,110 @@ public partial class MainWindow : Window
         GearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
             _settings.GearChecklistName, _settings.GearChecklist);
 
+        if (_settings.GearGroupByZone) RenderGearByZone();
+        else RenderGearBySlot();
+
+        UpdateGearHeaderOnly();
+    }
+
+    private void RenderGearBySlot()
+    {
         foreach (var group in EQBuddy.UI.Shared.GearChecklistPresentation.BuildGroups(_settings.GearChecklist))
+        {
+            GearChecklistList.Items.Add(GearGroupHeading(group.Heading));
+            foreach (var item in group.Items)
+                GearChecklistList.Items.Add(GearRow(item));
+        }
+    }
+
+    private void RenderGearByZone()
+    {
+        // The WHERE-TO-GO pivot: grouping and buckets live in UI.Shared
+        // (GearFarmRollup) where they are tested; this side only draws. Nearest-first
+        // needs a current zone — before the first zone line of a session the rollup
+        // degrades to alphabetical rather than guessing.
+        Func<string, int?>? hopsFromHere = CurrentZoneName.Length > 0
+            ? zone => ZoneGraph.Distance(CurrentZoneName, zone)?.Hops
+            : null;
+        var groups = EQBuddy.UI.Shared.GearFarmRollup.Build(
+            _settings.GearChecklist, ItemCatalog.Default.Find, hopsFromHere);
+        if (groups.Count == 0)
         {
             GearChecklistList.Items.Add(new TextBlock
             {
-                Text = group.Heading,
+                Text = "Everything on the list is acquired — nothing left to farm.",
                 FontSize = 11,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("AccentBrush"),
-                Margin = new Thickness(0, 8, 0, 2),
+                Foreground = (Brush)FindResource("DimBrush"),
+                TextWrapping = TextWrapping.Wrap,
             });
-            foreach (var item in group.Items)
-            {
-                var text = new StackPanel();
-                text.Children.Add(new TextBlock
-                {
-                    Text = item.Slot,
-                    FontSize = 10,
-                    Foreground = (Brush)FindResource("DimBrush"),
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                });
-                var itemName = new TextBlock
-                {
-                    FontSize = 12,
-                    Foreground = (Brush)FindResource("TextBrush"),
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                };
-                var itemText = EQBuddy.UI.Shared.GearChecklistPresentation.TextFor(item);
-                itemName.Inlines.Add(itemText.Name);
-                if (itemText.EffectSuffix.Length > 0)
-                {
-                    itemName.Inlines.Add(new System.Windows.Documents.Run(itemText.EffectSuffix)
-                    {
-                        FontSize = 10,
-                        Foreground = (Brush)FindResource("DimBrush"),
-                    });
-                }
-                text.Children.Add(itemName);
-                if (item.Source.Length > 0)
-                {
-                    text.Children.Add(new TextBlock
-                    {
-                        Text = item.Source,
-                        FontSize = 10,
-                        Foreground = (Brush)FindResource("DimBrush"),
-                        TextTrimming = TextTrimming.CharacterEllipsis,
-                    });
-                }
-
-                var check = new CheckBox
-                {
-                    IsChecked = item.Acquired,
-                    Content = text,
-                    Margin = new Thickness(0, 2, 0, 2),
-                    ToolTip = EQBuddy.UI.Shared.GearChecklistPresentation.Tooltip(item),
-                };
-                check.Checked += (_, _) => OnGearToggled(item, true);
-                check.Unchecked += (_, _) => OnGearToggled(item, false);
-                GearChecklistList.Items.Add(check);
-            }
+            return;
         }
 
-        UpdateGearHeaderOnly();
+        foreach (var group in groups)
+        {
+            GearChecklistList.Items.Add(GearGroupHeading(EQBuddy.UI.Shared.GearFarmRollup.Heading(group)));
+            foreach (var item in group.Items)
+                GearChecklistList.Items.Add(GearRow(item));
+        }
+    }
+
+    private TextBlock GearGroupHeading(string heading) => new()
+    {
+        Text = heading,
+        FontSize = 11,
+        FontWeight = FontWeights.SemiBold,
+        Foreground = (Brush)FindResource("AccentBrush"),
+        Margin = new Thickness(0, 8, 0, 2),
+    };
+
+    private CheckBox GearRow(GearChecklistItem item)
+    {
+        var text = new StackPanel();
+        text.Children.Add(new TextBlock
+        {
+            Text = item.Slot,
+            FontSize = 10,
+            Foreground = (Brush)FindResource("DimBrush"),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        var itemName = new TextBlock
+        {
+            FontSize = 12,
+            Foreground = (Brush)FindResource("TextBrush"),
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        var itemText = EQBuddy.UI.Shared.GearChecklistPresentation.TextFor(item);
+        itemName.Inlines.Add(itemText.Name);
+        if (itemText.EffectSuffix.Length > 0)
+        {
+            itemName.Inlines.Add(new System.Windows.Documents.Run(itemText.EffectSuffix)
+            {
+                FontSize = 10,
+                Foreground = (Brush)FindResource("DimBrush"),
+            });
+        }
+        text.Children.Add(itemName);
+        if (item.Source.Length > 0)
+        {
+            text.Children.Add(new TextBlock
+            {
+                Text = item.Source,
+                FontSize = 10,
+                Foreground = (Brush)FindResource("DimBrush"),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
+        }
+
+        var check = new CheckBox
+        {
+            IsChecked = item.Acquired,
+            Content = text,
+            Margin = new Thickness(0, 2, 0, 2),
+            ToolTip = EQBuddy.UI.Shared.GearChecklistPresentation.Tooltip(item),
+        };
+        check.Checked += (_, _) => OnGearToggled(item, true);
+        check.Unchecked += (_, _) => OnGearToggled(item, false);
+        return check;
     }
 
     private void OnGearToggled(GearChecklistItem item, bool acquired)
@@ -2454,6 +2499,28 @@ public partial class MainWindow : Window
         UpdateGearHeaderOnly();
         GearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
             _settings.GearChecklistName, _settings.GearChecklist);
+        // The zone view excludes acquired rows and repeats a multi-zone item under
+        // each zone it drops in — its checkbox twins must repaint, next tick.
+        if (_settings.GearGroupByZone) _gearChecklistDirty = true;
+    }
+
+    private void OnGearByZoneToggled(object sender, RoutedEventArgs e)
+    {
+        var value = GearByZoneCheck.IsChecked == true;
+        if (_settings.GearGroupByZone == value)
+            return;
+
+        _settings.GearGroupByZone = value;
+        _settings.Save();
+        if (GearSection.IsExpanded)
+        {
+            RenderGearChecklist();
+            _gearChecklistDirty = false;
+        }
+        else
+        {
+            _gearChecklistDirty = true;
+        }
     }
 
     private void UpdateGearHeaderOnly()
