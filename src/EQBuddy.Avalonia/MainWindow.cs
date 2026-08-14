@@ -3,10 +3,12 @@ using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Controls.Templates;
@@ -95,6 +97,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private readonly ItemsControl _motesList = new();
     private readonly TextBlock _gearHeader = AppTheme.StatValue("0/0");
     private readonly TextBlock _gearListName = AppTheme.DimText("");
+    private readonly CheckBox _gearByZoneCheck = new() { Content = "Group by farm zone" };
     private readonly StackPanel _gearChecklistPanel = new();
     private readonly TextBlock _raidsHeader = AppTheme.StatValue("0");
     private readonly StackPanel _raidsPanel = new();
@@ -896,6 +899,17 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _gearListName.Margin = new Thickness(0, 2, 0, 4);
         _gearListName.TextWrapping = TextWrapping.Wrap;
         panel.Children.Add(_gearListName);
+        // The checklist says WHAT; this says WHERE (#122abd6). Off by default — the
+        // slot view is the one people import for.
+        _gearByZoneCheck.IsChecked = _settings.GearGroupByZone;
+        _gearByZoneCheck.FontSize = 11;
+        _gearByZoneCheck.Margin = new Thickness(0, 0, 0, 2);
+        ToolTip.SetTip(_gearByZoneCheck,
+            "Pivot the same wishes to where you'd farm them — nearest zone first once "
+            + "the log has seen you zone in. An item that drops in several zones is listed "
+            + "under each, and one tick clears it everywhere.");
+        _gearByZoneCheck.IsCheckedChanged += OnGearByZoneToggled;
+        panel.Children.Add(_gearByZoneCheck);
         panel.Children.Add(new ScrollViewer
         {
             MaxHeight = 320,
@@ -1771,6 +1785,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         if (_hiddenForFocus) return;
 
         _zoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "-";
+        // The by-zone gear view bakes "you're here"/hop counts into its headings —
+        // zoning must repaint it or the card keeps claiming the old zone.
+        if (_settings.GearGroupByZone && CurrentZoneName != s.CurrentZone)
+            _gearChecklistDirty = true;
         CurrentZoneName = s.CurrentZone;
         var active = TimeSpan.FromSeconds(s.ActiveSeconds);
         _sessionText.Text = s.SessionStart is { } start
@@ -3839,6 +3857,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     {
         _gearChecklistPanel.Children.Clear();
         var total = _settings.GearChecklist.Count;
+        // No list, no view to pivot — the toggle would be a silent no-op.
+        _gearByZoneCheck.IsVisible = total > 0;
         if (total == 0)
         {
             _gearListName.Text = "Import an EQ Legends Tools shopping-list HTML in Options.";
@@ -3848,48 +3868,103 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         }
 
         UpdateGearListName();
-        foreach (var item in _settings.GearChecklist)
+        if (_settings.GearGroupByZone) RenderGearByZone();
+        else RenderGearBySlot();
+
+        UpdateGearHeaderOnly();
+    }
+
+    private void RenderGearBySlot()
+    {
+        foreach (var group in EQBuddy.UI.Shared.GearChecklistPresentation.BuildGroups(_settings.GearChecklist))
         {
-            var text = new StackPanel();
+            _gearChecklistPanel.Children.Add(GearGroupHeading(group.Heading));
+            foreach (var item in group.Items)
+                _gearChecklistPanel.Children.Add(GearRow(item));
+        }
+    }
+
+    private void RenderGearByZone()
+    {
+        // The WHERE-TO-GO pivot: grouping and buckets live in UI.Shared
+        // (GearFarmRollup) where they are tested; this side only draws. Nearest-first
+        // needs a current zone — before the first zone line of a session the rollup
+        // degrades to alphabetical rather than guessing.
+        Func<string, int?>? hopsFromHere = CurrentZoneName.Length > 0
+            ? zone => ZoneGraph.Distance(CurrentZoneName, zone)?.Hops
+            : null;
+        var groups = EQBuddy.UI.Shared.GearFarmRollup.Build(
+            _settings.GearChecklist, ItemCatalog.Default.Find, hopsFromHere);
+        if (groups.Count == 0)
+        {
+            _gearChecklistPanel.Children.Add(
+                EmptyCardLine("Everything on the list is acquired — nothing left to farm."));
+            return;
+        }
+
+        foreach (var group in groups)
+        {
+            _gearChecklistPanel.Children.Add(
+                GearGroupHeading(EQBuddy.UI.Shared.GearFarmRollup.Heading(group)));
+            foreach (var item in group.Items)
+                _gearChecklistPanel.Children.Add(GearRow(item));
+        }
+    }
+
+    private static TextBlock GearGroupHeading(string heading) => new()
+    {
+        Text = heading,
+        FontSize = 11,
+        FontWeight = FontWeight.SemiBold,
+        Foreground = AppTheme.AccentBrush,
+        Margin = new Thickness(0, 8, 0, 2),
+    };
+
+    private CheckBox GearRow(GearChecklistItem item)
+    {
+        var text = new StackPanel();
+        text.Children.Add(new TextBlock
+        {
+            Text = item.Slot,
+            FontSize = 10,
+            Foreground = AppTheme.DimBrush,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        });
+        var itemName = new TextBlock
+        {
+            FontSize = 12,
+            Foreground = AppTheme.TextBrush,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+        };
+        // An exaltation's effect rides the name as a dim run, so the row reads as one
+        // item rather than two — same treatment as WPF's.
+        var itemText = EQBuddy.UI.Shared.GearChecklistPresentation.TextFor(item);
+        itemName.Inlines?.Add(new Run(itemText.Name));
+        if (itemText.EffectSuffix.Length > 0)
+            itemName.Inlines?.Add(new Run(itemText.EffectSuffix)
+            {
+                FontSize = 10,
+                Foreground = AppTheme.DimBrush,
+            });
+        text.Children.Add(itemName);
+        if (item.Source.Length > 0)
             text.Children.Add(new TextBlock
             {
-                Text = item.Slot,
+                Text = item.Source,
                 FontSize = 10,
                 Foreground = AppTheme.DimBrush,
                 TextTrimming = TextTrimming.CharacterEllipsis,
             });
-            text.Children.Add(new TextBlock
-            {
-                Text = item.Item,
-                FontSize = 12,
-                Foreground = AppTheme.TextBrush,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            if (item.Source.Length > 0)
-                text.Children.Add(new TextBlock
-                {
-                    Text = item.Source,
-                    FontSize = 10,
-                    Foreground = AppTheme.DimBrush,
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                });
 
-            var tip = $"{item.Slot}: {item.Item}";
-            if (item.Source.Length > 0) tip += "\n" + item.Source;
-            if (item.Url.Length > 0) tip += "\n" + item.Url;
-            var check = new CheckBox
-            {
-                IsChecked = item.Acquired,
-                Content = text,
-                Margin = new Thickness(0, 2, 0, 2),
-            };
-            ToolTip.SetTip(check, tip);
-            var captured = item;
-            check.IsCheckedChanged += (box, _) => OnGearToggled(captured, ((CheckBox)box!).IsChecked == true);
-            _gearChecklistPanel.Children.Add(check);
-        }
-
-        UpdateGearHeaderOnly();
+        var check = new CheckBox
+        {
+            IsChecked = item.Acquired,
+            Content = text,
+            Margin = new Thickness(0, 2, 0, 2),
+        };
+        ToolTip.SetTip(check, EQBuddy.UI.Shared.GearChecklistPresentation.Tooltip(item));
+        check.IsCheckedChanged += (box, _) => OnGearToggled(item, ((CheckBox)box!).IsChecked == true);
+        return check;
     }
 
     private void OnGearToggled(GearChecklistItem item, bool acquired)
@@ -3898,16 +3973,32 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _settings.Save();
         UpdateGearHeaderOnly();
         UpdateGearListName();
+        // The zone view excludes acquired rows and repeats a multi-zone item under
+        // each zone it drops in — its checkbox twins must repaint, next tick.
+        if (_settings.GearGroupByZone) _gearChecklistDirty = true;
     }
 
-    private void UpdateGearListName()
+    private void OnGearByZoneToggled(object? sender, RoutedEventArgs e)
     {
-        var total = _settings.GearChecklist.Count;
-        var done = _settings.GearChecklist.Count(i => i.Acquired);
-        _gearListName.Text = _settings.GearChecklistName.Length > 0
-            ? $"{_settings.GearChecklistName} - {done}/{total}"
-            : $"{done}/{total} imported gear pieces";
+        var value = _gearByZoneCheck.IsChecked == true;
+        if (_settings.GearGroupByZone == value) return;
+
+        _settings.GearGroupByZone = value;
+        _settings.Save();
+        if (_sections["gear"].IsExpanded)
+        {
+            RenderGearChecklist();
+            _gearChecklistDirty = false;
+        }
+        else
+        {
+            _gearChecklistDirty = true;
+        }
     }
+
+    private void UpdateGearListName() =>
+        _gearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
+            _settings.GearChecklistName, _settings.GearChecklist);
 
     private void UpdateGearHeaderOnly()
     {

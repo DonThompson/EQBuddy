@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
@@ -78,6 +79,22 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains(headings, h => h.Contains("Combat"));
         Assert.Contains(headings, h => h.Contains("Healing"));
         Assert.Contains(headings, h => h.Contains("Kills"));
+        window.Close();
+    }
+
+    /// <summary>The Gear card's WHERE-TO-GO pivot (#122abd6) reached this UI: the
+    /// toggle has to exist in the tree, or the by-zone view is unreachable here even
+    /// though the rollup it draws is shared and tested.</summary>
+    [AvaloniaFact]
+    public void TheGearCardOffersTheByZonePivot()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        var checks = window.GetLogicalDescendants().OfType<CheckBox>()
+            .Select(c => c.Content as string ?? "").ToList();
+
+        Assert.Contains(checks, c => c.Contains("Group by farm zone"));
         window.Close();
     }
 
