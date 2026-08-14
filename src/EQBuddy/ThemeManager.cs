@@ -26,42 +26,30 @@ public static class ThemeManager
     /// Custom theme derived from the user's three colors — and swaps it in. An
     /// unrecognized key (e.g. from an older settings.json) falls back to the first
     /// entry in <see cref="ThemeCatalog"/> rather than throwing.</summary>
-    public static void Apply(Core.AppSettings settings) => Apply(CustomTheme.PaletteFor(settings));
+    public static void Apply(Core.AppSettings settings) =>
+        Apply(settings.Theme, CustomTheme.PaletteFor(settings));
 
-    private static void Apply(IEnumerable<(string Key, string Hex)> palette)
+    /// <summary>Raised after every swap with the theme key and its full palette (the
+    /// derived tones included). EQBuddy Mobile listens so a paired phone repaints with
+    /// the desktop instead of waiting for a reconnect; nothing else subscribes yet.</summary>
+    public static event Action<string, IReadOnlyList<(string Key, string Hex)>>? PaletteApplied;
+
+    private static void Apply(string themeKey, IEnumerable<(string Key, string Hex)> palette)
     {
+        // The derived tones (hairline, track, raised, accent-deep) come from
+        // UI.Shared so the Avalonia lane and the phone compose the same ones.
+        var rows = palette.ToList();
+        var full = rows.Concat(ThemeTones.Derive(rows)).ToList();
+
         var dictionary = new ResourceDictionary();
-        var colors = new System.Collections.Generic.Dictionary<string, Color>();
-        foreach (var (key, hex) in palette)
+        foreach (var (key, hex) in full)
         {
-            var color = (Color)ColorConverter.ConvertFromString(hex)!;
-            colors[key] = color;
-            var brush = new SolidColorBrush(color);
+            var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)!);
             brush.Freeze();   // shared across windows and never mutated — WPF swaps the whole dictionary
             dictionary[key] = brush;
         }
 
-        // Derived tones of the 2026-08-11 modernization — alpha variations of palette
-        // keys, composed here so all seven themes (and Custom) get them for free:
-        //   Hairline — card borders: the accent at a whisper instead of a solid line.
-        //   Track    — the empty part of a stat bar, under the accent-filled part.
-        //   Raised   — chips and tiles, one step above panel.
-        //   AccentDeep — gradient start for bar fills, accent pulled toward the ground.
-        void Derived(string key, Color c)
-        {
-            var b = new SolidColorBrush(c);
-            b.Freeze();
-            dictionary[key] = b;
-        }
-        var accent = colors["AccentBrush"];
-        var panel = colors["PanelBrush"];
-        Derived("HairlineBrush", Color.FromArgb(0x26, accent.R, accent.G, accent.B));
-        Derived("TrackBrush", Color.FromArgb(0x1E, accent.R, accent.G, accent.B));
-        Derived("RaisedBrush", Color.FromArgb(
-            (byte)Math.Min(255, panel.A * 3 / 2), panel.R, panel.G, panel.B));
-        Derived("AccentDeepBrush", Color.FromArgb(accent.A,
-            (byte)(accent.R * 6 / 10), (byte)(accent.G * 6 / 10), (byte)(accent.B * 6 / 10)));
-
         Application.Current.Resources.MergedDictionaries[PaletteIndex] = dictionary;
+        PaletteApplied?.Invoke(themeKey, full);
     }
 }

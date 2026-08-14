@@ -24,6 +24,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\EQBuddy.Core\EQBuddy.Core.csproj" />
+    <!-- UI.Shared is framework-neutral presentation (palettes, checklist grouping,
+         breakdown rows) — the phone renders the same views the desktop cards do, so
+         it projects from the same helpers instead of growing a second copy. -->
+    <ProjectReference Include="..\EQBuddy.UI.Shared\EQBuddy.UI.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
