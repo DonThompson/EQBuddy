@@ -67,12 +67,15 @@ reach into it anyway, and neither is a unit test:
   about itself. This is the only thing that sees whether the arithmetic is *wired* to
   the controls. To cover a piece of window behaviour: dump the fact, assert it from E2E.
 
-What remains uncovered is genuine rendering and input. `EQBuddy.Tests` covers Core, UI.Shared and Companion; Avalonia has its
-own render tests; the WPF UI has none.
+What remains genuinely uncovered is rendering and input: how it *looks*, and what a
+mouse does to it.
 
-This is not academic. Both bugs reported by players on 2026-08-14 — the clipped card
-(#144) and the drifting chips (#152) — live in exactly this layer, and neither could
-have been caught by any test that exists. See [TestPlan.md](TestPlan.md) §5.
+This is not academic. Both bugs players reported on 2026-08-14 — the clipped card (#144)
+and the drifting chips (#152) — live in this layer, and on the morning they were reported
+nothing here could have caught either. Both are now held: their arithmetic by
+`WidgetMetricsTests` and `ChipStackAnchorTests`, and #144's wiring by two E2E scenarios.
+That is the shape of progress to aim for — each escape converts a manual row into an
+automated one. See [TestPlan.md](TestPlan.md) §5.
 
 ### Hotspot ratchet
 
