@@ -22,7 +22,8 @@ public sealed class QuestsRenderTests : IDisposable
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("EQBUDDY_APPDATA", null);
-        try { Directory.Delete(_profile, recursive: true); } catch { /* best effort */ }
+        try { Directory.Delete(_profile, recursive: true); }
+        catch (Exception ex) { Console.Error.WriteLine($"profile cleanup failed: {ex.Message}"); }
     }
 
     private sealed class FakeHost : IQuestsHost

@@ -16,6 +16,7 @@ public sealed class AlertWindow : Window
     private readonly AppSettings _settings;
     private readonly MainWindow _owner;
     private readonly TextBlock _alertText;
+    private readonly Border _tile;
     private readonly DispatcherTimer _hide;
     private bool _placement;
 
@@ -40,7 +41,7 @@ public sealed class AlertWindow : Window
             Foreground = AppTheme.AccentBrush,
             TextWrapping = TextWrapping.Wrap,
         };
-        Content = new Border
+        _tile = new Border
         {
             Background = AppTheme.BgBrush,
             BorderBrush = AppTheme.AccentBrush,
@@ -50,6 +51,10 @@ public sealed class AlertWindow : Window
             MaxWidth = 380,
             Child = _alertText,
         };
+        // The alert tile is part of the chip family (one shared scale — WPF applies
+        // ChipScale in its AlertWindow ctor too), so SetChipScale's live loop reaches it.
+        Content = ChipScale.Host(_tile);
+        ChipScale.Apply(this, settings.ChipScale);
 
         _hide = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
         _hide.Tick += (_, _) =>
@@ -66,17 +71,16 @@ public sealed class AlertWindow : Window
     public void ShowAlert(string text, string? colorHex = null)
     {
         _alertText.Text = text;
-        var tile = (Border)Content!;
         if (!string.IsNullOrEmpty(colorHex) && Color.TryParse(colorHex, out var c))
         {
             var brush = new SolidColorBrush(c);
             _alertText.Foreground = brush;
-            tile.BorderBrush = brush;
+            _tile.BorderBrush = brush;
         }
         else
         {
             _alertText.Foreground = AppTheme.AccentBrush;
-            tile.BorderBrush = AppTheme.AccentBrush;
+            _tile.BorderBrush = AppTheme.AccentBrush;
         }
         PositionFromSettings();
         ShowOwned();

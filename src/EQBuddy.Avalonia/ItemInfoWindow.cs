@@ -21,7 +21,7 @@ public sealed class ItemInfoWindow : Window
     private string? _currentUrl;
     private int _requestSequence;
 
-    public ItemInfoWindow(EqlWikiItemService service)
+    public ItemInfoWindow(EqlWikiItemService service, AppSettings settings)
     {
         _service = service;
         Title = "EQBuddy Item Info";
@@ -34,6 +34,7 @@ public sealed class ItemInfoWindow : Window
         ShowInTaskbar = false;
         CanResize = false;
         Content = BuildContent();
+        WindowZoom.Attach(this, "iteminfo", settings);
         Opened += (_, _) =>
         {
             if (Screens.Primary is { } screen)

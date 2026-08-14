@@ -225,7 +225,7 @@ public class WidgetRenderTests : IDisposable
     {
         var service = new EqlWikiItemService(Path.Combine(_profile, "item-cache"),
             _ => Task.FromResult<string?>(null));
-        var window = new ItemInfoWindow(service);
+        var window = new ItemInfoWindow(service, new AppSettings());
         window.Render(new ItemLookupResult(new ItemInfo
         {
             Name = "Cloak of Flames",
@@ -590,5 +590,27 @@ public class WidgetRenderTests : IDisposable
             Assert.NotEqual(default, AppTheme.TextBrush.Color);
         }
         AppTheme.Apply("ParchmentBrass");
+    }
+
+    /// <summary>The toggleAll hotkey's restore loop must skip a window that closed while
+    /// hidden (a chip stack whose timers ran out, a tracker torn down by its owner) —
+    /// Avalonia throws "Cannot re-show a closed window" where WPF just checked IsLoaded.</summary>
+    [AvaloniaFact]
+    public void HotkeyRestoreSurvivesAWindowClosedWhileHidden()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var satellite = new Window { Width = 120, Height = 60 };
+        satellite.Show();
+        // Headless has no desktop lifetime, so the capture list comes from the seam.
+        main.WindowEnumeratorForTests = () => [main, satellite];
+
+        main.HandleHotkeyAction("toggleAll");
+        Assert.False(satellite.IsVisible);   // proves the hide pass actually captured it
+        satellite.Close();                   // closes while hidden
+
+        main.HandleHotkeyAction("toggleAll");   // restore must not throw on the corpse
+        Assert.True(main.IsVisible);
+        main.Close();
     }
 }

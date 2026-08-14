@@ -8,7 +8,6 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
-using Avalonia.Threading;
 using EQBuddy.Core;
 using Path = System.IO.Path;
 
@@ -58,7 +57,7 @@ public sealed class MapWindow : Window
     private readonly StackPanel _namedPanel = new() { Margin = new Thickness(8, 4, 8, 4) };
     private readonly List<(Control El, double X, double Y, double Dx, double Dy)> _campPins = [];
     private (int Count, long Bucket) _trailStamp = (-1, 0);
-    private readonly DispatcherTimer _tick;
+    private DateTime _lastRefresh = DateTime.MinValue;
 
     // ---- Spawn-point circles (David's map brief, 2026-08-13) ----------------
     // Every archived spawn point in the shown zone, drawn as a circle: named
@@ -227,13 +226,9 @@ public sealed class MapWindow : Window
         _mapHost.PointerMoved += OnDrag;
         _mapHost.SizeChanged += (_, _) => { if (!_dragging) FitToView(); };
 
-        // The WPF window rides MainWindow's shared RefreshUi tick; here the window
-        // carries its own 1 Hz tick (the SpawnsWindow pattern) so wiring stays thin.
-        _tick = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _tick.Tick += (_, _) => MaybeRefresh();
-        _tick.Start();
-        Closed += (_, _) => _tick.Stop();
-
+        // Like the WPF window, this rides MainWindow's shared RefreshUi tick (which
+        // calls MaybeRefresh while visible); the throttle guard there keeps any extra
+        // callers — follow button, share import — from stacking refreshes on top.
         PopulateZoneList();
         MaybeRefresh(force: true);
     }
@@ -268,6 +263,10 @@ public sealed class MapWindow : Window
     /// actually moved.</summary>
     public void MaybeRefresh(bool force = false)
     {
+        // The QuestsWindow (2 s) / DropsWindow (3 s) throttle shape, at 1 s: the host
+        // tick drives this once a second, and anything faster is wasted repainting.
+        if (!force && (DateTime.Now - _lastRefresh).TotalSeconds < 1) return;
+        _lastRefresh = DateTime.Now;
         var zone = _host.CurrentZoneName;
         if (MapFolder is not { } folder)
         {

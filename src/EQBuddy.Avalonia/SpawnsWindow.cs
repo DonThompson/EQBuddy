@@ -65,6 +65,7 @@ public sealed class SpawnsWindow : Window
         _followCheck.IsChecked = _settings.SpawnFollowZone;
 
         Content = BuildContent();
+        WindowZoom.Attach(this, "spawns", _settings);
         SelectZone(initialZone
             ?? (_settings.SpawnFollowZone ? _vm.CurrentZoneName : null)
             ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));

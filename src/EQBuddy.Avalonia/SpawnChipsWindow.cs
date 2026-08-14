@@ -49,8 +49,10 @@ public sealed class SpawnChipsWindow : Window
         CanResize = false;
         Content = ChipScale.Host(_panel);
         ChipScale.Apply(this, _settings.ChipScale);
+        // Ctrl+wheel drives the shared chip-scale setter (which clamps, applies to
+        // every open family window, and persists on its own) — WPF's WindowZoom.Route.
         if (setChipScale is not null)
-            ChipScale.RouteWheel(this, () => _settings.ChipScale, setChipScale);
+            WindowZoom.Route(this, () => _settings.ChipScale, setChipScale);
         ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
 
         Opened += (_, _) =>

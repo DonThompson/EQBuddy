@@ -137,12 +137,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private readonly Polyline _combatSpark = new()
     {
         StrokeThickness = 1.8, StrokeJoin = PenLineJoin.Round, StrokeLineCap = PenLineCap.Round,
-        Stroke = ChartBrushes.You,
+        Stroke = AppTheme.ChartYouBrush,
     };
     private readonly Polygon _combatSparkFill = new();
+    private Color _combatSparkFillColor;
     private readonly Ellipse _combatSparkPeak = new()
     {
-        Width = 6, Height = 6, IsVisible = false, Fill = ChartBrushes.You,
+        Width = 6, Height = 6, IsVisible = false, Fill = AppTheme.ChartYouBrush,
         Stroke = AppTheme.BgBrush, StrokeThickness = 1.5,
         HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
     };
@@ -375,6 +376,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _settings.LogFolder ??= LogWatcher.FindDefaultLogFolder();
         RestorePosition();
         ApplyUiScale(_settings.UiScale);
+        // Ctrl+wheel over the widget drives UiScale (WPF parity): the setter clamps,
+        // applies, and persists on its own.
+        WindowZoom.Route(this, () => _settings.UiScale, SetUiScale);
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
         UpdateStarVisuals();
         ApplySectionLayout();
@@ -1651,7 +1655,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
             // Chips are the ambient face and stay visible alongside the full browser.
             if (!_hiddenForFocus && _spawnsVm.HasActiveTimers(DateTime.Now))
             {
-                if (_spawnChipsWindow is not { IsVisible: true })
+                // A null field is the "window truly gone" signal (its Closed handler
+                // nulls it) — the Avalonia stand-in for WPF's `is not { IsLoaded: true }`,
+                // because Show() on a closed Avalonia window throws. A hidden-but-open
+                // stack (the toggleAll hotkey) is reused, never re-Shown as a duplicate,
+                // and nothing new pops up while the player asked everything to hide.
+                if (_spawnChipsWindow is null && !_hotkeyHidden)
                 {
                     var chips = new SpawnChipsWindow(this, _spawnsVm, SetChipScale);
                     chips.Closed += (_, _) =>
@@ -1661,7 +1670,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                     _spawnChipsWindow = chips;
                     chips.Show(this);
                 }
-                _spawnChipsWindow.RefreshChips(DateTime.Now);
+                _spawnChipsWindow?.RefreshChips(DateTime.Now);
             }
             else
                 CloseSpawnChips();
@@ -1687,7 +1696,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                 || (SlowChipsVisible(chipsNow) && _slowTracker.Any(chipsNow)));
         if (haveFightChips)
         {
-            if (_mezChipsWindow is not { IsVisible: true })
+            // Same lifecycle contract as the spawn stack above: null = gone, non-null
+            // hidden = reuse without re-Show, and no new window mid-toggleAll.
+            if (_mezChipsWindow is null && !_hotkeyHidden)
             {
                 var chips = new MezChipsWindow(_settings, FightChips, SetChipScale);
                 chips.Closed += (_, _) =>
@@ -1697,7 +1708,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                 _mezChipsWindow = chips;
                 chips.Show(this);
             }
-            _mezChipsWindow.RefreshChips(DateTime.Now);
+            _mezChipsWindow?.RefreshChips(DateTime.Now);
         }
         else
             CloseMezChips();
@@ -2412,9 +2423,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _combatSpark.Points = line;
         var fill = new List<Point>(line) { new(w, h + 2), new(0, h + 2) };
         _combatSparkFill.Points = fill;
-        if (_combatSparkFill.Fill is null)
+        // Rebuilt whenever the series color moved (a theme switch mutates the live
+        // brush): gradient stops snapshot the color, so a build-once fill would keep
+        // painting the old theme's wash forever.
+        var you = AppTheme.ChartYouBrush.Color;
+        if (_combatSparkFill.Fill is null || _combatSparkFillColor != you)
         {
-            var you = ChartBrushes.You.Color;
+            _combatSparkFillColor = you;
             _combatSparkFill.Fill = new LinearGradientBrush
             {
                 StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
@@ -2884,19 +2899,36 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     /// item's quests — the 🗺 badge path from the Loot views.</summary>
     internal void ShowQuestsWindow(string? filterItem = null)
     {
-        if (_questsWindow is not { IsVisible: true })
+        // Reopen contract for every satellite here: a null field means the window is
+        // closed for real (each Closed handler nulls it — Avalonia's Show() throws on a
+        // closed window, so WPF's `is not { IsLoaded: true }` becomes a null check), and
+        // a non-null field is reused via Show()+Activate() — Show() no-ops when it's
+        // already visible and resurfaces one hidden by the toggleAll hotkey.
+        if (_questsWindow is null)
         {
-            _questsWindow = new QuestsWindow(this);
-            _questsWindow.Show();
+            var window = new QuestsWindow(this);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_questsWindow, window)) _questsWindow = null;
+            };
+            _questsWindow = window;
         }
+        _questsWindow.Show();
         if (filterItem is { Length: > 0 }) _questsWindow.FilterToItem(filterItem);
         _questsWindow.Activate();
     }
 
     private void OnDropsWindow(object? sender, EventArgs e)
     {
-        if (_dropsWindow is not { IsVisible: true })
-            _dropsWindow = new DropsWindow(this);
+        if (_dropsWindow is null)
+        {
+            var window = new DropsWindow(this);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_dropsWindow, window)) _dropsWindow = null;
+            };
+            _dropsWindow = window;
+        }
         _dropsWindow.Update(CurrentSnapshot());
         _dropsWindow.Show();
         _dropsWindow.Activate();
@@ -2904,16 +2936,33 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
 
     private void OnZoneMap(object? sender, EventArgs e)
     {
-        if (_mapWindow is { IsVisible: true } m) { m.Activate(); return; }
-        _mapWindow = new MapWindow(this);
+        if (_mapWindow is null)
+        {
+            var window = new MapWindow(this);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_mapWindow, window)) _mapWindow = null;
+            };
+            _mapWindow = window;
+        }
         _mapWindow.Show(this);
+        _mapWindow.Activate();
     }
 
     private void OnTravelRoute(object? sender, EventArgs e)
     {
-        if (_travelWindow is { IsVisible: true } t) { t.RenderRoute(); t.Activate(); return; }
-        _travelWindow = new TravelWindow(this);
+        if (_travelWindow is null)
+        {
+            var window = new TravelWindow(this);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_travelWindow, window)) _travelWindow = null;
+            };
+            _travelWindow = window;
+        }
         _travelWindow.Show(this);
+        _travelWindow.RenderRoute();
+        _travelWindow.Activate();
     }
 
     private void OnInventoryWindow(object? sender, EventArgs e)
@@ -2939,10 +2988,18 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     /// reachable from the Combat card and the Damage breakout alike.</summary>
     internal void OpenFightTimeline()
     {
-        if (_timelineWindow is { IsVisible: true } open) { open.Activate(); return; }
-        _timelineWindow = new FightTimelineWindow(_settings, TimelineSource)
-        { SourceVersion = () => _stats.CurrentVersion };
+        if (_timelineWindow is null)
+        {
+            var window = new FightTimelineWindow(_settings, TimelineSource)
+            { SourceVersion = () => _stats.CurrentVersion };
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_timelineWindow, window)) _timelineWindow = null;
+            };
+            _timelineWindow = window;
+        }
         _timelineWindow.Show();
+        _timelineWindow.Activate();
     }
 
     /// <summary>The timeline's data pull, called on its 1 s tick: the current/last
@@ -3082,50 +3139,86 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     /// and again after any Options edit. Windows-only for now — HotkeyManager logs
     /// the degradation once elsewhere.</summary>
     internal void ApplyHotkeys() =>
-        _hotkeys.Apply(this, _settings.Hotkeys, action => Dispatcher.UIThread.Post(() =>
+        _hotkeys.Apply(this, _settings.Hotkeys,
+            action => Dispatcher.UIThread.Post(() => HandleHotkeyAction(action)));
+
+    /// <summary>The hotkey dispatch, out of the registration lambda so headless tests
+    /// can exercise the window lifecycles without a Win32 RegisterHotKey.</summary>
+    internal void HandleHotkeyAction(string action)
+    {
+        switch (action)
         {
-            switch (action)
-            {
-                case "toggleAll":
-                    // The get-out-of-my-way key: everything hides as one, comes back
-                    // as it was. Same idea as focus-hide, but on demand.
-                    if (_hotkeyHidden)
+            case "toggleAll":
+                // The get-out-of-my-way key: everything hides as one, comes back
+                // as it was. Same idea as focus-hide, but on demand.
+                if (_hotkeyHidden)
+                {
+                    foreach (var w in _hotkeyHiddenWindows)
                     {
-                        foreach (var w in _hotkeyHiddenWindows) w.Show();
-                        _hotkeyHiddenWindows.Clear();
-                        _hotkeyHidden = false;
+                        w.Closed -= OnHotkeyHiddenWindowClosed;
+                        w.Show();
                     }
-                    else if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                    {
-                        foreach (var w in desktop.Windows.ToList())
-                            if (w.IsVisible) { _hotkeyHiddenWindows.Add(w); w.Hide(); }
-                        _hotkeyHidden = _hotkeyHiddenWindows.Count > 0;
-                    }
-                    break;
-                case "toggleMap":
-                    if (_mapWindow is { IsVisible: true }) _mapWindow.Hide();
-                    else if (_mapWindow is not null) _mapWindow.Show();
-                    else OnZoneMap(this, EventArgs.Empty);
-                    break;
-                case "toggleQuests":
-                    if (_questsWindow is { IsVisible: true }) _questsWindow.Hide();
-                    else if (_questsWindow is not null) _questsWindow.Show();
-                    else OnQuestsWindow(this, EventArgs.Empty);
-                    break;
-                case "toggleSpawns":
-                    if (_spawnsWindow is { IsVisible: true }) _spawnsWindow.Hide();
-                    else if (_spawnsWindow is not null) _spawnsWindow.Show();
-                    else ShowSpawnsWindow();
-                    break;
-                case "toggleClickThrough":
-                    SetClickThrough(!_clickThrough);
-                    break;
-                // #100 round two (jlcrisp): the pill/dashboard flip, from the keyboard.
-                case "toggleMinimize":
-                    SetMode(!_settings.Minimized);
-                    break;
-            }
-        }));
+                    _hotkeyHiddenWindows.Clear();
+                    _hotkeyHidden = false;
+                }
+                else
+                {
+                    foreach (var w in AppWindows())
+                        if (w.IsVisible)
+                        {
+                            _hotkeyHiddenWindows.Add(w);
+                            // A window that closes while hidden (a chip stack whose
+                            // timers ran out, a tracker closed by SetTrackSpawns) must
+                            // leave the restore list — Avalonia's Show() throws on a
+                            // closed window (WPF gets away with an IsLoaded check).
+                            w.Closed += OnHotkeyHiddenWindowClosed;
+                            w.Hide();
+                        }
+                    _hotkeyHidden = _hotkeyHiddenWindows.Count > 0;
+                }
+                break;
+            case "toggleMap":
+                if (_mapWindow is { IsVisible: true }) _mapWindow.Hide();
+                else if (_mapWindow is not null) _mapWindow.Show();
+                else OnZoneMap(this, EventArgs.Empty);
+                break;
+            case "toggleQuests":
+                if (_questsWindow is { IsVisible: true }) _questsWindow.Hide();
+                else if (_questsWindow is not null) _questsWindow.Show();
+                else OnQuestsWindow(this, EventArgs.Empty);
+                break;
+            case "toggleSpawns":
+                if (_spawnsWindow is { IsVisible: true }) _spawnsWindow.Hide();
+                else if (_spawnsWindow is not null) _spawnsWindow.Show();
+                else ShowSpawnsWindow();
+                break;
+            case "toggleClickThrough":
+                SetClickThrough(!_clickThrough);
+                break;
+            // #100 round two (jlcrisp): the pill/dashboard flip, from the keyboard.
+            case "toggleMinimize":
+                SetMode(!_settings.Minimized);
+                break;
+        }
+    }
+
+    private void OnHotkeyHiddenWindowClosed(object? sender, EventArgs e)
+    {
+        if (sender is not Window window) return;
+        window.Closed -= OnHotkeyHiddenWindowClosed;
+        _hotkeyHiddenWindows.Remove(window);
+    }
+
+    /// <summary>Every open app window, for the toggleAll capture. Headless tests have
+    /// no desktop lifetime to enumerate, so they supply the list themselves (the
+    /// MarkUserMovedForTests pattern).</summary>
+    internal Func<IReadOnlyList<Window>>? WindowEnumeratorForTests;
+
+    private IReadOnlyList<Window> AppWindows() =>
+        WindowEnumeratorForTests?.Invoke()
+        ?? (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)
+            ?.Windows.ToList()
+        ?? [];
 
     /// <summary>
     /// A slow landed on the player, straight off the ingest thread. Speaks once per
@@ -3782,13 +3875,17 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private void OnHistory(object? sender, EventArgs e)
     {
         _archiver.CheckpointSync(CurrentSnapshot());
-        if (_historyWindow is { IsVisible: true })
+        if (_historyWindow is null)
         {
-            _historyWindow.Activate();
-            return;
+            var window = new HistoryWindow(_repo, _settings);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_historyWindow, window)) _historyWindow = null;
+            };
+            _historyWindow = window;
         }
-        _historyWindow = new HistoryWindow(_repo);
         _historyWindow.Show();
+        _historyWindow.Activate();
     }
 
     private void DropCampMarker()
@@ -3840,6 +3937,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
 
     private bool _hiddenForFocus;
     private bool _focusProbeUnsupportedLogged;
+    private bool _fgProbeFailureLogged;
     // Perf audit #6: the foreground answer is memoized per HWND (same window in
     // front → same verdict), and "is the game running" refreshes at most every 5 s.
     private (IntPtr Fg, bool IsGame) _lastFgProbe = (IntPtr.Zero, false);
@@ -3888,7 +3986,17 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                 using var p = Process.GetProcessById((int)fgPid);
                 isGame = p.ProcessName.Equals("eqgame", StringComparison.OrdinalIgnoreCase);
             }
-            catch { return false; }   // foreground process already gone — don't flicker
+            catch (Exception ex)
+            {
+                // Foreground process already gone — don't flicker. Expected in a race,
+                // but logged once so a probe that fails EVERY tick isn't invisible.
+                if (!_fgProbeFailureLogged)
+                {
+                    _fgProbeFailureLogged = true;
+                    App.LogError($"Foreground-process probe failed (logged once): {ex}");
+                }
+                return false;
+            }
             _lastFgProbe = (fg, isGame);
         }
         if (_lastFgProbe.IsGame) return false;
@@ -4468,12 +4576,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
 
     internal void ShowItemInfo(string itemName)
     {
-        if (_itemInfoWindow is not { IsVisible: true })
+        if (_itemInfoWindow is null)
         {
-            _itemInfoWindow = new ItemInfoWindow(_wikiItems);
+            _itemInfoWindow = new ItemInfoWindow(_wikiItems, _settings);
             _itemInfoWindow.Closed += (_, _) => _itemInfoWindow = null;
-            _itemInfoWindow.Show(this);
         }
+        _itemInfoWindow.Show(this);
         _itemInfoWindow.Activate();
         _itemInfoWindow.Lookup(itemName);
     }

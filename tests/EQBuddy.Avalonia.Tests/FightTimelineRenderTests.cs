@@ -21,7 +21,8 @@ public sealed class FightTimelineRenderTests : IDisposable
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("EQBUDDY_APPDATA", null);
-        try { Directory.Delete(_profile, recursive: true); } catch { /* best effort */ }
+        try { Directory.Delete(_profile, recursive: true); }
+        catch (Exception ex) { Console.Error.WriteLine($"profile cleanup failed: {ex.Message}"); }
     }
 
     private static (LastFightInfo?, List<GameEvent>, string) Fight()

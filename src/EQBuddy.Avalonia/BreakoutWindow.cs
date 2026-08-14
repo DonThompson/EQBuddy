@@ -64,7 +64,8 @@ public sealed class BreakoutWindow : Window
         _title.Foreground = AppTheme.TextBrush;
         _fight = ScopeButton("Fight", true);
         _session = ScopeButton("Session", false);
-        var close = AppTheme.IconButton("x", "Hide until the next minimize");
+        var close = AppTheme.IconButton("x",
+            "Hide this window for good (its ⭐ chip stays; re-enable under ⚙ Options → Breakout windows)");
         close.Click += (_, _) => { HideAndSave(); Dismissed?.Invoke(_kind); };
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto") };
         header.Children.Add(_title);
@@ -105,6 +106,7 @@ public sealed class BreakoutWindow : Window
             Child = panel,
         };
         Content = _chrome;
+        WindowZoom.Attach(this, $"breakout:{kind}", settings);
         PointerPressed += (_, e) =>
         {
             if (e.Source is not Button && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)

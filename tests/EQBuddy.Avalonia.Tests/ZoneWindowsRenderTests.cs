@@ -20,7 +20,8 @@ public sealed class ZoneWindowsRenderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_profile, recursive: true); } catch { }
+        try { Directory.Delete(_profile, recursive: true); }
+        catch (Exception ex) { Console.Error.WriteLine($"profile cleanup failed: {ex.Message}"); }
     }
 
     private sealed class FakeZoneHost : IZoneHost

@@ -1,7 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Media;
-using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
@@ -25,19 +23,5 @@ internal static class ChipScale
         root.LayoutTransform = Math.Abs(scale - 1.0) < 0.001
             ? null
             : new ScaleTransform(scale, scale);
-    }
-
-    /// <summary>WPF's WindowZoom.Route, scoped to the chip family: Ctrl+wheel drives the
-    /// shared chip-scale setter (which clamps, applies to every open family window, and
-    /// persists on its own). Lives here until the full WindowZoom mechanism is ported —
-    /// flag for consolidation when it is.</summary>
-    public static void RouteWheel(Window window, Func<double> get, Action<double> set)
-    {
-        window.PointerWheelChanged += (_, e) =>
-        {
-            if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.Delta.Y == 0) return;
-            e.Handled = true;
-            set(WindowZoomMath.Step(get(), Math.Sign(e.Delta.Y)));
-        };
     }
 }

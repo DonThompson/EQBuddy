@@ -233,7 +233,6 @@ public sealed class FightTimelineWindow : Window
     /// pull). Fit-mode keeps refitting as a live fight grows; a user viewport holds.</summary>
     private void Refresh()
     {
-        ChartBrushes.Refresh(_settings);
         var version = SourceVersion?.Invoke() ?? -1;
         if (version >= 0 && version == _sourceVersion && _view.Timeline is not null) return;
         _sourceVersion = version;
@@ -327,40 +326,10 @@ public sealed class FightTimelineWindow : Window
     }
 }
 
-/// <summary>Chart-series brushes (the 2026-08-13 approved pass): deeper cuts than the
-/// ambient accents, colorblind-validated on the default theme. AppTheme doesn't carry
-/// the Chart* palette keys yet, so these singletons mirror its live-mutation idiom —
-/// refreshed from the shared palette on the timeline's tick. Flagged for AppTheme
-/// consolidation.</summary>
-internal static class ChartBrushes
-{
-    public static readonly SolidColorBrush You = new(Color.Parse("#FFB4892C"));
-    public static readonly SolidColorBrush Pet = new(Color.Parse("#FF5CA352"));
-    public static readonly SolidColorBrush Incoming = new(Color.Parse("#FF4796DB"));
-    public static readonly SolidColorBrush Crit = new(Color.Parse("#FFF0BC55"));
-
-    private static string _applied = "";
-
-    public static void Refresh(AppSettings settings)
-    {
-        var signature = $"{settings.Theme}|{settings.CustomThemeBg}|{settings.CustomThemeText}|{settings.CustomThemeAccent}";
-        if (signature == _applied) return;
-        _applied = signature;
-        foreach (var (key, hex) in CustomTheme.PaletteFor(settings))
-            switch (key)
-            {
-                case "ChartYouBrush": You.Color = Color.Parse(hex); break;
-                case "ChartPetBrush": Pet.Color = Color.Parse(hex); break;
-                case "ChartIncomingBrush": Incoming.Color = Color.Parse(hex); break;
-                case "ChartCritBrush": Crit.Color = Color.Parse(hex); break;
-            }
-    }
-}
-
 /// <summary>Shared viewport: where in the fight we're looking and how magnified.
-/// Both render panels read it; the window writes it. Brushes are the live AppTheme /
-/// ChartBrushes singletons — mutated in place on a theme switch, so holding the
-/// reference IS the subscription (no per-render resource lookup like WPF's).</summary>
+/// Both render panels read it; the window writes it. Brushes are the live AppTheme
+/// singletons — mutated in place on a theme switch, so holding the reference IS the
+/// subscription (no per-render resource lookup like WPF's).</summary>
 internal sealed class TimelineViewport
 {
     public FightTimeline? Timeline;
@@ -373,10 +342,10 @@ internal sealed class TimelineViewport
     public IBrush Text = AppTheme.TextBrush;
     public IBrush Dim = AppTheme.DimBrush;
     public IBrush Bg = AppTheme.BgBrush;
-    public IBrush ChartYou = ChartBrushes.You;
-    public IBrush ChartPet = ChartBrushes.Pet;
-    public IBrush ChartIncoming = ChartBrushes.Incoming;
-    public IBrush ChartCrit = ChartBrushes.Crit;
+    public IBrush ChartYou = AppTheme.ChartYouBrush;
+    public IBrush ChartPet = AppTheme.ChartPetBrush;
+    public IBrush ChartIncoming = AppTheme.ChartIncomingBrush;
+    public IBrush ChartCrit = AppTheme.ChartCritBrush;
 }
 
 /// <summary>The three-line DPS graph: you+pet (accent), pet alone (dim), incoming (bad),

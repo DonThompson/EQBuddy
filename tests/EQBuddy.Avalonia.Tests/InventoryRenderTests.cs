@@ -18,7 +18,8 @@ public sealed class InventoryRenderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_profile, recursive: true); } catch { }
+        try { Directory.Delete(_profile, recursive: true); }
+        catch (Exception ex) { Console.Error.WriteLine($"profile cleanup failed: {ex.Message}"); }
     }
 
     private static InventoryFile.Snapshot Snapshot() =>

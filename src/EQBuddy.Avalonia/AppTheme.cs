@@ -31,6 +31,15 @@ internal static class AppTheme
     public static readonly SolidColorBrush GoodWashBrush = new();
     public static readonly SolidColorBrush WarnWashBrush = new();
 
+    // Chart-series brushes (the 2026-08-13 approved chart pass): deeper cuts than the
+    // ambient accents, colorblind-validated, one row per theme in ThemePalettes (and
+    // fixed steps under the Custom theme). Live-mutated like every other brush here, so
+    // the timeline and the sparkline repaint on a theme switch.
+    public static readonly SolidColorBrush ChartYouBrush = new();
+    public static readonly SolidColorBrush ChartPetBrush = new();
+    public static readonly SolidColorBrush ChartIncomingBrush = new();
+    public static readonly SolidColorBrush ChartCritBrush = new();
+
     // Derived tones of the 2026-08-11 WPF modernization — alpha/level variations of
     // palette keys, recomputed on every Apply so all themes (and Custom) get them for
     // free. Same formulas as the WPF ThemeManager, so the two UIs render alike:
@@ -62,6 +71,10 @@ internal static class AppTheme
         ["ComboBoxBrush"] = ComboBoxBrush,
         ["GoodWashBrush"] = GoodWashBrush,
         ["WarnWashBrush"] = WarnWashBrush,
+        ["ChartYouBrush"] = ChartYouBrush,
+        ["ChartPetBrush"] = ChartPetBrush,
+        ["ChartIncomingBrush"] = ChartIncomingBrush,
+        ["ChartCritBrush"] = ChartCritBrush,
     };
 
     static AppTheme() => Apply("ParchmentBrass");

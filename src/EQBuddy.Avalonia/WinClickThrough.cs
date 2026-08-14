@@ -19,6 +19,13 @@ internal static class WinClickThrough
     private const long WsExToolWindow = 0x80;
     private const long WsExLayered = 0x80000;
     private const long WsExNoActivate = 0x08000000;
+    private const uint LwaAlpha = 0x2;
+
+    // Windows whose WS_EX_LAYERED bit THIS code added (WPF never needs this bookkeeping:
+    // its windows are already layered, so it toggles only WS_EX_TRANSPARENT). Tracking it
+    // lets Set(false) restore exactly the pre-toggle style instead of stripping a layered
+    // bit Avalonia's transparency machinery may own.
+    private static readonly HashSet<IntPtr> _layeredAddedByUs = [];
 
     public static bool Set(Window window, bool enabled)
     {
@@ -26,10 +33,24 @@ internal static class WinClickThrough
         try
         {
             var style = GetWindowLongPtr(hwnd, GwlExStyle).ToInt64();
-            style = enabled
-                ? style | WsExTransparent | WsExLayered
-                : style & ~WsExTransparent;
-            SetWindowLongPtr(hwnd, GwlExStyle, new IntPtr(style));
+            if (enabled)
+            {
+                var addLayered = (style & WsExLayered) == 0;
+                SetWindowLongPtr(hwnd, GwlExStyle, new IntPtr(style | WsExTransparent | WsExLayered));
+                if (addLayered)
+                {
+                    // A window newly made layered via SetWindowLong stops rendering until
+                    // its layered attributes are set; full alpha keeps it painting as-is.
+                    SetLayeredWindowAttributes(hwnd, 0, 255, LwaAlpha);
+                    _layeredAddedByUs.Add(hwnd);
+                }
+            }
+            else
+            {
+                style &= ~WsExTransparent;
+                if (_layeredAddedByUs.Remove(hwnd)) style &= ~WsExLayered;
+                SetWindowLongPtr(hwnd, GwlExStyle, new IntPtr(style));
+            }
             return true;
         }
         catch (Exception ex)
@@ -47,9 +68,13 @@ internal static class WinClickThrough
         if (Handle(window) is not { } hwnd) return false;
         try
         {
-            var style = GetWindowLongPtr(hwnd, GwlExStyle).ToInt64()
-                | WsExTransparent | WsExLayered | WsExNoActivate | WsExToolWindow;
-            SetWindowLongPtr(hwnd, GwlExStyle, new IntPtr(style));
+            var style = GetWindowLongPtr(hwnd, GwlExStyle).ToInt64();
+            var addLayered = (style & WsExLayered) == 0;
+            SetWindowLongPtr(hwnd, GwlExStyle, new IntPtr(
+                style | WsExTransparent | WsExLayered | WsExNoActivate | WsExToolWindow));
+            // Same newly-layered rendering trap as Set: without attributes the overlay
+            // would go invisible the moment SetWindowLong adds the layered bit.
+            if (addLayered) SetLayeredWindowAttributes(hwnd, 0, 255, LwaAlpha);
             return true;
         }
         catch (Exception ex)
@@ -71,4 +96,7 @@ internal static class WinClickThrough
 
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
     private static extern IntPtr SetWindowLongPtr(IntPtr hwnd, int index, IntPtr value);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint colorKey, byte alpha, uint flags);
 }

@@ -300,6 +300,14 @@ public sealed class OptionsWindow : Window
 
     private void SelectTab(string tab, bool persist)
     {
+        // Leaving the tab disarms an armed recorder: a forgotten one would silently
+        // eat the next keystroke anywhere in the window as a hotkey.
+        if (_recordingAction is not null)
+        {
+            _recordingAction = null;
+            _recordingHint = null;
+            BuildHotkeyRows();
+        }
         if (_tabs.All(t => t.Key != tab)) tab = "look";   // stale setting → home
         foreach (var (key, link, panel) in _tabs)
         {
@@ -1564,16 +1572,19 @@ public sealed class OptionsWindow : Window
         if (e.KeyModifiers.HasFlag(KeyModifiers.Alt)) parts.Add("Alt");
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift)) parts.Add("Shift");
         if (e.KeyModifiers.HasFlag(KeyModifiers.Meta)) parts.Add("Win");
-        // Modifier required — a bare global letter would eat the game's chat typing.
-        // Say so on the button itself: a silent return looks like a dead recorder.
-        if (parts.Count == 0)
+        parts.Add(key.ToString());
+        var gesture = string.Join("+", parts);
+        // Modifier required — a bare global letter would eat the game's chat typing —
+        // and the key itself must map to a registrable virtual key. Parse is the same
+        // gate Apply uses, so nothing unregistrable is ever stored (WPF parity). Say so
+        // on the button itself: a silent return looks like a dead recorder.
+        if (HotkeyManager.Parse(gesture) is null)
         {
             _recordingHint = $"{key} alone won't do — add Ctrl, Alt or Shift";
             BuildHotkeyRows();
             return;
         }
-        parts.Add(key.ToString());
-        _main.Settings.Hotkeys[action] = string.Join("+", parts);
+        _main.Settings.Hotkeys[action] = gesture;
         _main.PersistSettings();
         ApplyHotkeys?.Invoke();
         _recordingAction = null;

@@ -16,7 +16,7 @@ public sealed partial class HistoryWindow : Window
     private readonly HistoryViewModel _viewModel;
     private bool _refreshing;
 
-    public HistoryWindow(SessionRepository repository)
+    public HistoryWindow(SessionRepository repository, AppSettings settings)
     {
         Resources["BgBrush"] = AppTheme.BgBrush;
         Resources["PanelBrush"] = AppTheme.PanelBrush;
@@ -29,6 +29,7 @@ public sealed partial class HistoryWindow : Window
         Resources["ComboBoxBrush"] = AppTheme.ComboBoxBrush;
         _viewModel = new HistoryViewModel(repository);
         InitializeComponent();
+        WindowZoom.Attach(this, "history", settings);
         DataContext = _viewModel;
         Opened += (_, _) => RenderProgress();   // needs real canvas widths
     }
