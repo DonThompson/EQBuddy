@@ -86,6 +86,12 @@ public sealed class CompanionHost : IDisposable
 
     private void Start()
     {
+        // The hard half of the preview gate: even a settings file carrying
+        // CompanionEnabled=true (copied from a field-test machine, or hand-edited)
+        // opens no socket in a released build. The Options entry is hidden too, but
+        // this is the guard that matters — it is the one standing between a dormant
+        // feature and a listening port.
+        if (!CompanionPreview.Enabled) return;
         LastError = null;
         _settings.CompanionToken ??= MintToken();
         try

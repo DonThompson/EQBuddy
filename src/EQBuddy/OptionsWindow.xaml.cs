@@ -22,6 +22,10 @@ public partial class OptionsWindow : Window
     {
         InitializeComponent();
         _main = main;
+        // Second screen stays invisible until the preview gate is set (see
+        // CompanionPreview) — released builds must not surface it before launch.
+        if (EQBuddy.Companion.CompanionPreview.Enabled)
+            SecondScreenBlock.Visibility = Visibility.Visible;
         _vm = new OptionsViewModel(main.Settings, main.PersistSettings);
         Owner = main;
         Width = Math.Clamp(_vm.OptionsWidth, MinWidth, MaxWidth);
