@@ -897,9 +897,16 @@ public partial class BreakoutWindow : Window
         _ => entry.RemainingSeconds is { } r ? $"{(int)r / 60}:{(int)r % 60:00}" : "up",
     };
 
-    /// <summary>The add-target buckets: "(any class)" plus the active combination.
-    /// Parked classes (stored, not active) are the Options editor's business — this
-    /// window shows the assembled set.</summary>
+    /// <summary>The add-target buckets: "(any class)", then the active combination, then
+    /// every remaining class.
+    ///
+    /// It used to stop after the active combination, on the reasoning that parked classes
+    /// were the Options editor's business. That made a GUESS load-bearing: class detection
+    /// is best-effort (Quest Tracker picks, else combat inference), so a character read as
+    /// Berserker alone could only ever build a Berserker set — which is precisely the
+    /// per-class assembly the feature exists to offer (#120, Frankthetankk, who was blocked
+    /// from testing it). Your own classes stay at the top where they are one click away;
+    /// the rest are simply reachable now instead of hidden behind a correct inference.</summary>
     private void RefreshBuffClassChoices(IReadOnlyList<string> classes)
     {
         var memo = string.Join("|", classes);
@@ -909,6 +916,9 @@ public partial class BreakoutWindow : Window
         BuffClassBox.Items.Clear();
         BuffClassBox.Items.Add(BuffSetStore.AnyClass);
         foreach (var cls in classes) BuffClassBox.Items.Add(cls);
+        foreach (var cls in EQBuddy.Core.QuestClassFilter.Classes)
+            if (!classes.Contains(cls, StringComparer.OrdinalIgnoreCase))
+                BuffClassBox.Items.Add(cls);
         BuffClassBox.SelectedItem = keep is not null && BuffClassBox.Items.Contains(keep)
             ? keep : BuffSetStore.AnyClass;
     }
