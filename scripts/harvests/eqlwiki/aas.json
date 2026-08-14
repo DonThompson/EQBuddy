@@ -1088,10 +1088,10 @@
       "class": "Monk",
       "max_rank": 3,
       "ranks_raw": "3",
-      "cost_per_rank_raw": "3/6/?",
+      "cost_per_rank_raw": "3/6/9",
       "level_requirement": 1,
       "requirements_raw": "Requirements: level 1, First Aid at level 3.",
-      "effect_text": "This passive ability gives you a 10% chance to perform a superior mend, doubling the healing of your mend skill. Requirements: level 1, First Aid at level 3."
+      "effect_text": "This passive ability gives you a 10/20/30% chance to perform a superior mend, doubling the healing of your mend skill. Requirements: level 1, First Aid at level 3."
     },
     {
       "name": "Purify Body",

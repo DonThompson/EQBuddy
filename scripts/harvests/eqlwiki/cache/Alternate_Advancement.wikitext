@@ -277,7 +277,7 @@ Every class gets access to a unique Class AA list. The full set of Class AAs ava
 |-
 | Dragon Force || 1 || 5 || Ability Activation ID: 116 - Refresh Time: 0:00:06 - Ability Timer(s): 7. This ability, when activated, pushes your target backwards and deals 10 damage. Requirements: level 15.
 |-
-| Improved Mend || 3 || 3/6/? || This passive ability gives you a 10% chance to perform a superior mend, doubling the healing of your mend skill. Requirements: level 1, First Aid at level 3.
+| Improved Mend || 3 || 3/6/9 || This passive ability gives you a 10/20/30% chance to perform a superior mend, doubling the healing of your mend skill. Requirements: level 1, First Aid at level 3.
 |-
 | Purify Body || 1 || 9 || Ability Activation ID: 98 - Refresh Time: 0:30:00 - Ability Timer(s): 87. Purification I, when activated, instantly cures you of up to 20 detrimental effects (excluding charm, fear, resurrection, and revival sickness). Requirements: level 15.
 |-

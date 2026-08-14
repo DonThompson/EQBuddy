@@ -1,195 +1,269 @@
 # Knowledge refresh report
 
-- Window: `2026-08-09T16:07:18Z` → `2026-08-10T10:12:53Z`
-- Changed wiki pages: 171
-- Changed templates: 1
-- Cache evictions: 77
+- Window: `2026-08-10T09:04:52Z` → `2026-08-14T02:05:02Z`
+- Changed wiki pages: 247
+- Changed templates: 0
+- Cache evictions: 43
 
 ## Promoted catalogs
 
-- `FadeMessages.json`: unchanged
+- `FadeMessages.json`: UPDATED
 - `QuestCatalog.json`: UPDATED
 - `ZoneGraph.json`: unchanged
+- `ItemCatalog.json.gz`: UPDATED
 
 ## Curated catalogs (never auto-written — review these)
 
-- `SpawnCatalog.json` mentions changed pages: Akksstaff, Elial Brook, Lord Bergurgle, Plane of Sky
-- `AaCatalog.json` mentions changed pages: Bard, Druid, Enchanter, (the Alternate Advancement page itself)
-
-## Changed templates (parser shapes may have moved)
-
-- Template:Build Guide Preload
+- `SpawnCatalog.json` mentions changed pages: Akksstaff, BoneCracker, Brother Qwinn, Brother Zephyl, Coercer T`vala, Ekeros, Kedge Keep, Lasna Cheroon, Linara Parlone, Lord Nagafen, Lynada the Exiled, Magus Rokyl …
+- `AaCatalog.json` mentions changed pages: Shaman, (the Alternate Advancement page itself)
+- `CcSpells.json` mentions changed pages: Call of Sky Strike
 
 ## Changed pages
 
-- A Goblin Magician
+- A Box of Bones
+- A Broom
+- A Disciple of Innoruuk
+- A Giant Black Widow
 - A Magician
-- A Shovel
-- A Torch
+- A Strategic Map of Kithicor
+- A Teir`Dal priest
+- A Teir`Dal ranger
+- A Teir`Dal rogue
+- A Teir`Dal shadowknight
+- A catfisher
+- A dread skeleton
+- A ferocious hammerhead
+- A jungle spider
+- A jungle spiderling
+- A large skeleton
+- Aid the Kerrans of Kerra Isle
 - Akksstaff
 - Alternate Advancement
-- An alluring siren
-- An isle goblin shaman
-- Antonian Javelin
-- Bard
+- Amulet of Necropotence
+- An Earth Elemental
+- An Initiate Familiar
+- An Injured Halfling
+- An Ogre Guard
+- An undine spirit
+- Azarack Skin
+- Bard Plane of Sky Tests
+- Beastlord Plane of Sky Tests
 - Berill Gladeleaper
-- Blessed Oil
-- Blessed Oil Quest
-- Bone Walk Summon
-- Broom of Trilon
-- Bug Collection
-- Build Guides
-- Burning Soul of the Pestilent
-- Burning Soul of the Pious
-- Burning Soul of the Virtuous
+- Berserker Monk Rogue Guide
+- Berserker Plane of Sky Tests
+- Black Spider Silk
+- Block of Permafrost
+- BoneCracker
+- Box For Bones
+- Box of Bones
+- Brother Qwinn
+- Brother Zephyl
+- Call of Sky
+- Call of Sky Strike
+- Catfish Tail
+- Catman Alliance
+- Celent Newmist
+- Centaur courser
 - Cleric Plane of Sky Tests
-- Column of Lightning
-- Conjuration: Air
-- Conjuration: Air Summon
-- Conjuration: Earth
+- Coercer T`vala
 - Conjuration: Earth Summon
-- Conjuration: Fire
-- Conjuration: Fire Summon
-- Conjuration: Water
-- Conjuration: Water Summon
-- Crown Of Elemental Mastery
-- Cure for Lempeck Hargrin
-- Dark-boned skeleton
-- Druid
+- Corroded Buckler
+- Crushbone Shoulderpads
+- Cyclops Eye
+- Cyclops Toes
+- Cyria Lorewhisper
+- Dagas
+- Dason Goldblade
+- Druid Enchanter Shadow Knight Guide
+- Druid Necromancer Shaman Guide
 - Druid Plane of Sky Tests
-- Elemental: Air
-- Elemental: Air Summon
-- Elemental: Earth
-- Elemental: Earth Summon
-- Elemental: Fire
-- Elemental: Fire Summon
-- Elemental: Water
-- Elemental: Water Summon
-- Elementaling: Air
-- Elementaling: Air Summon
-- Elementaling: Earth
-- Elementaling: Earth Summon
-- Elementaling: Fire
-- Elementaling: Fire Summon
-- Elementaling: Water
-- Elementaling: Water Summon
-- Elementalkin: Air
-- Elementalkin: Air Summon
-- Elementalkin: Earth
-- Elementalkin: Earth Summon
-- Elementalkin: Fire
-- Elementalkin: Fire Summon
-- Elementalkin: Water
-- Elementalkin: Water Summon
-- Elial Brook
-- Enchanter
+- Earthshaker
+- Efreeti Great Staff
+- Ekeros
+- Elle Leafdancer
+- Elytan Rantas
+- Emil Parsini
+- Enchanter Plane of Sky Tests
+- Erudite Prisoners
 - Est Treewalker
-- Greater Conjuration: Air
-- Greater Conjuration: Air Summon
-- Greater Conjuration: Earth
+- Ethereal Mist Greaves
+- Evil Research
+- Familiar Ring
+- Feraniel Leafsway
+- Fine Steel Long Sword
+- Fine Steel Spear
+- Fire Beetle Eye
+- Fire Opal
+- Fishmonger Jassa
+- Game Mechanics
+- Gem of Invigoration
+- Gharin's Note (evil)
+- Gnome Tinkered Toy
+- Gorgon Head
 - Greater Conjuration: Earth Summon
-- Greater Conjuration: Fire
-- Greater Conjuration: Fire Summon
-- Greater Conjuration: Water
-- Greater Conjuration: Water Summon
-- Greater Summoning: Air
-- Greater Summoning: Air Summon
-- Greater Summoning: Earth
-- Greater Summoning: Earth Summon
-- Greater Summoning: Fire
-- Greater Summoning: Fire Summon
-- Greater Summoning: Water
-- Greater Summoning: Water Summon
-- Guard Reskin
-- Guardian Spirit Summon
-- Hasten Bootstrutter and Brother Zephyl Cycle
-- Heretic Battle
-- Kobold Molars (Evil)
-- Kobold Molars (Good)
-- Large Block of Clay
-- Leering Corpse Summon
-- Lesser Conjuration: Air
-- Lesser Conjuration: Air Summon
-- Lesser Conjuration: Earth
-- Lesser Conjuration: Earth Summon
-- Lesser Conjuration: Fire
-- Lesser Conjuration: Fire Summon
-- Lesser Conjuration: Water
-- Lesser Conjuration: Water Summon
-- Lesser Summoning: Air
-- Lesser Summoning: Air Summon
-- Lesser Summoning: Earth
-- Lesser Summoning: Earth Summon
-- Lesser Summoning: Fire
-- Lesser Summoning: Fire Summon
-- Lesser Summoning: Water
-- Lesser Summoning: Water Summon
-- Lord Bergurgle
+- Gren Frikniller
+- Griff Candleflame
+- Guja Master Therik
+- Heretic's Toy
+- High Council of Erudin
+- Hill Giant Toes
+- Hilt of the Nobleman
+- Holy Dirt of Brell
+- Ice Giant Toes
+- Icon List
+- Ilanic`s skeleton
+- Ilanics Skeleton
+- Imbued Ogre War Bracer (Cazic Thule)
+- Imbued Ogre War Bracer (Rallos Zek)
+- Inferno Shock
+- Inkeeper Freegraze
+- Innkeep Danin
+- Iron Visor
+- Item Upgrade System
+- Jarah Reskan
+- Josin Faithbringer
+- Jras Solsier
+- Kedge Keep
+- Langseax Quest
+- Lasna Cheroon
+- Leatherfoot Raider Skullcap (drop)
+- Left Goblin Ears
+- Linara Parlone
+- Living Heart of a Brell Minion
+- Lord Nagafen
+- Lumi Stergnon
+- Lustrous Russet Greaves
+- Lynada the Exiled
 - Magician Plane of Sky Tests
-- Merchant Lyssia
-- Merchants of AkAnon
-- Minor Conjuration: Air
-- Minor Conjuration: Earth
+- Magus Rokyl
+- Mammoth Calf Hides
+- Mandrake Root
+- Marza T`Kix
+- Merchant Silspin
+- Merchant Sorintal
+- Merchant Tyslin (South Felwithe)
+- Merchant Yisasan
+- Merchants of Erudin
+- Midnight Clad Leggings
+- Minor Conjuration: Air Summon
 - Minor Conjuration: Earth Summon
-- Minor Conjuration: Fire
-- Minor Conjuration: Water
+- Minor Conjuration: Fire Summon
 - Minor Conjuration: Water Summon
-- Minor Summoning: Air
-- Minor Summoning: Air Summon
-- Minor Summoning: Earth
-- Minor Summoning: Earth Summon
-- Minor Summoning: Fire
-- Minor Summoning: Fire Summon
-- Minor Summoning: Water
-- Minor Summoning: Water Summon
-- Monster Summoning II
+- Monk Plane of Sky Tests
+- Moosh
+- Najena (NPC)
+- Necromancer Plane of Sky Tests
+- Nestess Branchtop
+- Osisa Goldenspear
+- Paineel Splinted Cloak
+- Paineel Steel Bracers
 - Paladin Plane of Sky Tests
+- Peacekeeper Staff Quest
+- Permafrost
+- Personal Instance
 - Pet Guide
+- Phosphorous Powder
+- Phosphorous Powder for Zok Zribb
 - Plane of Sky
-- Porra
-- Potential of the Void
+- Platinum Bar
+- Players:Planar Gear
+- Poacher's Head Quest (Erudin)
+- Potion of Mystical Aptitude
+- Prickly Pear
+- Protector of Sky
+- Quana Rainsparkle
+- Quiss Stormseeker
+- Rain Caller
+- Ranger Arrow Upgrade Chart
 - Ranger Plane of Sky Tests
-- Recharge Prayer Beads
+- Rathe Mountains
+- Rathyl
+- Rathyl reincarnate
+- Recommended Levels and ZEM List
+- Red Dragonscale Armor Quest
+- Reff Truewood
+- Ringmail Boots
+- Ringmail Bracelet
+- Ringmail Coat
+- Ringmail Coif
+- Ringmail Gloves
+- Ringmail Mantle
+- Ringmail Neckguard
 - Rogue Plane of Sky Tests
-- Rubicite Armor Set
-- Selo's Accelerando
+- Rotting Faydark Mask
+- Ruathey
+- Russet Oxide
+- Sentinel Drom
+- Seren the Swift
+- Serri Moonwatcher
 - Shadow Knight Plane of Sky Tests
-- Sisna's Animation
-- Skill Wild Rampage
-- Small Block of Clay
-- Small Brick of High Quality Ore
-- Solusek's Flower
-- SoulFire
-- Spirit of Herikol Summon
-- Spirit of Khaliz Summon
-- Spirit of Sharik Summon
-- Spirit of Yekan Summon
-- Stances & Invocations
-- Stein (of Water)
-- Summoning: Air
-- Summoning: Air Summon
-- Summoning: Earth
-- Summoning: Earth Summon
-- Summoning: Fire
-- Summoning: Fire Summon
-- Summoning: Water
-- Summoning: Water Summon
-- Tame Spirit Summon
-- Tesch Val Scrolls
-- The Clothspinner Sisters (good)
-- The Etched Stone (Spell: Life Leech)
+- Shadowed Book
+- Shaman
+- Shaman Plane of Sky Tests
+- Shimmering Ruby Stiletto
+- Shintar Vinlail
+- Skeleton Killing
+- Skill Alchemy
+- Skill Dual Wield
+- Skill Forage
+- Smith Tv`ysa
+- Soft Leather Shoes
+- Soldier's Brooch Quest
+- Soldier's Brooch of the Arcane
+- Soldier's Brooch of the Corrupt
+- Soldier's Brooch of the Darkened
+- Soldier's Brooch of the Robust
+- Soldier's Brooch of the Spirited
+- Soldier's Brooch of the Stalwart
+- Soldier's Brooch of the Stealthy
+- Soldier's Brooch of the Virtuous
+- Spear of Harmony
+- Spell Upgrade System
+- Spiderling Eye
+- Spiderling Legs
+- Srell Tumblebrook
+- Steel Knuckles
+- Stormy
+- Stylla Parsini
+- Supplies for the New Sebilisian Expedition
+- Sven Felligan
+- Sylvani Leaf
+- Tam Slyspan
+- Teir`Dal Sai
+- Tentacle Terror
+- Terror Spines
+- Test Page
+- The Frikniller Family
+- The Seax
+- The Sword of Nobility
 - The Torrid Corruptor
-- Torn Page of Mastery Earth
-- Torn Page of Mastery Fire
-- Torn Page of Mastery Water
+- The froglok shin lord
+- Tier'Dal Arcane Insignia
+- Tier'Dal Priest Insignia
 - Torn Page of Mastery Wind
-- Torrid Corruptor
+- Torn, Frost covered book
+- Torn, burnt book
+- Totemic Armor Quests
+- Tran Lilspin
+- Troll Basher Insignia
+- Troll Greenblood Insignia
+- Tyle Songwhisper
+- Umbral Platemail Greaves
+- Valorium Bracers
+- Valorium Chestplate
+- Valorium Greaves
+- Vellera Wintergreen
 - VerifiedPages
-- Void-Touched Potential
+- Vial of Swirling Smoke
 - Warrior Plane of Sky Tests
-- Whysia Flock
-- Wild Spirit Summon
-- Winds of Karana
+- What Happened Here?
+- Whirl Bolt
+- Whirlwind
+- Wiltin Windwalker
+- Wind Rune Neza
 - Wizard Plane of Sky Tests
-- Xista Finder
+- Woven Shadow Greaves
+- Wu's Fighting Armor Set
+- Xylania Rainsparkle
 - Zimel's Blades (SoulFire)
+- Zok Zribb

@@ -134,6 +134,12 @@ def zone_cache(title):
     return "zone-" + re.sub(r"[^A-Za-z0-9._-]", "_", title) + ".wikitext"
 
 
+def lsth_cache(title):
+    # quests-harvest.py caches {{#lsth:...}} transclusion sources under this
+    # scheme; an edit to the SOURCE page must re-expand every shell using it.
+    return "lsth-" + re.sub(r"[^A-Za-z0-9._-]", "_", title) + ".wikitext"
+
+
 def spell_cache(title):
     h = hashlib.md5(title.encode("utf-8")).hexdigest()[:8]
     safe = re.sub(r"[^A-Za-z0-9 '`().,_-]", "_", title).strip(" .")
@@ -144,7 +150,8 @@ def evict(titles):
     """Remove every cache file any harvester could hold for these pages."""
     evicted = []
     for title in titles:
-        candidates = [quest_cache(title), zone_cache(title), spell_cache(title)]
+        candidates = [quest_cache(title), zone_cache(title), spell_cache(title),
+                      lsth_cache(title)]
         if title == "Alternate Advancement":
             candidates.append("Alternate_Advancement.wikitext")
             candidates.append("revision_meta.json")

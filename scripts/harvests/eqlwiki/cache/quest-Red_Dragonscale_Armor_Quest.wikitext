@@ -31,7 +31,7 @@ Requires Indifferent or better faction, is multiquestable.
 [[Karam Dragonforge]] is located at +4105, +920, 4.51 in the Mountain of Rathe (the "human inn"). He wants the following items:
 {{CheckboxList}}
 * [[Red Dragon Scales]] from [[Lord Nagafen]] or [[Talendor]]
-* [[Vial of Swirling Smoke]] (vendor)
+* [[Vial of Swirling Smoke]] (vendor - see item page notes for tips to acquire)
 * 1000 platinum pieces
 {{End}}
 
