@@ -5,7 +5,7 @@ contract. When behaviour changes, this file changes in the same commit — a tes
 that has drifted from the product is worse than none, because it teaches confidently
 wrong things.
 
-Audited at **v1.82.0 (2026-08-14)**: 1,311 unit + 45 Avalonia + 4 E2E, all green.
+Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 4 E2E, all green.
 
 **How to read the Held-by column**
 
@@ -151,6 +151,20 @@ Fixture logs: see [FeatureGuide.md](FeatureGuide.md) §"Testing without playing"
 8. **Mobile layout** — one surface picked fills the screen on both a phone and a tablet;
    fullscreen shrinks the chrome; no sideways scroll at 375 px.
 9. **Off switch** — set `CompanionEnabled=false`, restart, confirm nothing is listening.
+
+## 6b. The docs check themselves
+
+| Expectation | Held by |
+|---|---|
+| Every file `CLAUDE.md`, `docs/Architecture.md` and this plan point at actually exists | **Auto** — `DocumentationTests` |
+| Every test class cited in the Held-by column above exists | **Auto** — `DocumentationTests` |
+| The ratchet table in `docs/Architecture.md` matches `ArchitectureTests`' baselines | **Auto** — `DocumentationTests` |
+| `CLAUDE.md` links the other docs, so none is orphaned | **Auto** — `DocumentationTests` |
+
+This is the mechanism behind §7. Documentation rots when keeping it true is a habit;
+it stops rotting when the build fails. It caught a wrong path in `CLAUDE.md` on its
+first run. What it cannot check is prose being *misleading* while every path resolves —
+that still needs a reader.
 
 ## 7. Keeping this true
 
