@@ -43,6 +43,8 @@
                 <MenuItem Header="Data &amp; imports">
                     <MenuItem Header="Import achievements…" Click="OnImportAchievements"
                               ToolTip="Read the game's /outputfile achievements dump and pre-mark Sky quest rewards (and raid clears) you completed before EQBuddy — preview first, adds only, never unticks"/>
+                    <MenuItem Header="⧉ Copy /outputfile achievements" Click="OnCopyAchievementsCommand"
+                              ToolTip="Puts the command on your clipboard — paste it into the game's chat, the game writes its achievements dump, then Import achievements… reads it"/>
                     <MenuItem x:Name="ReviewLogItem" Header="Review an archived log…" Click="OnReviewLog"
                               ToolTip="Replay a saved log read-only — Drops by Creature and ✦ Copy for wiki work against that session"/>
                     <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>
