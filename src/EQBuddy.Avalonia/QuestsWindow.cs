@@ -994,7 +994,7 @@ public sealed class QuestsWindow : Window
             Foreground = AppTheme.AccentBrush,
         };
         AttachWikiTip(link, name);
-        OnClick(link, () => OpenWikiPage(name));
+        OnClick(link, () => MainWindow.OpenWikiPage(name));
         return link;
     }
 
@@ -1135,15 +1135,6 @@ public sealed class QuestsWindow : Window
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
         catch (Exception ex) { CoreLog.Error(ex); }
     }
-
-    /// <summary>Open an item's eqlwiki page in the default browser — the search URL
-    /// lands on the page itself on an exact title match (MediaWiki "Go"), and on
-    /// search results otherwise, so a rename never strands the user on a 404.
-    /// (WPF keeps this on MainWindow; flagged for consolidation once the Avalonia
-    /// shell grows its own copy.)</summary>
-    private static void OpenWikiPage(string itemName) =>
-        OpenUrl("https://eqlwiki.com/index.php?search="
-            + Uri.EscapeDataString(EqlWikiItemService.NormalizeTitle(itemName)));
 
     // WPF's InputBox / ActionButton / SectionLabel styles, built inline (Theme.xaml
     // equivalents; same recipe as SpawnsWindow's DarkBox).

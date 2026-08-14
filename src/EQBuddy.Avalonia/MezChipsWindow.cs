@@ -16,8 +16,7 @@ namespace EQBuddy.Avalonia;
 public sealed class MezChipsWindow : Window
 {
     private readonly AppSettings _settings;
-    private readonly Func<IReadOnlyList<MezState>, DateTime, List<SpawnChip>> _mezSource;
-    private readonly Func<DateTime, List<SpawnChip>>? _clockSource;
+    private readonly Func<DateTime, List<SpawnChip>> _clockSource;
     private readonly StackPanel _panel = new();
     private readonly List<TextBlock> _countdowns = [];
     private readonly List<(Grid Track, Border Fill)> _gauges = [];
@@ -33,25 +32,14 @@ public sealed class MezChipsWindow : Window
     /// <summary>Tests can't drag a headless window; this is the drag signal's test seam.</summary>
     internal void MarkUserMovedForTests() => _userMoved = true;
 
-    public MezChipsWindow(AppSettings settings,
-        Func<IReadOnlyList<MezState>, DateTime, List<SpawnChip>>? source = null)
-        : this(settings, null, source, null) { }
-
     /// <summary>WPF's current shape: one clock-driven source for everything the
     /// fight-side stack shows — mez chips, slow chips, the Options placement preview —
     /// built by MainWindow (its FightChips), sharing this window and saved position.</summary>
     public MezChipsWindow(AppSettings settings, Func<DateTime, List<SpawnChip>> source,
         Action<double>? setChipScale = null)
-        : this(settings, source, null, setChipScale) { }
-
-    private MezChipsWindow(AppSettings settings,
-        Func<DateTime, List<SpawnChip>>? clockSource,
-        Func<IReadOnlyList<MezState>, DateTime, List<SpawnChip>>? mezSource,
-        Action<double>? setChipScale)
     {
         _settings = settings;
-        _clockSource = clockSource;
-        _mezSource = mezSource ?? BuildChips;
+        _clockSource = source;
         Title = "EQBuddy Mez Targets";
         SizeToContent = SizeToContent.WidthAndHeight;
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
@@ -128,17 +116,9 @@ public sealed class MezChipsWindow : Window
         }).ToList();
     }
 
-    /// <summary>Called from the main window's one-second refresh while mezzes exist.</summary>
-    internal void RefreshChips(IReadOnlyList<MezState> mezzes, DateTime now) =>
-        ApplyChips(_mezSource(mezzes, now));
-
-    /// <summary>WPF's tick entry point for the clock-driven (FightChips) wiring: mez
-    /// chips, slow chips, and the Options placement preview arrive already built.</summary>
-    internal void RefreshChips(DateTime now)
-    {
-        if (_clockSource is null) return;
-        ApplyChips(_clockSource(now));
-    }
+    /// <summary>The main window's tick entry point: mez chips, slow chips, and the
+    /// Options placement preview arrive already built (MainWindow.FightChips).</summary>
+    internal void RefreshChips(DateTime now) => ApplyChips(_clockSource(now));
 
     private void ApplyChips(List<SpawnChip> chips)
     {

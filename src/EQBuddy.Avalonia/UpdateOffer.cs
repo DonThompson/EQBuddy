@@ -14,14 +14,20 @@ internal static class UpdateOffer
     /// <summary>The staged file is always a Windows EQBuddySetup.exe run with an Inno
     /// Setup /SILENT flag — there's nothing installable that way on Linux, so updates
     /// there always go through the browser. OneDrive-sourced updates (SetupPath) are a
-    /// Windows-only distribution channel already, so they're unaffected by this check.</summary>
-    internal static bool CanAutoInstall(UpdateInfo info, bool isWindows) =>
-        isWindows && (info.SetupPath is not null || info.DownloadUrl is not null);
+    /// Windows-only distribution channel already, so they're unaffected by this check.
+    /// Portable Windows copies never get the silent install either (#119): the
+    /// installer lands elsewhere and the portable exe stays old, which reads as the
+    /// update "reverting" on every relaunch.</summary>
+    internal static bool CanAutoInstall(UpdateInfo info, bool isWindows, bool isInstalled = true) =>
+        isWindows && isInstalled && (info.SetupPath is not null || info.DownloadUrl is not null);
 
     /// <summary>What the banner offers before the click.</summary>
-    internal static string OfferText(UpdateInfo info, bool isWindows)
+    internal static string OfferText(UpdateInfo info, bool isWindows, bool isInstalled = true)
     {
-        if (CanAutoInstall(info, isWindows))
+        if (isWindows && !isInstalled)
+            return $"Update v{info.Latest} is out. You're running the portable copy - click to open " +
+                   "the download page, then replace this folder with the new EQBuddy-portable.zip.";
+        if (CanAutoInstall(info, isWindows, isInstalled))
             return $"Update v{info.Latest} is ready - click here to install.";
         if (!isWindows && info.LinuxTarballUrl is not null)
             return $"Update v{info.Latest} is available - click to download {UpdateChecker.LinuxTarballName}.";
@@ -39,10 +45,12 @@ internal static class UpdateOffer
     /// <summary>What the banner says once the browser is open. On Linux the setup exe
     /// means nothing — say what actually works there (issue #30: the old text told Linux
     /// users to run a Windows installer).</summary>
-    internal static string OpenedText(UpdateInfo info, bool isWindows)
+    internal static string OpenedText(UpdateInfo info, bool isWindows, bool isInstalled = true)
     {
         if (isWindows)
-            return "Download page opened - run the new EQBuddySetup.exe to update.";
+            return isInstalled
+                ? "Download page opened - run the new EQBuddySetup.exe to update."
+                : "Download page opened - grab EQBuddy-portable.zip, close EQBuddy, and replace this folder's files with the zip's.";
         return info.LinuxTarballUrl is not null
             ? $"Downloading {UpdateChecker.LinuxTarballName} - extract it over this install and restart."
             : $"Download page opened - get {UpdateChecker.LinuxTarballName} and extract it over this install.";

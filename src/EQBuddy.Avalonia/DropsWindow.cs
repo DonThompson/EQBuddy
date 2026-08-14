@@ -236,7 +236,7 @@ public sealed class DropsWindow : Window
             Text = l.Item, FontSize = 12, Foreground = AppTheme.TextBrush,
         };
         AttachWikiTip(name, l.Item);
-        OnClick(name, () => OpenWikiPage(l.Item));
+        OnClick(name, () => MainWindow.OpenWikiPage(l.Item));
         row.Children.Add(name);
 
         if (isQuest)
@@ -371,13 +371,4 @@ public sealed class DropsWindow : Window
         };
     }
 
-    /// <summary>WPF keeps this on MainWindow (static); local copy until the Avalonia
-    /// shell grows its own — flagged for consolidation.</summary>
-    private static void OpenWikiPage(string itemName)
-    {
-        var url = "https://eqlwiki.com/index.php?search="
-            + Uri.EscapeDataString(EqlWikiItemService.NormalizeTitle(itemName));
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-        catch (Exception ex) { CoreLog.Error(ex); }
-    }
 }

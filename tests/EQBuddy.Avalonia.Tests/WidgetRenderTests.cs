@@ -195,8 +195,10 @@ public class WidgetRenderTests : IDisposable
             new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-8), now.AddSeconds(22)),
             new MezState("an orc oracle", "Entrance", "Aenari", now.AddSeconds(-5), null),
         };
-        var chips = new MezChipsWindow(settings);
-        chips.RefreshChips(mezzes, now);
+        // The clock-source ctor is the only shape left (WPF parity): the stack asks
+        // its source at refresh time; BuildChips remains the shared mez builder.
+        var chips = new MezChipsWindow(settings, at => MezChipsWindow.BuildChips(mezzes, at));
+        chips.RefreshChips(now);
         chips.Show();
 
         Assert.NotNull(chips.CaptureRenderedFrame());
@@ -487,6 +489,69 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("💡 Feature request", text);
         Assert.Contains("🐛 Bug report", text);
         Assert.Contains(text, t => t.Contains("nothing is sent from the app"));
+        window.Close();
+    }
+
+    /// <summary>The KPI strip (2026-08-11 modernization): the headline numbers are
+    /// always painted, before any card opens.</summary>
+    [AvaloniaFact]
+    public void KpiStripShowsTheHeadlineNumbers()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            CurrentDps = 42, YourKillCount = 7, LootTotal = 3, XpPerHour = 12.5,
+        });
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("XP/HR", text);   // the strip's captions (SectionLabel uppercases)
+        Assert.Contains("42", text);      // current DPS leads while fighting
+        Assert.Contains("7", text);
+        Assert.Contains("12.5%", text);
+        window.Close();
+    }
+
+    /// <summary>The Sky Quest card: class tabs from the embedded checklist, the state
+    /// lens vocabulary, and live checkboxes on the selected tab.</summary>
+    [AvaloniaFact]
+    public void SkyQuestCardRendersClassTabsWithChecklists()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot());
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("☁ Sky Quest", text);
+        Assert.Contains(text, t => t.StartsWith("BRD 0/"));   // a class tab with its score
+        Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(),
+            combo => combo.Items.Contains("ready") && combo.Items.Contains("open"));
+        Assert.Contains(window.GetVisualDescendants().OfType<CheckBox>(),
+            check => check.IsEnabled);   // the selected tab's item boxes are live
+        window.Close();
+    }
+
+    /// <summary>Buffs and Raids cards stay where Options put them, with honest empty
+    /// states instead of vanishing (David's 1.66.2 verdict).</summary>
+    [AvaloniaFact]
+    public void BuffsAndRaidsCardsShowHonestEmptyStates()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot());
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("⏳ Buffs", text);
+        Assert.Contains(text, t => t.StartsWith("Nothing running"));
+        Assert.Contains("🐉 Raids", text);
+        Assert.Contains(text, t => t.StartsWith("Nothing defeated yet"));
         window.Close();
     }
 

@@ -168,7 +168,7 @@ public sealed class BreakoutWindow : Window
     {
         ApplyBackgroundOpacity();
         _lastFight = s.LastFight;
-        _resists = SpellResistLookup(s);
+        _resists = MainWindow.SpellResistLookup(s);
         var fight = s.LastFight;
         var (title, stats, seconds, rateLabel) = _kind switch
         {
@@ -224,16 +224,6 @@ public sealed class BreakoutWindow : Window
         BreakdownRows.FillAbilityRowsSorted(_rows, stats, StatSort.Total, Math.Max(1, seconds),
             rateLabel, max: 10, resists: resists);
     }
-
-    /// <summary>Session resist tallies keyed by base spell name (WPF: a MainWindow
-    /// static — duplicated here because the port's MainWindow is another owner's file;
-    /// flagged for consolidation).</summary>
-    private static IReadOnlyDictionary<string, (int Casts, int Resists)>? SpellResistLookup(
-        StatsSnapshot s) =>
-        s.SpellResists.Count == 0
-            ? null
-            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists),
-                StringComparer.OrdinalIgnoreCase);
 
     public void HideAndSave() { SavePosition(); Hide(); }
 

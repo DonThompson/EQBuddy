@@ -58,24 +58,22 @@ internal sealed class TrayIcon : IDisposable
         return item;
     }
 
-    /// <summary>Mirrors WPF's RestoreFromAnotherInstance: an explicit show is the
-    /// user's choice, whatever hide logic was in effect.</summary>
-    private static void Restore(MainWindow main)
+    /// <summary>An explicit show is the user's choice, whatever hide logic was in
+    /// effect — same path a second launch takes (MainWindow clears its focus-hide
+    /// state there, so the widget can't come back visible-but-frozen).</summary>
+    private static void Restore(MainWindow main) => main.RestoreFromAnotherInstance();
+
+    /// <summary>The shipped EQBuddy.ico when it loads (the csproj carries it as an
+    /// AvaloniaResource now), else a 32px accent-colored disc with "EQ" — recognizable
+    /// next to the widget it summons, following whatever theme was live at startup.</summary>
+    private static WindowIcon DrawIcon()
     {
         try
         {
-            main.Show();
-            if (main.WindowState == WindowState.Minimized) main.WindowState = WindowState.Normal;
-            main.Topmost = true;
-            main.Activate();
+            return new WindowIcon(global::Avalonia.Platform.AssetLoader.Open(
+                new Uri("avares://EQBuddy.Avalonia/Assets/EQBuddy.ico")));
         }
-        catch (Exception ex) { App.LogError(ex); }
-    }
-
-    /// <summary>A 32px accent-colored disc with "EQ" — recognizable next to the widget
-    /// it summons, and it follows whatever theme was live at startup.</summary>
-    private static WindowIcon DrawIcon()
-    {
+        catch (Exception ex) { App.LogError(ex); /* fall back to the drawn disc */ }
         var bitmap = new RenderTargetBitmap(new PixelSize(32, 32), new Vector(96, 96));
         using (var ctx = bitmap.CreateDrawingContext())
         {

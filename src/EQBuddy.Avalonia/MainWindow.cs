@@ -1263,12 +1263,23 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         return menu;
     }
 
+    // Where the window was placed at open and whether that was the SAVED spot —
+    // OnClosed's PositionToPersist call needs both (#117: an unmoved fallback
+    // placement must never overwrite a real saved position).
+    private bool _restoredSavedPosition;
+    private PixelPoint _placedPosition;
+
     private void RestorePosition()
     {
         // A spot saved on a monitor that's since gone would put the widget in the
         // void; keep the default position instead (parity with the WPF guard).
-        if (ScreenGuard.OnScreen(this, _settings.WindowLeft, _settings.WindowTop, Width, Height))
+        _restoredSavedPosition = ScreenGuard.OnScreen(this, _settings.WindowLeft, _settings.WindowTop, Width, Height);
+        if (_restoredSavedPosition)
             Position = new PixelPoint((int)_settings.WindowLeft, (int)_settings.WindowTop);
+        // The fallback spot is whatever the WM hands us — record it once the window
+        // is real, so a session that never moved it can be told apart from a drag.
+        Opened += (_, _) => _placedPosition = Position;
+        _placedPosition = Position;
     }
 
     private void ApplyUiScale(double scale)
@@ -1614,6 +1625,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
     private void RefreshUi()
     {
         EnsureOverlayLevel();
+        UpdateFocusHide();
+        ReassertTopmost();
         _stats.RegenPerTickOverride = _settings.RegenPerTickOverride;
 
         // Spawn timers crossing zero: banner always, sound only if one is chosen. Runs
@@ -1630,7 +1643,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                     PlayAlertSound(sound);
 
             // Chips are the ambient face and stay visible alongside the full browser.
-            if (_spawnsVm.HasActiveTimers(DateTime.Now))
+            if (!_hiddenForFocus && _spawnsVm.HasActiveTimers(DateTime.Now))
             {
                 if (_spawnChipsWindow is not { IsVisible: true })
                 {
@@ -1662,9 +1675,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         // empty) so it can be parked before the first real debuff (#94 follow-up).
         var chipPlacement = _optionsWindow is { IsVisible: true }
             && (_settings.MezChipsEnabled || _settings.SlowAlertEnabled);
-        var haveFightChips = chipPlacement
-            || (_settings.MezChipsEnabled && _mezTracker.Any(chipsNow))
-            || (SlowChipsVisible(chipsNow) && _slowTracker.Any(chipsNow));
+        var haveFightChips = !_hiddenForFocus
+            && (chipPlacement
+                || (_settings.MezChipsEnabled && _mezTracker.Any(chipsNow))
+                || (SlowChipsVisible(chipsNow) && _slowTracker.Any(chipsNow)));
         if (haveFightChips)
         {
             if (_mezChipsWindow is not { IsVisible: true })
@@ -1723,6 +1737,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         }
         if (_miniRoot.IsVisible) UpdateMiniChips(s);
         UpdateBreakouts(s);
+
+        // Hidden while the game is unfocused: everything the player can't see stops
+        // here — alerts, chips, timers, and checkpoints above already ran (perf
+        // audit #1b: the full element rebuild used to run every second into a
+        // window that wasn't even shown).
+        if (_hiddenForFocus) return;
+
         _zoneText.Text = s.CurrentZone.Length > 0 ? s.CurrentZone : "-";
         CurrentZoneName = s.CurrentZone;
         var active = TimeSpan.FromSeconds(s.ActiveSeconds);
@@ -2621,10 +2642,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         // ctor's SetMode lands here before the main window ever opens. A profile saved
         // minimized then CRASHED ON EVERY LAUNCH, unrecoverably (issue #82, Bazzite/KDE:
         // "can't reopen"). The 1-second tick calls back the moment we're actually up.
-        if (!IsVisible) return;
+        // A focus-hide is the exception: then the pass runs solely to HIDE breakouts.
+        if (!IsVisible && !_hiddenForFocus) return;
         foreach (var (kind, star) in BreakoutStars)
         {
-            var wanted = _settings.Minimized && _settings.MiniStats.Contains(star)
+            var wanted = _settings.Minimized && !_hiddenForFocus
+                && _settings.MiniStats.Contains(star)
                 && !_settings.DisabledBreakouts.Contains(kind.ToString())
                 && !_dismissedBreakouts.Contains(kind);
             _breakouts.TryGetValue(kind, out var window);
@@ -3807,6 +3830,155 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         if (OperatingSystem.IsMacOS()) MacOverlayLevel.Update();
     }
 
+    // ---- hide while the game is unfocused / not running (FOCUS-*, #41 / #114) ----
+
+    private bool _hiddenForFocus;
+    private bool _focusProbeUnsupportedLogged;
+    // Perf audit #6: the foreground answer is memoized per HWND (same window in
+    // front → same verdict), and "is the game running" refreshes at most every 5 s.
+    private (IntPtr Fg, bool IsGame) _lastFgProbe = (IntPtr.Zero, false);
+    private (DateTime At, bool Running) _lastGameProbe = (DateTime.MinValue, false);
+
+    private void UpdateFocusHide()
+    {
+        var hide = ShouldHideForFocus();
+        if (hide == _hiddenForFocus) return;
+        _hiddenForFocus = hide;
+        if (hide) Hide();
+        else Show();
+    }
+
+    /// <summary>Two opt-ins share this gate (#41 unfocused / #114 not running); the
+    /// actual decision lives in UI.Shared.FocusHide where tests reach it. Everything
+    /// here is per-OS probe plumbing, degrading to "always visible" where the
+    /// platform can't answer (logged once).</summary>
+    private bool ShouldHideForFocus()
+    {
+        if (!_settings.HideWhenGameUnfocused && !_settings.HideWhenGameNotRunning) return false;
+        if (OperatingSystem.IsWindows()) return ShouldHideForFocusWindows();
+        if (OperatingSystem.IsMacOS()) return ShouldHideForFocusMac();
+        // X11/Wayland: there is no portable foreground-window probe; hiding on a
+        // wrong guess would strand the overlay, so it stays visible.
+        if (!_focusProbeUnsupportedLogged)
+        {
+            _focusProbeUnsupportedLogged = true;
+            App.LogError("Hide-when-game-unfocused/not-running: no foreground probe " +
+                "on this platform; the overlay stays visible.");
+        }
+        return false;
+    }
+
+    private bool ShouldHideForFocusWindows()
+    {
+        var fg = FocusNative.GetForegroundWindow();
+        if (fg == IntPtr.Zero) return false;
+        FocusNative.GetWindowThreadProcessId(fg, out var fgPid);
+        if (fgPid == (uint)Environment.ProcessId) return false;
+        if (fg != _lastFgProbe.Fg)
+        {
+            bool isGame;
+            try
+            {
+                using var p = Process.GetProcessById((int)fgPid);
+                isGame = p.ProcessName.Equals("eqgame", StringComparison.OrdinalIgnoreCase);
+            }
+            catch { return false; }   // foreground process already gone — don't flicker
+            _lastFgProbe = (fg, isGame);
+        }
+        if (_lastFgProbe.IsGame) return false;
+
+        if (DateTime.Now - _lastGameProbe.At > TimeSpan.FromSeconds(5))
+            _lastGameProbe = (DateTime.Now, EqConfig.IsGameRunning());
+        return EQBuddy.UI.Shared.FocusHide.Decide(
+            _settings.HideWhenGameUnfocused, _settings.HideWhenGameNotRunning,
+            foregroundIsSelf: false, foregroundIsGame: false, _lastGameProbe.Running);
+    }
+
+    /// <summary>macOS: the CrossOver frontmost-app detection MacOverlayLevel already
+    /// does answers "is the game in front". "Is the game running while backgrounded"
+    /// has no honest probe under a Wine bottle, so a frontmost sighting is remembered
+    /// as running for the probe window — degrading toward visible, never toward a
+    /// wrongly hidden overlay.</summary>
+    private bool ShouldHideForFocusMac()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            && desktop.Windows.Any(w => w.IsActive))
+            return false;   // the player is using EQBuddy itself
+        var wineFront = MacOverlayLevel.IsWineHostFrontmost();
+        if (wineFront is null) return false;   // unidentifiable frontmost app — stay visible
+        var fgIsGame = wineFront == true;
+        if (fgIsGame || DateTime.Now - _lastGameProbe.At > TimeSpan.FromSeconds(5))
+            _lastGameProbe = (DateTime.Now, fgIsGame || EqConfig.IsGameRunning());
+        return EQBuddy.UI.Shared.FocusHide.Decide(
+            _settings.HideWhenGameUnfocused, _settings.HideWhenGameNotRunning,
+            foregroundIsSelf: false, fgIsGame, _lastGameProbe.Running);
+    }
+
+    private static class FocusNative
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern IntPtr GetForegroundWindow();
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        public static readonly IntPtr HwndTopmost = new(-1);
+        public const uint SwpNoSize = 0x0001;
+        public const uint SwpNoMove = 0x0002;
+        public const uint SwpNoActivate = 0x0010;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
+            int x, int y, int cx, int cy, uint flags);
+    }
+
+    /// <summary>Every EQBuddy surface is Topmost, but Windows keeps topmost windows
+    /// in the order they claimed the band — an overlay created AFTER ours (Lossless
+    /// Scaling's upscale surface was the field case, discussion #91) sits above the
+    /// widget and nothing re-asserts on its own. A periodic no-activate re-place
+    /// lifts every visible EQBuddy window back to the top of the band. macOS gets the
+    /// same effect from MacOverlayLevel.Update every tick; X11 stacking belongs to
+    /// the window manager, so no re-place there.</summary>
+    private const int TopmostReassertSeconds = 5;
+    private int _topmostTick;
+
+    private void ReassertTopmost()
+    {
+        if (!_settings.KeepAboveOverlays) return;   // #91: opt out for capture setups
+        if (++_topmostTick < TopmostReassertSeconds) return;
+        _topmostTick = 0;
+        if (!OperatingSystem.IsWindows()) return;
+        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime desktop) return;
+        foreach (var w in desktop.Windows)
+        {
+            if (!w.Topmost || !w.IsVisible) continue;
+            if (w.TryGetPlatformHandle() is { Handle: not 0 } handle)
+                FocusNative.SetWindowPos(handle.Handle, FocusNative.HwndTopmost, 0, 0, 0, 0,
+                    FocusNative.SwpNoMove | FocusNative.SwpNoSize | FocusNative.SwpNoActivate);
+        }
+    }
+
+    /// <summary>
+    /// Someone launched a second EQBuddy. Surface this one instead — which is almost
+    /// certainly what they wanted, since the usual reason to relaunch is that the widget
+    /// is hidden or buried behind a fullscreen game.
+    /// </summary>
+    internal void RestoreFromAnotherInstance()
+    {
+        try
+        {
+            if (!IsVisible) Show();
+            if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+            // Clear the hide state DIRECTLY — relying on Activate() winning foreground
+            // left a visible-but-frozen widget when the OS refused the focus switch:
+            // RefreshUi gates on this flag, so a stale true froze stats and kept
+            // satellites hidden. An explicit show IS the user's choice.
+            _hiddenForFocus = false;
+            Topmost = true;
+            Activate();
+        }
+        catch (Exception ex) { App.LogError(ex); }
+    }
+
     private void OnGear(object? sender, EventArgs e) => _root.ContextMenu?.Open(_root);
 
     private void OnStarChanged(object? sender, global::Avalonia.Interactivity.RoutedEventArgs e)
@@ -3846,7 +4018,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
                 if (info is not null && UpdateChecker.IsNewer(info))
                 {
                     _pendingUpdate = info;
-                    _updateText.Text = UpdateOffer.OfferText(info, OperatingSystem.IsWindows());
+                    _updateText.Text = UpdateOffer.OfferText(info, OperatingSystem.IsWindows(),
+                        UpdateChecker.IsInstalledCopy);
                     _updateBanner.IsVisible = true;
                 }
                 else if (manual)
@@ -3862,6 +4035,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         });
     }
 
+    /// <summary>Freedesktop sound-theme equivalents of the shared palette. The NAMES
+    /// are owned by <see cref="EQBuddy.UI.Shared.AlertSoundCatalog"/> (one list, both
+    /// UIs and every picker); only the per-platform file mapping lives here.</summary>
     internal static readonly (string Name, string File)[] AlertSounds =
     [
         ("Ding", "bell.oga"),
@@ -3888,14 +4064,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         if (coalesce && !_soundGate.TryClaim(DateTime.Now)) return;
         try
         {
-            var choice = choiceOrPath switch
-            {
-                "Asterisk" or "" => "Ding",
-                "Beep" => "Chord",
-                "Hand" => "Chimes",
-                "Question" => "Notify",
-                { } other => other,
-            };
+            // Legacy SystemSounds values map through the shared catalog — one
+            // normalization for both UIs and every picker.
+            var choice = EQBuddy.UI.Shared.AlertSoundCatalog.Normalize(choiceOrPath);
             var named = Array.Find(AlertSounds, x => x.Name == choice);
             var file = named.File is { } systemFile
                 ? FindBuiltInSound(choice, systemFile)
@@ -4042,14 +4213,15 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         e.Handled = true;
         if (_pendingUpdate is not { } info || _installingUpdate) return;
 
-        if (!UpdateOffer.CanAutoInstall(info, OperatingSystem.IsWindows()))
+        if (!UpdateOffer.CanAutoInstall(info, OperatingSystem.IsWindows(), UpdateChecker.IsInstalledCopy))
         {
             var target = UpdateOffer.BrowserTarget(info, OperatingSystem.IsWindows());
             try
             {
                 Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
                 _pendingUpdate = null;
-                _updateText.Text = UpdateOffer.OpenedText(info, OperatingSystem.IsWindows());
+                _updateText.Text = UpdateOffer.OpenedText(info, OperatingSystem.IsWindows(),
+                    UpdateChecker.IsInstalledCopy);
                 _upToDateNoticeUntil = DateTime.Now.AddSeconds(10);
             }
             catch (Exception ex)
@@ -4398,8 +4570,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost
         _gridOverlay?.Close();
         _cursorRing?.Close();
         foreach (var breakout in _breakouts.Values) breakout.Close();
-        _settings.WindowLeft = Position.X;
-        _settings.WindowTop = Position.Y;
+        // Never let an unmoved fallback overwrite a real saved spot (#117).
+        (_settings.WindowLeft, _settings.WindowTop) = WindowPlacement.PositionToPersist(
+            _restoredSavedPosition, _placedPosition.X, _placedPosition.Y,
+            Position.X, Position.Y, _settings.WindowLeft, _settings.WindowTop);
         _settings.Save();
         if (_clickThrough)
             ClickThrough.Set(this, enabled: false);

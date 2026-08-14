@@ -27,6 +27,10 @@
   <ItemGroup>
     <AvaloniaResource Include="..\EQBuddy\Assets\tutorial\*.png"
                       Link="Assets\tutorial\%(Filename)%(Extension)" />
+    <!-- The real logo for the tray icon (TrayIcon.DrawIcon falls back to a drawn
+         disc when a platform can't load it). -->
+    <AvaloniaResource Include="..\EQBuddy\Assets\EQBuddy.ico"
+                      Link="Assets\EQBuddy.ico" />
   </ItemGroup>
 
   <ItemGroup>
