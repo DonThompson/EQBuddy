@@ -74,6 +74,17 @@ You don't need Windows, the game, or an account:
   changes — regenerate via the fixture recipe, don't hand-mock them).
 - Commit messages explain *why*, release-notes style; user-facing changes get a
   version bump and a line in the release.
+- **Every change a player can notice gets a `WhatsNew.json` entry in the release
+  that ships it.** The What's-new popup is how an update explains itself; a fix
+  that lands silently is indistinguishable from the app behaving differently for
+  no reason — and the player who reported it never learns it was fixed. Write the
+  entry from the player's side (what changed for them, and where), name the
+  reporter and the discussion, and be honest about limits. If a user-visible fix
+  lands after a tag, it gets its own release rather than riding along unannounced.
+  Internal-only work (dependency bumps, refactors, test infrastructure) needs no
+  entry — but "invisible" means invisible to the player, not merely uninteresting
+  to us. `scripts/release.ps1` refuses to publish a version with no entry at all;
+  that guard is the floor, not the standard.
 
 ## Log privacy
 
