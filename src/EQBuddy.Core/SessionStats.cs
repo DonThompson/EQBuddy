@@ -1233,8 +1233,10 @@ public sealed class SessionStats
     /// cutoff. In-place compaction rather than RemoveAll so the tracked scan's index
     /// can follow: every removed entry below <see cref="_trackedScanIndex"/> shifts
     /// the same unscanned entry one slot left (perf audit #10). No accumulator ever
-    /// rewinds — the pruned kinds are exactly the ones no tracked rule can match, so
-    /// a from-scratch scan of the pruned journal yields the same totals.</summary>
+    /// rewinds — the combat kinds are ones no tracked rule can match, and RawLineEvents
+    /// (perf audit #5: previously retained whole-session) are kept countable by the
+    /// Text-rule ACCUMULATORS, which survive pruning by construction — see
+    /// ScanTrackedLocked's text-preservation rule.</summary>
     private void PruneJournalLocked(DateTime cutoff)
     {
         var removedBeforeScanIndex = 0;
@@ -1245,7 +1247,7 @@ public sealed class SessionStats
             if (j.Time < cutoff && j is DamageDealtEvent
                 or DamageTakenEvent or MissEvent or RuneBlockEvent or ThirdMeleeEvent
                 or ThirdDotEvent or ThirdSchoolEvent or ThirdMissEvent or HealEvent
-                or RegenTickEvent)
+                or RegenTickEvent or RawLineEvent)
             {
                 if (read < _trackedScanIndex) removedBeforeScanIndex++;
                 continue;
@@ -2175,7 +2177,10 @@ public sealed class SessionStats
 
     /// <summary>Incremental tracked-rule scan (perf audit #10). Behavior contract: the
     /// result must always equal a from-scratch scan of the current journal (the test
-    /// seam <see cref="TrackedScanFromScratch"/> is that oracle). Accumulators fold
+    /// seam <see cref="TrackedScanFromScratch"/> is that oracle) — EXCEPT Text rules
+    /// once the raw-line prune has run (perf audit #5): their accumulators keep
+    /// counts whose raw events have aged out of the journal, deliberately, so a
+    /// text total never shrinks mid-session. Accumulators fold
     /// forward over appended entries only; they rebuild from index 0 whenever anything
     /// an already-folded answer could have depended on changed — the rules fingerprint,
     /// the learning spell catalog (SpellFade classification), the charm-hold lookaside
@@ -2186,25 +2191,42 @@ public sealed class SessionStats
     {
         var active = ActiveTrackedRules(rules);
         var petName = _petName ?? "";
-        if (_trackedAccs is null
-            || _trackedAccFingerprint != rulesFp
-            || _trackedSpellsRevision != _spells.Revision
+        var fpChanged = _trackedAccs is null || _trackedAccFingerprint != rulesFp;
+        var stateChanged = _trackedSpellsRevision != _spells.Revision
             || _trackedHoldRevision != _charmHoldRevision
-            || !string.Equals(_trackedPetName, petName, StringComparison.OrdinalIgnoreCase))
+            || !string.Equals(_trackedPetName, petName, StringComparison.OrdinalIgnoreCase);
+        var start = _trackedScanIndex;
+        var textStart = start;
+        if (fpChanged || stateChanged)
         {
-            _trackedAccs = new List<TrackedAcc>(active.Count);
-            for (var i = 0; i < active.Count; i++) _trackedAccs.Add(new TrackedAcc());
+            // Raw lines are pruned past retention (perf audit #5), so the Text
+            // accumulators are the ONLY keeper of pre-retention text counts. A
+            // state-triggered rescan (spell catalog / charm holds / pet name — none
+            // of which a Text rule's match depends on) therefore KEEPS them and
+            // re-folds only the entries they haven't seen; every other kind
+            // rebuilds from the journal as before. Only a rules edit (fingerprint
+            // change) rebuilds Text accumulators too — their counts then honestly
+            // reflect the retained window, the same trade the combat prune makes.
+            var fresh = new List<TrackedAcc>(active.Count);
+            for (var i = 0; i < active.Count; i++)
+                fresh.Add(!fpChanged && active[i].Kind == WatchKind.Text
+                    ? _trackedAccs![i] : new TrackedAcc());
+            textStart = fpChanged ? 0 : _trackedScanIndex;
+            start = 0;
+            _trackedAccs = fresh;
             _trackedAccFingerprint = rulesFp;
-            _trackedScanIndex = 0;
             _trackedSpellsRevision = _spells.Revision;
             _trackedHoldRevision = _charmHoldRevision;
             _trackedPetName = petName;
         }
-        for (var i = _trackedScanIndex; i < _journal.Count; i++)
+        for (var i = start; i < _journal.Count; i++)
         {
             var evt = _journal[i];
             for (var r = 0; r < active.Count; r++)
-                FoldTrackedEvent(active[r], _trackedAccs[r], evt);
+            {
+                if (i < textStart && active[r].Kind == WatchKind.Text) continue;
+                FoldTrackedEvent(active[r], _trackedAccs![r], evt);
+            }
         }
         _trackedScanIndex = _journal.Count;
 
