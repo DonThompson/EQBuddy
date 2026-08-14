@@ -31,6 +31,21 @@ public class RaidTargetsTests
     }
 
     [Fact]
+    public void ResolveBossReturnsTheCanonicalNameForTitledAndFoldedForms()
+    {
+        var c = RaidTargetCatalog.Default;
+        Assert.Equal("Innoruuk", c.ResolveBoss("Innoruuk"));
+        // #140 (AkevoTheBard): the log titles him "Innoruuk, Prince of Hate";
+        // the pre-comma head must land on the catalog's bare name.
+        Assert.Equal("Innoruuk", c.ResolveBoss("Innoruuk, Prince of Hate"));
+        Assert.True(c.IsRaidBoss("Innoruuk, Prince of Hate"));
+        Assert.Equal("Cazic-Thule", c.ResolveBoss("Cazic Thule"));   // hyphen fold keeps the dump's spelling
+        Assert.Null(c.ResolveBoss("a gnoll pup"));
+        // The head consults only the catalog — a comma alone vouches for nothing.
+        Assert.Null(c.ResolveBoss("a servant, of nothing"));
+    }
+
+    [Fact]
     public void AWitnessedKillIsRecordedWithItsDateWhoeverLandedTheBlow()
     {
         var l = Ledger();
@@ -39,6 +54,23 @@ public class RaidTargetsTests
         var rec = l.For("Lord Nagafen")!;
         Assert.Equal(1, rec.Kills);
         Assert.Equal(T0, rec.FirstKill);
+        Assert.Equal(1, l.DefeatedCount());
+    }
+
+    [Fact]
+    public void ATitledKillLineLandsOnTheCatalogRow()
+    {
+        // #140 (AkevoTheBard): "Innoruuk, Prince of Hate has been slain" must
+        // record under "Innoruuk" — the name the Raids card and its D0–D4 badge
+        // ask For() with — not under the titled log form.
+        var l = Ledger();
+        l.Apply(Ev(0, "You have entered The Plane of Hate - Solo."));
+        l.Apply(Ev(10, "Innoruuk, Prince of Hate has been slain by Tankname!"));
+
+        var rec = l.For("Innoruuk")!;
+        Assert.Equal(1, rec.Kills);
+        Assert.Equal(1, rec.TierKills["d0"]);
+        Assert.Equal(0, rec.HighestDifficulty());
         Assert.Equal(1, l.DefeatedCount());
     }
 
@@ -144,6 +176,44 @@ public class RaidTargetsTests
         Assert.Equal(1, snapshot.Kills);                    // the snapshot froze
         Assert.Equal(1, snapshot.TierKills["d3"]);
         Assert.Equal(2, l.For("Lord Nagafen")!.Kills);      // a fresh read sees both
+    }
+
+    [Fact]
+    public void LoadRekeysPreCanonicalRecordsAndMergesDuplicates()
+    {
+        // Pre-#140 stores keyed kills by the raw log spelling: a "Cazic Thule"
+        // kill could never be read back through the catalog's "Cazic-Thule" row.
+        // Loading must re-key through ResolveBoss, merge with any canonical
+        // duplicate (kills sum — the keys held disjoint events; tiers max;
+        // FirstKill earliest, LastKill latest; achievement ORs), leave keys the
+        // catalog can't resolve alone, and persist once.
+        var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        File.WriteAllText(path, """
+            {"Records":{
+              "Dranak|legends|Cazic thule":{"Kills":2,"FirstKill":"2026-07-01T20:00:00","LastKill":"2026-07-08T20:00:00","TierKills":{"d1":2}},
+              "Dranak|legends|Cazic-Thule":{"Kills":1,"FirstKill":"2026-07-15T20:00:00","LastKill":"2026-07-15T20:00:00","AchievementComplete":true,"TierKills":{"d3":1}},
+              "Dranak|legends|Fippy Darkpaw":{"Kills":5}},
+             "HighWater":"2026-07-15T20:00:00"}
+            """);
+        try
+        {
+            var l = new RaidKillLedger(path) { CharacterKey = () => "Dranak|legends" };
+
+            var rec = l.For("Cazic-Thule")!;
+            Assert.Equal(3, rec.Kills);
+            Assert.Equal(DateTime.Parse("2026-07-01T20:00:00"), rec.FirstKill);
+            Assert.Equal(DateTime.Parse("2026-07-15T20:00:00"), rec.LastKill);
+            Assert.True(rec.AchievementComplete);
+            Assert.Equal(2, rec.TierKills["d1"]);
+            Assert.Equal(1, rec.TierKills["d3"]);
+            Assert.Equal(5, l.For("Fippy Darkpaw")!.Kills);   // unresolvable key untouched
+
+            var once = File.ReadAllText(path);
+            Assert.Contains("Cazic-Thule", once);              // migrated form persisted
+            _ = new RaidKillLedger(path);
+            Assert.Equal(once, File.ReadAllText(path));        // second load changes nothing
+        }
+        finally { File.Delete(path); }
     }
 
     [Fact]

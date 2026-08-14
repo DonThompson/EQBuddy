@@ -142,6 +142,45 @@ public sealed class OptionsViewModelTests
     }
 
     [Fact]
+    public void BardMaskAndMantleCarryTheHandInVerifiedItems()
+    {
+        // #139 (n3cr0nk1tt3n): the wiki's bard table has these two swapped; the
+        // first-hand hand-in is the authority. Sources travel with the items.
+        var settings = new AppSettings();
+        settings.ApplyDefaultSkyQuestChecklist();
+
+        var mask = settings.SkyQuestChecklist.Single(
+            i => i.ClassName == "Bard" && i.Reward == "Mask of Song" && i.QuestItem.StartsWith("Light Woolen"));
+        Assert.Equal("Light Woolen Mantle", mask.QuestItem);
+        Assert.Equal("Isle 4: Keeper of Souls", mask.Source);
+
+        var mantle = settings.SkyQuestChecklist.Single(
+            i => i.ClassName == "Bard" && i.Reward == "Mantle of the Songweaver" && i.QuestItem.StartsWith("Light Woolen"));
+        Assert.Equal("Light Woolen Mask", mantle.QuestItem);
+        Assert.Equal("Isle 3: Gorgalosk", mantle.Source);
+    }
+
+    [Fact]
+    public void SkyQuestRefreshCorrectsMetadataButKeepsTicks()
+    {
+        // A settings file saved before #139 still carries the swapped text: the
+        // Id-keyed refresh corrects the row, and the player's tick stays — the row
+        // now names the item they actually handed in.
+        var settings = new AppSettings();
+        settings.ApplyDefaultSkyQuestChecklist();
+        var row = settings.SkyQuestChecklist.Single(i => i.Id == "sky-005");
+        row.QuestItem = "Light Woolen Mask";
+        row.Source = "Isle 3: Gorgalosk";
+        row.Acquired = true;
+
+        Assert.True(settings.ApplyDefaultSkyQuestChecklist());
+        Assert.Equal("Light Woolen Mantle", row.QuestItem);
+        Assert.Equal("Isle 4: Keeper of Souls", row.Source);
+        Assert.True(row.Acquired);
+        Assert.False(settings.ApplyDefaultSkyQuestChecklist());   // refreshed once, then quiet
+    }
+
+    [Fact]
     public void GearSectionSlotsInAfterSky()
     {
         var settings = new AppSettings { SectionOrder = ["combat", "motes", "sky", "tracked"] };

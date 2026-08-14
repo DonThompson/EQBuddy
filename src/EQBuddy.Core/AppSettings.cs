@@ -482,8 +482,26 @@ public sealed class AppSettings
         var changed = false;
         foreach (var item in SkyQuestDefaults.Items)
         {
-            if (SkyQuestChecklist.Any(i => string.Equals(i.Id, item.Id, StringComparison.Ordinal)))
+            var existing = SkyQuestChecklist.FirstOrDefault(i => string.Equals(i.Id, item.Id, StringComparison.Ordinal));
+            if (existing is not null)
+            {
+                // Refresh quest metadata by Id so curated corrections reach installs
+                // already carrying the row (#139's mask/mantle swap). Acquired and
+                // AcquiredUnassigned are the player's record and are never touched —
+                // a tick placed on the old text stays on the corrected row.
+                if (existing.Npc == item.Npc &&
+                    existing.Reward == item.Reward &&
+                    existing.QuestItem == item.QuestItem &&
+                    existing.Source == item.Source)
+                    continue;
+
+                existing.Npc = item.Npc;
+                existing.Reward = item.Reward;
+                existing.QuestItem = item.QuestItem;
+                existing.Source = item.Source;
+                changed = true;
                 continue;
+            }
 
             SkyQuestChecklist.Add(item.Clone());
             changed = true;
