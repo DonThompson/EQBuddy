@@ -1,0 +1,144 @@
+# EQBuddy test plan
+
+**What EQBuddy is expected to do, and how each expectation is held down.** This is the
+contract. When behaviour changes, this file changes in the same commit — a test plan
+that has drifted from the product is worse than none, because it teaches confidently
+wrong things.
+
+Audited at **v1.82.0 (2026-08-14)**: 1,295 unit + 45 Avalonia + 4 E2E, all green.
+
+**How to read the Held-by column**
+
+| Mark | Meaning |
+|---|---|
+| **Auto** | A test fails if this breaks. Safe to refactor against. |
+| **Partial** | The logic is tested; the wiring to the screen is not. |
+| **Manual** | Only a human sitting in front of it will notice. See §6 for the pass. |
+
+---
+
+## 1. Reading the log
+
+| Expectation | Held by |
+|---|---|
+| Every known line type parses to its `GameEvent`; unknown lines are ignored, never guessed at | **Auto** — `LogParserTests`, `SplitOnceParserTests` |
+| A growing file is tailed from its last offset, survives truncation and rollover | **Auto** — `LogWatcherTests`, `LogSessionsTests` |
+| 60+ minutes of silence ends a session; the next line starts a fresh one | **Auto** — `SessionStatsTests`, `SessionArchiverTests` |
+| The active character is followed automatically (whichever log is growing) | **Partial** — detection tested, the 5 s re-scan is not |
+| `Log=1` is forced in `eqclient.ini`; stale logs truncate only while the game is closed | **Auto** — `EqConfigTests` |
+| A log folder is found from the registry, with Wine/CrossOver prefixes handled | **Auto** — `LogFolderDetectionTests` |
+
+## 2. What the numbers mean
+
+| Expectation | Held by |
+|---|---|
+| Session DPS = damage ÷ time in combat; wall-clock DPS reported separately and labelled | **Auto** — `SessionStatsTests` |
+| Per-ability DPS is that ability's damage ÷ total combat time (contribution rate); burst rate is damage ÷ its own active time | **Auto** — `BreakdownRangeTests` |
+| Self-inflicted damage counts as damage taken but opens **no** combat window and **no** encounter | **Auto** — `EncounterTests` |
+| A fight closes on the kill line, or after 20 s of silence marked `Timeout` | **Auto** — `EncounterTests` |
+| Fights group into a pull when no 10 s lull separates them; live card and History agree | **Auto** — `EncounterTests`, `LastFightTests` |
+| **A pull in a never-quiet zone runs long and its DPS is a long average.** Deliberate (#151); per-mob figures live on the Kills card | **Auto** (the rule) / documented limit |
+| Pet damage is attributed to the pet, never to your accuracy or crit counters | **Auto** — `SessionStatsTests`, `SpellTrackingTests` |
+| A charm cast confirms a pet; an interrupted or faded charm never claims one | **Auto** — `SessionStatsTests` |
+| Crit, miss, resist, fizzle and block counts follow the log's own words | **Auto** — `LogParserTests`, `StackingTests` |
+
+## 3. Knowledge and catalogs
+
+| Expectation | Held by |
+|---|---|
+| Every zone EQBuddy knows resolves to a real map file (aliases included) | **Auto** — `ZoneMapCoverageTests` |
+| Catalogs stay internally consistent; no duplicate or orphaned entries | **Auto** — `CatalogHygieneTests`, `CatalogSanityTests` |
+| Wiki lookups try article, case and backtick variants, then a bounded-fuzzy backstop; a merely-similar page is never accepted | **Auto** — `EqlWikiMobsTests` |
+| **A redirected lookup records the title the wiki SERVED, not the one requested** | **Auto** — `EqlWikiMobsTests` (regression, #65 — this broke twice) |
+| An epithet (`X, the Y`) falls back to the base name rather than proposing a duplicate page | **Auto** — `EqlWikiMobsTests` (#65) |
+| **A contribution pack names the zone the creature died in, everywhere in the entry** | **Auto** — `WikiContributionTests` (#65) |
+| Rarity labels only appear from 10+ kills | **Auto** — `WikiContributionTests` |
+| Zone-knowledge share strings round-trip; imports preview every change; wild timers arrive flagged | **Auto** — `SpawnPointLedgerTests` |
+| Curated catalogs are never written by automation | **Process** — the weekly refresh PR only flags them |
+
+## 4. EQBuddy Mobile
+
+| Expectation | Held by |
+|---|---|
+| Off by default: a fresh install opens no socket | **Auto** — `CompanionEnableTests` |
+| Turning it on is the only thing that opens the port; a token is minted and rides the URL fragment | **Auto** — `CompanionEnableTests` |
+| A tick with nobody paired builds no projection | **Auto** — `CompanionEnableTests` |
+| A device receives only the surfaces the desktop offers **and** it subscribed to | **Auto** — `CompanionSurfaceTests`, `CompanionServerTests` |
+| A section only wakes devices watching it; drifting values are excluded from fingerprints | **Auto** — `CompanionProjectionTests` |
+| Map geometry is sent once per zone per device | **Auto** — `CompanionMapSourceTests` |
+| The breadcrumb trail matches the desktop's fade curve, anchor crumb included | **Auto** — `CompanionMapSourceTests`, `TrailFadeTests` |
+| Camp pins and the Named list come from one projected list, so a pin and its row cannot disagree | **Auto** — `CompanionMapSourceTests` |
+| Curation applies to the same ledger the desktop edits, and always answers — including when nothing changed | **Auto** — `CompanionCurationTests` |
+| An edit made on a device appears on the PC map (via the ledger's `Revision`) | **Auto** — `CompanionCurationTests` |
+| The page's fade constants match `TrailFade` | **Auto** — pinned by reading the shipped page |
+| Theme reaches the page for every `var(--x)` it uses | **Auto** — `CompanionThemeTests` |
+| Layout: solo panel fills the viewport; chrome shrinks in fullscreen; nothing scrolls sideways | **Manual** — §6, or the harness |
+
+## 5. The gap — read this before trusting the suite
+
+**`src/EQBuddy` (the WPF app, 14,432 lines across 37 files) has no automated coverage.
+No test project references it.**
+
+Everything below is **Manual** and can only be caught by a human or a player:
+
+- Window placement, sizing, the UI-scale transform, grip drags, screen guards
+- Card expand/collapse, section order, star/pin behaviour, the mini pill
+- Chip stacks (mez, spawn, slow) — placement, growth direction, anchoring
+- Click-through, see-through, focus-hide, tray icon, hotkeys
+- The zone map window: rendering, pan/zoom, context menus, camp pins
+- Alert banners and sounds at the moment they fire
+
+This is where the risk lives, and it is not theoretical. **Both player-reported bugs of
+2026-08-14 — the clipped Epics card (#144) and the drifting chips (#152) — are in this
+layer, and no existing test could have caught either.** Both were also unit-mismatch
+bugs of the kind a small pure helper *could* pin.
+
+### Recommended, in order of value per effort
+
+1. **Extract the arithmetic, then test it.** Both bugs were sums, not pixels:
+   `screenCap → preScaleCap` and `bottomEdge → newTop`. Moved into `UI.Shared` as pure
+   functions they become ordinary unit tests, with the window left holding only the
+   wiring. Cheap, and it retires trap classes 1 and 2 in `CLAUDE.md`.
+2. **A WPF render-test project** mirroring `EQBuddy.Avalonia.Tests`, which already
+   proves the approach works on this codebase. Would cover placement, scaling and chip
+   layout properly.
+3. **Extend E2E** past its four scenarios into what the widget *shows*, not just what it
+   ingests.
+
+## 6. Manual pass
+
+Run before a release that touches the widget, and after any change in §5.
+
+**Setup** (never against the real profile):
+```bash
+EQBUDDY_APPDATA=<scratch>   # isolated settings/history
+EQBUDDY_EXPAND=1            # all sections expanded + a state dump
+```
+Fixture logs: see [FeatureGuide.md](FeatureGuide.md) §"Testing without playing".
+
+1. **Scale** — drag the size grip from 80% to 160%. Every card stays reachable by
+   scrolling at *every* scale; the bottom card is never clipped. (#144)
+2. **Chips, grow-up** — enable grow-upwards, let a mez stack empty completely, mez
+   again. The stack returns to the same spot. Repeat five times; it must not walk. (#152)
+3. **Chips, grow-down** — same, unmoved.
+4. **Multi-monitor** — drag the widget to a portrait secondary screen; height caps
+   follow that monitor.
+5. **Focus-hide / click-through / see-through** — each toggles cleanly and the tray icon
+   always brings it back.
+6. **Alerts** — a watch rule fires with banner, sound and colour, and the cooldown
+   behaves per matched label.
+7. **Mobile** — pair a device; untick a surface on the PC and it says "Not shared";
+   tick an Epic row on the device and the desktop card repaints; curate a spawn point
+   and the PC map drops the circle within a tick; "New code" drops paired devices.
+8. **Mobile layout** — one surface picked fills the screen on both a phone and a tablet;
+   fullscreen shrinks the chrome; no sideways scroll at 375 px.
+9. **Off switch** — set `CompanionEnabled=false`, restart, confirm nothing is listening.
+
+## 7. Keeping this true
+
+- Behaviour change → update the row in the same commit.
+- New regression test → move its row from Manual/Partial to **Auto** and name it.
+- A bug that reached a player → add its expectation here, and its cause to `CLAUDE.md`'s
+  trap list. Every entry in §5 that becomes Auto is permanent progress.
+- Re-audit the counts and the ratchet table in [Architecture.md](Architecture.md) at
+  each minor version.
