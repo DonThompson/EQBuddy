@@ -2220,24 +2220,20 @@ public partial class MainWindow : Window
             return;
         }
 
-        var done = _settings.GearChecklist.Count(i => i.Acquired);
-        GearListName.Text = _settings.GearChecklistName.Length > 0
-            ? $"{_settings.GearChecklistName} - {done}/{total}"
-            : $"{done}/{total} imported gear pieces";
+        GearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
+            _settings.GearChecklistName, _settings.GearChecklist);
 
-        foreach (var group in _settings.GearChecklist
-            .OrderBy(item => item.IsExaltation)
-            .GroupBy(item => item.IsExaltation))
+        foreach (var group in EQBuddy.UI.Shared.GearChecklistPresentation.BuildGroups(_settings.GearChecklist))
         {
             GearChecklistList.Items.Add(new TextBlock
             {
-                Text = group.Key ? "Exaltations" : "Gear",
+                Text = group.Heading,
                 FontSize = 11,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = (Brush)FindResource("AccentBrush"),
                 Margin = new Thickness(0, 8, 0, 2),
             });
-            foreach (var item in group)
+            foreach (var item in group.Items)
             {
                 var text = new StackPanel();
                 text.Children.Add(new TextBlock
@@ -2253,10 +2249,11 @@ public partial class MainWindow : Window
                     Foreground = (Brush)FindResource("TextBrush"),
                     TextTrimming = TextTrimming.CharacterEllipsis,
                 };
-                itemName.Inlines.Add(item.Item);
-                if (item.IsExaltation && item.ExaltationEffect.Length > 0)
+                var itemText = EQBuddy.UI.Shared.GearChecklistPresentation.TextFor(item);
+                itemName.Inlines.Add(itemText.Name);
+                if (itemText.EffectSuffix.Length > 0)
                 {
-                    itemName.Inlines.Add(new System.Windows.Documents.Run($" ({item.ExaltationEffect})")
+                    itemName.Inlines.Add(new System.Windows.Documents.Run(itemText.EffectSuffix)
                     {
                         FontSize = 10,
                         Foreground = (Brush)FindResource("DimBrush"),
@@ -2274,17 +2271,12 @@ public partial class MainWindow : Window
                     });
                 }
 
-                var tip = $"{item.Slot}: {item.Item}";
-                if (item.IsExaltation && item.ExaltationEffect.Length > 0)
-                    tip += $" ({item.ExaltationEffect})";
-                if (item.Source.Length > 0) tip += "\n" + item.Source;
-                if (item.Url.Length > 0) tip += "\n" + item.Url;
                 var check = new CheckBox
                 {
                     IsChecked = item.Acquired,
                     Content = text,
                     Margin = new Thickness(0, 2, 0, 2),
-                    ToolTip = tip,
+                    ToolTip = EQBuddy.UI.Shared.GearChecklistPresentation.Tooltip(item),
                 };
                 check.Checked += (_, _) => OnGearToggled(item, true);
                 check.Unchecked += (_, _) => OnGearToggled(item, false);
@@ -2300,11 +2292,8 @@ public partial class MainWindow : Window
         item.Acquired = acquired;
         _settings.Save();
         UpdateGearHeaderOnly();
-        var total = _settings.GearChecklist.Count;
-        var done = _settings.GearChecklist.Count(i => i.Acquired);
-        GearListName.Text = _settings.GearChecklistName.Length > 0
-            ? $"{_settings.GearChecklistName} - {done}/{total}"
-            : $"{done}/{total} imported gear pieces";
+        GearListName.Text = EQBuddy.UI.Shared.GearChecklistPresentation.ListName(
+            _settings.GearChecklistName, _settings.GearChecklist);
     }
 
     private void UpdateGearHeaderOnly()

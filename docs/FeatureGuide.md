@@ -345,6 +345,24 @@ third to `Off` and confirm it stays silent rather than falling back to the defau
 Append `Your Chords of Dissonance spell has worn off of a giant spider.` → no alert
 (not crowd control). Toggle 🔊 off, delete the rule, restart → it stays deleted.
 
+### Gear card
+Import an EQ Legends Tools shopping-list HTML file from **Options → Cards & windows
+→ Import gear list…**. The 🛡 Gear card is a persistent manual checklist: each row
+includes its slot, target item, drop/quest source, wiki/item URL on hover, and a
+checkbox. Re-importing replaces the complete list; *Clear* removes it.
+
+Imports separate equipped items under a *Gear* heading from socketed entries under
+an *Exaltations* heading. An exaltation that supplies an effect name displays it in
+smaller text immediately after the item name, for example `Fishbone Earring
+(Enduring Breath)`. Lists without either category omit that heading, and older
+shopping-list exports without socketed entries remain ordinary Gear-only lists.
+
+**Verify:** Import a shopping-list export
+containing both equipped gear and socketed exaltations. Confirm that Gear comes first,
+Exaltations follows, item sources remain with their own rows, effect text is smaller
+and parenthetical, and toggling a checkbox updates the Gear-card count and persists
+after restart. Import a gear-only export as a compatibility check.
+
 ### Money card
 Corpse coin vs merchant income, drops count, biggest drop, per-hour rates (wall +
 active), everything sold with per-item totals.
