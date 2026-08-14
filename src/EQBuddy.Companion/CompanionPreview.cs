@@ -41,13 +41,17 @@ public static class CompanionPreview
 
     private static bool Read()
     {
-        var v = Environment.GetEnvironmentVariable(EnvVar);
-        if (v is not null
-            && (v.Equals("1", StringComparison.Ordinal)
-                || v.Equals("true", StringComparison.OrdinalIgnoreCase)
-                || v.Equals("yes", StringComparison.OrdinalIgnoreCase)))
-            return true;
-        try { return File.Exists(MarkerPath); }
+        try { return IsOptedIn(Environment.GetEnvironmentVariable(EnvVar), File.Exists(MarkerPath)); }
         catch { return false; }   // an unreadable profile folder is not an opt-in
     }
+
+    /// <summary>The decision itself, free of the machine it runs on — the seam the tests
+    /// use, because the developer's own box IS opted in and a test asserting "off here"
+    /// would only ever prove where it ran.</summary>
+    public static bool IsOptedIn(string? envValue, bool markerExists) =>
+        markerExists
+        || (envValue is not null
+            && (envValue.Equals("1", StringComparison.Ordinal)
+                || envValue.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || envValue.Equals("yes", StringComparison.OrdinalIgnoreCase)));
 }

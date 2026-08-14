@@ -109,9 +109,15 @@ public partial class MainWindow : Window
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
-        // The phone second screen (Options -> Behavior -> Second screen). Construction
-        // is free; it only listens (LAN-only, token-gated) once CompanionEnabled is on.
+        // EQBuddy Mobile (Beta) — the title-bar 📱 and the menu's first window entry.
+        // Construction is free; it only listens (LAN-only, token-gated) once enabled,
+        // and only on a machine that opted into the preview at all.
         _companion = new Companion.CompanionHost(_settings, UpdateChecker.CurrentVersion.ToString());
+        if (EQBuddy.Companion.CompanionPreview.Enabled)
+        {
+            MobileBtn.Visibility = Visibility.Visible;
+            MobileMenuItem.Visibility = Visibility.Visible;
+        }
         // The map's spawn-point circles: kills near a fresh /loc accrete into
         // per-zone archives that only refine over time (David's map brief).
         _spawnPoints = new SpawnPointLedger(
@@ -618,6 +624,8 @@ public partial class MainWindow : Window
     internal EqlWikiItemService WikiItems => _wikiItems;
     private ItemInfoWindow? _itemWindow;
     private GearLockerWindow? _gearLockerWindow;
+
+    private void OnCompanion(object sender, RoutedEventArgs e) => OpenCompanionWindow();
 
     internal void OpenCompanionWindow()
     {

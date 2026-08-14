@@ -397,6 +397,18 @@
 
         <!-- ========================== BEHAVIOR ========================== -->
         <StackPanel x:Name="TabBehaviorPanel" Visibility="Collapsed">
+            <!-- PREVIEW-GATED (see CompanionPreview): collapsed unless this machine opted
+                 in, so released builds never surface it and never open a socket. FIRST in
+                 the tab, not buried at the bottom — the primary way in is the title-bar
+                 📱 button; this is the explanation that sits beside it. -->
+            <StackPanel x:Name="SecondScreenBlock" Visibility="Collapsed" Margin="0,0,0,14">
+                <TextBlock Text="EQBuddy Mobile (Beta)" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentBrush}"/>
+                <TextBlock Text="Show EQBuddy on a phone or tablet on your Wi-Fi: scan the code once, then pick which windows that device shows. LAN-only and off by default — nothing leaves your network. The 📱 button in the title bar opens it any time."
+                           Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+                <Button x:Name="SecondScreenBtn" Content="EQBuddy Mobile…" Style="{StaticResource ActionButton}"
+                        HorizontalAlignment="Left" Click="OnSecondScreen"/>
+            </StackPanel>
             <CheckBox x:Name="HideUnfocusedCheck"
                       Checked="OnHideUnfocusedToggled" Unchecked="OnHideUnfocusedToggled">
                 <TextBlock Text="Hide the widget while the game is running but not focused" FontSize="12"
@@ -469,17 +481,6 @@
             <TextBlock Text="A small dim readout (&quot;0.3% · 84 MB&quot;) refreshed every few seconds — CPU is the share of ALL cores. Diagnostic honesty: if EQBuddy ever hogs your machine, this is how you catch it and tell us."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
 
-            <!-- PREVIEW-GATED (see CompanionPreview): the whole block stays collapsed
-                 unless EQBUDDY_COMPANION=1 is set, so released builds never surface it
-                 and never open a socket. Ungate here when the feature launches. -->
-            <StackPanel x:Name="SecondScreenBlock" Visibility="Collapsed">
-                <TextBlock Text="Second screen (preview)" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
-                           Foreground="{DynamicResource AccentBrush}"/>
-                <TextBlock Text="Turn a phone or tablet on your Wi-Fi into a live spawn-timer display. Off by default and LAN-only; the QR code, pairing, and what gets shared all live in its own window."
-                           Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-                <Button x:Name="SecondScreenBtn" Content="Second screen…" Style="{StaticResource ActionButton}"
-                        HorizontalAlignment="Left" Click="OnSecondScreen"/>
-            </StackPanel>
         </StackPanel>
 
         </Grid>

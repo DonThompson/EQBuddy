@@ -8,15 +8,20 @@ namespace EQBuddy.Tests;
 /// that keeps a socket closed even when a settings file asks for one.</summary>
 public class CompanionPreviewGateTests
 {
-    [Fact]
-    public void PreviewIsOffWithoutAnExplicitOptIn()
-    {
-        // The test host sets neither the env var nor the marker file, which is exactly
-        // a player's machine. If this fails, released builds are surfacing the feature.
-        Assert.Null(Environment.GetEnvironmentVariable(CompanionPreview.EnvVar));
-        Assert.False(File.Exists(CompanionPreview.MarkerPath));
-        Assert.False(CompanionPreview.Enabled);
-    }
+    [Theory]
+    // A player's machine: no marker, no variable. This is the case that must stay false
+    // or released builds surface the feature.
+    [InlineData(null, false, false)]
+    [InlineData("", false, false)]
+    [InlineData("0", false, false)]
+    [InlineData("no", false, false)]
+    // Either opt-in alone is enough; the marker is the one that survives a relaunch.
+    [InlineData(null, true, true)]
+    [InlineData("1", false, true)]
+    [InlineData("true", false, true)]
+    [InlineData("YES", false, true)]
+    public void OptInRequiresAMarkerOrAnExplicitVariable(string? env, bool marker, bool expected) =>
+        Assert.Equal(expected, CompanionPreview.IsOptedIn(env, marker));
 
     [Fact]
     public void TheMarkerLivesBesideSettingsSoItSurvivesHoweverTheAppWasLaunched()
@@ -29,26 +34,23 @@ public class CompanionPreviewGateTests
         Assert.EndsWith("mobile-preview.enabled", CompanionPreview.MarkerPath);
     }
 
+    // Asserts the INVARIANT rather than a machine's answer: a listener exists only where
+    // the preview is opted in. On a player's box (and CI) that reads "enabled settings
+    // still open no socket" — the dangerous case, a settings.json copied from a field-test
+    // machine or hand-edited. On an opted-in box it reads "the gate lets it through".
+    //
+    // Constructing the host does NOT save, so this test writes nothing. Its sibling —
+    // "does SetEnabled obey the gate" — is deliberately absent: SetEnabled calls
+    // AppSettings.Save(), which writes the REAL profile's settings.json, and running it
+    // here overwrote a live install's settings (2026-08-14). A test must never reach
+    // outside its sandbox; the toggle's behavior is covered by the same gate this pins.
     [Fact]
-    public void EnabledSettingsStillOpenNoSocketWhileGated()
+    public void ASocketExistsOnlyWhereThePreviewIsOptedIn()
     {
-        // The dangerous case: a settings.json copied from a field-test machine, or
-        // hand-edited, carrying CompanionEnabled=true into a released build.
         var settings = new AppSettings { CompanionEnabled = true, CompanionPort = 47999 };
         using var host = new CompanionHost(settings, "test");
 
-        Assert.False(host.Running);
-        Assert.Equal(0, host.ClientCount);
-    }
-
-    [Fact]
-    public void TurningItOnAtRuntimeAlsoOpensNoSocketWhileGated()
-    {
-        var settings = new AppSettings { CompanionPort = 47998 };
-        using var host = new CompanionHost(settings, "test");
-
-        host.SetEnabled(true);   // what the Options toggle calls
-
-        Assert.False(host.Running);
+        Assert.Equal(CompanionPreview.Enabled, host.Running);
+        if (!CompanionPreview.Enabled) Assert.Equal(0, host.ClientCount);
     }
 }
