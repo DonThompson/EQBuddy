@@ -61,6 +61,8 @@ public partial class MainWindow : Window
         AttachSpellStore();
         _mezTracker.AttachStore(System.IO.Path.Combine(Core.AppPaths.Dir, "mez-durations.json"));
         _stats.AaStore = new AaLedgerStore(AppPaths.File("aa-ledger.json"));
+        // Measured stacking conflicts ("did not take hold") — per character, replay-safe.
+        _stats.StackingStore = new StackingLedgerStore(AppPaths.File("stacking-ledger.json"));
         // Quest ledger rides the same replay: the catalog decides what's worth keeping,
         // the store's time high-water mark keeps the replay from double-counting.
         QuestCatalog = QuestCatalog.LoadEmbedded();
@@ -1825,12 +1827,19 @@ public partial class MainWindow : Window
                 // fizzle/resist line for logs with no cast lines in them.
                 (s.CastCompletion is { } completion
                     ? $"\nCasts {s.CastsStarted} · {completion * 100:0}% completed" +
-                      $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted)"
-                    : s.Fizzles + s.Resists > 0 ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" : "") +
+                      $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted" +
+                      // Blocked = completed casts a standing buff refused ("did not take
+                      // hold") — a stacking fact, not a casting failure, so it joins the
+                      // parenthetical only when it happened.
+                      (s.Blocked > 0 ? $" · {s.Blocked} blocked" : "") + ")"
+                    : s.Fizzles + s.Resists + s.Blocked > 0
+                        ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" +
+                          (s.Blocked > 0 ? $" · blocked {s.Blocked}" : "")
+                        : "") +
                 (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
             PaintCombatSpark(s);
             FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps",
-                SpellResistLookup(s));
+                SpellResistLookup(s), BlockedByLookup(s));
             // Shares the damage sort bar above it — it's the same rows, one level down.
             // Collapsed to one line by default (asked for in discussion #28 by a pet
             // class drowning in rows): the pet's overall damage is already a row in the
@@ -1894,7 +1903,11 @@ public partial class MainWindow : Window
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;
-            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps");
+            // The resist/block lookup rides along: a blocked HoT or buff that has
+            // landed at least once this session gets its "N blocked" here — the only
+            // per-spell row a non-damage spell ever has.
+            FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps",
+                SpellResistLookup(s), BlockedByLookup(s));
             HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(HealerList, s.HealsByHealer.Select(h =>
                 (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
@@ -3964,14 +3977,33 @@ public partial class MainWindow : Window
         });
     }
 
-    /// <summary>Per-spell resist tallies as a row-lookup dict (session-scoped; empty →
-    /// null so rows skip the lookup entirely).</summary>
-    internal static IReadOnlyDictionary<string, (int Casts, int Resists)>? SpellResistLookup(
+    /// <summary>Per-spell resist/block tallies as a row-lookup dict (session-scoped;
+    /// empty → null so rows skip the lookup entirely).</summary>
+    internal static IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? SpellResistLookup(
         StatsSnapshot s) =>
         s.SpellResists.Count == 0
             ? null
-            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists),
+            : s.SpellResists.ToDictionary(x => x.Spell, x => (x.Casts, x.Resists, x.Blocked),
                 StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Tooltip text per blocked spell ("Blocked by: Chloroplast ×3") from the
+    /// per-character stacking ledger — only for spells the session actually saw blocked,
+    /// so the ledger read stays proportional to what's on screen. Null when nothing was.</summary>
+    internal IReadOnlyDictionary<string, string>? BlockedByLookup(StatsSnapshot s)
+    {
+        if (_stats.StackingStore is not { } store) return null;
+        var blockedSpells = s.SpellResists.Where(x => x.Blocked > 0).Select(x => x.Spell).ToList();
+        if (blockedSpells.Count == 0) return null;
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var spell in blockedSpells)
+        {
+            var blockers = store.BlockersFor(_stats.LedgerCharacterKey, spell);
+            if (blockers.Count == 0) continue;   // blocker-less lines only — no names to show
+            result[spell] = "Blocked by: " + string.Join(", ",
+                blockers.Select(b => $"{b.BlockedBy} ×{b.Count}"));
+        }
+        return result.Count > 0 ? result : null;
+    }
 
     /// <summary>Details!-style breakdown: proportional bar behind each row with the full
     /// "total · ×hits · avg · rate (· crit%)" columns inline. The rate (dps/hps) uses the
@@ -3988,9 +4020,10 @@ public partial class MainWindow : Window
 
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
         StatSort sort, double combatSeconds, string rateLabel,
-        IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null) =>
+        IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? resists = null,
+        IReadOnlyDictionary<string, string>? blockedBy = null) =>
         BreakdownRows.FillAbilityRowsSorted(this, list, stats, sort, combatSeconds, rateLabel,
-            CardRowCap, resists: resists);
+            CardRowCap, resists: resists, blockedBy: blockedBy);
 
     /// <summary>Render a Total/Count/Avg stat list in the chosen sort order.</summary>
     private void FillStatList(ItemsControl list, IEnumerable<SourceDamage> stats, StatSort sort, string unit)
@@ -4480,6 +4513,7 @@ public partial class MainWindow : Window
         foreach (var w in _breakouts.Values) w.Close();   // each persists its spot on Closed
         _stats.QuestStore?.Flush();   // debounced writers get their last word (audit #3)
         _stats.AaStore?.Flush();
+        _stats.StackingStore?.Flush();
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();

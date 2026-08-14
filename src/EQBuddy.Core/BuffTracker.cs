@@ -138,6 +138,17 @@ public sealed class BuffTracker
                     changed = OnLanding(entry, landed.Time);
                     break;
 
+                // A blocked cast never lands, so no state opens (landing lines are the
+                // only thing that opens state) — but its cast must not stay remembered:
+                // armed for up to CastToLand, it would resolve a LATER unexplained
+                // landing of the same message (a groupmate's cast, a clicky) to OUR
+                // cast and caster. Only "You" disarms — the line is first-person.
+                case SpellBlockedEvent blocked:
+                    _recentCasts.RemoveAll(c => c.Caster == "You"
+                        && SpellCatalog.BaseName(c.Spell).Equals(
+                            SpellCatalog.BaseName(blocked.Spell), StringComparison.OrdinalIgnoreCase));
+                    break;
+
                 case BuffFadeEvent fade:
                     changed = OnFade(fade.Spells, fade.Time);
                     break;

@@ -122,7 +122,8 @@ internal static class BreakdownRows
     public static void FillAbilityRowsSorted(FrameworkElement resources, ItemsControl list,
         IEnumerable<SourceDamage> stats, StatSort sort, double combatSeconds, string rateLabel,
         int max = int.MaxValue,
-        IReadOnlyDictionary<string, (int Casts, int Resists)>? resists = null)
+        IReadOnlyDictionary<string, (int Casts, int Resists, int Blocked)>? resists = null,
+        IReadOnlyDictionary<string, string>? blockedBy = null)
     {
         var secs = Math.Max(1, combatSeconds);
         double Rate(SourceDamage d) => d.Total / secs;
@@ -158,10 +159,25 @@ internal static class BreakdownRows
             var resistPart = "";
             var resistTip = "";
             if (resists is not null
-                && resists.TryGetValue(SpellCatalog.BaseName(d.Name), out var rr) && rr.Resists > 0)
+                && resists.TryGetValue(SpellCatalog.BaseName(d.Name), out var rr))
             {
-                resistPart = $" · {Math.Min(100, 100.0 * rr.Resists / Math.Max(1, rr.Casts)):0}% resist";
-                resistTip = $" · {rr.Resists} resist{(rr.Resists == 1 ? "" : "s")} across {rr.Casts} casts this session";
+                if (rr.Resists > 0)
+                {
+                    resistPart = $" · {Math.Min(100, 100.0 * rr.Resists / Math.Max(1, rr.Casts)):0}% resist";
+                    resistTip = $" · {rr.Resists} resist{(rr.Resists == 1 ? "" : "s")} across {rr.Casts} casts this session";
+                }
+                // Stacking blocks ("did not take hold") ride the same lookup: a raw
+                // count, not a % — one occupied slot blocks every re-cast, and a
+                // percentage would read like a resist rate. The ledger names the
+                // blocker(s) in the tooltip when it knows them.
+                if (rr.Blocked > 0)
+                {
+                    resistPart += $" · {rr.Blocked} blocked";
+                    resistTip += blockedBy is not null
+                        && blockedBy.TryGetValue(SpellCatalog.BaseName(d.Name), out var blockers)
+                        ? $" · {blockers}"
+                        : $" · {rr.Blocked} cast{(rr.Blocked == 1 ? "" : "s")} did not take hold (another buff held the slot)";
+                }
             }
             // Miss % out of ATTEMPTS (hits + misses), the number a player means by it;
             // melee only — a spell's failure is its resist %, never both.

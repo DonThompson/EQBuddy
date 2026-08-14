@@ -169,6 +169,10 @@ public sealed class SessionStats
     /// rides AA purchases (QUEST-*; the UI wires catalog + path).</summary>
     public QuestLedgerStore? QuestStore { get; set; }
 
+    /// <summary>Optional spell-stacking ledger, fed from blocked-cast lines the same
+    /// way — its own time high-water mark keeps the startup replay idempotent.</summary>
+    public StackingLedgerStore? StackingStore { get; set; }
+
     /// <summary>The per-character ledger key ("dranak_legends") the stores are written
     /// under — the Quest Tracker window queries the ledger with this.</summary>
     public string LedgerCharacterKey => AaCharacterKey;
@@ -180,7 +184,7 @@ public sealed class SessionStats
     private readonly Dictionary<string, (int Ups, int Value)> _skills = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, (int Hits, int Net, bool Capped, bool CappedDown)> _faction = new(StringComparer.OrdinalIgnoreCase);
     private readonly List<(DateTime Time, string Zone)> _zones = new();
-    private int _fizzles, _resists;
+    private int _fizzles, _resists, _blocked;
 
     // Session event journal (JOURNAL-*): loot/coin/xp/kill/etc. kept whole-session;
     // high-frequency combat/heal events pruned past the largest recent window.
@@ -304,8 +308,9 @@ public sealed class SessionStats
     private readonly Dictionary<string, (int Count, long Damage)> _procs = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _spellCastAt = new(StringComparer.OrdinalIgnoreCase);
     // Per-spell casts vs resists (#102, jeremycranfill: "do I need to switch to
-    // overchannel?"). Keyed by base spell name; songs count too — they resist the same.
-    private readonly Dictionary<string, (int Casts, int Resists)> _spellOutcomes = new(StringComparer.OrdinalIgnoreCase);
+    // overchannel?") and stacking blocks ("did not take hold"). Keyed by base spell
+    // name; songs count too — they resist the same.
+    private readonly Dictionary<string, (int Casts, int Resists, int Blocked)> _spellOutcomes = new(StringComparer.OrdinalIgnoreCase);
     private (string Item, DateTime Time)? _lastItemProc;
     // A cast that preceded a blink or charmed line, held until a "Master" tell proves it
     // was a charm. Pet carries the creature the line named: the tell must name the SAME
@@ -692,7 +697,7 @@ public sealed class SessionStats
                     {
                         var outKey = SpellCatalog.BaseName(started.Spell);
                         var so = _spellOutcomes.GetValueOrDefault(outKey);
-                        _spellOutcomes[outKey] = (so.Casts + 1, so.Resists);
+                        _spellOutcomes[outKey] = (so.Casts + 1, so.Resists, so.Blocked);
                     }
                     if (ClassSignals.TryGetValue(SpellCatalog.BaseName(started.Spell), out var castCls))
                         _classEvidence[castCls] = _classEvidence.GetValueOrDefault(castCls) + 1;
@@ -708,6 +713,29 @@ public sealed class SessionStats
                 case SpellInterruptedEvent:
                     _castsInterrupted++;
                     _pendingCast = null;
+                    break;
+                case SpellBlockedEvent blk:
+                    // "did not take hold": the cast COMPLETED — mana spent, so it stays
+                    // out of the interrupt/fizzle completion math, like a resist — but
+                    // nothing landed, so nothing may stay armed. A pending charm cast
+                    // left live here could claim a bystander's blink seconds later,
+                    // the exact phantom the interrupt case already prevents.
+                    _blocked++;
+                    {
+                        var blkKey = SpellCatalog.BaseName(blk.Spell);
+                        var so = _spellOutcomes.GetValueOrDefault(blkKey);
+                        _spellOutcomes[blkKey] = (so.Casts, so.Resists, so.Blocked + 1);
+                        if (_pendingCast is { } bpc && string.Equals(
+                                SpellCatalog.BaseName(bpc.Spell), blkKey, StringComparison.OrdinalIgnoreCase))
+                            _pendingCast = null;
+                        if (_charmCandidate is { } bcc && string.Equals(
+                                SpellCatalog.BaseName(bcc.Spell), blkKey, StringComparison.OrdinalIgnoreCase))
+                            _charmCandidate = null;
+                        // A blocker-less line still counts above; only a NAMED pair is
+                        // a stacking fact the ledger can hold.
+                        if (blk.BlockedBy.Length > 0)
+                            StackingStore?.Record(AaCharacterKey, blkKey, blk.BlockedBy, blk.Time);
+                    }
                     break;
                 case SpellWornOffEvent { Pet: false } wo when _petName is not null && wo.Target.Length > 0
                         && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
@@ -1120,7 +1148,7 @@ public sealed class SessionStats
                     {
                         var rzKey = SpellCatalog.BaseName(rz.Spell);
                         var so = _spellOutcomes.GetValueOrDefault(rzKey);
-                        _spellOutcomes[rzKey] = (so.Casts, so.Resists + 1);
+                        _spellOutcomes[rzKey] = (so.Casts, so.Resists + 1, so.Blocked);
                     }
                     break;
                 case ItemProcEvent iproc: _lastItemProc = (iproc.Item, iproc.Time); break;
@@ -1663,7 +1691,7 @@ public sealed class SessionStats
         _xpPercent = 0; _xpTicks = 0; _xpSinceLevel = 0; _levels.Clear();
         _aaGained = 0; _aaTotal = 0;
         _skills.Clear(); _faction.Clear(); _zones.Clear();
-        _fizzles = 0; _resists = 0;
+        _fizzles = 0; _resists = 0; _blocked = 0;
         _closedCombatSeconds = 0; _closedCombatDamage = 0;
         _combatStart = null; _combatLast = null; _combatDamage = 0;
         _lastOwnAction = null; _petName = null; _petConfirmed = false;
@@ -1983,6 +2011,7 @@ public sealed class SessionStats
                 CurrentZone = _zones.Count > 0 ? _zones[^1].Zone : "",
                 Fizzles = _fizzles,
                 Resists = _resists,
+                Blocked = _blocked,
                 CastsStarted = _castsStarted,
                 CastsInterrupted = _castsInterrupted,
                 DotDamage = _dotDamage,
@@ -2028,9 +2057,9 @@ public sealed class SessionStats
                     .Select(kv => (kv.Key, kv.Value.Count, kv.Value.Damage))
                     .OrderByDescending(x => x.Damage).ToList(),
                 SpellResists = _spellOutcomes
-                    .Where(kv => kv.Value.Resists > 0)
-                    .Select(kv => (kv.Key, kv.Value.Casts, kv.Value.Resists))
-                    .OrderByDescending(x => x.Resists).ToList(),
+                    .Where(kv => kv.Value.Resists > 0 || kv.Value.Blocked > 0)
+                    .Select(kv => (kv.Key, kv.Value.Casts, kv.Value.Resists, kv.Value.Blocked))
+                    .OrderByDescending(x => x.Resists + x.Blocked).ToList(),
                 InferredClass = _classEvidence
                     .Where(kv => kv.Value >= ClassEvidenceFloor)
                     .OrderByDescending(kv => kv.Value)
@@ -2197,6 +2226,10 @@ public sealed class StatsSnapshot
     public string CurrentZone { get; init; } = "";
     public int Fizzles { get; init; }
     public int Resists { get; init; }
+    /// <summary>Buff casts that did not take hold — another buff held the stacking slot.
+    /// Excluded from <see cref="CastCompletion"/> for the same reason resists are: the
+    /// cast itself completed. Defaults 0, so old archives deserialize unchanged.</summary>
+    public int Blocked { get; init; }
     /// <summary>Casts begun ("You begin casting X."). The denominator for cast completion.</summary>
     public int CastsStarted { get; init; }
     public int CastsInterrupted { get; init; }
@@ -2242,10 +2275,11 @@ public sealed class StatsSnapshot
     /// <summary>Spell damage whose spell was never cast (#85): weapon/poison/item procs,
     /// each with hit count and total damage. Rate display divides by combat minutes.</summary>
     public List<(string Name, int Count, long Damage)> Procs { get; init; } = [];
-    /// <summary>Per-spell resist tallies for spells resisted at least once (#102,
-    /// jeremycranfill): base spell name, casts started, resists seen — the
-    /// "switch to overchannel?" numbers. Session-scoped; your own casts only.</summary>
-    public List<(string Spell, int Casts, int Resists)> SpellResists { get; init; } = [];
+    /// <summary>Per-spell resist/block tallies for spells that failed at least once
+    /// (#102, jeremycranfill): base spell name, casts started, resists seen, stacking
+    /// blocks seen — the "switch to overchannel?" numbers plus the "what's eating my
+    /// buff slot?" ones. Session-scoped; your own casts only.</summary>
+    public List<(string Spell, int Casts, int Resists, int Blocked)> SpellResists { get; init; } = [];
     /// <summary>Most-evidenced class from class-unique signals — "" until enough
     /// sightings. ALWAYS present as "(inferred)": players swap classes.</summary>
     public string InferredClass { get; init; } = "";
