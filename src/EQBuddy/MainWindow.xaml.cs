@@ -35,6 +35,12 @@ public partial class MainWindow : Window
     private SpawnsWindow? _spawnsWindow;
     private readonly Dictionary<string, int> _skyQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _epicQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    // Gear auto-done high-water marks, one per snapshot stream: loot drops, manual
+    // merges (Crafted — how exaltations arrive), and loot-merge results (Upgraded —
+    // how a wished "+N" tier is usually reached). Same delta contract as Sky's.
+    private readonly Dictionary<string, int> _gearLootSeen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _gearCraftSeen = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, int> _gearUpgradeSeen = new(StringComparer.OrdinalIgnoreCase);
     // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
     // does elsewhere — the checklist re-renders only when a box actually changed.
     private bool _skyQuestDirty = true;
@@ -1587,6 +1593,7 @@ public partial class MainWindow : Window
         _targetResults.Clear();
         _skyQuestLootSeen.Clear();
         _epicQuestLootSeen.Clear();
+        ClearGearAutoCheckSeen();
         if (pick is not null) _watcher.Select(path, pick.StartOffset, pick.EndOffset);
         else _watcher.Select(path);
         ReviewLogItem.Header = "✓ Reviewing an archive — return to live log";
@@ -1661,7 +1668,15 @@ public partial class MainWindow : Window
             _targetResults.Clear();
             _skyQuestLootSeen.Clear();
             _epicQuestLootSeen.Clear();
+            ClearGearAutoCheckSeen();
         }
+    }
+
+    private void ClearGearAutoCheckSeen()
+    {
+        _gearLootSeen.Clear();
+        _gearCraftSeen.Clear();
+        _gearUpgradeSeen.Clear();
     }
 
     /// <summary>Every EQBuddy surface is Topmost, but Windows keeps topmost windows
@@ -1850,7 +1865,7 @@ public partial class MainWindow : Window
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         UpdateSkyQuestChecklist(s);
-        UpdateGearHeaderOnly();
+        UpdateGearChecklist(s);
         UpdateEpicQuestChecklist(s);
         MoneyHeader.Text = StatsSnapshot.FormatCoin(s.Copper);
         ProgressHeader.Text = $"{s.XpPercent:0.0}% xp"
@@ -2326,6 +2341,9 @@ public partial class MainWindow : Window
 
     internal void ImportGearChecklist(GearChecklistImportResult import)
     {
+        // Boxes ticked in the app (by hand or auto-done) survive a re-import — the
+        // fresh export only knows what the website was told.
+        GearChecklistImporter.PreserveAcquired(import.Items, _settings.GearChecklist);
         _settings.GearChecklist = import.Items;
         _settings.GearChecklistName = import.Name;
         _settings.Save();
@@ -2443,6 +2461,56 @@ public partial class MainWindow : Window
         var total = _settings.GearChecklist.Count;
         var acquired = _settings.GearChecklist.Count(i => i.Acquired);
         GearHeader.Text = $"{acquired}/{total}";
+    }
+
+    private void UpdateGearChecklist(StatsSnapshot s)
+    {
+        var changed = AutoCheckGearLoot(s);
+        UpdateGearHeaderOnly();
+        if (changed)
+        {
+            _gearChecklistDirty = true;   // rebuild next tick: checked box, list-name count
+            _settings.Save();
+        }
+    }
+
+    private bool AutoCheckGearLoot(StatsSnapshot s)
+    {
+        // The matching rules live in Core (GearLootAutoCheck) where they are tested:
+        // single-owner list, so a name match ticks — no class lens, no * machinery
+        // (an auto-ticked row is indistinguishable from a hand-ticked one, by design).
+        // Three streams feed it: drops, manual merges (exaltations), and loot-merge
+        // results (the "+N" tier a wish usually names). Same high-water diff as
+        // Sky/Epic — only the newly-obtained delta ticks, so a re-render never
+        // double-counts.
+        var changed = ApplyGearHighWater(_gearLootSeen,
+            s.Loot.Select(l => new NameCount(l.Item, l.Count)));
+        changed |= ApplyGearHighWater(_gearCraftSeen, s.Crafted);
+        changed |= ApplyGearHighWater(_gearUpgradeSeen, s.Upgraded);
+        return changed;
+    }
+
+    private bool ApplyGearHighWater(Dictionary<string, int> seen, IEnumerable<NameCount> counts)
+    {
+        var byName = counts
+            .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Sum(c => c.Count), StringComparer.OrdinalIgnoreCase);
+
+        // A session reset empties the snapshot's lists; drop the marks with it so the
+        // next session's first loot still reads as new (the Sky perf-audit #9 contract).
+        foreach (var key in seen.Keys.ToList())
+            if (!byName.ContainsKey(key))
+                seen[key] = 0;
+
+        var changed = false;
+        foreach (var (name, count) in byName)
+        {
+            seen.TryGetValue(name, out var prior);
+            seen[name] = count;
+            if (count <= prior) continue;
+            changed |= GearLootAutoCheck.Apply(_settings.GearChecklist, name, count - prior);
+        }
+        return changed;
     }
 
     private void RenderEpicQuestChecklist()
@@ -4482,8 +4550,33 @@ public partial class MainWindow : Window
     internal InventoryFile.Snapshot? LatestInventory(bool refresh = false)
     {
         if (refresh || _inventory is null)
+        {
             _inventory = InventoryFile.FindLatest(_settings.LogFolder, Identity.Character);
+            // This is where dumps enter the app (the ⟳ buttons, the quests held tab)
+            // — the Gear card's auto-done rides the same load.
+            AutoCheckGearFromInventory(_inventory);
+        }
         return _inventory?.WithChanges(_stats.ItemsGainedSince(_inventory.WrittenAt));
+    }
+
+    /// <summary>One dump, one pass: what the character verifiably OWNS ticks gear
+    /// wishes — the raw Entries carry "+N" tiers (Counts folds them off), so the
+    /// at-or-above rule holds here too. The stamp keeps a re-scan of the same file
+    /// from re-fighting a box the player deliberately unchecked.</summary>
+    private string _gearInventoryApplied = "";
+
+    private void AutoCheckGearFromInventory(InventoryFile.Snapshot? dump)
+    {
+        if (dump is null) return;
+        var stamp = $"{dump.Path}|{dump.WrittenAt:O}";
+        if (stamp == _gearInventoryApplied) return;
+        _gearInventoryApplied = stamp;
+        if (GearLootAutoCheck.ApplyInventory(_settings.GearChecklist, dump.Entries))
+        {
+            _gearChecklistDirty = true;
+            _settings.Save();
+            UpdateGearHeaderOnly();
+        }
     }
 
     private void OnInventoryWindow(object sender, RoutedEventArgs e)
