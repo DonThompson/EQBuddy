@@ -22,7 +22,7 @@ public partial class OptionsWindow : Window
     {
         InitializeComponent();
         _main = main;
-        // Second screen stays invisible until the preview gate is set (see
+        // EQBuddy Mobile stays invisible until the preview gate is set (see
         // CompanionPreview) — released builds must not surface it before launch.
         if (EQBuddy.Companion.CompanionPreview.Enabled)
             SecondScreenBlock.Visibility = Visibility.Visible;

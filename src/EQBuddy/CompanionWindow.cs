@@ -7,7 +7,7 @@ using EQBuddy.Companion;
 namespace EQBuddy;
 
 /// <summary>
-/// The second-screen pairing window (Options → Behavior → "Second screen…"): the
+/// The EQBuddy Mobile pairing window (Options → Behavior → "EQBuddy Mobile…"): the
 /// enable switch, the QR code a phone scans to become a live companion display, the
 /// literal URL for when scanning won't take, the desktop gate (which screens the PC
 /// is willing to send), and the honest firewall talk. All lifecycle logic lives in
@@ -35,7 +35,7 @@ public sealed class CompanionWindow : Window
     public CompanionWindow(CompanionHost host)
     {
         _host = host;
-        Title = "Second screen";
+        Title = "EQBuddy Mobile (Beta)";
         Width = 430;
         SizeToContent = SizeToContent.Height;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -45,16 +45,17 @@ public sealed class CompanionWindow : Window
         var root = new StackPanel { Margin = new Thickness(14, 10, 14, 12) };
 
         var intro = Dim(
-            "Turn a phone or tablet on the same Wi-Fi into a live companion display: scan " +
-            "the code, the browser opens, spawn timers follow you around the house. " +
-            "Everything stays on your own network — nothing is hosted, nothing is uploaded, " +
-            "and it's off unless you turn it on.");
+            "Turn a phone or tablet on the same Wi-Fi into a live EQBuddy display: scan " +
+            "the code, the browser opens, and your timers, map and checklists follow you " +
+            "around the house. Everything stays on your own network — nothing is hosted, " +
+            "nothing is uploaded, and it's off unless you turn it on. Beta: it works, it " +
+            "just hasn't been through as many camps as the rest of EQBuddy.");
         intro.Margin = new Thickness(0, 0, 0, 10);
         root.Children.Add(intro);
 
         _enable = new CheckBox
         {
-            Content = new TextBlock { Text = "Enable the second screen", FontSize = 12 },
+            Content = new TextBlock { Text = "Enable EQBuddy Mobile", FontSize = 12 },
             IsChecked = _host.Running,
         };
         ((TextBlock)_enable.Content).SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");

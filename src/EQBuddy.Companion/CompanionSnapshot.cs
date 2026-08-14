@@ -53,7 +53,7 @@ public sealed record CompanionSnapshot
     public CompanionIdentity Identity { get; init; } = new("", "", "");
 
     /// <summary>The surfaces the DESKTOP is willing to send (the owner's gate in
-    /// Options → Second screen). The page builds its ⚙ Screens picker from this.</summary>
+    /// Options → EQBuddy Mobile). The page builds its ⚙ Screens picker from this.</summary>
     public IReadOnlyList<string> Offered { get; init; } = [];
 
     /// <summary>Surfaces this client subscribed to that the desktop is NOT offering —

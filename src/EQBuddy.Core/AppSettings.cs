@@ -387,7 +387,7 @@ public sealed class AppSettings
     public string BreakoutHealingSort { get; set; } = "total";
     public string BreakoutPetSort { get; set; } = "total";
 
-    // ---- second screen (the LAN companion server; see SECURITY.md) ----
+    // ---- EQBuddy Mobile (the LAN companion server; see SECURITY.md) ----
     /// <summary>The phone companion listener. OFF by default and stays off until the
     /// player flips it — a network listener is opt-in, never a surprise.</summary>
     public bool CompanionEnabled { get; set; }

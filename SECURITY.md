@@ -41,10 +41,10 @@ itself, it hands the URL to your default browser and steps away:
 - eqmaps.info (the map window's "Get maps…" button, linking Brewall's map packs)
 - eqlegendstools.com (the char-sheet link in Options)
 
-## The second screen (LAN listener)
+## EQBuddy Mobile (LAN listener)
 
-The "Second screen" feature (Options → Behavior → Second screen) is the one
-place EQBuddy can LISTEN on the network instead of only making requests, so
+The "EQBuddy Mobile (Beta)" feature (Options → Behavior → EQBuddy Mobile) is the
+one place EQBuddy can LISTEN on the network instead of only making requests, so
 here is exactly what it does:
 
 - **Off by default.** Until you flip the toggle, nothing listens on anything.
@@ -54,8 +54,8 @@ here is exactly what it does:
   changeable). It is plain HTTP + WebSocket on your Wi-Fi — nothing is hosted
   on the internet, no cloud relay, no account. Traffic goes phone → PC and
   never leaves your network. (Consequence to know: LAN HTTP is unencrypted,
-  so anyone on the same network could observe it — the data at stake is spawn
-  timers and session stats.)
+  so anyone on the same network could observe it — the data at stake is what
+  your desktop cards already show you.)
 - **Token-gated.** Enabling the feature mints a crypto-random 128-bit pairing
   token, carried in the QR code's URL *fragment* (the part after `#`, which
   browsers never send in requests). The page presents it on the WebSocket

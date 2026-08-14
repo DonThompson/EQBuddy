@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- EQBuddy second screen (Phase 1). Self-contained: no CDN, no fonts, no requests to
+<!-- EQBuddy Mobile (Beta). Self-contained: no CDN, no fonts, no requests to
      anywhere but the PC that served it. The pairing token rides the URL FRAGMENT
      (never sent over HTTP); this page presents it on the WebSocket connect. Without a
      token the page is only the pairing explainer — no data exists here to see. -->
@@ -8,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#16130e">
-<title>EQBuddy — second screen</title>
+<title>EQBuddy Mobile (Beta)</title>
 <style>
   /* EQBuddy ParchmentBrass palette (ThemePalettes.cs): bg #16130E, text #EDE4D3,
      dim #9C927F, accent/gold #E3B341, good #7FBF5F, bad #D9634F, warn #E0A030. */
@@ -113,9 +113,9 @@
 </header>
 
 <div id="pair">
-  <h1>EQBuddy second screen</h1>
+  <h1>EQBuddy Mobile (Beta)</h1>
   <p>This page needs a pairing code to show anything.</p>
-  <p>On your PC, open EQBuddy → <b>Options → Behavior → Second screen</b> and scan the QR code there — it carries the code for you.</p>
+  <p>On your PC, open EQBuddy → <b>Options → Behavior → EQBuddy Mobile</b> and scan the QR code there — it carries the code for you.</p>
   <p>Nothing is shown, stored, or sent without it.</p>
 </div>
 
@@ -237,7 +237,7 @@ function boot() {
     if (!latest) return;
     $("who").textContent = latest.identity.character || "EQBuddy";
     $("zone").textContent = latest.identity.zone || "waiting for the log…";
-    $("ver").textContent = "EQBuddy " + latest.identity.appVersion + " · second screen";
+    $("ver").textContent = "EQBuddy Mobile (Beta) · " + latest.identity.appVersion;
 
     const host = $("sections");
     host.replaceChildren();

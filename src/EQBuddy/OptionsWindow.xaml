@@ -473,11 +473,11 @@
                  unless EQBUDDY_COMPANION=1 is set, so released builds never surface it
                  and never open a socket. Ungate here when the feature launches. -->
             <StackPanel x:Name="SecondScreenBlock" Visibility="Collapsed">
-                <TextBlock Text="Second screen (preview)" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
+                <TextBlock Text="EQBuddy Mobile (Beta)" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
                            Foreground="{DynamicResource AccentBrush}"/>
-                <TextBlock Text="Turn a phone or tablet on your Wi-Fi into a live spawn-timer display. Off by default and LAN-only; the QR code, pairing, and what gets shared all live in its own window."
+                <TextBlock Text="Turn a phone or tablet on your Wi-Fi into a live EQBuddy display — spawn timers, the zone map, your checklists. Off by default and LAN-only; the QR code, pairing, and what gets shared all live in its own window."
                            Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-                <Button x:Name="SecondScreenBtn" Content="Second screen…" Style="{StaticResource ActionButton}"
+                <Button x:Name="SecondScreenBtn" Content="EQBuddy Mobile…" Style="{StaticResource ActionButton}"
                         HorizontalAlignment="Left" Click="OnSecondScreen"/>
             </StackPanel>
         </StackPanel>

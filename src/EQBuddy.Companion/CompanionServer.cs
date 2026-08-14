@@ -27,13 +27,13 @@ public sealed class CompanionServerOptions
 }
 
 /// <summary>
-/// The second-screen listener: a deliberately tiny HTTP/1.1 + RFC 6455 WebSocket
+/// The EQBuddy Mobile listener: a deliberately tiny HTTP/1.1 + RFC 6455 WebSocket
 /// server over raw TcpListener. Two routes only — GET / serves the embedded phone
 /// page (which shows nothing but pairing instructions until its JS presents the
 /// token), and GET /ws?token=… upgrades to a WebSocket that streams
 /// CompanionSnapshot JSON. Everything else is 404.
 ///
-/// Trust model (see SECURITY.md "Second screen"): binds LAN addresses only, never
+/// Trust model (see SECURITY.md "EQBuddy Mobile"): binds LAN addresses only, never
 /// 0.0.0.0 unless the caller says so; every WS connect must carry the pairing token
 /// (constant-time compare); failed attempts are rate-limited per IP; the unauthed
 /// HTTP surface contains no player data at all.

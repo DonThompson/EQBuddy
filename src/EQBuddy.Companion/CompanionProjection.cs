@@ -14,7 +14,7 @@ public static class CompanionProjection
     public const double ImminentSeconds = 120;
 
     /// <summary>Build the full offered snapshot. <paramref name="offered"/> is the
-    /// desktop gate (Options → Second screen): sections outside it are never even
+    /// desktop gate (Options → EQBuddy Mobile): sections outside it are never even
     /// projected, so gated data doesn't exist in memory to leak, let alone send.</summary>
     public static CompanionSnapshot Build(
         StatsSnapshot? stats,

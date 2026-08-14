@@ -87,7 +87,7 @@ public class CompanionServerTests : IDisposable
         var html = await response.Content.ReadAsStringAsync();
         // The explainer is there; the page itself contains no player data — data only
         // ever arrives over the token-checked WebSocket.
-        Assert.Contains("EQBuddy second screen", html);
+        Assert.Contains("EQBuddy Mobile (Beta)", html);
         Assert.Contains("pairing code", html);
     }
 

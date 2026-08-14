@@ -109,7 +109,7 @@ public partial class MainWindow : Window
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
-        // The phone second screen (Options -> Behavior -> Second screen). Construction
+        // EQBuddy Mobile, the phone companion (Options -> Behavior). Construction
         // is free; it only listens (LAN-only, token-gated) once CompanionEnabled is on.
         _companion = new Companion.CompanionHost(_settings, UpdateChecker.CurrentVersion.ToString());
         // The map's spawn-point circles: kills near a fresh /loc accrete into
@@ -2097,7 +2097,7 @@ public partial class MainWindow : Window
         ObserveBuffLosses(s);
         UpdateBreakouts(s);
 
-        // The second screen rides the same shared snapshot as every desktop card, and
+        // EQBuddy Mobile rides the same shared snapshot as every desktop card, and
         // must keep flowing while the widget hides for focus (the phone is exactly the
         // screen you look at then). Free unless a device is actually connected.
         _companion.Tick(s, _spawnTimers, _stats.CharacterName ?? "", DateTime.Now);
