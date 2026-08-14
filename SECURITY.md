@@ -41,6 +41,42 @@ itself, it hands the URL to your default browser and steps away:
 - eqmaps.info (the map window's "Get maps…" button, linking Brewall's map packs)
 - eqlegendstools.com (the char-sheet link in Options)
 
+## The second screen (LAN listener)
+
+The "Second screen" feature (Options → Behavior → Second screen) is the one
+place EQBuddy can LISTEN on the network instead of only making requests, so
+here is exactly what it does:
+
+- **Off by default.** Until you flip the toggle, nothing listens on anything.
+  The toggle's state persists; turning it off closes the listener immediately.
+- **LAN only.** The server binds your machine's local-network addresses
+  (skipping loopback-only and link-local) on one TCP port (default 47859,
+  changeable). It is plain HTTP + WebSocket on your Wi-Fi — nothing is hosted
+  on the internet, no cloud relay, no account. Traffic goes phone → PC and
+  never leaves your network. (Consequence to know: LAN HTTP is unencrypted,
+  so anyone on the same network could observe it — the data at stake is spawn
+  timers and session stats.)
+- **Token-gated.** Enabling the feature mints a crypto-random 128-bit pairing
+  token, carried in the QR code's URL *fragment* (the part after `#`, which
+  browsers never send in requests). The page presents it on the WebSocket
+  connect; a connect without the exact token is refused, and repeated failures
+  are rate-limited per IP. "New code" mints a fresh token and disconnects
+  every previously paired device.
+- **Unauthenticated surface = the explainer page only.** A browser hitting the
+  address without the token gets a static page that says how to pair. It
+  contains no game data; data flows only over the token-checked WebSocket.
+- **You choose what's offered.** The pairing window lists the screens
+  (spawn timers, session stats) the PC is willing to send; untick anything you
+  want to never leave the machine. Each phone then picks its own subset of
+  what's offered — that choice is stored on the phone, not by EQBuddy.
+- **What's actually sent:** character name, current zone, app version, the
+  spawn-timer list, and session basics (kills, xp/hr, session length, dps).
+  Nothing is received from the phone except its screen picks.
+- **Windows Firewall** will ask to allow EQBuddy the first time it listens;
+  saying no (or missing the prompt) silently blocks phones — the pairing
+  window says so and tells you where to fix it. EQBuddy never edits firewall
+  rules or elevates to try.
+
 ## Zero telemetry
 
 There is no analytics endpoint, no crash reporter, no usage ping, no

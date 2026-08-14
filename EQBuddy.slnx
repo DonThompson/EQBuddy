@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/EQBuddy.Avalonia/EQBuddy.Avalonia.csproj" />
+    <Project Path="src/EQBuddy.Companion/EQBuddy.Companion.csproj" />
     <Project Path="src/EQBuddy.Core/EQBuddy.Core.csproj" />
     <Project Path="src/EQBuddy.UI.Shared/EQBuddy.UI.Shared.csproj" />
     <Project Path="src/EQBuddy/EQBuddy.csproj" />

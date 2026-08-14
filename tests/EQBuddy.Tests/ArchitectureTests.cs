@@ -25,6 +25,9 @@ public class ArchitectureTests
     {
         typeof(EQBuddy.Core.LogParser).Assembly,        // EQBuddy.Core
         typeof(EQBuddy.UI.Shared.GameCommands).Assembly, // EQBuddy.UI.Shared
+        // The companion server must stay hostable from the Avalonia lane too —
+        // a WPF type leaking in here would quietly kill that.
+        typeof(EQBuddy.Companion.CompanionServer).Assembly, // EQBuddy.Companion
     };
 
     [Theory]

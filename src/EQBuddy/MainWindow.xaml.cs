@@ -32,6 +32,9 @@ public partial class MainWindow : Window
 
     private readonly SpawnTimers _spawnTimers;
     internal SpawnTimers SpawnTimers => _spawnTimers;
+    private readonly Companion.CompanionHost _companion;
+    internal Companion.CompanionHost Companion => _companion;
+    private CompanionWindow? _companionWindow;
     private readonly EQBuddy.UI.Shared.SpawnsViewModel _spawnsVm;
     private SpawnsWindow? _spawnsWindow;
     private readonly Dictionary<string, int> _skyQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
@@ -106,6 +109,9 @@ public partial class MainWindow : Window
         _spawnTimers = new SpawnTimers(spawnCatalog, spawnOverrides, AppPaths.File("spawn-timers.json"));
         _watcher.Spawns = _spawnTimers;
         _spawnsVm = new EQBuddy.UI.Shared.SpawnsViewModel(spawnCatalog, spawnOverrides, _spawnTimers);
+        // The phone second screen (Options -> Behavior -> Second screen). Construction
+        // is free; it only listens (LAN-only, token-gated) once CompanionEnabled is on.
+        _companion = new Companion.CompanionHost(_settings, UpdateChecker.CurrentVersion.ToString());
         // The map's spawn-point circles: kills near a fresh /loc accrete into
         // per-zone archives that only refine over time (David's map brief).
         _spawnPoints = new SpawnPointLedger(
@@ -612,6 +618,14 @@ public partial class MainWindow : Window
     internal EqlWikiItemService WikiItems => _wikiItems;
     private ItemInfoWindow? _itemWindow;
     private GearLockerWindow? _gearLockerWindow;
+
+    internal void OpenCompanionWindow()
+    {
+        if (_companionWindow is { IsLoaded: true } open) { open.Activate(); return; }
+        _companionWindow = new CompanionWindow(_companion) { Owner = this };
+        _companionWindow.Closed += (_, _) => _companionWindow = null;
+        _companionWindow.Show();
+    }
 
     private void OnGearLocker(object sender, RoutedEventArgs e)
     {
@@ -2082,6 +2096,11 @@ public partial class MainWindow : Window
         // this tick's losses, not last tick's.
         ObserveBuffLosses(s);
         UpdateBreakouts(s);
+
+        // The second screen rides the same shared snapshot as every desktop card, and
+        // must keep flowing while the widget hides for focus (the phone is exactly the
+        // screen you look at then). Free unless a device is actually connected.
+        _companion.Tick(s, _spawnTimers, _stats.CharacterName ?? "", DateTime.Now);
 
         // Hidden while the game is unfocused: everything the player can't see stops
         // here — alerts, chips, timers, and checkpoints above already ran (perf
@@ -5150,6 +5169,7 @@ public partial class MainWindow : Window
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();
+        _companion.Dispose();   // stop the LAN listener with the app, not after it
         _repo.Dispose();
         base.OnClosed(e);
         Application.Current.Shutdown();

@@ -468,6 +468,13 @@
             </CheckBox>
             <TextBlock Text="A small dim readout (&quot;0.3% · 84 MB&quot;) refreshed every few seconds — CPU is the share of ALL cores. Diagnostic honesty: if EQBuddy ever hogs your machine, this is how you catch it and tell us."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="20,2,0,0"/>
+
+            <TextBlock Text="Second screen" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
+                       Foreground="{DynamicResource AccentBrush}"/>
+            <TextBlock Text="Turn a phone or tablet on your Wi-Fi into a live spawn-timer display. Off by default and LAN-only; the QR code, pairing, and what gets shared all live in its own window."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+            <Button x:Name="SecondScreenBtn" Content="Second screen…" Style="{StaticResource ActionButton}"
+                    HorizontalAlignment="Left" Click="OnSecondScreen"/>
         </StackPanel>
 
         </Grid>
