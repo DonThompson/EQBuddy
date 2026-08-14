@@ -312,27 +312,33 @@ public sealed class MapWindow : Window
         }
         UpdateMarker();
         UpdateTrail();
-        UpdateSpawnCircles();   // before the pins so pins stay on top
-        UpdateNamedPanel();
+        // ONE spawn-timer snapshot per tick, zone-filtered once, shared by the
+        // circles and the named panel (perf audit #14: the panel used to take a
+        // second full snapshot every tick).
+        var now = DateTime.Now;
+        var timerZone = ResolvedTimerZone();
+        var zoneTimers = timerZone.Length > 0
+            ? _main.SpawnTimers.Snapshot(now)
+                .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
+                .ToList()
+            : [];
+        UpdateSpawnCircles(now, timerZone, zoneTimers);   // before the pins so pins stay on top
+        UpdateNamedPanel(now, zoneTimers);
     }
 
     /// <summary>Rebuild the circles only when the archive actually changed (zone,
     /// point count, or kill total) — a rebuild every tick would restart the pulse
     /// animations mid-beat. The pulse check itself runs every tick regardless,
     /// because imminence is a property of the clock, not the archive.</summary>
-    private void UpdateSpawnCircles()
+    private void UpdateSpawnCircles(DateTime now, string timerZone, List<SpawnTimerState> zoneTimers)
     {
-        var now = DateTime.Now;
-        var timerZone = ResolvedTimerZone();
         var showing = _map is not null && !_userPicked && timerZone.Length > 0;
-        // ONE timer snapshot per tick, shared by the rebuild check and the pulse —
-        // and change detection by the ledger's revision counter, not a per-tick
-        // deep clone of the archive (review 2026-08-13).
+        // ONE timer snapshot per tick, shared by the rebuild check, the pulse, AND
+        // the named panel (perf audit #14) — and change detection by the ledger's
+        // revision counter, not a per-tick deep clone of the archive (review
+        // 2026-08-13). Sorted here so the hash is order-independent.
         var timers = showing
-            ? _main.SpawnTimers.Snapshot(now)
-                .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList()
+            ? zoneTimers.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase).ToList()
             : [];
         // Running timers matter to the rebuild too: a named circle carries its own
         // name label ONLY while no timer pin is labeling that mob (David caught
@@ -606,16 +612,75 @@ public sealed class MapWindow : Window
         AfterViewChanged();
     }
 
+    /// <summary>The named panel's rebuild signature + kept per-timer elements (perf
+    /// audit #14, the same idiom as the Watch card): while nothing structural
+    /// changed — the zone, the timer set, a timer restarting (DueAt), a DUE flip,
+    /// or a camp resolving — ticks update the countdown pill, the elapsed-track
+    /// fill, and the pin label text in place instead of rebuilding rows and pins.</summary>
+    private string _namedSignature = "";
+    private sealed record NamedRowRefs(SpawnTimerState Timer, TextBlock Pill,
+        Border? Fill, Grid? Track, double? DurationSeconds, TextBlock? PinLabel);
+    private readonly List<NamedRowRefs> _namedRowRefs = [];
+
     /// <summary>Side panel + camp pins: every running spawn timer in the shown zone,
     /// its countdown, and a pin when a camp location is known — learned from your
-    /// kill-time /loc first, the wiki's location field as fallback.</summary>
-    private void UpdateNamedPanel()
+    /// kill-time /loc first, the wiki's location field as fallback. Takes the
+    /// tick's shared zone-filtered timer list (perf audit #14) instead of taking a
+    /// second SpawnTimers snapshot. Timer-zone resolution stays in the caller —
+    /// hopping to another instance of the same zone must not empty the panel
+    /// (David's field test, 2026-08-10; countdowns already span instances).</summary>
+    private void UpdateNamedPanel(DateTime now, List<SpawnTimerState> timers)
     {
+        var zone = _main.CurrentZoneName;
+        var pinsAllowedNow = _map is not null && !_userPicked;
+
+        // Camp resolution runs per tick like it always did: EnsureMobLookup is the
+        // memoized kick-off for the wiki fallback, and an answer arriving flips the
+        // signature below so the pin appears without waiting for a timer change.
+        var resolved = new List<(SpawnTimerState T, (double Y, double X)? Camp, bool FromWiki)>(timers.Count);
+        foreach (var t in timers)
+        {
+            (double Y, double X)? camp = t is { CampLocY: { } cy, CampLocX: { } cx } ? (cy, cx) : null;
+            var fromWiki = false;
+            if (camp is null)
+            {
+                _main.EnsureMobLookup(t.Name);
+                if (_main.WikiMobResult(t.Name)?.Mob?.LocYX is { } wl) { camp = wl; fromWiki = true; }
+            }
+            resolved.Add((t, camp, fromWiki));
+        }
+
+        var signature = $"{zone}§{pinsAllowedNow}§" + string.Join("¦", resolved.Select(r =>
+            $"{r.T.Name}|{r.T.DueAt?.Ticks}|{r.T.DurationSeconds}|{r.T.IsDue(now)}" +
+            $"|{r.Camp?.Y}|{r.Camp?.X}|{r.FromWiki}"));
+        if (signature == _namedSignature)
+        {
+            foreach (var row in _namedRowRefs)
+            {
+                var due = row.Timer.DueAt;
+                var countdown = due is null ? "?"
+                    : row.Timer.IsDue(now) ? "DUE"
+                    : EQBuddy.UI.Shared.Countdown.Format(due.Value - now);
+                row.Pill.Text = countdown;
+                if (row is { Fill: { } fill, Track: { } track, DurationSeconds: { } dur }
+                    && dur > 0 && due is not null)
+                {
+                    var frac = row.Timer.IsDue(now)
+                        ? 1.0 : Math.Clamp(1 - (due.Value - now).TotalSeconds / dur, 0, 1);
+                    fill.Width = Math.Max(0, track.ActualWidth * frac);
+                }
+                if (row.PinLabel is { } pinLabel)
+                    pinLabel.Text = $"{row.Timer.Name} {countdown}";
+            }
+            return;
+        }
+        _namedSignature = signature;
+        _namedRowRefs.Clear();
+
         _namedPanel.Children.Clear();
         foreach (var (el, _, _, _, _) in _campPins) _canvas.Children.Remove(el);
         _campPins.Clear();
 
-        var zone = _main.CurrentZoneName;
         var header = new TextBlock
         {
             Text = zone.Length > 0 ? $"⏳ Named — {zone}" : "⏳ Named",
@@ -625,14 +690,6 @@ public sealed class MapWindow : Window
         header.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
         _namedPanel.Children.Add(header);
 
-        var now = DateTime.Now;
-        // Resolve before comparing — hopping to another instance of the same zone
-        // must not empty the panel (David's field test, 2026-08-10; countdowns
-        // already span instances by design).
-        var timerZone = ResolvedTimerZone();
-        var timers = _main.SpawnTimers.Snapshot(now)
-            .Where(t => string.Equals(t.Zone, timerZone, StringComparison.OrdinalIgnoreCase))
-            .ToList();
         if (timers.Count == 0)
         {
             var none = new TextBlock
@@ -645,19 +702,11 @@ public sealed class MapWindow : Window
             return;
         }
 
-        var pinsAllowed = _map is not null && !_userPicked;
-        foreach (var t in timers)
+        foreach (var (t, camp, fromWiki) in resolved)
         {
             // Camp: learned kill-time /loc wins; wiki location field is the fallback
-            // (fetched through the same cached, polite lookup the Loot card uses).
-            (double Y, double X)? camp = t is { CampLocY: { } cy, CampLocX: { } cx } ? (cy, cx) : null;
-            var fromWiki = false;
-            if (camp is null)
-            {
-                _main.EnsureMobLookup(t.Name);
-                if (_main.WikiMobResult(t.Name)?.Mob?.LocYX is { } wl) { camp = wl; fromWiki = true; }
-            }
-
+            // (fetched through the same cached, polite lookup the Loot card uses) —
+            // resolved once above, where the signature reads it.
             var due = t.DueAt;
             var isDue = t.IsDue(now);
             var countdown = due is null ? "?"
@@ -696,6 +745,8 @@ public sealed class MapWindow : Window
             else pillText.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
             pill.Child = pillText;
             gaugeRow.Children.Add(pill);
+            Border? fillRef = null;
+            Grid? trackRef = null;
             if (t.DurationSeconds is { } dur && dur > 0 && due is not null)
             {
                 var frac = isDue ? 1.0 : Math.Clamp(1 - (due.Value - now).TotalSeconds / dur, 0, 1);
@@ -713,6 +764,8 @@ public sealed class MapWindow : Window
                 track.SizeChanged += (_, se) => fill.Width = Math.Max(0, se.NewSize.Width * frac);
                 Grid.SetColumn(track, 1);
                 gaugeRow.Children.Add(track);
+                fillRef = fill;
+                trackRef = track;
             }
             body.Children.Add(gaugeRow);
 
@@ -729,7 +782,8 @@ public sealed class MapWindow : Window
             row.SetResourceReference(Border.BorderBrushProperty, isDue ? "BadBrush" : "HairlineBrush");
             _namedPanel.Children.Add(row);
 
-            if (camp is { } c && pinsAllowed)
+            TextBlock? pinLabel = null;
+            if (camp is { } c && pinsAllowedNow)
             {
                 var (mx, my) = ZoneMap.FromLoc(c.Y, c.X);
                 var pin = new System.Windows.Shapes.Polygon
@@ -747,7 +801,10 @@ public sealed class MapWindow : Window
                 _campPins.Add((label, mx, my, 7, -14));
                 _canvas.Children.Add(pin);
                 _canvas.Children.Add(label);
+                pinLabel = label;
             }
+            _namedRowRefs.Add(new NamedRowRefs(t, pillText, fillRef, trackRef,
+                t.DurationSeconds, pinLabel));
         }
         PlaceCampPins();
     }
