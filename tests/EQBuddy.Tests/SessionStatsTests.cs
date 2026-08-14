@@ -615,4 +615,37 @@ public class SessionStatsTests
 
         Assert.Single(stats.Snapshot().Deaths);
     }
+
+    /// <summary>Review replay is read-only (#74, audit finding 4): with
+    /// StoresSuppressed set, the durable ledgers ignore replayed events — the
+    /// in-session view still shows them — and lifting the flag resumes recording.
+    /// (MainWindow sets the flag for the duration of review; that WPF wiring isn't
+    /// hostable here, so the seam it relies on is what's pinned.)</summary>
+    [Fact]
+    public void SuppressedStoresIgnoreReviewReplay()
+    {
+        var dir = Directory.CreateTempSubdirectory("eqbuddy-stores-").FullName;
+        try
+        {
+            var store = new AaLedgerStore(Path.Combine(dir, "aa-ledger.json"));
+            var stats = new SessionStats
+            {
+                CharacterName = "Kaybek", ServerName = "freeport",
+                AaStore = store, StoresSuppressed = true,
+            };
+            void Line(int mm, string msg) =>
+                stats.Apply(LogParser.Parse($"[Sat Jul 18 15:{mm:D2}:00 2026] {msg}")!);
+
+            Line(0, "You have gained the ability \"Quick Buff\" at a cost of 5 ability points.");
+            Assert.Empty(store.For("kaybek_freeport"));   // nothing written through
+            Assert.Contains(stats.Snapshot().AaAbilities, a => a.Name == "Quick Buff");
+
+            stats.StoresSuppressed = false;               // back to live
+            Line(5, "You have gained the ability \"Combat Fury\" at a cost of 3 ability points.");
+            var recorded = store.For("kaybek_freeport");
+            Assert.True(recorded.ContainsKey("Combat Fury"));
+            Assert.False(recorded.ContainsKey("Quick Buff"));
+        }
+        finally { try { Directory.Delete(dir, recursive: true); } catch { } }
+    }
 }

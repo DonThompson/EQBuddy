@@ -1648,6 +1648,13 @@ public partial class MainWindow : Window
         // then the archiver stands down until we're back.
         _archiver.FinalizeActive(_stats.Snapshot(), "ReviewingArchive");
         _reviewPath = path;
+        // Review is read-only (finding 4): the per-character ledgers stand down and
+        // the two persisting watcher consumers detach — an archive replay must not
+        // mint spawn timers or raid kills. The spawn-point ledger stays attached:
+        // its per-zone archive carries no character identity and is replay-gated.
+        _stats.StoresSuppressed = true;
+        _watcher.Spawns = null;
+        _watcher.Raids = null;
         _targetResults.Clear();
         _skyQuestLootSeen.Clear();
         _epicQuestLootSeen.Clear();
@@ -1665,14 +1672,18 @@ public partial class MainWindow : Window
 
     private void ExitReview()
     {
-        _reviewPath = null;
         ReviewLogItem.Header = "Review an archived log…";
         CharLabel.Foreground = (Brush)FindResource("DimBrush");
         CharLabel.Cursor = null;
         CharLabel.ToolTip = "Follows whoever is actively playing (log file growth)";
+        // Reattach the persistent consumers BEFORE the live Select, so its replay
+        // rebuilds their state; their own high-water marks keep it idempotent.
+        _stats.StoresSuppressed = false;
+        _watcher.Spawns = _spawnTimers;
+        _watcher.Raids = _raidLedger;
         // No finalize here: the reviewed session is already history. Follow just
         // re-selects whoever is live; the switch path sees review's CurrentPath but
-        // _reviewPath is null again, so guard by handing follow a clean slate.
+        // _reviewPath clears below, so guard by handing follow a clean slate.
         _lastCharScan = DateTime.MinValue;
         if (_settings.LogFolder is { } lf && LogWatcher.MostRecentlyActive(lf) is { } active)
         {
@@ -1685,6 +1696,10 @@ public partial class MainWindow : Window
         {
             CharLabel.Text = "waiting for a character to log in…";
         }
+        // Cleared only AFTER Select returns (finding 5): the SessionEnding guard
+        // must stay armed while the archive replay can still roll a session over —
+        // clearing first let those rollovers mint duplicate history rows.
+        _reviewPath = null;
     }
 
     // Mouse DOWN, and handled: the title bar's OnDrag starts a DragMove on the same
