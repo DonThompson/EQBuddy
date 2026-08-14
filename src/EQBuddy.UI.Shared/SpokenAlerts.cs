@@ -204,7 +204,11 @@ public static partial class SpokenAlerts
             if (voiceType is null) return null;
             var voice = Activator.CreateInstance(voiceType);
             if (voice is null) return null;
-            ApplyConfigWindows(voice);
+            // Keep the voice even if applying stored config throws (a stale voice
+            // token, a COM hiccup) — losing the config must not cost every future
+            // alert its speech.
+            try { ApplyConfigWindows(voice); }
+            catch (Exception ex) { CoreLog.Error(ex); }
             _voice = voice;
         }
         return _voice;

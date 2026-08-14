@@ -733,8 +733,14 @@ public sealed class SessionStats
                         if (_pendingCast is { } bpc && string.Equals(
                                 SpellCatalog.BaseName(bpc.Spell), blkKey, StringComparison.OrdinalIgnoreCase))
                             _pendingCast = null;
+                        // A charm blocked BY ITSELF is a re-cast bouncing off the pet
+                        // already held — evidence about the NEW cast, not the armed
+                        // candidate from the original landing. Disarming there would
+                        // cost a chain-charmer the claim of a genuinely held pet.
                         if (_charmCandidate is { } bcc && string.Equals(
-                                SpellCatalog.BaseName(bcc.Spell), blkKey, StringComparison.OrdinalIgnoreCase))
+                                SpellCatalog.BaseName(bcc.Spell), blkKey, StringComparison.OrdinalIgnoreCase)
+                            && !string.Equals(SpellCatalog.BaseName(blk.BlockedBy), blkKey,
+                                StringComparison.OrdinalIgnoreCase))
                             _charmCandidate = null;
                         // A blocker-less line still counts above; only a NAMED pair is
                         // a stacking fact the ledger can hold.

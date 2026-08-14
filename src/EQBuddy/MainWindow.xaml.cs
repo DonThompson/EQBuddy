@@ -1730,6 +1730,8 @@ public partial class MainWindow : Window
         }
     }
 
+    private DateTime? _autoCheckSessionStart;
+
     private void ClearGearAutoCheckSeen()
     {
         _gearLootSeen.Clear();
@@ -1926,6 +1928,17 @@ public partial class MainWindow : Window
             : $"{s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")}";
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
+        // A session rollover empties the loot lists lazily, inside the same batch
+        // that may carry the new session's first loot — inferring the reset from
+        // emptied lists can miss that first same-name drop. The session identity
+        // is the honest reset signal for every auto-check high-water mark.
+        if (s.SessionStart != _autoCheckSessionStart)
+        {
+            _autoCheckSessionStart = s.SessionStart;
+            _skyQuestLootSeen.Clear();
+            _epicQuestLootSeen.Clear();
+            ClearGearAutoCheckSeen();
+        }
         UpdateSkyQuestChecklist(s);
         UpdateGearChecklist(s);
         UpdateEpicQuestChecklist(s);

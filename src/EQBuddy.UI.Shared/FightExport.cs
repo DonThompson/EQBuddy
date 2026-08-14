@@ -26,7 +26,12 @@ public static class FightExport
         sb.AppendLine("```");
         var who = character.Length > 0 ? character : "You";
         var tail = $" — {f.DurationSeconds:0}s · {f.Outcome}";
-        sb.AppendLine($"{who} vs {Clip(f.Name, MaxLine - who.Length - 4 - tail.Length)}{tail}");
+        // Clip the ASSEMBLED line, not just the name: a multi-fight pull's outcome
+        // tail ("X Timeout · Y Timeout") is itself unbounded and was sailing past
+        // the column budget on its own.
+        sb.AppendLine(Clip(
+            $"{who} vs {Clip(f.Name, Math.Max(2, MaxLine - who.Length - 4 - tail.Length))}{tail}",
+            MaxLine));
 
         var dmg = $"Damage {f.DamageOut:N0} ({f.Dps:0.#} dps)";
         if (f.DamageIn > 0) dmg += $" · taken {f.DamageIn:N0}";
