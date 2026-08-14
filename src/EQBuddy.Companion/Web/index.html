@@ -286,6 +286,12 @@ const TICKABLE = { epics: 1, sky: 1, gear: 1 };
 // else repaints only when its data actually changed, which is what keeps a scrolled
 // loot list scrolled and a half-ticked checklist from jumping under your thumb.
 const TICKING = { spawns: 1, mez: 1, session: 1, map: 1 };
+// The picks a device starts with, before anyone touches the ⚙. Measured against the
+// viewport (the layout breakpoint's own measure), not the window, so a fullscreen or
+// Home-Screen launch is judged by the room it actually has.
+const FIRST_RUN = innerWidth >= 900
+  ? ["map", "spawns", "mez", "session"]
+  : ["spawns", "session"];
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -321,9 +327,10 @@ function boot() {
     if (!choice) choice = { order: [], enabled: {} };
     for (const s of offered) {
       if (!choice.order.includes(s)) choice.order.push(s);
-      // Sane first run: the two Phase 1 screens on, the rest a deliberate choice —
-      // a first-time tablet shouldn't open with eleven panels.
-      if (!(s in choice.enabled)) choice.enabled[s] = s === "spawns" || s === "session";
+      // Sane first run, sized to the device: a phone opens on the two screens you
+      // glance at, a tablet also opens the map (the reason to prop one up) — and
+      // neither opens with eleven panels the owner didn't ask for.
+      if (!(s in choice.enabled)) choice.enabled[s] = FIRST_RUN.includes(s);
     }
   }
   // What this device picked — the subscribe message deliberately does NOT intersect
