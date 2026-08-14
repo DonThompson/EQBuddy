@@ -755,9 +755,10 @@
                 </Expander.Header>
                 <StackPanel>
                     <TextBlock x:Name="ProgressSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
-                    <!-- The ding's answer: AAs that just became available, always shown
-                         while the session holds the level-up — a card line, never a
-                         popup. Tooltips carry the wiki effect text. -->
+                    <!-- The ding's answer: AAs and spells that just became available,
+                         always shown while the session holds the level-up — a card
+                         line, never a popup. AA tooltips carry the wiki effect text;
+                         spell tooltips the classes that get the spell and when. -->
                     <TextBlock x:Name="LevelUnlocksLabel" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="LevelUnlocksList" Margin="0,2,0,4" Visibility="Collapsed"/>
                     <TextBlock Text="Skill-ups" Style="{StaticResource SectionLabel}"/>
@@ -772,11 +773,12 @@
                                ToolTip="Everything the log's history (plus the durable ledger) says this character owns — click to expand or fold"/>
                     <ItemsControl x:Name="AaAbilityList" Margin="0,2,0,0" Visibility="Collapsed"/>
                     <!-- "What do I get at N?" any time — the next milestone with new
-                         AAs, folded behind the ▸ label, All-AA-abilities style. Hidden
-                         until the log has ever announced a level for this character. -->
+                         AAs or spells, folded behind the ▸ label, All-AA-abilities
+                         style. Hidden until the log has ever announced a level for
+                         this character. -->
                     <TextBlock x:Name="NextUnlocksLabel" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
                                Visibility="Collapsed" Cursor="Hand" MouseLeftButtonDown="OnNextUnlocksToggled"
-                               ToolTip="AA abilities that open up at your next milestone level — click to expand or fold"/>
+                               ToolTip="Spells and AA abilities that open up at your next milestone level — click to expand or fold"/>
                     <ItemsControl x:Name="NextUnlocksList" Margin="0,2,0,0" Visibility="Collapsed"/>
                 </StackPanel>
             </Expander>

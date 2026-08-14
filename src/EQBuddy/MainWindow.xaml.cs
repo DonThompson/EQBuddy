@@ -1011,13 +1011,13 @@ public partial class MainWindow : Window
     // ticks allocate nothing they don't have to).
     private int? _dingLevelMemo;
     private string _dingClassesMemo = "";
-    private IReadOnlyList<AaCatalogEntry> _dingUnlocks = [];
+    private LevelUnlockSet _dingUnlocks = LevelUnlockSet.Empty;
 
-    /// <summary>AAs newly available at the session's latest level-up; empty when the
-    /// session hasn't leveled.</summary>
-    private IReadOnlyList<AaCatalogEntry> DingUnlocks(StatsSnapshot s)
+    /// <summary>AAs and spells newly available at the session's latest level-up;
+    /// empty when the session hasn't leveled.</summary>
+    private LevelUnlockSet DingUnlocks(StatsSnapshot s)
     {
-        if (s.LastLevel is not { } level) return [];
+        if (s.LastLevel is not { } level) return LevelUnlockSet.Empty;
         var classes = UnlockClasses(s);
         var key = string.Join(",", classes);
         if (_dingLevelMemo != level || _dingClassesMemo != key)
@@ -1038,6 +1038,21 @@ public partial class MainWindow : Window
             picked = [inf];
         return picked;
     }
+
+    /// <summary>Unlock rows for FillList: the AA group in its category order, then
+    /// the Spells grouping — same list, rows told apart by their value column.</summary>
+    private static IEnumerable<(string Name, string Value)> UnlockRows(LevelUnlockSet set) =>
+        set.Aas.Select(a => (a.Name, LevelUnlockText.RowValue(a)))
+            .Concat(set.Spells.Select(sp => (sp.Name, LevelUnlockText.SpellRowValue(sp))));
+
+    /// <summary>Tooltip lookup for a merged unlock list: spell rows show which classes
+    /// get the spell and when (catalog facts, never invented effect text); AA rows keep
+    /// the wiki effect prose. Resolved per set, since only it knows which group a name
+    /// came from.</summary>
+    private static Func<string, string?> UnlockTooltip(LevelUnlockSet set) =>
+        name => set.Spells.Any(sp => sp.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            ? LevelUnlockText.SpellTooltip(SpellLevelCatalog.Default.Find(name))
+            : AaCatalog.Find(name)?.Effect;
 
     private void OnOpenWebsite(object sender, RoutedEventArgs e) =>
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(
@@ -2033,16 +2048,16 @@ public partial class MainWindow : Window
                     : "");
             // The ding's answer: what just became available at the session's latest
             // level, always shown while the level-up is on the card — same idiom as
-            // "AA learned this session". Class rows lead; Archetype rows are labeled,
-            // not guessed (the wiki doesn't say which classes they cover).
+            // "AA learned this session". AA class rows lead; Archetype rows are
+            // labeled, not guessed (the wiki doesn't say which classes they cover);
+            // the Spells grouping follows, its rows marked "… spell".
             var ding = DingUnlocks(s);
             LevelUnlocksLabel.Visibility = ding.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             LevelUnlocksList.Visibility = LevelUnlocksLabel.Visibility;
             if (ding.Count > 0 && s.LastLevel is { } dingLevel)
             {
                 LevelUnlocksLabel.Text = LevelUnlockText.NewAtLevelLabel(dingLevel);
-                FillList(LevelUnlocksList, ding.Select(a => (a.Name, LevelUnlockText.RowValue(a))),
-                    tooltip: name => AaCatalog.Find(name)?.Effect);
+                FillList(LevelUnlocksList, UnlockRows(ding), tooltip: UnlockTooltip(ding));
             }
 
             // "What do I get at N?" without waiting for a ding — the next milestone
@@ -2056,11 +2071,11 @@ public partial class MainWindow : Window
             NextUnlocksLabel.Visibility = next is not null ? Visibility.Visible : Visibility.Collapsed;
             if (next is { } nx)
             {
-                NextUnlocksLabel.Text = LevelUnlockText.NextLabel(nx.Level, nx.Unlocks.Count, _settings.ShowNextUnlocks);
+                NextUnlocksLabel.Text = LevelUnlockText.NextLabel(
+                    nx.Level, nx.Unlocks.Aas.Count, nx.Unlocks.Spells.Count, _settings.ShowNextUnlocks);
                 NextUnlocksList.Visibility = _settings.ShowNextUnlocks ? Visibility.Visible : Visibility.Collapsed;
                 if (_settings.ShowNextUnlocks)
-                    FillList(NextUnlocksList, nx.Unlocks.Select(a => (a.Name, LevelUnlockText.RowValue(a))),
-                        tooltip: name => AaCatalog.Find(name)?.Effect);
+                    FillList(NextUnlocksList, UnlockRows(nx.Unlocks), tooltip: UnlockTooltip(nx.Unlocks));
             }
             else NextUnlocksList.Visibility = Visibility.Collapsed;
 

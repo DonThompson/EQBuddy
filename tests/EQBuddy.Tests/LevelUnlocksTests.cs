@@ -3,77 +3,158 @@ using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Tests;
 
-/// <summary>Over the real embedded AA catalog — these assert facts the eqlwiki harvest
-/// recorded (2026-08-06), so a regenerated catalog that loses a level requirement or a
-/// class column fails here, not on someone's ding.</summary>
+/// <summary>Over the real embedded catalogs — these assert facts the eqlwiki harvests
+/// recorded (AAs 2026-08-06, spell levels 2026-08-14), so a regenerated catalog that
+/// loses a level requirement, a class column, or a class spelling fails here, not on
+/// someone's ding.</summary>
 public class LevelUnlocksTests
 {
     [Fact]
     public void ClassAbilityAppearsAtItsLevelForItsClassOnly()
     {
         // Lay on Hands: Paladin, level 6 — the archetypal "what did I just unlock".
-        Assert.Contains(LevelUnlocks.UnlocksAt(["Paladin"], 6), a => a.Name == "Lay on Hands");
-        Assert.DoesNotContain(LevelUnlocks.UnlocksAt(["Warrior"], 6), a => a.Name == "Lay on Hands");
+        Assert.Contains(LevelUnlocks.UnlocksAt(["Paladin"], 6).Aas, a => a.Name == "Lay on Hands");
+        Assert.DoesNotContain(LevelUnlocks.UnlocksAt(["Warrior"], 6).Aas, a => a.Name == "Lay on Hands");
         // Case-insensitive like every class list in the app.
-        Assert.Contains(LevelUnlocks.UnlocksAt(["paladin"], 6), a => a.Name == "Lay on Hands");
+        Assert.Contains(LevelUnlocks.UnlocksAt(["paladin"], 6).Aas, a => a.Name == "Lay on Hands");
     }
 
     [Fact]
-    public void MultiClassUnionSeesEveryPickedClass()
+    public void SpellAppearsAtItsDocumentedClassAndLevel()
     {
-        // Legends allows up to three active classes; level 12 is the "Unbound" wave.
+        // Greater Healing: Cleric, level 20 — the core Cleric heal, and the dedup
+        // winner (the wiki's "Healing Water" twin page carries stale levels; the
+        // spell's own page is authoritative in the promotion).
+        var unlocks = LevelUnlocks.UnlocksAt(["Cleric"], 20);
+        var row = Assert.Single(unlocks.Spells, sp => sp.Name == "Greater Healing");
+        Assert.Equal(["Cleric"], row.Classes);
+        Assert.DoesNotContain(LevelUnlocks.UnlocksAt(["Wizard"], 20).Spells,
+            sp => sp.Name == "Greater Healing");
+        Assert.Contains(LevelUnlocks.UnlocksAt(["cleric"], 20).Spells,
+            sp => sp.Name == "Greater Healing");
+    }
+
+    [Fact]
+    public void MultiClassUnionInterleavesSpellsAndAas()
+    {
+        // Legends allows up to three active classes; level 12 is the "Unbound" AA
+        // wave AND a Cleric spell tier — both groups answer, held apart.
         var unlocks = LevelUnlocks.UnlocksAt(["Warrior", "Cleric"], 12);
-        Assert.Contains(unlocks, a => a.Name == "Heroic Leap");     // Warrior
-        Assert.Contains(unlocks, a => a.Name == "Unbound Boon");    // Cleric
-        Assert.DoesNotContain(unlocks, a => a.Name == "Unbound Nature");   // Druid — not picked
+        Assert.Contains(unlocks.Aas, a => a.Name == "Heroic Leap");     // Warrior AA
+        Assert.Contains(unlocks.Aas, a => a.Name == "Unbound Boon");    // Cleric AA
+        Assert.Contains(unlocks.Spells, sp => sp.Name == "Halo of Light");    // Cleric spell
+        Assert.Contains(unlocks.Spells, sp => sp.Name == "Sense Summoned");   // Cleric spell
+        Assert.DoesNotContain(unlocks.Aas, a => a.Name == "Unbound Nature");  // Druid — not picked
+        Assert.Equal(unlocks.Aas.Count + unlocks.Spells.Count, unlocks.Count);
     }
 
     [Fact]
-    public void ClassAgnosticCategoriesShowRegardlessOfClasses()
+    public void WikiClassSpellingJoinsTheAppSpelling()
     {
-        // Rampage is an Archetype row (level 30) with no class column in the wiki —
-        // included even with no classes picked, labeled rather than guessed.
-        Assert.Contains(LevelUnlocks.UnlocksAt([], 30), a => a.Name == "Rampage");
-        var warrior = LevelUnlocks.UnlocksAt(["Warrior"], 30);
-        Assert.Contains(warrior, a => a.Name == "Warrior's Endurance");
-        Assert.Contains(warrior, a => a.Name == "Rampage");
+        // Cure Disease's wiki page writes the class as "Shadowknight"; the app's
+        // class lists (QuestClassFilter, class inference) say "Shadow Knight". The
+        // promotion folds the spelling, so the app's picks must join — and the
+        // catalog must echo the app spelling back for display.
+        var row = Assert.Single(LevelUnlocks.UnlocksAt(["Shadow Knight"], 19).Spells,
+            sp => sp.Name == "Cure Disease");
+        Assert.Equal(["Shadow Knight"], row.Classes);
+        Assert.Contains(LevelUnlocks.UnlocksAt(["shadow knight"], 19).Spells,
+            sp => sp.Name == "Cure Disease");
+        Assert.Contains(SpellLevelCatalog.Default.Find("Cure Disease")!.Classes,
+            c => c.Class == "Shadow Knight" && c.Level == 19);
     }
 
     [Fact]
-    public void ClassRowsLeadTheList()
+    public void ClassAgnosticCategoriesShowRegardlessOfClasses_ButSpellsNeverDo()
+    {
+        // Rampage is an Archetype AA row (level 30) with no class column in the wiki —
+        // included even with no classes picked, labeled rather than guessed. Spells
+        // have no class-agnostic rows: no picked class, no spell unlocks.
+        var anonymous = LevelUnlocks.UnlocksAt([], 30);
+        Assert.Contains(anonymous.Aas, a => a.Name == "Rampage");
+        Assert.Empty(anonymous.Spells);
+        var warrior = LevelUnlocks.UnlocksAt(["Warrior"], 30);
+        Assert.Contains(warrior.Aas, a => a.Name == "Warrior's Endurance");
+        Assert.Contains(warrior.Aas, a => a.Name == "Rampage");
+    }
+
+    [Fact]
+    public void ClassRowsLeadTheAaList()
     {
         // Monk 15: two Class rows (Dragon Force, Purify Body), then Archetype
         // (Double Riposte) — the ding's headline is "my class got a new button".
-        var unlocks = LevelUnlocks.UnlocksAt(["Monk"], 15);
-        Assert.True(unlocks.Count >= 3);
-        Assert.Equal("Class", unlocks[0].Category);
-        Assert.Equal("Class", unlocks[1].Category);
-        Assert.Contains(unlocks.Skip(2), a => a.Name == "Double Riposte");
+        var aas = LevelUnlocks.UnlocksAt(["Monk"], 15).Aas;
+        Assert.True(aas.Count >= 3);
+        Assert.Equal("Class", aas[0].Category);
+        Assert.Equal("Class", aas[1].Category);
+        Assert.Contains(aas.Skip(2), a => a.Name == "Double Riposte");
     }
 
     [Fact]
     public void LevelWithNothingIsEmptyNotPadded()
     {
-        // No AA in the catalog requires level 2 for anyone.
-        Assert.Empty(LevelUnlocks.UnlocksAt(["Warrior", "Cleric", "Wizard"], 2));
+        // No AA requires level 2 for anyone, and Warriors cast nothing — level 2
+        // stays a quiet ding.
+        Assert.Equal(0, LevelUnlocks.UnlocksAt(["Warrior"], 2).Count);
     }
 
     [Fact]
-    public void NextJumpsToTheNextRealMilestone()
+    public void NextIsUsuallyTheVeryNextLevelForACaster()
     {
-        // Paladin after the level-6 Lay on Hands ding: level 8 belongs to Rangers
-        // alone, so the next Paladin milestone is 10 (Exodus, Archetype).
-        var next = LevelUnlocks.Next(["Paladin"], 6);
+        // Spell levels are dense where AA levels are sparse: a Cleric gains spells
+        // at every level to 60, so the preview after the level-6 ding is 7, not the
+        // level-10 AA milestone the AA-only feature jumped to.
+        var next = LevelUnlocks.Next(["Cleric"], 6);
+        Assert.NotNull(next);
+        Assert.Equal(7, next!.Value.Level);
+        Assert.Contains(next.Value.Unlocks.Spells, sp => sp.Name == "Root");
+        // Even the hybrid Paladin: level 7 brings Cease.
+        var pal = LevelUnlocks.Next(["Paladin"], 6);
+        Assert.Equal(7, pal!.Value.Level);
+        Assert.Contains(pal.Value.Unlocks.Spells, sp => sp.Name == "Cease");
+    }
+
+    [Fact]
+    public void NextStillJumpsSparseAaLevelsWhenNoSpellsApply()
+    {
+        // No classes picked = AA class-agnostic categories only: level 8 belongs to
+        // Ranger Class rows alone, so the next milestone after 6 is 10 (Exodus,
+        // Archetype) — the sparse-jump behavior the AA-only feature shipped with.
+        var next = LevelUnlocks.Next([], 6);
         Assert.NotNull(next);
         Assert.Equal(10, next!.Value.Level);
-        Assert.Contains(next.Value.Unlocks, a => a.Name == "Exodus");
+        Assert.Contains(next.Value.Unlocks.Aas, a => a.Name == "Exodus");
+        Assert.Empty(next.Value.Unlocks.Spells);
     }
 
     [Fact]
     public void NextPastTheLastMilestoneIsNull()
     {
-        // 50 is the catalog's highest level requirement — nothing to preview beyond it.
-        Assert.Null(LevelUnlocks.Next(["Cleric"], 50));
+        // The AA catalog tops out at 50, spell levels at 60. A spell-less Warrior
+        // has nothing past 50; a Cleric now previews spell tiers to 60 and stops.
+        Assert.Null(LevelUnlocks.Next(["Warrior"], 50));
+        Assert.NotNull(LevelUnlocks.Next(["Cleric"], 50));
+        Assert.Null(LevelUnlocks.Next(["Cleric"], 60));
+    }
+
+    [Fact]
+    public void EmbeddedSpellCatalogIsSaneAndClean()
+    {
+        var catalog = SpellLevelCatalog.Default;
+        Assert.True(catalog.Count > 1000, $"only {catalog.Count} spells");
+        // The promotion's row discipline: real classes, real levels, cap 60.
+        Assert.All(catalog.All, s =>
+        {
+            Assert.NotEmpty(s.Classes);
+            Assert.All(s.Classes, c =>
+            {
+                Assert.True(c.Class.Length > 0);
+                Assert.InRange(c.Level, 1, 60);
+            });
+        });
+        // A stable anchor fact: the signature Cleric heal.
+        var ch = Assert.Single(catalog.Find("Complete Healing")!.Classes);
+        Assert.Equal(("Cleric", 39), (ch.Class, ch.Level));
     }
 
     [Fact]
@@ -88,9 +169,33 @@ public class LevelUnlocksTests
     }
 
     [Fact]
-    public void NextLabelFoldsAndCounts()
+    public void SpellRowValueMarksTheSpellApartFromAaRows()
     {
-        Assert.Equal("▸ At level 35: 2 new AA abilities", LevelUnlockText.NextLabel(35, 2, expanded: false));
-        Assert.Equal("▾ At level 6: 1 new AA ability", LevelUnlockText.NextLabel(6, 1, expanded: true));
+        Assert.Equal("Cleric spell", LevelUnlockText.SpellRowValue(new SpellUnlock("x", ["Cleric"])));
+        Assert.Equal("Druid/Ranger spell",
+            LevelUnlockText.SpellRowValue(new SpellUnlock("x", ["Druid", "Ranger"])));
+    }
+
+    [Fact]
+    public void SpellTooltipListsCatalogClassesAndNothingInvented()
+    {
+        Assert.Equal("Cleric 39",
+            LevelUnlockText.SpellTooltip(SpellLevelCatalog.Default.Find("Complete Healing")));
+        // Multi-class spells list every class with its own level.
+        var tip = LevelUnlockText.SpellTooltip(SpellLevelCatalog.Default.Find("Greater Healing"))!;
+        Assert.Contains("Cleric 20", tip);
+        Assert.Contains("Druid 29", tip);
+        Assert.Null(LevelUnlockText.SpellTooltip(null));
+    }
+
+    [Fact]
+    public void NextLabelFoldsAndCountsBothGroups()
+    {
+        Assert.Equal("▸ At level 35: 2 new AA abilities",
+            LevelUnlockText.NextLabel(35, 2, 0, expanded: false));
+        Assert.Equal("▾ At level 6: 1 new AA ability, 3 new spells",
+            LevelUnlockText.NextLabel(6, 1, 3, expanded: true));
+        Assert.Equal("▸ At level 7: 1 new spell",
+            LevelUnlockText.NextLabel(7, 0, 1, expanded: false));
     }
 }

@@ -17,6 +17,7 @@ What one run does:
      proportional to what actually changed, not catalog size
   4. re-runs the deterministic promotions:
        spells.json  -> FadeMessages.json   (fades-harvest.py)
+       spells.json  -> SpellLevels.json    (spell-levels-promote.py)
        quests.json  -> QuestCatalog.json   (quests-promote.py)
        zones.json   -> ZoneGraph.json      (../eqltools/zones-merge.py; the
                        eqltools half is a committed extract — browser-fetched,
@@ -67,10 +68,12 @@ HARVESTERS = ["spells-harvest.py", "quests-harvest.py", "zones-harvest.py", "aas
               "items-harvest.py"]
 PROMOTIONS = [WIKI / "fades-harvest.py", WIKI / "quests-promote.py",
               HERE / "eqltools" / "zones-merge.py",
-              WIKI / "items-promote.py"]
+              WIKI / "items-promote.py",
+              WIKI / "spell-levels-promote.py"]
 
 # Written by promotions above; diffed for the report.
-PROMOTED = ["FadeMessages.json", "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz"]
+PROMOTED = ["FadeMessages.json", "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz",
+            "SpellLevels.json"]
 # Human-curated; never auto-written, only flagged when their sources move.
 CURATED = ["SpawnCatalog.json", "AaCatalog.json", "MezSpells.json",
            "CcSpells.json", "RegenSpells.json"]
