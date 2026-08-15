@@ -14,14 +14,22 @@ internal static class SkyQuestDefaults
         SkyLine("sky-012|Bard|Cilin Spellsinger|Harmonic Spear|Efreeti War Spear|Isle eight: the Hand of Veeshan; Isle four: Overseer of Air; Isle 1.5: Noble Dojorn"),
         SkyLine("sky-013|Bard|Cilin Spellsinger|Harmonic Spear|Nebulous Diamond|Isle 8: Eye of Veeshan"),
         SkyLine("sky-014|Bard|Cilin Spellsinger|Harmonic Spear|Wind Rune Heda|Trash mobs"),
-        // #139 (n3cr0nk1tt3n, first-hand hand-in): Mask of Song takes the Light Woolen
-        // MANTLE and Mantle of the Songweaver the MASK. The wiki's bard table still
-        // carries these two swapped, so a harvest diff that "agrees" with the wiki here
-        // is reproducing its error — the drop sources belong to the ITEMS and travel
-        // with them (Mask: Isle 3 Gorgalosk, Mantle: Isle 4 Keeper of Souls).
-        SkyLine("sky-003|Bard|Cilin Spellsinger|Mantle of the Songweaver|Light Woolen Mask|Isle 3: Gorgalosk"),
+        // These two matched the item to its like-named quest (the wiki's pairing), were
+        // crossed in v1.79.0 on a first-hand hand-in report (#139, n3cr0nk1tt3n), and are
+        // now back — reported wrong again by a second player (#150, knaackville).
+        //
+        // Nobody has produced a decisive turn-in either way, so David's standing rule
+        // applies: WHEN WE CANNOT RESOLVE A CONFLICT, MATCH THE WIKI. Being wrong the same
+        // way as the community's own reference is recoverable — a player who cross-checks
+        // finds agreement, and a wiki correction fixes both of us. Being uniquely wrong
+        // costs trust in EQBuddy specifically, which is the thing quest data is for.
+        //
+        // Drop sources belong to the ITEMS, not the quests, and travel with them:
+        // Light Woolen Mask from Isle 3 (Gorgalosk), Light Woolen Mantle from Isle 4
+        // (Keeper of Souls). Both accounts agree on the wind runes.
+        SkyLine("sky-003|Bard|Cilin Spellsinger|Mantle of the Songweaver|Light Woolen Mantle|Isle 4: Keeper of Souls"),
         SkyLine("sky-004|Bard|Cilin Spellsinger|Mantle of the Songweaver|Wind Rune Kala|Trash mobs"),
-        SkyLine("sky-005|Bard|Cilin Spellsinger|Mask of Song|Light Woolen Mantle|Isle 4: Keeper of Souls"),
+        SkyLine("sky-005|Bard|Cilin Spellsinger|Mask of Song|Light Woolen Mask|Isle 3: Gorgalosk"),
         SkyLine("sky-006|Bard|Cilin Spellsinger|Mask of Song|Wind Rune Meda|Trash mobs"),
         SkyLine("sky-015|Beastlord|Animist Kratho|Azarack Skin Wristwraps|Azarack Skin|Isle 2: Protector of Sky"),
         SkyLine("sky-016|Beastlord|Animist Kratho|Azarack Skin Wristwraps|Wind Rune Heda|Trash mobs"),

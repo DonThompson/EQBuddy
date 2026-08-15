@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.83.0",
+  "date": "2026-08-14",
+  "highlights": [
+   "FIXED (issue #150, thanks knaackville - and thanks again to n3cr0nk1tt3n, whose earlier report was made in good faith) - THE BARD SKY QUESTS Mask of Song and Mantle of the Songweaver now match the community wiki again: Mask of Song takes the Light Woolen MASK (Isle 3, Gorgalosk) and Mantle of the Songweaver the Light Woolen MANTLE (Isle 4, Keeper of Souls). We had crossed these two in v1.79.0 on a first-hand hand-in report, deliberately going against the wiki; a second player has since reported them wrong that way. With no decisive turn-in either direction, EQBuddy's rule from now on is to match the wiki when a conflict can't be settled - being wrong the same way as everyone's shared reference is fixable, being uniquely wrong is not. If you have actually handed one of these in and know which way it goes, please say so on issue #150 and we'll follow the evidence.",
+   "Your ticks are safe either way: the correction updates the row in place and keeps whatever you had already checked off."
+  ]
+ },
+ {
   "version": "1.82.0",
   "date": "2026-08-14",
   "highlights": [

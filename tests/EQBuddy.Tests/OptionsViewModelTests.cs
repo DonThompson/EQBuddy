@@ -142,40 +142,44 @@ public sealed class OptionsViewModelTests
     }
 
     [Fact]
-    public void BardMaskAndMantleCarryTheHandInVerifiedItems()
+    public void BardMaskAndMantleMatchTheWiki()
     {
-        // #139 (n3cr0nk1tt3n): the wiki's bard table has these two swapped; the
-        // first-hand hand-in is the authority. Sources travel with the items.
+        // Crossed in v1.79.0 on a first-hand report (#139), reported wrong again by a
+        // second player (#150), and now aligned with the wiki per David's standing rule:
+        // when a conflict cannot be resolved, match the community's own reference. Being
+        // wrong the same way is recoverable; being uniquely wrong is what costs trust.
+        // Sources travel with the ITEMS, not the quests.
         var settings = new AppSettings();
         settings.ApplyDefaultSkyQuestChecklist();
 
         var mask = settings.SkyQuestChecklist.Single(
             i => i.ClassName == "Bard" && i.Reward == "Mask of Song" && i.QuestItem.StartsWith("Light Woolen"));
-        Assert.Equal("Light Woolen Mantle", mask.QuestItem);
-        Assert.Equal("Isle 4: Keeper of Souls", mask.Source);
+        Assert.Equal("Light Woolen Mask", mask.QuestItem);
+        Assert.Equal("Isle 3: Gorgalosk", mask.Source);
 
         var mantle = settings.SkyQuestChecklist.Single(
             i => i.ClassName == "Bard" && i.Reward == "Mantle of the Songweaver" && i.QuestItem.StartsWith("Light Woolen"));
-        Assert.Equal("Light Woolen Mask", mantle.QuestItem);
-        Assert.Equal("Isle 3: Gorgalosk", mantle.Source);
+        Assert.Equal("Light Woolen Mantle", mantle.QuestItem);
+        Assert.Equal("Isle 4: Keeper of Souls", mantle.Source);
     }
 
     [Fact]
     public void SkyQuestRefreshCorrectsMetadataButKeepsTicks()
     {
-        // A settings file saved before #139 still carries the swapped text: the
-        // Id-keyed refresh corrects the row, and the player's tick stays — the row
-        // now names the item they actually handed in.
+        // A settings file saved while the crossed version shipped (v1.79.0-v1.82.0)
+        // still carries that text: the Id-keyed refresh corrects the row in place and the
+        // player's tick survives, so a correction never costs anyone their progress.
+        // This is the mechanism that lets us change our mind about quest data at all.
         var settings = new AppSettings();
         settings.ApplyDefaultSkyQuestChecklist();
         var row = settings.SkyQuestChecklist.Single(i => i.Id == "sky-005");
-        row.QuestItem = "Light Woolen Mask";
-        row.Source = "Isle 3: Gorgalosk";
+        row.QuestItem = "Light Woolen Mantle";
+        row.Source = "Isle 4: Keeper of Souls";
         row.Acquired = true;
 
         Assert.True(settings.ApplyDefaultSkyQuestChecklist());
-        Assert.Equal("Light Woolen Mantle", row.QuestItem);
-        Assert.Equal("Isle 4: Keeper of Souls", row.Source);
+        Assert.Equal("Light Woolen Mask", row.QuestItem);
+        Assert.Equal("Isle 3: Gorgalosk", row.Source);
         Assert.True(row.Acquired);
         Assert.False(settings.ApplyDefaultSkyQuestChecklist());   // refreshed once, then quiet
     }
