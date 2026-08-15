@@ -1021,6 +1021,18 @@ internal sealed class QuestChecklistView
         AddSkyQuestTabMetric(header, "D", counts.Done, "GoodBrush");
         AddSkyQuestTabMetric(header, "R", counts.Ready, "WarnBrush");
         AddSkyQuestTabMetric(header, "P", counts.Partial, "IncomingBrush");
+        // The total, because D+R+P deliberately does NOT sum to it — a quest you have
+        // not started sits in no bucket. bjstrange read three numbers that didn't add
+        // up and reasonably concluded they were wrong (#136). Showing what they are out
+        // of turns a puzzle into a subtraction: "2+1+1 of 5, so one is untouched."
+        var total = new TextBlock
+        {
+            Text = $" /{counts.Total}",
+            FontSize = 10,
+            Margin = new Thickness(3, 0, 0, 0),
+        };
+        total.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+        header.Children.Add(total);
         return header;
     }
 
