@@ -78,6 +78,13 @@ PROMOTED = ["FadeMessages.json", "QuestCatalog.json", "ZoneGraph.json", "ItemCat
 CURATED = ["SpawnCatalog.json", "AaCatalog.json", "MezSpells.json",
            "CcSpells.json", "RegenSpells.json"]
 
+# Curated knowledge that lives in CODE rather than a Data JSON. Without these, a wiki
+# correction to a quest we carry would never surface here — which matters because
+# EQBuddy's rule is to match the wiki when a conflict cannot be settled, and we ask
+# reporters to fix the wiki. That ask is only honest if a wiki fix reaches us.
+CURATED_SOURCES = ["SkyQuestDefaults.cs", "EpicQuestChecklistCatalog.cs"]
+SRC = HERE.parents[1] / "src" / "EQBuddy.Core"
+
 _last_request = [0.0]
 
 
@@ -198,6 +205,22 @@ def curated_flags(changed_titles):
         hits = sorted({s for s in strings if s.lower() in lowered})
         if name == "AaCatalog.json" and "Alternate Advancement" in changed_titles:
             hits.append("(the Alternate Advancement page itself)")
+        if hits:
+            flags[name] = hits
+
+    # Same intersection over the code-resident catalogs. Their rows are pipe-delimited
+    # inside one string literal, so split on "|" to get individual page-sized names.
+    for name in CURATED_SOURCES:
+        path = SRC / name
+        if not path.exists():
+            continue
+        strings = set()
+        for literal in re.findall(r'"([^"\n]*)"', path.read_text(encoding="utf-8")):
+            for field in literal.split("|"):
+                field = field.strip()
+                if field:
+                    strings.add(field)
+        hits = sorted({s for s in strings if s.lower() in lowered})
         if hits:
             flags[name] = hits
     return flags
