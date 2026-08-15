@@ -29,6 +29,7 @@ public sealed class MezChipsWindow : Window
     private bool _restoredSaved;
     private bool _openedOnce;
     private bool _userMoved;
+    private ChipStackAnchor? _anchor;
     /// <summary>Tests can't drag a headless window; this is the drag signal's test seam.</summary>
     internal void MarkUserMovedForTests() => _userMoved = true;
 
@@ -55,8 +56,6 @@ public sealed class MezChipsWindow : Window
         // every open family window, and persists on its own) — WPF's WindowZoom.Route.
         if (setChipScale is not null)
             WindowZoom.Route(this, () => _settings.ChipScale, setChipScale);
-        ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp);
-
         Opened += (_, _) =>
         {
             _restoredSaved = ScreenGuard.OnScreen(this, _settings.MezChipsLeft,
@@ -65,6 +64,12 @@ public sealed class MezChipsWindow : Window
                 Position = new PixelPoint((int)_settings.MezChipsLeft, (int)_settings.MezChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 120);
+            // Attach AFTER placement — a grow-up stack restores its BOTTOM edge, and
+            // the saved Top belongs to whatever chip count the stack had at close
+            // (#122, Snagglefern).
+            _anchor = ChipAnchor.Attach(this, () => _settings.MezChipsGrowUp,
+                _restoredSaved && _settings.MezChipsGrowUp && !double.IsNaN(_settings.MezChipsBottom)
+                    ? _settings.MezChipsBottom : null);
             _openedOnce = true;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
@@ -86,6 +91,9 @@ public sealed class MezChipsWindow : Window
             (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
                 _restoredSaved, _userMoved, current.X, current.Y,
                 _settings.MezChipsLeft, _settings.MezChipsTop);
+            // The anchor's own bottom, never a measurement taken here: a closing window
+            // reports a zero height, and "bottom" then means the top edge (#152).
+            if (_anchor is { HasAnchor: true } anchor) _settings.MezChipsBottom = anchor.Bottom;
             _settings.Save();
         };
     }

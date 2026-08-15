@@ -28,6 +28,7 @@ public sealed class SpawnChipsWindow : Window
     private bool _restoredSaved;
     private bool _openedOnce;
     private bool _userMoved;
+    private ChipStackAnchor? _anchor;
     /// <summary>Tests can't drag a headless window; this is the drag signal's test seam.</summary>
     internal void MarkUserMovedForTests() => _userMoved = true;
     private PixelPoint _lastVisiblePosition;
@@ -53,8 +54,6 @@ public sealed class SpawnChipsWindow : Window
         // every open family window, and persists on its own) — WPF's WindowZoom.Route.
         if (setChipScale is not null)
             WindowZoom.Route(this, () => _settings.ChipScale, setChipScale);
-        ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
-
         Opened += (_, _) =>
         {
             _restoredSaved = ScreenGuard.OnScreen(this, _settings.SpawnChipsLeft,
@@ -63,6 +62,12 @@ public sealed class SpawnChipsWindow : Window
                 Position = new PixelPoint((int)_settings.SpawnChipsLeft, (int)_settings.SpawnChipsTop);
             else if (Screens.Primary is { } primary)
                 Position = new PixelPoint(primary.WorkingArea.X + 40, primary.WorkingArea.Y + 40);
+            // Attach AFTER placement — a grow-up stack restores its BOTTOM edge, and
+            // the saved Top belongs to whatever chip count the stack had at close
+            // (#122, Snagglefern).
+            _anchor = ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp,
+                _restoredSaved && _settings.SpawnChipsGrowUp && !double.IsNaN(_settings.SpawnChipsBottom)
+                    ? _settings.SpawnChipsBottom : null);
             _openedOnce = true;
             _lastVisiblePosition = Position;
             _haveVisiblePosition = true;
@@ -88,6 +93,9 @@ public sealed class SpawnChipsWindow : Window
             (_settings.SpawnChipsLeft, _settings.SpawnChipsTop) = WindowPlacement.PositionToPersist(
                 _restoredSaved, _userMoved, current.X, current.Y,
                 _settings.SpawnChipsLeft, _settings.SpawnChipsTop);
+            // The anchor's own bottom, never a measurement taken here: a closing window
+            // reports a zero height, and "bottom" then means the top edge (#152).
+            if (_anchor is { HasAnchor: true } anchor) _settings.SpawnChipsBottom = anchor.Bottom;
             _settings.Save();
         };
     }
