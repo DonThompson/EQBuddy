@@ -1805,7 +1805,7 @@ public sealed class OptionsWindow : Window
             _vm.ArchiveLogs, on => _vm.ArchiveLogs = on, new Thickness(20, 6, 0, 0));
         panel.Children.Add(_archiveCheck);
         panel.Children.Add(AppTheme.DimText(
-            "Each finished session is saved as eqlog_name_server_YYYYMMDDHHMMSS.txt — the stamp is when the session ended. Archives are yours to keep or clean up; EQBuddy never deletes them.",
+            "On by default: each finished session is saved as eqlog_name_server_YYYYMMDDHHMMSS.txt — the stamp is when the session ended — and Reset session splits the log here rather than letting it run on. Archives are yours to keep or clean up; EQBuddy never deletes them. Untick if you would rather have the disk space back.",
             new Thickness(40, 2, 0, 0)));
 
         _tutorialCheck = Check("Show quick tutorial at launch",

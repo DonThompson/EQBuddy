@@ -125,10 +125,21 @@ public sealed class AppSettings
     /// (for players who upload their logs elsewhere).</summary>
     public bool TruncateLogs { get; set; } = true;
     /// <summary>Copy a log's content to Logs\archive\eqlog_name_server_STAMP.txt before
-    /// the janitor empties it — for players who want the raw history kept (discussion
-    /// #52, joeymavity). Off by default: most players run EQBuddy precisely so logs
-    /// stop accumulating.</summary>
-    public bool ArchiveLogs { get; set; }
+    /// the janitor empties it (discussion #52, joeymavity), and split rather than
+    /// continue the log on a manual reset.
+    ///
+    /// **On by default since 1.84.0** (discussion #146, wizen). It shipped off, which
+    /// meant EQBuddy's out-of-the-box behaviour was to destroy a file the player never
+    /// asked it to destroy — and as wizen put it, these are text files. Keeping a dated
+    /// copy is the answer that costs a few megabytes; wanting the space back is the
+    /// preference worth making people opt into, not the other way round.</summary>
+    public bool ArchiveLogs { get; set; } = true;
+    /// <summary>Whether the one-time "archiving is on now" pass has run. Existing
+    /// profiles carry an explicit <c>false</c> from when that was the default, so a
+    /// changed default alone would never reach them — and they are exactly the players
+    /// whose logs are being emptied without a copy. A flag rather than inferring it,
+    /// so someone who turns archiving back off keeps it off.</summary>
+    public bool ArchiveDefaultMigrated { get; set; }
     /// <summary>User-defined tracked-loot rules (TRACK-018: persisted).</summary>
     public List<TrackedRule> TrackedRules { get; set; } = [];
     /// <summary>Highest version of the built-in default watch rules already applied.
@@ -441,6 +452,7 @@ public sealed class AppSettings
         changed |= settings.ApplyDefaultSkyQuestChecklist();
         changed |= settings.ApplyDefaultEpicQuestChecklist();
         changed |= settings.MigrateBuffSetsToClassBuckets();
+        changed |= settings.MigrateArchiveDefault();
         if (changed | settings.TrackedRules.Any(r => r.IdWasGenerated))
             settings.Save();
         return settings;
@@ -463,6 +475,19 @@ public sealed class AppSettings
     /// move to the "(any class)" bucket the assembled set always includes, so nothing
     /// anyone configured is lost or demoted. Idempotent — see BuffSetStore.Migrate.</summary>
     public bool MigrateBuffSetsToClassBuckets() => BuffSetStore.Migrate(BuffSets, BuffSetsByClass);
+
+    /// <summary>Turn log archiving on once for profiles that predate it becoming the
+    /// default (discussion #146). Runs exactly once and records that it did, so this is
+    /// a changed default reaching existing players — not a preference being overruled
+    /// every launch.</summary>
+    public bool MigrateArchiveDefault()
+    {
+        if (ArchiveDefaultMigrated) return false;
+        ArchiveDefaultMigrated = true;
+        if (ArchiveLogs) return true;    // already on; just record that we've been here
+        ArchiveLogs = true;
+        return true;
+    }
 
     public bool ApplyDefaultRules()
     {

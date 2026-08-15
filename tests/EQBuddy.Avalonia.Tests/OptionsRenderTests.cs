@@ -536,9 +536,14 @@ public class OptionsRenderTests : IDisposable
         chipScale.Value = 1.4;
         Assert.Equal(1.4, main.Settings.ChipScale, 3);
 
+        // Archiving is ON out of the box from 1.84.0 (#146) — emptying a log and keeping
+        // no copy was a destructive default nobody chose. So the toggle worth exercising
+        // is the one that gives the disk space back.
         var archive = options.GetVisualDescendants().OfType<CheckBox>()
             .Single(c => (c.Content as TextBlock)?.Text?.Contains("timestamped copy") == true);
-        Assert.False(archive.IsChecked);
+        Assert.True(archive.IsChecked);
+        archive.IsChecked = false;
+        Assert.False(main.Settings.ArchiveLogs);
         archive.IsChecked = true;
         Assert.True(main.Settings.ArchiveLogs);
 

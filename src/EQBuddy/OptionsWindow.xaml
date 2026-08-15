@@ -462,6 +462,8 @@
                 <TextBlock Text="Keep a timestamped copy before emptying (Logs\archive)" FontSize="12"
                            Foreground="{DynamicResource TextBrush}"/>
             </CheckBox>
+            <TextBlock Text="On by default: each finished session is saved as eqlog_name_server_YYYYMMDDHHMMSS.txt — the stamp is when the session ended — and Reset session splits the log here rather than letting it run on. Archives are yours to keep or clean up; EQBuddy never deletes them. Untick if you would rather have the disk space back."
+                       Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="40,2,0,0"/>
             <TextBlock Text="Each finished session is saved as eqlog_name_server_YYYYMMDDHHMMSS.txt — the stamp is when the session ended. Archives are yours to keep or clean up; EQBuddy never deletes them."
                        Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="40,2,0,0"/>
 
