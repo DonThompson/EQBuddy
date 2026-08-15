@@ -536,9 +536,13 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
   input shapes or NSWindow `ignoresMouseEvents`), spoken alerts (`say`), and
   Wine/CrossOver/Whisky log-folder auto-detection — were contributed by
   [quasarj](https://github.com/quasarj) (PR #90; thanks!). Releases attach
-  macOS tarballs (osx-arm64 for Apple Silicon, osx-x64 for Intel) alongside the
-  Linux one. They're unsigned — first launch needs right-click → Open, or
-  `xattr -d com.apple.quarantine EQBuddy.Avalonia`.
+  **`EQBuddy-osx-arm64.zip`** (Apple Silicon) and **`EQBuddy-osx-x64.zip`** (Intel)
+  alongside the Linux tarball. Each unzips to `EQBuddy.app` — drag it to
+  Applications and open it like any Mac app (thanks to
+  [pmcginn](https://github.com/pmcginn), discussion #157, for pointing out that the
+  old loose-files tarball gave a new Mac user nothing obviously openable).
+  They're unsigned — **first launch needs right-click → Open** (not a double-click),
+  or `xattr -dr com.apple.quarantine EQBuddy.app`.
 - `src/EQBuddy.Core` — shared parser, watcher, settings, update, and session-stat logic.
   Both UI projects reference this; UI-independent code goes here.
 - `src/EQBuddy.Core/LogParser.cs` — one regex per log-line type; add new patterns here.
@@ -551,7 +555,8 @@ Session DPS = your damage ÷ time actually **in combat**, so downtime never dilu
   single source for every project), publishes, signs both exes (self-signed cert; create
   once with `scripts\new-cert.ps1`), compiles the installer with the matching version
   stamp, and copies the artifacts to the update channel. Pass `-Tag vX.Y.Z` to push,
-  tag, and publish a GitHub release (CI attaches the Linux and macOS tarballs). Bump `<Version>`
+  tag, and publish a GitHub release (CI attaches the Linux tarball and the macOS
+  `.app` bundles). Bump `<Version>`
   in `Directory.Build.props` and add a `WhatsNew.json` entry first — the script refuses
   to release without one.
 - Knowledge refresh: wiki-derived catalogs (quests, fade messages, zone graph) refresh
