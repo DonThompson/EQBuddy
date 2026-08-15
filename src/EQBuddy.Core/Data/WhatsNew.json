@@ -1,5 +1,12 @@
 [
  {
+  "version": "1.87.0",
+  "date": "2026-08-15",
+  "highlights": [
+   "POTION BUFFS SHOW ON THE BUFF TRACKER (issue #167, thanks Liminal Warmth). Drinking a Distillate of Alacrity or Clarity never produced a timer: the potions cast Elixir spells that had no wiki page, and the buff catalog is harvested from the wiki. The whole alchemy catalog is now documented there and absorbed here - roughly 50 potion buffs join the tracker (every Distillate line, the Awareness focus potions, Turtle's Drink, the racial essences and more), and their fade lines are recognized so a chip clears the moment the buff actually drops instead of lingering at 0:00."
+  ]
+ },
+ {
   "version": "1.86.0",
   "date": "2026-08-15",
   "highlights": [
