@@ -13,7 +13,7 @@
   },
   {
    "message": "A coat of shimmering runes surround you.",
-   "label": "A coat of shimmering runes surround you",
+   "label": "Rune line",
    "spells": [
     {
      "name": "Rune IV",
@@ -27,7 +27,7 @@
   },
   {
    "message": "A cool breeze slips through your mind.",
-   "label": "A cool breeze slips through your mind",
+   "label": "Clarity line",
    "spells": [
     {
      "name": "Boon of the Clear Mind",
@@ -91,7 +91,7 @@
   },
   {
    "message": "A feeling of temperance washes over you.",
-   "label": "A feeling of temperance washes over you",
+   "label": "Temperance line",
    "spells": [
     {
      "name": "Blessing of Temperance",
@@ -135,7 +135,7 @@
   },
   {
    "message": "A mystic symbol flashes before your eyes.",
-   "label": "A mystic symbol flashes before your eyes",
+   "label": "Symbol line",
    "spells": [
     {
      "name": "Naltron's Mark",
@@ -221,7 +221,7 @@
   },
   {
    "message": "A soft breeze slips through your mind.",
-   "label": "A soft breeze slips through your mind",
+   "label": "Clarity II line",
    "spells": [
     {
      "name": "Clarity II",
@@ -465,7 +465,7 @@
   },
   {
    "message": "You are enveloped by flame.",
-   "label": "You are enveloped by flame",
+   "label": "Fire damage shield",
    "spells": [
     {
      "name": "Barrier of Combustion",
@@ -543,7 +543,7 @@
   },
   {
    "message": "You are now a wolf.",
-   "label": "You are now a wolf",
+   "label": "Wolf form",
    "spells": [
     {
      "name": "Form of the Howler",
@@ -577,7 +577,7 @@
   },
   {
    "message": "You are surrounded by a thorny barrier.",
-   "label": "You are surrounded by a thorny barrier",
+   "label": "Thorns damage shield",
    "spells": [
     {
      "name": "Legacy of Spike",
@@ -637,7 +637,7 @@
   },
   {
    "message": "You become like the dead.",
-   "label": "You become like the dead",
+   "label": "Dead Man Floating",
    "spells": [
     {
      "name": "Dead Man Floating",
@@ -671,7 +671,7 @@
   },
   {
    "message": "You begin to radiate with divine strength.",
-   "label": "You begin to radiate with divine strength",
+   "label": "Divine Strength line",
    "spells": [
     {
      "name": "Brell's Steadfast Aegis",
@@ -685,7 +685,7 @@
   },
   {
    "message": "You begin to radiate.",
-   "label": "You begin to radiate",
+   "label": "O'Keil's line",
    "spells": [
     {
      "name": "O'Keil's Embers",
@@ -707,7 +707,7 @@
   },
   {
    "message": "You begin to regenerate.",
-   "label": "You begin to regenerate",
+   "label": "Regeneration line",
    "spells": [
     {
      "name": "Chloroplast",
@@ -739,7 +739,7 @@
   },
   {
    "message": "You drink the potion.",
-   "label": "You drink the potion",
+   "label": "Potion",
    "spells": [
     {
      "name": "Accuracy",
@@ -869,7 +869,7 @@
   },
   {
    "message": "You feel different.",
-   "label": "You feel different",
+   "label": "Illusion",
    "spells": [
     {
      "name": "Form of Bleached Bone",
@@ -985,7 +985,7 @@
   },
   {
    "message": "You feel heroic.",
-   "label": "You feel heroic",
+   "label": "Heroism line",
    "spells": [
     {
      "name": "Heroic Bond",
@@ -1019,7 +1019,7 @@
   },
   {
    "message": "You feel much faster.",
-   "label": "You feel much faster",
+   "label": "Haste line",
    "spells": [
     {
      "name": "Alacrity",
@@ -1041,7 +1041,7 @@
   },
   {
    "message": "You feel no need to breathe.",
-   "label": "You feel no need to breathe",
+   "label": "Enduring Breath line",
    "spells": [
     {
      "name": "Enduring Breath",
@@ -1095,7 +1095,7 @@
   },
   {
    "message": "You feel stronger.",
-   "label": "You feel stronger",
+   "label": "Strength line",
    "spells": [
     {
      "name": "Impart Strength",
@@ -1125,7 +1125,7 @@
   },
   {
    "message": "You feel the favor of the gods upon you.",
-   "label": "You feel the favor of the gods upon you",
+   "label": "Cleric AC line",
    "spells": [
     {
      "name": "Armor of Faith",
@@ -1147,7 +1147,7 @@
   },
   {
    "message": "You feel the skin peel from your bones.",
-   "label": "You feel the skin peel from your bones",
+   "label": "Lich line",
    "spells": [
     {
      "name": "Arch Lich",
@@ -1271,7 +1271,7 @@
   },
   {
    "message": "You feel tough.",
-   "label": "You feel tough",
+   "label": "Shaman stamina line",
    "spells": [
     {
      "name": "Harnessing of Spirit",
@@ -1325,7 +1325,7 @@
   },
   {
    "message": "You feel your body pulse with energy.",
-   "label": "You feel your body pulse with energy",
+   "label": "Augmentation line",
    "spells": [
     {
      "name": "Augment",
@@ -1349,7 +1349,7 @@
   },
   {
    "message": "You feel your skin tingle.",
-   "label": "You feel your skin tingle",
+   "label": "Invisibility vs Undead",
    "spells": [
     {
      "name": "Improved Invis vs Undead",
@@ -1409,7 +1409,7 @@
   },
   {
    "message": "You have taken root.",
-   "label": "You have taken root",
+   "label": "Treeform",
    "spells": [
     {
      "name": "Spirit of Oak",
@@ -1473,7 +1473,7 @@
   },
   {
    "message": "You vanish.",
-   "label": "You vanish",
+   "label": "Invisibility line",
    "spells": [
     {
      "name": "Improved Invisibility",
@@ -1565,7 +1565,7 @@
   },
   {
    "message": "Your eyes feel stronger.",
-   "label": "Your eyes feel stronger",
+   "label": "Sight line",
    "spells": [
     {
      "name": "Gaze",
@@ -1583,7 +1583,7 @@
   },
   {
    "message": "Your eyes tingle.",
-   "label": "Your eyes tingle",
+   "label": "Vision line",
    "spells": [
     {
      "name": "Acumen",
@@ -1619,7 +1619,7 @@
   },
   {
    "message": "Your feet leave the ground.",
-   "label": "Your feet leave the ground",
+   "label": "Levitation",
    "spells": [
     {
      "name": "Levitate",
@@ -1673,7 +1673,7 @@
   },
   {
    "message": "Your image blurs.",
-   "label": "Your image blurs",
+   "label": "Blur line",
    "spells": [
     {
      "name": "Haze",
@@ -1757,7 +1757,7 @@
   },
   {
    "message": "Your mind sharpens.",
-   "label": "Your mind sharpens",
+   "label": "Intelligence line",
    "spells": [
     {
      "name": "Intellectual Advancement",
@@ -1881,7 +1881,7 @@
   },
   {
    "message": "Your skin shimmers.",
-   "label": "Your skin shimmers",
+   "label": "Natureskin line",
    "spells": [
     {
      "name": "Natureskin",
@@ -1905,7 +1905,7 @@
   },
   {
    "message": "Your skin turns hard as diamond.",
-   "label": "Your skin turns hard as diamond",
+   "label": "Diamond skin",
    "spells": [
     {
      "name": "Protection of Diamond",
@@ -1919,7 +1919,7 @@
   },
   {
    "message": "Your skin turns hard as steel.",
-   "label": "Your skin turns hard as steel",
+   "label": "Steel skin",
    "spells": [
     {
      "name": "Protection of Steel",
@@ -1933,7 +1933,7 @@
   },
   {
    "message": "Your skin turns hard as stone.",
-   "label": "Your skin turns hard as stone",
+   "label": "Stone skin",
    "spells": [
     {
      "name": "Protection of Rock",
@@ -1947,7 +1947,7 @@
   },
   {
    "message": "Your skin turns hard as wood.",
-   "label": "Your skin turns hard as wood",
+   "label": "Wood skin",
    "spells": [
     {
      "name": "Protection of Wood",
@@ -1961,7 +1961,7 @@
   },
   {
    "message": "Your spirit drifts from your body.",
-   "label": "Your spirit drifts from your body",
+   "label": "Bind sight line",
    "spells": [
     {
      "name": "Assiduous Vision",
@@ -1985,7 +1985,7 @@
   },
   {
    "message": "Your thoughts begin to race and flow faster.",
-   "label": "Your thoughts begin to race and flow faster",
+   "label": "Gift line",
    "spells": [
     {
      "name": "Gift of Brilliance",
