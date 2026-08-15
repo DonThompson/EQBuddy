@@ -102,10 +102,14 @@ public static class EqConfig
     /// i.e. when the session actually ended) — joeymavity's ask, discussion #52. The
     /// archive SUBFOLDER is load-bearing: a timestamped copy in the log folder itself
     /// would match this very method's glob next sweep and get truncated too.
-    /// Returns the number of files truncated.
+    /// Returns the number of files truncated. <paramref name="archived"/> is invoked
+    /// with the full path of each copy actually written — the janitor runs unattended on
+    /// a background thread, and an archive nobody is told about is indistinguishable from
+    /// one that never happened (#159, Frankthetankk, who lost a session and then had no
+    /// way to check whether archiving was working at all).
     /// </summary>
     public static int TruncateStaleLogs(string logFolder, TimeSpan staleAfter,
-        bool ignoreGameCheck = false, bool archive = false)
+        bool ignoreGameCheck = false, bool archive = false, Action<string>? archived = null)
     {
         if (!ignoreGameCheck && (IsGameRunning() || IsLogReaderRunning())) return 0;
         if (!Directory.Exists(logFolder)) return 0;
@@ -117,7 +121,7 @@ public static class EqConfig
                 var fi = new FileInfo(f);
                 if (fi.Length > 0 && DateTime.Now - fi.LastWriteTime > staleAfter)
                 {
-                    if (archive) ArchiveCopy(fi);
+                    if (archive && ArchiveCopy(fi) is { } dest) archived?.Invoke(dest);
                     using var fs = new FileStream(f, FileMode.Open, FileAccess.Write,
                         FileShare.ReadWrite | FileShare.Delete);
                     fs.SetLength(0);
@@ -129,7 +133,10 @@ public static class EqConfig
         return truncated;
     }
 
-    private static void ArchiveCopy(FileInfo log)
+    /// <summary>Copies the log into Logsrchive. Returns the destination, or null when
+    /// an identical copy is already there (see the dedup reasoning below) — the caller
+    /// announces only real writes, so a retried sweep cannot claim an archive twice.</summary>
+    private static string? ArchiveCopy(FileInfo log)
     {
         // A sweep whose copy succeeded but whose truncate lost the file-lock race
         // retries next sweep with the log unchanged — same stamp, same length — and
@@ -138,8 +145,10 @@ public static class EqConfig
         // here: the stamp IS the content's own last write. A same-stamp archive of
         // a DIFFERENT length still gets its dedup copy (the documented
         // same-second-twice case).
-        if (AlreadyArchived(log)) return;
-        log.CopyTo(ArchiveDest(log));
+        if (AlreadyArchived(log)) return null;
+        var dest = ArchiveDest(log);
+        log.CopyTo(dest);
+        return dest;
     }
 
     /// <summary>An archive copy of exactly this content already exists.</summary>

@@ -126,4 +126,59 @@ public class SkyLootAutoCheckTests
         Assert.Equal(2, list.Count(i => i.Acquired));
         Assert.All(list.Where(i => i.Acquired), i => Assert.True(i.AcquiredUnassigned));
     }
+
+    // ---- upgrade tiers fold (#156, bjstrange) ----
+
+    /// <summary>
+    /// "Azure Ring +1" is an Azure Ring. The dump and the loot line both print the
+    /// upgrade suffix; every catalog — sky, epic, gear, the wiki — stores the base name.
+    ///
+    /// This checker compared raw strings until 1.85.0 while EpicLootAutoCheck and
+    /// GearLootAutoCheck both folded through QuestCatalog.BaseItemName, so one loot line
+    /// ticked a gear wish and an epic step and quietly skipped the Sky row that wanted
+    /// the same item. The inconsistency is the bug; the fold is the fix.
+    /// </summary>
+    [Fact]
+    public void AnUpgradedDropTicksTheRowForItsBaseItem()
+    {
+        var list = Checklist();
+
+        var changed = SkyLootAutoCheck.Apply(list, "Great Staff +1", 1, [], activeTab: "Druid");
+
+        Assert.True(changed);
+        Assert.True(list.Single(i => i.ClassName == "Berserker").Acquired);
+    }
+
+    [Fact]
+    public void ADoubleDigitUpgradeFoldsToo()
+    {
+        var list = Checklist();
+
+        Assert.True(SkyLootAutoCheck.Apply(list, "Great Staff +12", 1, [], activeTab: "Druid"));
+        Assert.True(list.Single(i => i.ClassName == "Berserker").Acquired);
+    }
+
+    [Fact]
+    public void FoldingStillRespectsTheClassLens()
+    {
+        // The fold must not smuggle an item past the scoping rules: a shared rune with
+        // an upgrade suffix is still shared, and still ticks only the played class.
+        var list = Checklist();
+
+        SkyLootAutoCheck.Apply(list, "Wind Rune Azia +1", 1, ["Druid"], activeTab: "");
+
+        Assert.True(list.Single(i => i.ClassName == "Druid").Acquired);
+        Assert.False(list.Single(i => i.ClassName == "Monk").Acquired);
+        Assert.False(list.Single(i => i.ClassName == "Wizard").Acquired);
+    }
+
+    [Fact]
+    public void AnUnrelatedItemStillDoesNotMatch()
+    {
+        // Guard against the fold turning into a loose contains-match.
+        var list = Checklist();
+
+        Assert.False(SkyLootAutoCheck.Apply(list, "Great Staff of Something Else", 1, [], "Druid"));
+        Assert.All(list, i => Assert.False(i.Acquired));
+    }
 }

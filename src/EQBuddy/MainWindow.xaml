@@ -142,8 +142,12 @@
                         Click="OnCompanion"/>
                 <Button x:Name="GearBtn" Grid.Column="5" Style="{StaticResource IconButton}"
                         Content="&#x2699;&#xFE0F;" ToolTip="Settings" Click="OnGear"/>
-                <Button Grid.Column="6" Style="{StaticResource IconButton}" Content="&#x21BB;"
-                        ToolTip="Reset session stats" Click="OnReset"/>
+                <!-- Tooltip is set in code (ResetPrompt): what this button does to your
+                     log depends on whether archiving is on, and "Reset session stats"
+                     hid that it touches a file at all (#159). -->
+                <Button x:Name="ResetButton" Grid.Column="6" Style="{StaticResource IconButton}"
+                        Content="&#x21BB;" ToolTipOpening="OnResetToolTipOpening"
+                        ToolTip="Start a new session" Click="OnReset"/>
                 <Button Grid.Column="7" Style="{StaticResource IconButton}" Content="&#x2013;"
                         ToolTip="Minimize to dashboard (starred stats only)" Click="OnMinimize"/>
                 <Button Grid.Column="8" Style="{StaticResource IconButton}" Content="&#x2715;"

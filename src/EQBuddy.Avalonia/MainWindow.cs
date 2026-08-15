@@ -435,7 +435,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(lf);
-                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap, archive: archive);
+                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap,
+                    archive: archive, archived: AnnounceArchive);
             });
         }
 
@@ -827,12 +828,23 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         _gearBtn.Click += OnGear;
         Grid.SetColumn(_gearBtn, 3);
         grid.Children.Add(_gearBtn);
-        var reset = AppTheme.IconButton(AppIcon.Refresh, "Reset session stats");
-        reset.Click += (_, _) =>
+        var reset = AppTheme.IconButton(AppIcon.Refresh, ResetPrompt.Tooltip(_settings.ArchiveLogs));
+        reset.Click += async (_, _) =>
         {
+            // The tooltip is rebuilt per click rather than fixed at construction: what
+            // this button does to your log depends on a setting that Options can change
+            // while the widget stays open (#159).
+            ToolTip.SetTip(reset, ResetPrompt.Tooltip(_settings.ArchiveLogs));
+            // Ask first when the click will move a file — WPF's confirmation, same words.
+            if (ResetPrompt.Confirmation(_settings.ArchiveLogs) is { } ask
+                && !await ConfirmDialog.Ask(this, ResetPrompt.ConfirmationTitle, ask, "Reset"))
+                return;
             // With archiving on, reset also splits the log (#52) — same as WPF.
             if (_settings.ArchiveLogs && _watcher.CurrentPath is { } path)
-                Task.Run(() => EqConfig.SplitLog(path));
+                Task.Run(() =>
+                {
+                    if (EqConfig.SplitLog(path) is { } dest) AnnounceArchive(dest);
+                });
             _stats.Reset();
         };
         Grid.SetColumn(reset, 4);
@@ -5466,6 +5478,20 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             return process.ExitCode == 0;
         }
         catch { return false; }
+    }
+
+    /// <summary>
+    /// Say so, out loud, whenever a log is archived — with the file it went to. WPF's
+    /// AnnounceArchive, same reasoning: the janitor runs unattended on a background
+    /// thread, and until 1.85.0 the only evidence archiving worked was going and looking
+    /// (#159, Frankthetankk, who lost a session and could not tell whether the copy he
+    /// was relying on had ever been made).
+    /// </summary>
+    private void AnnounceArchive(string destination)
+    {
+        App.LogError($"Log archived → {destination}");
+        Dispatcher.UIThread.Post(() => AlertTile.ShowAlert(
+            $"Log archived — {System.IO.Path.GetFileName(destination)} (Logs/archive)"));
     }
 
     private void OnUpdateBannerClick(object? sender, PointerPressedEventArgs e)

@@ -228,7 +228,8 @@ public partial class MainWindow : Window
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(lf);
-                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap, archive: archive);
+                if (prune) EqConfig.TruncateStaleLogs(lf, SessionStats.SessionGap,
+                    archive: archive, archived: AnnounceArchive);
             });
         }
 
@@ -2144,7 +2145,8 @@ public partial class MainWindow : Window
             Task.Run(() =>
             {
                 EqConfig.EnsureLoggingEnabled(folder);
-                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap, archive: archive);
+                if (prune) EqConfig.TruncateStaleLogs(folder, SessionStats.SessionGap,
+                    archive: archive, archived: AnnounceArchive);
             });
         }
 
@@ -2612,6 +2614,26 @@ public partial class MainWindow : Window
             }
             catch { }
         }
+    }
+
+    /// <summary>
+    /// Say so, out loud, whenever a log is archived — with the file it went to.
+    ///
+    /// The janitor runs unattended on a background thread, so until 1.85.0 the only
+    /// evidence archiving worked was going and looking. Frankthetankk lost a session to
+    /// the idle cleanup (#159) and had no way to tell whether the copy he was relying on
+    /// had ever been made. A destructive-adjacent action that leaves no trace is the same
+    /// silent no-op the rest of this app refuses to ship.
+    ///
+    /// Both the toast and the log line, deliberately: the banner is seen now, the
+    /// error.log entry is what answers "did it archive that session last Tuesday".
+    /// </summary>
+    private void AnnounceArchive(string destination)
+    {
+        var line = $"Log archived → {destination}";
+        CoreLog.Error(line);
+        Dispatcher.BeginInvoke(() => AlertTile.ShowAlert(
+            $"Log archived — {System.IO.Path.GetFileName(destination)} (Logs\\archive)"));
     }
 
     /// <summary>Rows the selected tab is showing, for the EQBUDDY_EXPAND dump. Every
@@ -4287,8 +4309,22 @@ public partial class MainWindow : Window
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
     }
 
+    /// <summary>The tooltip is built on hover rather than fixed in XAML, so it always
+    /// describes the archiving setting as it is right now (#159).</summary>
+    private void OnResetToolTipOpening(object sender, ToolTipEventArgs e) =>
+        ResetButton.ToolTip = EQBuddy.UI.Shared.ResetPrompt.Tooltip(_settings.ArchiveLogs);
+
     private void OnReset(object sender, RoutedEventArgs e)
     {
+        // Ask first when the click will move a file (#159, Frankthetankk — same
+        // treatment Epic Complete got after #138). With archiving off nothing but the
+        // on-screen numbers change, and ResetPrompt returns null rather than put a
+        // dialog in front of an action that cannot lose anything.
+        if (EQBuddy.UI.Shared.ResetPrompt.Confirmation(_settings.ArchiveLogs) is { } ask
+            && MessageBox.Show(this, ask, EQBuddy.UI.Shared.ResetPrompt.ConfirmationTitle,
+                MessageBoxButton.OKCancel, MessageBoxImage.Question) != MessageBoxResult.OK)
+            return;
+
         // History first (audit finding 1): without the finalize, the archiver's row id
         // survived the reset and later checkpoints overwrote the pre-reset session's
         // row with post-reset numbers. Snapshot before the split task and the reset,
@@ -4297,7 +4333,10 @@ public partial class MainWindow : Window
         // With archiving on, reset also splits the log: what's parsed so far moves to
         // Logs\archive and a fresh file begins — the second half of #52's ask.
         if (_settings.ArchiveLogs && _watcher.CurrentPath is { } path)
-            Task.Run(() => EqConfig.SplitLog(path));
+            Task.Run(() =>
+            {
+                if (EqConfig.SplitLog(path) is { } dest) AnnounceArchive(dest);
+            });
         _stats.Reset();
     }
 

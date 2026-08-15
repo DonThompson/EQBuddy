@@ -18,6 +18,12 @@ namespace EQBuddy.Core;
 ///    class gets the tick, flagged AcquiredUnassigned so the row wears a * and the
 ///    player can move it ("check one of them off, doesn't matter which, and let me
 ///    decide if it's the right one" — his words, his rule).
+///
+/// Names are folded through <see cref="QuestCatalog.BaseItemName"/> on BOTH sides, so
+/// an upgraded drop ticks the row for its base item ("Azure Ring +1" is an Azure Ring).
+/// This checker matched raw strings until 1.85.0 while its Epic and Gear siblings both
+/// folded — so the same loot line ticked a gear wish and an epic step and silently
+/// skipped Sky (#156, bjstrange).
 /// </summary>
 public static class SkyLootAutoCheck
 {
@@ -32,8 +38,10 @@ public static class SkyLootAutoCheck
             ? myClasses.Any(c => c.Equals(className, StringComparison.OrdinalIgnoreCase))
             : activeTab.Length == 0 || string.Equals(className, activeTab, StringComparison.Ordinal);
 
+        var looted = QuestCatalog.BaseItemName(itemName);
         var slots = checklist
-            .Where(i => string.Equals(i.QuestItem, itemName, StringComparison.OrdinalIgnoreCase))
+            .Where(i => string.Equals(QuestCatalog.BaseItemName(i.QuestItem), looted,
+                StringComparison.OrdinalIgnoreCase))
             .ToList();
         var owningClasses = slots.Select(i => i.ClassName)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
