@@ -82,22 +82,40 @@ gh issue list --repo "$owner/$name" --state open --limit 20 `
 
 # A thread whose last word is somebody else's is a thread waiting on us.
 Head 'DISCUSSIONS AWAITING A REPLY'
+# GraphQL variables, not string substitution. The owner and name used to be pasted
+# into the query between double quotes, and PowerShell mangles embedded quotes when
+# it hands a string to a native command — gh saw "-bot" as a flag and rejected the
+# whole query. Passing them as -f fields keeps every quote out of the string.
 $q = @'
-{ repository(owner:"OWNER", name:"NAME") {
+query($owner:String!, $name:String!) {
+  repository(owner:$owner, name:$name) {
     discussions(first:25, orderBy:{field:UPDATED_AT, direction:DESC}) {
-      nodes { number title updatedAt author{login} comments(last:1){ nodes{ author{login} } } } } } }
-'@ -replace 'OWNER', $owner -replace 'NAME', $name
+      nodes { number title updatedAt closed author{login} comments(last:1){ nodes{ author{login} } } } } } }
+'@
 
-$nodes = (gh api graphql -f query=$q 2>$null | ConvertFrom-Json).data.repository.discussions.nodes
-$waiting = $nodes | Where-Object {
-    $last = if ($_.comments.nodes.Count) { $_.comments.nodes[-1].author.login } else { $_.author.login }
-    $last -ne $owner
+$raw = gh api graphql -f query=$q -f owner=$owner -f name=$name 2>&1
+$nodes = $null
+if ($LASTEXITCODE -eq 0) {
+    $nodes = ($raw | ConvertFrom-Json).data.repository.discussions.nodes
 }
-if ($waiting) {
-    $waiting | ForEach-Object {
+
+# A query that FAILED must never look like a quiet board. It did for a while, and
+# the reassuring green "none" hid a queue of unanswered reports (2026-08-15).
+if ($null -eq $nodes) {
+    Write-Host '  COULD NOT CHECK - the discussions query failed:' -ForegroundColor Red
+    Write-Host ("    {0}" -f ($raw | Select-Object -First 1)) -ForegroundColor Red
+}
+else {
+    $waiting = @($nodes | Where-Object { -not $_.closed } | Where-Object {
         $last = if ($_.comments.nodes.Count) { $_.comments.nodes[-1].author.login } else { $_.author.login }
-        Write-Host ("  #{0} [{1}] {2}" -f $_.number, $last, $_.title) -ForegroundColor Yellow
+        $last -ne $owner
+    })
+    if ($waiting.Count) {
+        $waiting | ForEach-Object {
+            $last = if ($_.comments.nodes.Count) { $_.comments.nodes[-1].author.login } else { $_.author.login }
+            Write-Host ("  #{0} [{1}] {2}" -f $_.number, $last, $_.title) -ForegroundColor Yellow
+        }
     }
+    else { Write-Host "  none - all $($nodes.Count) open threads have our reply last" -ForegroundColor Green }
 }
-else { Write-Host '  none - every thread has our reply last' -ForegroundColor Green }
 Write-Host ''
