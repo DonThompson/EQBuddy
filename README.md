@@ -126,6 +126,14 @@ page instead.
    - The dot in EQBuddy's corner turns **green** when it's receiving data. If it's red
      with a yellow banner during play, type `/log` in the game's chat as a one-time fix.
 
+> **Playing on a Mac through CrossOver/Wine?** The Windows build runs in a bottle, but
+> a fullscreen game will paint over the widget — a Wine-on-macOS quirk, not an EQBuddy
+> bug. An opt-in setup fixes it so the widget floats over the fullscreen game (and
+> clicking it doesn't disturb the game or pop the Mac menu bar): see
+> [docs/CrossOver-macOS-overlay.md](docs/CrossOver-macOS-overlay.md). It does nothing on
+> Windows or unless you turn it on. (Prefer a native Mac app? The Avalonia build ships as
+> a `.app` on every release — see the developer section.)
+
 Mini dashboard:
 - Click the **★ star** next to any section header to include that stat in the mini dashboard.
 - Click **–** in the title bar to minimize: only your starred stats remain, in a tiny

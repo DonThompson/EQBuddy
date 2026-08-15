@@ -88,13 +88,18 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        var settings = Core.AppSettings.Load();
+        // Under Wine only, and only when opted in: float the widget over a fullscreen
+        // game and stop clicks from foregrounding the Wine process — see WineOverlay.cs.
+        // Inert on Windows and off by default.
+        WineOverlay.Configure(settings);
         // Applied before MainWindow is constructed, so the saved theme is already live for
         // the very first frame. There's no StartupUri (App.xaml) creating that window for
         // us — WPF queues a StartupUri window's construction independently of OnStartup, so
         // it could still land even after the ClaimSingleInstance() bailout above, crashing
         // on a theme that was never applied. Building it explicitly here, only on the
         // success path, closes that race.
-        try { ThemeManager.Apply(Core.AppSettings.Load()); }
+        try { ThemeManager.Apply(settings); }
         catch (Exception ex) { LogError(ex); }
         DispatcherUnhandledException += (_, args) =>
         {
