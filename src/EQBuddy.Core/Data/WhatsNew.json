@@ -1,5 +1,19 @@
 [
  {
+  "version": "1.85.0",
+  "date": "2026-08-15",
+  "highlights": [
+   "FIXED (discussion #135, thanks bjstrange, whose log finally cracked it) - CHARM SOMETIMES DIDN'T REPORT HOW LONG IT HELD. If the creature was mid-swing at the instant your charm landed, the game resolved that attack round anyway - and EQBuddy read your brand-new pet hitting you as the charm breaking, throwing away the clock one second after starting it. Minutes later the real fade had nothing left to measure, so the \"held M:SS\" went missing while the fade message itself printed as normal. That is why it looked random and moved between mobs: it depended entirely on the creature's swing timer. A hit within 3 seconds of the landing is now the tail of that round rather than a break.",
+   "FIXED (discussion #156, thanks bjstrange) - UPGRADED DROPS NOW TICK SKY ROWS. \"Azure Ring +1\" is an Azure Ring, but the Sky checklist compared the name exactly while the Epic and Gear checkers both folded the \"+N\" away - so one loot line ticked a gear wish and an epic step and silently skipped the Sky row that wanted the same item. Note this only applies to loot as it arrives; tick anything you already have by hand once.",
+   "FIXED (discussion #120, thanks Frankthetankk) - A BUFF ADDED UNDER A CLASS YOU AREN'T PLAYING VANISHED. Picking, say, Paladin in the buff-set class picker and clicking a searched buff appeared to do nothing - and then the buff disappeared from later searches, so you couldn't even retry. It was being added correctly every time; the breakout just never showed buckets outside your active classes, so the pick was stored, hidden and unremovable. Those picks were never lost and now appear as a parked section. Options and the breakout share one answer about this now.",
+   "YOUR LOGS SAY WHEN THEY'RE ARCHIVED (discussion #159, thanks Frankthetankk, who lost a session to the old cleanup and had no way to check archiving was working). Every archive now announces itself with a banner naming the file, and writes a line to error.log so you can answer \"did it archive that session last Tuesday\" later. The ↻ Reset button also stops underselling itself: its tooltip now says that it MOVES your log to Logs\\archive and starts a fresh one, and it asks before doing it. Nothing is deleted, and with archiving switched off ↻ leaves your log completely alone and skips the dialog.",
+   "MACOS SHIPS AS A REAL APP (discussion #157, thanks pmcginn, who hit this as a new Mac user and worked out the fix himself). Releases now attach EQBuddy-osx-arm64.zip and EQBuddy-osx-x64.zip, each unzipping to EQBuddy.app - drag it to Applications and open it like anything else, instead of hunting through loose files for something openable. Still unsigned, so the first launch needs right-click → Open.",
+   "EQBUDDY MOBILE KEEPS UP NOW. Your phone was waiting for the desktop's once-a-second redraw before it heard about anything, even though EQBuddy reads the log every 150ms. Mobile has its own cadence from this release, so a mez breaking or a spawn coming up reaches the second screen as soon as it's known rather than up to a second later. It costs nothing when nothing is happening, or when no device is paired.",
+   "The Sky quest tabs now show what their D/R/P counters are out of (discussion #136, bjstrange) - they never summed to the total because an untouched quest sits in no bucket, which read as a bug rather than a design.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.84.0",
   "date": "2026-08-15",
   "highlights": [
