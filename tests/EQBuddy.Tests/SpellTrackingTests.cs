@@ -1263,6 +1263,62 @@ public class SpellTrackingTests
         Assert.Contains("held 3:54", after.LastItem);
     }
 
+    /// <summary>
+    /// #135 round three, from bjstrange's charm.txt (2026-08-15): a swing already in
+    /// flight when the charm lands.
+    ///
+    /// His log has "Bzzazzt has been charmed." at 22:28:07 and "Bzzazzt cleaves YOU"
+    /// in the SAME second — the mob was mid-round, and the game resolves that round
+    /// before the charm takes hold. EQBuddy read it as the pet turning on him, dropped
+    /// the claim one second after making it, and so the real fade eight minutes later
+    /// had no landing to measure from and printed no hold at all.
+    ///
+    /// That is why it was intermittent and why it moved between mobs: it depended
+    /// entirely on whether the creature happened to be mid-swing at the instant the
+    /// charm landed. Three charms announced, the fourth silent.
+    /// </summary>
+    [Fact]
+    public void ASwingAlreadyInFlightWhenTheCharmLandsIsNotABreak()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),                                  // charm lands 0:04
+            At(0, 4, "A puma hits YOU for 144 points of damage."),        // same second
+            At(0, 5, "A puma hits YOU for 261 points of damage."),        // and the next
+            At(2, 0, "A puma hits orc pawn for 30 points of damage."));   // still ours
+
+        // The claim survived: the pet is still credited two minutes later.
+        var s = stats.Snapshot(recentWindow: null, rules: settings.TrackedRules);
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 0, 4), s.CharmedSince);
+
+        // And the real fade, minutes later, can still say how long it held.
+        stats.Apply(LogParser.Parse(At(8, 5, "Your Befriend Animal spell has worn off of a puma."))!);
+        var tracked = Assert.Single(
+            stats.Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
+        Assert.Contains("held 8:01", tracked.LastItem);
+    }
+
+    /// <summary>The settle window must not swallow a genuine break: a pet still
+    /// hitting you AFTER it has passed is the charm actually failing, and the claim
+    /// has to drop then rather than wait for the fade line.</summary>
+    [Fact]
+    public void APetStillHittingYouPastTheSettleWindowIsARealBreak()
+    {
+        var s = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(0, 4, "A puma hits YOU for 144 points of damage."),   // in-flight, ignored
+            At(0, 30, "A puma hits YOU for 90 points of damage."),   // well past: a real break
+            At(1, 0, "A puma hits orc pawn for 30 points of damage.")).Snapshot();
+
+        // No longer ours, so its damage is not credited as pet damage.
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet ("));
+        Assert.Null(s.CharmedSince);
+    }
+
     /// <summary>#135: the targetless Befriend Animal break line can be a stale echo
     /// too — same cascade, and the re-charm's claim must survive it the same way.</summary>
     [Fact]

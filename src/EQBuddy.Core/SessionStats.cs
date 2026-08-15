@@ -361,6 +361,15 @@ public sealed partial class SessionStats
     // wear-off ingest treats a fade this close to an already-recorded break as that
     // break's delayed echo rather than a new break (#135, bjstrange: re-charm cascade).
     private const int CharmFadeSkewSeconds = 10;
+    // A swing already in flight when the charm lands still hits YOU a beat later — the
+    // mob was mid-round, and the game resolves that round before the charm takes hold.
+    // Reading it as "my pet turned on me" destroys the claim one second after making it,
+    // so the real fade minutes later has no landing to measure from and prints no hold
+    // (#135, bjstrange: "3 charms announced, the 4th didn't", different mobs, random —
+    // random because it depends on whether the mob happened to be mid-swing). A melee
+    // round is ~2 s, so 3 covers the tail without hiding a genuine instant break: the
+    // authoritative "worn off" line still records that a moment later.
+    private const int CharmSettleSeconds = 3;
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
@@ -945,7 +954,10 @@ public sealed partial class SessionStats
                     break;
                 case DamageTakenEvent dt:
                     // A "pet" attacking us means the charm broke — stop crediting it.
-                    if (IsPet(dt.Attacker)) { RecordCharmBreak(dt.Time); _petName = null; }
+                    // Unless the charm only just landed, in which case this is the
+                    // mob's in-flight swing finishing its round (see CharmSettleSeconds).
+                    if (IsPet(dt.Attacker) && !CharmJustLanded(dt.Time))
+                    { RecordCharmBreak(dt.Time); _petName = null; }
                     _damageTaken += dt.Amount;
                     if (dt.Melee) { _meleeHitsTaken++; _runeBlockStreak = 0; }
                     TouchFight(dt.Attacker, dt.Time, dmgIn: dt.Amount);
@@ -1242,6 +1254,12 @@ public sealed partial class SessionStats
     /// <summary>#130 (bjstrange): close the charm-hold clock at a break and remember
     /// how long it held, keyed by the break time so the fade alert's label can carry
     /// it ("Charm (a gnoll) — held 4:32").</summary>
+    /// <summary>Did the charm land so recently that a hit on us is the mob's own
+    /// in-flight swing rather than a break? (#135 — see <see cref="CharmSettleSeconds"/>.)</summary>
+    private bool CharmJustLanded(DateTime at) =>
+        (_charmHold?.LandedAt ?? _charmProvisional?.LandedAt) is { } landed
+        && at >= landed && (at - landed).TotalSeconds <= CharmSettleSeconds;
+
     private void RecordCharmBreak(DateTime at)
     {
         var landed = _charmHold?.LandedAt ?? _charmProvisional?.LandedAt;
