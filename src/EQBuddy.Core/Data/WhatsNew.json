@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.87.0",
+  "date": "2026-08-15",
+  "highlights": [
+   "FIXED (discussion #172, thanks bjstrange) - UNCHECKING A SKY QUEST ITEM LEFT THE QUEST LOOKING READY. Ticking the last item marks a quest ready to turn in; unticking it again updated the counters but not the list itself, so the ready label stayed put until something else forced a redraw. The list now refreshes exactly when a quest's readiness changes - and not on every tick, so checking off a long quest no longer loses your scroll position.",
+   "FORAGED ITEMS COUNT NOW (discussion #163, thanks wizen). The game announces a forage as \"You have scrounged up ...\" rather than a normal loot line, and EQBuddy was ignoring it entirely. Forages now appear on the Loot card and in the new recent-drops view with \"Forage\" as their source, which also means a foraged item can tick a quest or gear row like any other. A failed forage is still ignored - a miss is not a drop.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.86.0",
   "date": "2026-08-15",
   "highlights": [

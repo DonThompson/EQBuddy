@@ -119,4 +119,57 @@ public class RawLootViewTests
         Assert.Equal("Ruined Lion Pelt", recent[1].Item);
         Assert.True(recent[0].Time > recent[1].Time, "newest must come first");
     }
+
+    // ---- forage (#163, wizen) ----
+
+    /// <summary>
+    /// Foraged items never reached the loot card at all — the game announces them with
+    /// "You have scrounged up X." rather than a corpse-loot line, and nothing parsed it.
+    /// Routing it to a LootEvent means the loot card, the raw drop view and every
+    /// quest/gear auto-checker pick it up for free; a forage that finishes a quest step
+    /// should count exactly like one pulled off a corpse.
+    /// </summary>
+    [Fact]
+    public void AForagedItemIsLootedWithForageAsItsSource()
+    {
+        var evt = Assert.IsType<LootEvent>(LogParser.Parse(
+            "[Sat Aug 15 14:00:00 2026] You have scrounged up a Ration."));
+
+        Assert.Equal("Ration", evt.Item);
+        Assert.Equal("Forage", evt.Source);
+        Assert.Equal(1, evt.Count);
+    }
+
+    [Fact]
+    public void AForagedItemStartingWithAVowelParsesToo()
+    {
+        var evt = Assert.IsType<LootEvent>(LogParser.Parse(
+            "[Sat Aug 15 14:00:00 2026] You have scrounged up an Apple."));
+
+        Assert.Equal("Apple", evt.Item);
+    }
+
+    [Fact]
+    public void AFailedForageIsNotAnEvent()
+    {
+        // A miss is not an acquisition and must not reach the loot card.
+        Assert.Null(LogParser.Parse(
+            "[Sat Aug 15 14:00:00 2026] You fail to locate any food nearby."));
+    }
+
+    [Fact]
+    public void ForagedItemsReachTheLootCardAndTheRawView()
+    {
+        var stats = new SessionStats();
+        foreach (var line in new[]
+                 {
+                     "[Sat Aug 15 14:00:00 2026] You have scrounged up a Ration.",
+                     "[Sat Aug 15 14:00:30 2026] --You have looted a HQ Lion Skin from a lion's corpse.--",
+                 })
+            if (LogParser.Parse(line) is { } evt) stats.Apply(evt);
+
+        var snap = stats.Snapshot();
+        Assert.Contains(snap.Loot, l => l.Item == "Ration");
+        Assert.Contains(snap.RecentLoot, l => l.Item == "Ration" && l.Source == "Forage");
+    }
 }

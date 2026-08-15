@@ -123,6 +123,15 @@ public static partial class LogParser
     [GeneratedRegex(@"^--You have looted (?:(?<n>\d+)|an?) (?<item>.+?) from (?<source>.+?)'s corpse\.--$")]
     private static partial Regex LootRx();
 
+    // You have scrounged up a Ration. — Forage (#163, wizen). It is an acquisition
+    // like any other, so it becomes a LootEvent with "Forage" as its source: the loot
+    // card, the raw drop list, and every quest/gear auto-checker then see it for free,
+    // which is the whole reason to route it here rather than invent a second path.
+    // The failure line ("You fail to locate any food nearby.") is deliberately ignored
+    // — a miss is not an event anyone wants counted.
+    [GeneratedRegex(@"^You have scrounged up an? (?<item>.+?)\.$")]
+    private static partial Regex ForageRx();
+
     // You looted a Crushbone Belt +2 from orc centurion's corpse to create a Crushbone Belt +5
     [GeneratedRegex(@"^You looted an? (?<item>.+?) from (?<source>.+?)'s corpse to create an? (?<result>.+?)\.?$")]
     private static partial Regex LootUpgradeRx();
@@ -585,6 +594,9 @@ public static partial class LogParser
         if ((r = LootRx().Match(msg)).Success)
             return new LootEvent(ts, r.Groups["item"].Value, Normalize(r.Groups["source"].Value), null,
                 Count: r.Groups["n"].Success ? int.Parse(r.Groups["n"].Value) : 1);
+
+        if ((r = ForageRx().Match(msg)).Success)
+            return new LootEvent(ts, r.Groups["item"].Value, "Forage", null);
 
         if ((r = MoneyRx().Match(msg)).Success)
         {

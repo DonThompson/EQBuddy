@@ -903,6 +903,12 @@ internal sealed class QuestChecklistView
     /// need refreshing — no rebuild, the control under the cursor stays put.</summary>
     private void OnSkyQuestToggled(SkyQuestChecklistItem item, bool acquired)
     {
+        // Whether this quest reads as READY is "every item acquired", and the body is
+        // only drawn when the checklist is dirty. Ticking the last item made a quest
+        // ready and unticking it left the ready label sitting there, because the
+        // headers were refreshed and the rows were not (#172, bjstrange).
+        var wasReady = RewardGroupOf(item).All(i => i.Acquired);
+
         item.Acquired = acquired;
         // The player deciding IS the resolution of an auto-parked tick (#106) —
         // whichever way they toggled, the * has served its purpose.
@@ -910,7 +916,19 @@ internal sealed class QuestChecklistView
         _settings.Save();
         UpdateSkyQuestHeaderOnly();
         UpdateSkyQuestTabHeader(item.ClassName);
+
+        // Only when readiness actually flipped. Rebuilding on every tick would throw
+        // away scroll position mid-way through checking off a quest's items, which is
+        // exactly when a player is clicking most.
+        if (RewardGroupOf(item).All(i => i.Acquired) != wasReady) MarkSkyDirty();
     }
+
+    /// <summary>The items sharing this one's quest — same class, same reward.</summary>
+    private List<SkyQuestChecklistItem> RewardGroupOf(SkyQuestChecklistItem item) =>
+        _settings.SkyQuestChecklist
+            .Where(i => string.Equals(i.ClassName, item.ClassName, StringComparison.Ordinal)
+                && string.Equals(i.Reward, item.Reward, StringComparison.Ordinal))
+            .ToList();
 
     /// <summary>Persist the class tab the player works in — it scopes loot auto-check
     /// and picks the tab shown after a restart.</summary>
