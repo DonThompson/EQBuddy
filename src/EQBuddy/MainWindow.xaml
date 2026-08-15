@@ -460,7 +460,12 @@
                         <TextBlock x:Name="LootSortCount" Text="count" FontSize="10" Cursor="Hand"
                                    Tag="count" MouseLeftButtonDown="OnLootSort" Margin="0,0,6,0"/>
                         <TextBlock x:Name="LootSortName" Text="name" FontSize="10" Cursor="Hand"
-                                   Tag="name" MouseLeftButtonDown="OnLootSort"/>
+                                   Tag="name" MouseLeftButtonDown="OnLootSort" Margin="0,0,6,0"/>
+                        <!-- Every drop in arrival order, not the totals (#160, wizen):
+                             the way to spot the one rare thing among 200 of the same. -->
+                        <TextBlock x:Name="LootSortRecent" Text="recent" FontSize="10" Cursor="Hand"
+                                   Tag="recent" MouseLeftButtonDown="OnLootSort"
+                                   ToolTip="Every drop as it happened, newest first — how you catch the one unusual thing in a long farm. Runs of the same item collapse into a single row."/>
                     </StackPanel>
                     <ItemsControl x:Name="LootList"/>
                     <TextBlock x:Name="CraftedLabel" Text="Created by merging" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>

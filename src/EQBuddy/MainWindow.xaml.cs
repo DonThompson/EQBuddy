@@ -2431,14 +2431,21 @@ public partial class MainWindow : Window
 
         if (LootSection.IsExpanded)
         {
-            var byName = _settings.LootSort == "name";
+            var mode = _settings.LootSort;
             LootSortBar.Visibility = s.Loot.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-            LootSortName.Foreground = (Brush)FindResource(byName ? "AccentBrush" : "DimBrush");
-            LootSortCount.Foreground = (Brush)FindResource(byName ? "DimBrush" : "AccentBrush");
-            var loot = byName
-                ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
-                : s.Loot;
-            FillList(LootList, loot.Select(l => (l.Item, $"×{l.Count}")), onNameClick: ShowItemInfo,
+            LootSortCount.Foreground = (Brush)FindResource(mode == "name" || mode == "recent" ? "DimBrush" : "AccentBrush");
+            LootSortName.Foreground = (Brush)FindResource(mode == "name" ? "AccentBrush" : "DimBrush");
+            LootSortRecent.Foreground = (Brush)FindResource(mode == "recent" ? "AccentBrush" : "DimBrush");
+            // "recent" is the raw arrival order, not a re-sort of the totals — the whole
+            // point is that 200 Lion Skins stay 200 rows' worth of history rather than
+            // one row that hides the pelt (#160). Runs collapse; different items don't.
+            var rows = mode == "recent"
+                ? EQBuddy.UI.Shared.RawLootView.Rows(s.RecentLoot)
+                : (mode == "name"
+                        ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
+                        : s.Loot)
+                    .Select(l => (l.Item, $"×{l.Count}")).ToList();
+            FillList(LootList, rows, onNameClick: ShowItemInfo,
                 tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
             CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));

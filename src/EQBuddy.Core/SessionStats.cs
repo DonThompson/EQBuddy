@@ -218,6 +218,10 @@ public sealed partial class SessionStats
     // Session event journal (JOURNAL-*): loot/coin/xp/kill/etc. kept whole-session;
     // high-frequency combat/heal events pruned past the largest recent window.
     private readonly List<GameEvent> _journal = new();
+    /// <summary>How many raw drops the newest-first loot view carries. Long farms run to
+    /// thousands; the card shows a window, and the aggregate view remains the complete
+    /// record.</summary>
+    private const int MaxRecentLoot = 250;
     private static readonly TimeSpan CombatJournalRetention = TimeSpan.FromMinutes(40);
     private int _journalAppendsSincePrune;
 
@@ -2053,6 +2057,15 @@ public sealed partial class SessionStats
                 RuneBlockStreak = _runeBlockStreak,
                 RuneBlockStreakMax = _runeBlockStreakMax,
                 LootTotal = _lootCount,
+                // Every drop in the order it happened, newest first. The aggregate above
+                // answers "what did this session give me"; a farm answers a different
+                // question — "did anything unusual land while I was grinding the same
+                // thing 200 times" — and a count that ticked from 41 to 42 cannot show
+                // that (#160, wizen). Capped because it feeds a scrolling card, not a log.
+                RecentLoot = _journal.OfType<LootEvent>()
+                    .Reverse().Take(MaxRecentLoot)
+                    .Select(l => new LootPickup(l.Time, l.Item, Math.Max(1, l.Count), l.Source))
+                    .ToList(),
                 Loot = _loot.OrderByDescending(kv => kv.Value.Count)
                     .Select(kv => new LootDetail(kv.Key, kv.Value.Count, kv.Value.LastSource)).ToList(),
                 Crafted = _crafted.OrderByDescending(kv => kv.Value)
@@ -2190,6 +2203,9 @@ public record SourceDamage(string Name, int Hits, long Total, int Crits = 0, dou
     public int Misses { get; init; }
 }
 public record LootDetail(string Item, int Count, string LastSource);
+
+/// <summary>One drop as it happened — the raw loot view's row (#160).</summary>
+public record LootPickup(DateTime Time, string Item, int Count, string Source);
 public record SkillDetail(string Skill, int Ups, int Value);
 public record SoldDetail(string Item, int Count, long Copper);
 /// <param name="Capped">Standing hit the cap this session ("could not possibly get any
@@ -2279,6 +2295,8 @@ public sealed class StatsSnapshot
     public int RuneBlockStreakMax { get; init; }
     public int LootTotal { get; init; }
     public List<LootDetail> Loot { get; init; } = [];
+    /// <summary>Every drop, newest first, capped — see SessionStats.MaxRecentLoot.</summary>
+    public List<LootPickup> RecentLoot { get; init; } = [];
     public List<NameCount> Crafted { get; init; } = [];
     public int CraftedTotal { get; init; }
     /// <summary>Loot-merge results by created name ("... to create a Belt +5" → Belt +5).
