@@ -1301,6 +1301,68 @@ public class SpellTrackingTests
         Assert.Contains("held 8:01", tracked.LastItem);
     }
 
+    /// <summary>
+    /// #135 round four, from bjstrange's charm4.txt on v1.86.0 — TWO creatures of the
+    /// same name.
+    ///
+    /// His log settles it beyond doubt: "A greater ice bones slashes a greater ice
+    /// bones." Your charmed one is fighting the uncharmed one, and the uncharmed one is
+    /// hitting you. EQ's log names creatures and nothing else, so IsPet() matched the
+    /// wrong one and EQBuddy dropped the claim six seconds in — well past the settle
+    /// window that fixed the in-flight-swing case. The charm ran a further 26 seconds
+    /// and its fade had nothing left to measure.
+    ///
+    /// A pet demonstrably busy hitting somebody else makes a same-named attacker
+    /// ambiguous, and ambiguous evidence must not destroy a claim while the
+    /// unambiguous "worn off" line is still coming.
+    /// </summary>
+    [Fact]
+    public void ASameNamedCreatureHittingYouIsNotYourPetTurning()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),                                 // charm lands 0:04
+            At(0, 5, "A puma slashes a puma for 50 points of damage."),  // ours fights the other
+            At(0, 10, "A puma hits YOU for 29 points of damage."),       // the OTHER one hits us
+            At(0, 12, "A puma slashes a puma for 26 points of damage."),
+            At(0, 20, "A puma hits YOU for 14 points of damage."));
+
+        // The claim survived, so the pet's damage is still credited as ours.
+        var s = stats.Snapshot(recentWindow: null, rules: settings.TrackedRules);
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 0, 4), s.CharmedSince);
+
+        // And the real fade can still report how long it held.
+        stats.Apply(LogParser.Parse(At(0, 36, "Your Befriend Animal spell has worn off of a puma."))!);
+        var tracked = Assert.Single(
+            stats.Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
+        Assert.Contains("held 0:32", tracked.LastItem);
+    }
+
+    /// <summary>The busy-elsewhere guard must expire. A pet that stopped fighting
+    /// anything else and is now only hitting YOU really has turned, and the claim has
+    /// to drop without waiting for the fade line.</summary>
+    [Fact]
+    public void APetThatOnlyHitsYouLongAfterFightingOthersStillBreaks()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(0, 5, "A puma slashes an orc pawn for 50 points of damage."),
+            At(1, 0, "A puma hits YOU for 29 points of damage."));   // ~55s later: not busy
+
+        // The claim is gone: it really did turn on us.
+        Assert.Null(stats.Snapshot().CharmedSince);
+
+        // The 50 it dealt while still ours stays credited — that damage was real — but
+        // nothing it does from here is.
+        var before = stats.Snapshot().DamageBySource.Single(d => d.Name == "Pet (Puma)").Total;
+        stats.Apply(LogParser.Parse(At(1, 30, "A puma hits orc pawn for 30 points of damage."))!);
+        Assert.Equal(before, stats.Snapshot().DamageBySource.Single(d => d.Name == "Pet (Puma)").Total);
+    }
+
     /// <summary>The settle window must not swallow a genuine break: a pet still
     /// hitting you AFTER it has passed is the charm actually failing, and the claim
     /// has to drop then rather than wait for the fade line.</summary>

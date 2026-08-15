@@ -374,6 +374,16 @@ public sealed partial class SessionStats
     // round is ~2 s, so 3 covers the tail without hiding a genuine instant break: the
     // authoritative "worn off" line still records that a moment later.
     private const int CharmSettleSeconds = 3;
+    // When the pet was last seen attacking somebody who is not us. EQ's log identifies
+    // creatures only by name, so two "a greater ice bones" are indistinguishable — and
+    // while your charmed one fights the other one, the OTHER one hitting you reads
+    // exactly like your pet turning on you (#135, bjstrange's charm4.txt, where the
+    // giveaway is literally "a greater ice bones slashes a greater ice bones"). A pet
+    // demonstrably busy elsewhere makes a same-named attacker ambiguous, and ambiguous
+    // evidence must not destroy a claim when an unambiguous signal — the "worn off"
+    // line — is coming anyway.
+    private const int PetBusyElsewhereSeconds = 8;
+    private DateTime? _petAttackedOtherAt;
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
@@ -812,6 +822,7 @@ public sealed partial class SessionStats
                     _petConfirmed = false;
                     break;
                 case ThirdMeleeEvent tm when IsPet(tm.Attacker):
+                    _petAttackedOtherAt = tm.Time;   // busy with someone else — see below
                     AddPetDamage(tm.Time, tm.Amount, DamageKind.Melee, tm.Target, tm.Skill, tm.Critical);
                     break;
                 case ThirdDotEvent td when IsPet(td.Caster):
@@ -824,6 +835,7 @@ public sealed partial class SessionStats
                     TrackCombat(tse2.Time, canStart: false);
                     break;
                 case ThirdMissEvent tm2 when IsPet(tm2.Attacker):
+                    _petAttackedOtherAt = tm2.Time;
                     TrackCombat(tm2.Time);
                     break;
                 case ThirdMeleeEvent tm3:
@@ -960,7 +972,8 @@ public sealed partial class SessionStats
                     // A "pet" attacking us means the charm broke — stop crediting it.
                     // Unless the charm only just landed, in which case this is the
                     // mob's in-flight swing finishing its round (see CharmSettleSeconds).
-                    if (IsPet(dt.Attacker) && !CharmJustLanded(dt.Time))
+                    if (IsPet(dt.Attacker) && !CharmJustLanded(dt.Time)
+                        && !PetBusyElsewhere(dt.Time))
                     { RecordCharmBreak(dt.Time); _petName = null; }
                     _damageTaken += dt.Amount;
                     if (dt.Melee) { _meleeHitsTaken++; _runeBlockStreak = 0; }
@@ -1264,11 +1277,20 @@ public sealed partial class SessionStats
         (_charmHold?.LandedAt ?? _charmProvisional?.LandedAt) is { } landed
         && at >= landed && (at - landed).TotalSeconds <= CharmSettleSeconds;
 
+    /// <summary>Was the pet just seen attacking somebody other than us? Then a
+    /// same-named creature hitting us is very likely a DIFFERENT one, and the charm
+    /// claim survives until the wear-off line settles it (#135 — see
+    /// <see cref="PetBusyElsewhereSeconds"/>).</summary>
+    private bool PetBusyElsewhere(DateTime at) =>
+        _petAttackedOtherAt is { } busy
+        && at >= busy && (at - busy).TotalSeconds <= PetBusyElsewhereSeconds;
+
     private void RecordCharmBreak(DateTime at)
     {
         var landed = _charmHold?.LandedAt ?? _charmProvisional?.LandedAt;
         _charmHold = null;
         _charmProvisional = null;
+        _petAttackedOtherAt = null;
         if (landed is not { } l) return;
         var held = (at - l).TotalSeconds;
         if (held <= 0) return;
