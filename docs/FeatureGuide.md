@@ -18,7 +18,7 @@ You don't need the game (or Windows) to exercise almost everything:
     history at startup.
   - A block ending **~1 min ago** becomes the *live* session.
   - Append lines to the file while the app runs to simulate live play — the watcher
-    polls every 500 ms. The status dot is green only if the file grew in the last 30 s.
+    polls every 150 ms. The status dot is green only if the file grew in the last 30 s.
 - **`EQBUDDY_EXPAND=1`** launches with every section expanded (plus a state dump in
   `<appdata>/debug.txt`) — good for screenshots and layout checks.
 - `docs/screenshots/` shows the current WPF rendering of each section for side-by-side

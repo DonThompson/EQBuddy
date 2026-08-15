@@ -68,7 +68,7 @@ retrying, because a killed run may already have built, signed and copied.
 |---|---|
 | Parse a log line | `Core/LogParser.cs` — one regex per line type |
 | Aggregate / DPS / encounters | `Core/SessionStats.cs` (+ `.Tracked.cs`) |
-| Tail the file | `Core/LogWatcher.cs` — 500 ms polls, offset-based |
+| Tail the file | `Core/LogWatcher.cs` — 150 ms polls, offset-based |
 | Settings + profile paths | `Core/AppSettings.cs`, `Core/AppPaths.cs` (`EQBUDDY_APPDATA`) |
 | Zone map geometry, aliases | `Core/ZoneMap.cs` (holds `ZoneMap`, `ZoneMapFiles`) |
 | Spawn points / timers | `Core/SpawnPointLedger.cs`, `Core/SpawnTimers.cs` |

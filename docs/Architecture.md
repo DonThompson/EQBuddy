@@ -13,7 +13,7 @@ Measured 2026-08-14 at v1.82.0.
 ```
                     eqlog_<char>_<server>.txt   (the game writes it; we only read)
                                  |
-                    LogWatcher   |  500 ms polls, byte-offset, truncation-safe
+                    LogWatcher   |  150 ms polls, byte-offset, truncation-safe
                                  v
                     LogParser    |  one regex per line type -> GameEvent records
                                  v
