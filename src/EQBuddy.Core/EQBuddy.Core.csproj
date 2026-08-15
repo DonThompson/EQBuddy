@@ -25,6 +25,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Data\SpawnCatalog.json" />
     <EmbeddedResource Include="Data\FadeMessages.json" />
+    <EmbeddedResource Include="Data\DebuffLandings.json" />
     <EmbeddedResource Include="Data\WhatsNew.json" />
     <EmbeddedResource Include="Data\MezSpells.json" />
     <EmbeddedResource Include="Data\AaCatalog.json" />

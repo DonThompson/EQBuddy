@@ -622,6 +622,12 @@ public static partial class LogParser
         if (SlowDebuffCatalog.Default.Find(msg) is not null)
             return new SlowLandedEvent(ts, msg);
 
+        // Other detrimental landing lines ("You feel somewhat vulnerable.") — same
+        // exact-match economics, and the harvest guarantees no message is claimed by
+        // two catalogs. Read only by the buff-loss history (#120).
+        if (DebuffLandingCatalog.Default.Find(msg) is not null)
+            return new DebuffLandedEvent(ts, msg);
+
         // "You forget <song>." — the SlowTracker's haste-vs-slow disambiguator (#116).
         if (msg.StartsWith("You forget ", StringComparison.Ordinal) && msg.EndsWith('.'))
             return new SongForgottenEvent(ts, msg["You forget ".Length..^1]);

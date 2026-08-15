@@ -78,6 +78,13 @@ public record BuffFadeEvent(DateTime Time, string Label, string[] Spells, string
 /// lines only print when the slow lands on YOU. Carries the message rather than the
 /// candidates; <see cref="SlowTracker"/> resolves it against its own catalog.</summary>
 public record SlowLandedEvent(DateTime Time, string Message) : GameEvent(Time);
+
+/// <summary>A detrimental spell's cast-on-you flavor line ("You feel somewhat
+/// vulnerable."). Carries the raw message; DebuffLandingCatalog names the spell. Its
+/// only consumer is BuffLossLog, which uses it to say what displaced a buff (#120) —
+/// a pure debuff deals no damage and is not a slow, so nothing else in the log
+/// records that it happened at all.</summary>
+public record DebuffLandedEvent(DateTime Time, string Message) : GameEvent(Time);
 /// <summary>"You forget Selo's Accelerando." — a bard song leaving the twist. Parsed
 /// for one purpose (#116): a song's wear-off line can collide with a slow landing
 /// line ("You slow down."), and a recent forget of the named song is the signal that

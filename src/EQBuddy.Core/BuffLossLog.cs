@@ -24,7 +24,10 @@ public sealed record BuffLossEntry(DateTime Time, string Spell, string Cause);
 ///    scenario ("Buff X was active, NPC Y cast debuff Z, Buff X was gone"). The
 ///    evidence the log actually offers is a named non-melee DamageTakenEvent (nuke /
 ///    named DoT landing; ticks excluded — a tick minutes after its cast proves
-///    nothing) and a SlowLandedEvent resolved through SlowDebuffCatalog. Deliberately
+///    nothing), a SlowLandedEvent resolved through SlowDebuffCatalog, and any other
+///    detrimental landing line resolved through DebuffLandingCatalog — the last of
+///    those is what finally covers a pure debuff, which deals no damage and is not a
+///    slow and so used to land completely silently. Deliberately
 ///    tight: a loose window would happily blame an unrelated nuke, and a wrong cause
 ///    is worse than the honest "faded". (A SpellBlockedEvent naming a set buff as the
 ///    blocked-BY party is evidence the buff is still UP blocking a cast — it never
@@ -81,6 +84,14 @@ public sealed class BuffLossLog
                 // (#94); the catalog supplies the display label the line lacks.
                 case SlowLandedEvent slow when _slows.Find(slow.Message) is { } entry:
                     RememberHostile(entry.Label, "", slow.Time);
+                    break;
+                // Any other debuff landing on YOU. A pure debuff does no damage and is
+                // not a slow, so before this it left no trace at all and the buff it
+                // displaced was recorded as merely "faded" (#120, Frankthetankk's
+                // Malaise -> Elemental Shield case). Caster unknown: the flavor line
+                // does not name who cast it.
+                case DebuffLandedEvent debuff when DebuffLandingCatalog.Default.Find(debuff.Message) is { } d:
+                    RememberHostile(d.Label, "", debuff.Time);
                     break;
                 case BuffFadeEvent fade:
                     foreach (var s in fade.Spells) _lastFade[SpellCatalog.BaseName(s)] = fade.Time;

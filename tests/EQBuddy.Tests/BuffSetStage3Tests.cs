@@ -252,6 +252,58 @@ public class BuffSetStage3Tests
         Assert.Equal("lost as Turgur's Insects landed", Assert.Single(log.Snapshot()).Cause);
     }
 
+    // ---- pure debuffs, which used to land in complete silence (#120) ----
+
+    /// <summary>
+    /// Frankthetankk's documented case, verbatim: Malaise lands, Elemental Shield goes.
+    ///
+    /// Malaise drops strength and AC. It deals no damage, it is not a slow, and its only
+    /// trace in the log is the flavor line "You feel somewhat vulnerable." — so before
+    /// DebuffLandingCatalog existed there was nothing for the loss history to correlate
+    /// and the buff was recorded as merely "faded". His whole point was that a permanent
+    /// buff's fade is itself the anomaly, and it deserves a named cause to put in an EQL
+    /// bug report.
+    /// </summary>
+    [Fact]
+    public void APureDebuffLandingNamesItselfAsTheCause()
+    {
+        var log = new BuffLossLog(Slows);
+        log.Observe([Active("Elemental Shield")], T0);
+        log.Apply(LogParser.Parse(
+            "[Fri Aug 14 21:00:30 2026] You feel somewhat vulnerable.")!);
+        log.Apply(new BuffFadeEvent(T0.AddSeconds(31), "Elemental Shield", ["Elemental Shield"]));
+        log.Observe([Missing("Elemental Shield")], T0.AddSeconds(32));
+
+        Assert.Equal("lost as Malaise landed", Assert.Single(log.Snapshot()).Cause);
+    }
+
+    /// <summary>The parser must actually produce the event — the catalog is only useful
+    /// if a real log line reaches it.</summary>
+    [Fact]
+    public void TheDebuffFlavorLineParsesToItsOwnEvent()
+    {
+        var evt = Assert.IsType<DebuffLandedEvent>(LogParser.Parse(
+            "[Fri Aug 14 21:00:30 2026] You feel somewhat vulnerable."));
+
+        Assert.Equal("You feel somewhat vulnerable.", evt.Message);
+        Assert.Equal("Malaise", DebuffLandingCatalog.Default.Find(evt.Message)!.Label);
+    }
+
+    /// <summary>A debuff landing well before the fade explains nothing. The window is
+    /// deliberately tight: a wrong cause in a bug report is worse than no cause.</summary>
+    [Fact]
+    public void AnOldDebuffLandingIsNotBlamed()
+    {
+        var log = new BuffLossLog(Slows);
+        log.Observe([Active("Elemental Shield")], T0);
+        log.Apply(LogParser.Parse(
+            "[Fri Aug 14 21:00:00 2026] You feel somewhat vulnerable.")!);
+        log.Apply(new BuffFadeEvent(T0.AddSeconds(31), "Elemental Shield", ["Elemental Shield"]));
+        log.Observe([Missing("Elemental Shield")], T0.AddSeconds(32));
+
+        Assert.Equal("faded", Assert.Single(log.Snapshot()).Cause);
+    }
+
     [Fact]
     public void DeathOwnsTheLoss_FadeOrExpiryAlike()
     {
