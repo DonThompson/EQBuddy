@@ -1453,16 +1453,17 @@ public partial class MainWindow : Window
 
     /// <summary>Per-class sections with each entry's live honesty state — the Buff Set
     /// breakout's content (#120 stage 2). Sections come from the active combination
-    /// (empty ones included: they're where the breakout's editor adds), each evaluated
-    /// against the same tracker state the card uses.</summary>
+    /// (empty ones included: they're where the breakout's editor adds) PLUS any parked
+    /// bucket with stored picks, because the class picker offers every class and a
+    /// pick you cannot see is a pick you cannot remove (#120, Frankthetankk).</summary>
     internal List<(string Class, List<BuffSetEntryState> Entries)> BuffSetSectionStates(
         StatsSnapshot s, DateTime now)
     {
         if (BuffSetKey is not { Length: > 0 } key) return [];
         var active = _buffTracker.Snapshot(now);
-        return BuffSetStore.Sections(
+        return BuffSetStore.EditableSections(
                 _settings.BuffSetsByClass.GetValueOrDefault(key), BuffSetClassSource(s).Classes)
-            .Select(sec => (sec.Class, EvaluateBuffSet([.. sec.Spells], active, now)))
+            .Select(r => (r.Section.Class, EvaluateBuffSet([.. r.Section.Spells], active, now)))
             .ToList();
     }
 

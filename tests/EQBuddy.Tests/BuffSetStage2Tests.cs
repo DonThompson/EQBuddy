@@ -251,4 +251,59 @@ public class BuffSetStage2Tests
         }
         finally { File.Delete(store); }
     }
+
+    // ---- parked buckets must stay visible (#120, Frankthetankk) ----
+
+    /// <summary>
+    /// Since v1.82.0 the class pickers offer EVERY class, so a player can add to a
+    /// bucket that is not in their active combination. Frankthetankk did exactly that
+    /// building a Paladin set: the pick was stored, was then correctly excluded from
+    /// the next search (it IS in the bucket), and rendered nowhere — so the click read
+    /// as doing nothing, and the buff appeared to vanish and could not be retried.
+    ///
+    /// The cause was two editors composing their own section lists: Options showed
+    /// parked buckets, the breakout did not. EditableSections is the single answer both
+    /// now use, and this is the case that must never regress.
+    /// </summary>
+    [Fact]
+    public void APickUnderANonActiveClassIsStillShown()
+    {
+        var byClass = new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.OrdinalIgnoreCase);
+        BuffSetStore.Add(byClass, "Char|server", "Paladin", "Armor of Faith");
+
+        var sections = BuffSetStore.EditableSections(
+            byClass["Char|server"], activeClasses: ["Cleric"]);
+
+        var paladin = Assert.Single(sections, r => r.Section.Class == "Paladin");
+        Assert.True(paladin.Parked);
+        Assert.Equal(["Armor of Faith"], paladin.Section.Spells);
+    }
+
+    [Fact]
+    public void ActiveClassesAreNotMarkedParked()
+    {
+        var byClass = new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.OrdinalIgnoreCase);
+        BuffSetStore.Add(byClass, "Char|server", "Cleric", "Symbol");
+
+        var sections = BuffSetStore.EditableSections(byClass["Char|server"], ["Cleric"]);
+
+        Assert.All(sections, r => Assert.False(r.Parked));
+        // The any-class bucket is always offered, empty or not — it is where you add.
+        Assert.Contains(sections, r => r.Section.Class == BuffSetStore.AnyClass);
+    }
+
+    [Fact]
+    public void AClassIsNeverListedTwice()
+    {
+        // A stored class that IS active must appear once, as active - not again as parked.
+        var byClass = new Dictionary<string, Dictionary<string, List<string>>>(StringComparer.OrdinalIgnoreCase);
+        BuffSetStore.Add(byClass, "Char|server", "Cleric", "Symbol");
+        BuffSetStore.Add(byClass, "Char|server", "Paladin", "Armor of Faith");
+
+        var sections = BuffSetStore.EditableSections(byClass["Char|server"], ["Cleric", "Paladin"]);
+
+        Assert.Equal(sections.Select(r => r.Section.Class).Distinct(StringComparer.OrdinalIgnoreCase).Count(),
+            sections.Count);
+        Assert.All(sections, r => Assert.False(r.Parked));
+    }
 }

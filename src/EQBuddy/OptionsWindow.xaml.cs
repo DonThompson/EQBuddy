@@ -265,17 +265,15 @@ public partial class OptionsWindow : Window
         // whose class isn't in the current combination) — visible and editable, so a
         // swap never strands a pick out of reach. That parked picks SURVIVE the swap
         // is the requester's whole design.
-        var sections = BuffSetStore.Sections(stored, classes)
-            .Where(sec => sec.Spells.Count > 0)
-            .Select(sec => (sec.Class, Spells: sec.Spells, Parked: false))
+        // Shared with the breakout (BuffSetStore.EditableSections) so the two editors
+        // cannot disagree about which buckets are visible — they did, and a pick added
+        // to a parked class vanished from the breakout entirely (#120, Frankthetankk).
+        // Options additionally hides EMPTY active sections; the breakout keeps them,
+        // because there they are the place you add.
+        var sections = BuffSetStore.EditableSections(stored, classes)
+            .Where(r => r.Section.Spells.Count > 0)
+            .Select(r => (r.Section.Class, Spells: r.Section.Spells, r.Parked))
             .ToList();
-        var activeNames = BuffSetStore.Sections(stored, classes)
-            .Select(sec => sec.Class).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        sections.AddRange(BuffSetStore.StoredClasses(stored)
-            .Where(c => !activeNames.Contains(c))
-            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
-            .Select(c => (Class: c, Spells: (IReadOnlyList<string>)BuffSetStore.SpellsFor(stored, c),
-                Parked: true)));
         if (sections.Count == 0)
         {
             var none = new TextBlock

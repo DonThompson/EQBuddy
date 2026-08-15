@@ -72,6 +72,35 @@ public static class BuffSetStore
         return removed;
     }
 
+    /// <summary>
+    /// Every section an EDITOR must show: the active combination (from
+    /// <see cref="Sections"/>), then any class with stored picks that isn't in it,
+    /// flagged as parked.
+    ///
+    /// Both editors have to use this. Since v1.82.0 the class pickers offer EVERY
+    /// class — that was the fix for only being able to build a set for the class
+    /// EQBuddy had guessed — which means a player can add to a bucket that isn't in
+    /// their active combination. Options showed those parked buckets; the breakout
+    /// composed its own list from <see cref="Sections"/> alone and didn't. So a pick
+    /// added there was stored correctly, correctly excluded from the next search
+    /// (it IS in the bucket), and rendered nowhere: it read as a click that did
+    /// nothing and then ate the buff (#120, Frankthetankk, building a Paladin set).
+    /// One method, so the two editors cannot disagree about this again.
+    /// </summary>
+    public static List<(BuffSetSection Section, bool Parked)> EditableSections(
+        IReadOnlyDictionary<string, List<string>>? characterSets,
+        IEnumerable<string> activeClasses)
+    {
+        var result = Sections(characterSets, activeClasses)
+            .Select(sec => (Section: sec, Parked: false)).ToList();
+        var active = result.Select(r => r.Section.Class).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        result.AddRange(StoredClasses(characterSets)
+            .Where(c => !active.Contains(c))
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .Select(c => (Section: new BuffSetSection(c, SpellsFor(characterSets, c)), Parked: true)));
+        return result;
+    }
+
     /// <summary>One class bucket's stored picks (copy); empty when there are none.</summary>
     public static List<string> SpellsFor(
         IReadOnlyDictionary<string, List<string>>? characterSets, string cls) =>
