@@ -16,7 +16,7 @@ public sealed record GearRow(
     /// <summary>This is the item currently in that worn slot, not a bag copy.</summary>
     public bool Worn { get; init; }
     /// <summary>"" or the name of the WORN item this one beats outright — the Locker's
-    /// answer to "what should I swap in" (discussion #145, davidjsimpson).</summary>
+    /// answer to "what should I swap in" (discussion #145, skwayb).</summary>
     public string UpgradeOver { get; init; } = "";
 }
 
@@ -31,7 +31,7 @@ public sealed record GearSlotGroup(string Slot, List<GearRow> Rows);
 /// Stats are wiki BASE values; a "+N" raises them in-game by an amount the wiki
 /// doesn't state, so upgrades are shown but never folded into comparisons.
 ///
-/// From 1.84.0 it also answers the other half (discussion #145, davidjsimpson): each
+/// From 1.84.0 it also answers the other half (discussion #145, skwayb): each
 /// slot knows which row you are actually WEARING, and a bag item that outright beats
 /// it is marked "⬆ upgrade over X". That is the same dominance test pointed the other
 /// way — the Locker was already computing everything needed, it just never said which
