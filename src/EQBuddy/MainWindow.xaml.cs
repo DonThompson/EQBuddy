@@ -67,6 +67,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        // FIRST, before any control is restored. Restoring a control raises its
+        // handler, and the quest handlers forward here — so a player with
+        // "classic-doable only" already ticked crashed the constructor outright in
+        // 1.84.0, leaving a process with no window (#158, twidget76). Anything the
+        // XAML can call must exist before the XAML is touched.
+        _quests = new QuestChecklistView(this, _settings, () => _raidLedger);
         EpicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
         GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
@@ -103,7 +109,6 @@ public partial class MainWindow : Window
         _raidLedger = new RaidKillLedger(AppPaths.File("raid-kills.json"))
         { CharacterKey = () => _stats.LedgerCharacterKey };
         _watcher.Raids = _raidLedger;
-        _quests = new QuestChecklistView(this, _settings, _raidLedger);
         // Spawn timers ride the watcher's event stream — wired before the first Select so
         // the startup replay re-derives countdowns from kills already in the log.
         var spawnCatalog = SpawnCatalog.LoadEmbedded();

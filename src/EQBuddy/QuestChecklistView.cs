@@ -33,7 +33,10 @@ internal sealed class QuestChecklistView
 {
     private readonly MainWindow _w;
     private readonly AppSettings _settings;
-    private readonly RaidKillLedger _raidLedger;
+    // Fetched on use, not on construction: this view must exist before MainWindow
+    // restores any control, and the raid ledger is built later in that constructor.
+    // Only the achievement import touches it, long after everything is in place.
+    private readonly Func<RaidKillLedger> _raidLedger;
 
     // The whole of this surface's reach into MainWindow's XAML, named once here.
     private readonly TabControl _epicTabs, _skyTabs;
@@ -45,7 +48,7 @@ internal sealed class QuestChecklistView
     private readonly ScrollViewer _skySearchScroll, _sectionScroll;
     private readonly ComboBox _skyStateCombo;
 
-    public QuestChecklistView(MainWindow w, AppSettings settings, RaidKillLedger raidLedger)
+    public QuestChecklistView(MainWindow w, AppSettings settings, Func<RaidKillLedger> raidLedger)
     {
         _w = w;
         _settings = settings;
@@ -764,7 +767,7 @@ internal sealed class QuestChecklistView
             // The same dump carries the Conqueror sections — the Raids card's memory
             // of clears from before EQBuddy. Marking is add-only and idempotent, so
             // it needs no preview step of its own.
-            _raidLedger.MarkAchievements(achievements);
+            _raidLedger().MarkAchievements(achievements);
             ShowAchievementsPreview(matches, unmatched, autoGranted, achievements.Count);
         }
         catch (Exception ex)

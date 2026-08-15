@@ -178,6 +178,34 @@ public sealed class EndToEndTests
     }
 
     /// <summary>
+    /// #158 (twidget76): v1.84.0 would not start for anyone who had "classic-doable
+    /// only" ticked.
+    ///
+    /// The constructor restores that checkbox, restoring it raises its Checked handler,
+    /// and after the QuestChecklistView extraction that handler forwarded to a field
+    /// assigned thirty lines further down. NullReferenceException inside
+    /// MainWindow..ctor — so the process started, logged, and never produced a window:
+    /// visible in Task Manager, no CPU, nothing on the taskbar.
+    ///
+    /// The existing quest test did not catch it because the harness left the setting
+    /// false, and assigning false to an unchecked box raises nothing. The bug lived
+    /// entirely in the TRUE path, which is why it reached players.
+    ///
+    /// So: launch with it on, and require the app to reach a live session — the same
+    /// bar every other scenario uses, which a half-built window cannot clear.
+    /// </summary>
+    [Fact]
+    public void TheAppStartsWithTheClassicOnlyEpicFilterAlreadyOn()
+    {
+        using var app = new AppHarness(s => s.EpicQuestClassicOnly = true);
+        app.Launch();   // waits for killsTotal > 0; a window that never built never gets there
+
+        Assert.True(app.DumpValue("epicTabs") > 0,
+            "the epic checklist should render with the classic-only filter on; dump was: "
+            + app.Artifacts());
+    }
+
+    /// <summary>
     /// EQBuddy Mobile's 20 Hz pump costs nothing when nobody is paired.
     ///
     /// `CompanionPumpGateTests` proves the gate returns false; it cannot prove the real
