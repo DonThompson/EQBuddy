@@ -1,29 +1,29 @@
 # Buff-duration catalog report
 
-- 263 buffs across 163 landing lines (37 shared)
+- 305 buffs across 192 landing lines (41 shared)
 
 ## Shared landing lines (cast correlation resolves; unresolved = est)
 
 - 'You feel different.': 25 spells
 - 'You drink the potion.': 11 spells
+- 'You feel stronger.': 10 spells
 - 'You are surrounded by a thorny barrier.': 6 spells
-- 'You feel stronger.': 6 spells
 - 'You feel your skin tingle.': 6 spells
 - 'A mystic symbol flashes before your eyes.': 5 spells
 - 'Your eyes tingle.': 5 spells
 - 'You begin to radiate.': 4 spells
 - 'You begin to regenerate.': 4 spells
+- 'You feel dexterous.': 4 spells
 - 'You feel much faster.': 4 spells
 - 'You feel the favor of the gods upon you.': 4 spells
+- 'You feel tough.': 4 spells
 - 'You vanish.': 4 spells
 - 'You are enveloped by flame.': 3 spells
+- 'You feel your body pulse with energy.': 3 spells
 - 'Your eyes feel stronger.': 3 spells
 - 'Your thoughts begin to race and flow faster.': 3 spells
 - 'A coat of shimmering runes surround you.': 2 spells
 - 'A cool breeze slips through your mind.': 2 spells
-- 'A feeling of temperance washes over you.': 2 spells
-- 'A soft breeze slips through your mind.': 2 spells
-- 'You are now a wolf.': 2 spells
 
 ## Excluded
 
@@ -40,6 +40,7 @@
 - Bounce: duration 12s < 60s
 - Budding Heal: duration 24s < 60s
 - Burnout IV: no cast-on-you message on the wiki page
+- Burst of Strength: duration 18s < 60s
 - Calm: duration 42s < 60s
 - Calm Animal: duration 42s < 60s
 - Calming Visage: duration 36s < 60s
@@ -59,6 +60,7 @@
 - Expedience: no cast-on-you message on the wiki page
 - Eye of Tallon: no cast-on-you message on the wiki page
 - Feral Spirit: no cast-on-you message on the wiki page
+- Fleeting Fury: duration 18s < 60s
 - Flowering Heal: duration 24s < 60s
 - Focus Death: no cast-on-you message on the wiki page
 - Glimpse: duration 13s < 60s

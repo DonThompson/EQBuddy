@@ -180,6 +180,16 @@
    ]
   },
   {
+   "message": "A protective aura settles over you.",
+   "label": "Protect",
+   "spells": [
+    {
+     "name": "Protect",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
    "message": "A protective spirit shroud cloaks you.",
    "label": "Shroud of the Spirits",
    "spells": [
@@ -728,6 +738,16 @@
    ]
   },
   {
+   "message": "You begin to snarl as your features become feline.",
+   "label": "Spirit of the Puma",
+   "spells": [
+    {
+     "name": "Spirit of the Puma",
+     "durationSeconds": 60.0
+    }
+   ]
+  },
+  {
    "message": "You cast your sight.",
    "label": "Cast Sight",
    "spells": [
@@ -838,12 +858,46 @@
    ]
   },
   {
+   "message": "You feel agile.",
+   "label": "Agility",
+   "spells": [
+    {
+     "name": "Agility",
+     "durationSeconds": 3780.0
+    }
+   ]
+  },
+  {
+   "message": "You feel alluring.",
+   "label": "Alluring Aura",
+   "spells": [
+    {
+     "name": "Alluring Aura",
+     "durationSeconds": 2700.0
+    }
+   ]
+  },
+  {
    "message": "You feel armored.",
    "label": "Shield of the Magi",
    "spells": [
     {
      "name": "Shield of the Magi",
      "durationSeconds": 5400.0
+    }
+   ]
+  },
+  {
+   "message": "You feel charismatic.",
+   "label": "Charisma line",
+   "spells": [
+    {
+     "name": "Charisma",
+     "durationSeconds": 3780.0
+    },
+    {
+     "name": "Glamour",
+     "durationSeconds": 3240.0
     }
    ]
   },
@@ -864,6 +918,28 @@
     {
      "name": "Deliriously Nimble",
      "durationSeconds": 4320.0
+    }
+   ]
+  },
+  {
+   "message": "You feel dexterous.",
+   "label": "Dexterity line",
+   "spells": [
+    {
+     "name": "Deftness",
+     "durationSeconds": 3240.0
+    },
+    {
+     "name": "Dexterity",
+     "durationSeconds": 3780.0
+    },
+    {
+     "name": "Dexterous Aura",
+     "durationSeconds": 1620.0
+    },
+    {
+     "name": "Rising Dexterity",
+     "durationSeconds": 2700.0
     }
    ]
   },
@@ -984,6 +1060,16 @@
    ]
   },
   {
+   "message": "You feel healthy.",
+   "label": "Health",
+   "spells": [
+    {
+     "name": "Health",
+     "durationSeconds": 3240.0
+    }
+   ]
+  },
+  {
    "message": "You feel heroic.",
    "label": "Heroism line",
    "spells": [
@@ -993,6 +1079,16 @@
     },
     {
      "name": "Heroism",
+     "durationSeconds": 4320.0
+    }
+   ]
+  },
+  {
+   "message": "You feel imbued with spiritual brawn.",
+   "label": "Spiritual Brawn",
+   "spells": [
+    {
+     "name": "Spiritual Brawn",
      "durationSeconds": 4320.0
     }
    ]
@@ -1018,6 +1114,16 @@
    ]
   },
   {
+   "message": "You feel more agile.",
+   "label": "Feet like Cat",
+   "spells": [
+    {
+     "name": "Feet like Cat",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
    "message": "You feel much faster.",
    "label": "Haste line",
    "spells": [
@@ -1036,6 +1142,16 @@
     {
      "name": "Swift Like The Wind",
      "durationSeconds": 960.0
+    }
+   ]
+  },
+  {
+   "message": "You feel nimble.",
+   "label": "Nimble",
+   "spells": [
+    {
+     "name": "Nimble",
+     "durationSeconds": 3240.0
     }
    ]
   },
@@ -1064,12 +1180,56 @@
    ]
   },
   {
-   "message": "You feel protected from magic.",
-   "label": "Group Resist Magic",
+   "message": "You feel protected from cold.",
+   "label": "Endure Cold",
    "spells": [
+    {
+     "name": "Endure Cold",
+     "durationSeconds": 1620.0
+    }
+   ]
+  },
+  {
+   "message": "You feel protected from disease.",
+   "label": "Endure Disease",
+   "spells": [
+    {
+     "name": "Endure Disease",
+     "durationSeconds": 1620.0
+    }
+   ]
+  },
+  {
+   "message": "You feel protected from fire.",
+   "label": "Endure Fire",
+   "spells": [
+    {
+     "name": "Endure Fire",
+     "durationSeconds": 1620.0
+    }
+   ]
+  },
+  {
+   "message": "You feel protected from magic.",
+   "label": "Magic resist line",
+   "spells": [
+    {
+     "name": "Endure Magic",
+     "durationSeconds": 1620.0
+    },
     {
      "name": "Group Resist Magic",
      "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel protected from poison.",
+   "label": "Endure Poison",
+   "spells": [
+    {
+     "name": "Endure Poison",
+     "durationSeconds": 1620.0
     }
    ]
   },
@@ -1079,6 +1239,56 @@
    "spells": [
     {
      "name": "Radiant Visage",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel resistant from cold.",
+   "label": "Resist Cold",
+   "spells": [
+    {
+     "name": "Resist Cold",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel resistant from disease.",
+   "label": "Resist Disease",
+   "spells": [
+    {
+     "name": "Resist Disease",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel resistant from fire.",
+   "label": "Resist Fire",
+   "spells": [
+    {
+     "name": "Resist Fire",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel resistant from magic.",
+   "label": "Resist Magic",
+   "spells": [
+    {
+     "name": "Resist Magic",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel resistant from poison.",
+   "label": "Resist Poison",
+   "spells": [
+    {
+     "name": "Resist Poison",
      "durationSeconds": 2160.0
     }
    ]
@@ -1094,12 +1304,44 @@
    ]
   },
   {
+   "message": "You feel robust.",
+   "label": "Stamina",
+   "spells": [
+    {
+     "name": "Stamina",
+     "durationSeconds": 3780.0
+    }
+   ]
+  },
+  {
+   "message": "You feel strong.",
+   "label": "Strength",
+   "spells": [
+    {
+     "name": "Strength",
+     "durationSeconds": 3780.0
+    }
+   ]
+  },
+  {
    "message": "You feel stronger.",
    "label": "Strength line",
    "spells": [
     {
+     "name": "Furious Strength",
+     "durationSeconds": 3240.0
+    },
+    {
      "name": "Impart Strength",
      "durationSeconds": 360.0
+    },
+    {
+     "name": "Raging Strength",
+     "durationSeconds": 2700.0
+    },
+    {
+     "name": "Spirit Strength",
+     "durationSeconds": 2160.0
     },
     {
      "name": "Storm Strength",
@@ -1112,6 +1354,10 @@
     {
      "name": "Strength of Stone",
      "durationSeconds": 2160.0
+    },
+    {
+     "name": "Strengthen",
+     "durationSeconds": 1620.0
     },
     {
      "name": "Talisman of the Beast",
@@ -1156,6 +1402,66 @@
     {
      "name": "Demi Lich",
      "durationSeconds": 1140.0
+    }
+   ]
+  },
+  {
+   "message": "You feel the spirit of bear enter you.",
+   "label": "Spirit of Bear",
+   "spells": [
+    {
+     "name": "Spirit of Bear",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel the spirit of cat enter you.",
+   "label": "Spirit of Cat",
+   "spells": [
+    {
+     "name": "Spirit of Cat",
+     "durationSeconds": 2700.0
+    }
+   ]
+  },
+  {
+   "message": "You feel the spirit of monkey enter you.",
+   "label": "Spirit of Monkey",
+   "spells": [
+    {
+     "name": "Spirit of Monkey",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel the spirit of ox enter you.",
+   "label": "Spirit of Ox",
+   "spells": [
+    {
+     "name": "Spirit of Ox",
+     "durationSeconds": 2700.0
+    }
+   ]
+  },
+  {
+   "message": "You feel the spirit of shrew enter you.",
+   "label": "Spirit of the Shrew",
+   "spells": [
+    {
+     "name": "Spirit of the Shrew",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
+   "message": "You feel the spirit of snake enter you.",
+   "label": "Spirit of Snake",
+   "spells": [
+    {
+     "name": "Spirit of Snake",
+     "durationSeconds": 2160.0
     }
    ]
   },
@@ -1221,10 +1527,14 @@
   },
   {
    "message": "You feel the spirit of wolf enter you.",
-   "label": "Pack Spirit",
+   "label": "Spirit of Wolf line",
    "spells": [
     {
      "name": "Pack Spirit",
+     "durationSeconds": 2160.0
+    },
+    {
+     "name": "Spirit of Wolf",
      "durationSeconds": 2160.0
     }
    ]
@@ -1278,7 +1588,15 @@
      "durationSeconds": 4320.0
     },
     {
+     "name": "Talisman of Altuna",
+     "durationSeconds": 4320.0
+    },
+    {
      "name": "Talisman of Kragg",
+     "durationSeconds": 4320.0
+    },
+    {
+     "name": "Talisman of Tnarg",
      "durationSeconds": 4320.0
     }
    ]
@@ -1334,6 +1652,10 @@
     {
      "name": "Augmentation",
      "durationSeconds": 1620.0
+    },
+    {
+     "name": "Inner Fire",
+     "durationSeconds": 1620.0
     }
    ]
   },
@@ -1384,6 +1706,16 @@
     {
      "name": "Gather Shadows",
      "durationSeconds": 1200.0
+    }
+   ]
+  },
+  {
+   "message": "You grow scales.",
+   "label": "Scale Skin",
+   "spells": [
+    {
+     "name": "Scale Skin",
+     "durationSeconds": 1620.0
     }
    ]
   },
@@ -1942,6 +2274,16 @@
     {
      "name": "Skin Like Rock",
      "durationSeconds": 1620.0
+    }
+   ]
+  },
+  {
+   "message": "Your skin turns hard as turtle shell.",
+   "label": "Turtle Skin",
+   "spells": [
+    {
+     "name": "Turtle Skin",
+     "durationSeconds": 2160.0
     }
    ]
   },

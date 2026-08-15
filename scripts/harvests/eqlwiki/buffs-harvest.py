@@ -33,6 +33,29 @@ REPORT = HERE / "buffs-report.md"
 MIN_DURATION = 60
 
 
+def beneficial(s) -> bool:
+    """Is this a buff we should time?
+
+    The wiki states it outright on most pages. On 200 of 1,929 it says nothing, and
+    treating silence as "no" silently dropped real buffs — DeusSilvam could not add
+    Talisman of Altuna, Strength, Agility, Dexterity, Stamina or Spirit of the Puma to
+    his timers, and all six are on the wiki with durations (#162).
+
+    Simply admitting the blanks would be worse: most of them are debuffs (Asphyxiate,
+    Beguile, Bonds of Force), and a debuff in the buff catalog would start a countdown
+    on something the player never cast. So a blank must EARN admission on two
+    independent signals — the spell targets a friend or yourself, AND the page calls it
+    some kind of Buff. Both, because either alone lets something through.
+    """
+    if s.get("beneficial") is True:
+        return True
+    if s.get("beneficial") is False:
+        return False
+    target = (s.get("target_type") or "").lower()
+    friendly = "friendly" in target or "group member" in target or target.strip() == "self"
+    return friendly and "buff" in (s.get("spell_type_raw") or "").lower()
+
+
 def canonical(name: str) -> str:
     return name.replace("`", "'")
 
@@ -47,7 +70,7 @@ def main():
     excluded = []
     by_message = {}
     for s in spells:
-        if s.get("beneficial") is not True:
+        if not beneficial(s):
             continue
         name = canonical(s["name"])
         duration = s.get("duration_seconds") or 0
@@ -105,10 +128,61 @@ def main():
     print(f"{n} buffs across {len(messages)} lines -> {OUT.name}")
 
 
+# Names for landing lines shared by several spells. Echoing the sentence back was the
+# old behaviour and it read as EQBuddy quoting the game at you: DeusSilvam's haste timer
+# said "You feel much faster" while a single-spell neighbour said "Selo's Accelerating
+# Chorus" (#162). Where the spells share a stem the name comes from them; where they do
+# not, it is the line's ordinary name. Add one whenever a new shared line appears —
+# BuffCatalogLabelTests fails the build if any line falls back to its own message.
+SHARED_LINE_NAMES = {
+    "You feel charismatic.": "Charisma line",
+    "You feel dexterous.": "Dexterity line",
+    "You feel protected from magic.": "Magic resist line",
+    "You feel the spirit of wolf enter you.": "Spirit of Wolf line",
+    "A coat of shimmering runes surround you.": "Rune line",
+    "A cool breeze slips through your mind.": "Clarity line",
+    "A feeling of temperance washes over you.": "Temperance line",
+    "A mystic symbol flashes before your eyes.": "Symbol line",
+    "A soft breeze slips through your mind.": "Clarity II line",
+    "You are enveloped by flame.": "Fire damage shield",
+    "You are now a wolf.": "Wolf form",
+    "You are surrounded by a thorny barrier.": "Thorns damage shield",
+    "You become like the dead.": "Dead Man Floating",
+    "You begin to radiate with divine strength.": "Divine Strength line",
+    "You begin to radiate.": "O'Keil's line",
+    "You begin to regenerate.": "Regeneration line",
+    "You drink the potion.": "Potion",
+    "You feel different.": "Illusion",
+    "You feel heroic.": "Heroism line",
+    "You feel much faster.": "Haste line",
+    "You feel no need to breathe.": "Enduring Breath line",
+    "You feel stronger.": "Strength line",
+    "You feel the favor of the gods upon you.": "Cleric AC line",
+    "You feel the skin peel from your bones.": "Lich line",
+    "You feel tough.": "Shaman stamina line",
+    "You feel your body pulse with energy.": "Augmentation line",
+    "You feel your skin tingle.": "Invisibility vs Undead",
+    "You have taken root.": "Treeform",
+    "You vanish.": "Invisibility line",
+    "Your eyes feel stronger.": "Sight line",
+    "Your eyes tingle.": "Vision line",
+    "Your feet leave the ground.": "Levitation",
+    "Your image blurs.": "Blur line",
+    "Your mind sharpens.": "Intelligence line",
+    "Your skin shimmers.": "Natureskin line",
+    "Your skin turns hard as diamond.": "Diamond skin",
+    "Your skin turns hard as steel.": "Steel skin",
+    "Your skin turns hard as stone.": "Stone skin",
+    "Your skin turns hard as wood.": "Wood skin",
+    "Your spirit drifts from your body.": "Bind sight line",
+    "Your thoughts begin to race and flow faster.": "Gift line",
+}
+
+
 def SharedLabel(msg: str, cands) -> str:
-    """A display label for a shared line: the sentence itself, trimmed — 'You feel
-    different.' IS how the player knows it, and any one spell name would be a guess."""
-    return msg.rstrip(".!")
+    """A display label for a shared line: its curated name, else the sentence trimmed.
+    The fallback is a build failure waiting to happen by design — see the test."""
+    return SHARED_LINE_NAMES.get(msg, msg.rstrip(".!"))
 
 
 if __name__ == "__main__":
