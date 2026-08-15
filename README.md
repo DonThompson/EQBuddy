@@ -151,14 +151,20 @@ Updates (automatic):
   GitHub. The published `EQBuddySetup.exe.sha256` is verified before anything runs.
 
 Log cleanup, splitting, and archive review:
-- Because logging is always on, EQBuddy empties any character log that has been quiet
-  for 60+ minutes (a finished play session), so files never grow across sessions.
+- **Nothing is thrown away.** Since 1.84.0, *"Keep a timestamped copy before emptying"*
+  is **on by default**, so every finished session is saved to `Logs\archive\` as
+  `eqlog_<name>_<server>_<STAMP>.txt`. EQBuddy never deletes anything in that folder —
+  it's yours to keep or clear on your own schedule. Each archive announces itself with
+  a banner and a line in `error.log`, so you can tell it happened without going to look.
+- Because logging is always on, EQBuddy then empties any character log that has been
+  quiet for 60+ minutes (a finished play session), so files never grow across sessions.
   Cleanup runs at EQBuddy startup and every 10 minutes — but never while the game is open.
-- **Keep every session as its own file**: turn on *"Keep a timestamped copy before
-  emptying"* in ⚙ Options and each finished session is saved to `Logs\archive\`
-  as `eqlog_<name>_<server>_<STAMP>.txt` before the live log is emptied. The **↻
-  Reset button splits on demand**: everything so far moves to the archive and a
-  fresh log starts immediately, mid-play — ideal for "one file per raid".
+  Don't want it emptied at all? Untick *"Clean up finished session logs"* in ⚙ Options.
+- The **↻ Reset button splits on demand**: everything so far *moves* to the archive and
+  a fresh log starts immediately, mid-play — ideal for "one file per raid". It asks
+  before it does that, and its tooltip names the file operation, because a button
+  labelled "reset stats" shouldn't quietly touch a file on disk (#159, Frankthetankk).
+  With archiving turned off, ↻ leaves your log alone entirely and only clears the numbers.
 - **Review any archived log**: right-click → *Review an archived log…* replays a
   saved file read-only. The title bar turns amber while you're in the past; one
   click returns to live. Drops by Creature and ✦ Copy for wiki work against the
