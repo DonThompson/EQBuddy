@@ -80,19 +80,30 @@ automated one. See [TestPlan.md](TestPlan.md) §5.
 ### Hotspot ratchet
 
 `ArchitectureTests` fails the build if these grow more than 10% past their baseline.
-Current state:
+A path may be a glob, and then its matches are **summed** — so splitting a hotspot into
+another partial cannot buy headroom. Current state:
 
 | File | Baseline | Now | Fails at | Headroom |
 |---|---:|---:|---:|---:|
-| `EQBuddy/MainWindow.xaml.cs` | 4,891 | 5,227 | 5,380 | 153 |
+| `EQBuddy/MainWindow*.xaml.cs` | 4,274 | 4,274 | 4,701 | 427 |
 | `EQBuddy.Core/SessionStats.cs` | 2,324 | 2,372 | 2,556 | 184 |
 | `EQBuddy/OptionsWindow.xaml.cs` | 1,547 | 1,597 | 1,701 | 104 |
 | `EQBuddy.Core/LogParser.cs` | 853 | 853 | 938 | 85 |
 
-`MainWindow` is at 97% of its allowance. The next few features either extract something
-or bump the baseline as a reviewed decision — which is precisely what the ratchet is
-for. The P1 decomposition (card controllers out to `UI.Shared`, one card at a time,
-behaviour-pinned by E2E) is the intended answer.
+`MainWindow` sat at 97% of its allowance until 2026-08-15, which is not a place to work
+from. The 992-line Epic/Sky checklist surface came out into `QuestChecklistView` — it
+only ever touched settings, its own state and eleven named controls, so it was a
+component that had never been separated rather than logic that was truly entangled. The
+baseline came down with it, banking the room instead of leaving it to refill.
+
+That is the pattern to repeat, and there is more of it: the render family (`RefreshUi`
+at 551 lines, `RenderTracked` at 181) is the next candidate. Two rules make it safe.
+**Pin the behaviour in E2E first** — add the facts to the `EQBUDDY_EXPAND` dump and
+assert them, as `TheQuestChecklistRendersATabPerClassAndTheSelectedClassesRows` does;
+with no unit tests in the WPF layer that assertion is the only thing standing between a
+move and a silent regression. And **prefer a class over a partial**, because a class is
+a component with a boundary you can read, while a partial is the same window in two
+files — which is why the ratchet now sums them.
 
 ## 4. Concepts worth knowing before you change them
 

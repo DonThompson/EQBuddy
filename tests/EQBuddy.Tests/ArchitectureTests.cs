@@ -51,7 +51,7 @@ public class ArchitectureTests
 
     /// <summary>
     /// THE RATCHET CONTRACT. These are the current line counts of the files that
-    /// have historically absorbed every feature (measured 2026-08-14). The test
+    /// have historically absorbed every feature (re-measured 2026-08-15). The test
     /// fails when any of them grows more than 10% past its baseline.
     ///
     /// Shrink freely — and when you do, lower the baseline here in the same PR so
@@ -59,10 +59,20 @@ public class ArchitectureTests
     /// deliberate baseline bump in the same PR, which makes "this file gets
     /// bigger" a reviewed decision instead of a drift. New logic usually belongs
     /// in Core or UI.Shared anyway, where it's testable without a window.
+    ///
+    /// **A path may be a glob**, and when it is, the lines of every file it matches
+    /// are SUMMED. That is deliberate: MainWindow.xaml.cs could otherwise be brought
+    /// under its limit by splitting it into `MainWindow.Something.xaml.cs` and
+    /// changing nothing, which leaves exactly as much untestable window logic as
+    /// before — the thing this gate exists to push back on. Splitting for
+    /// readability stays fine; it just doesn't buy headroom. Only two things do:
+    /// moving logic out of the WPF layer, or lifting a surface into a component of
+    /// its own (QuestChecklistView, 2026-08-15, is what the current MainWindow
+    /// baseline reflects).
     /// </summary>
     private static readonly (string RelativePath, int BaselineLines)[] Hotspots =
     [
-        (@"EQBuddy/MainWindow.xaml.cs", 4891),
+        (@"EQBuddy/MainWindow*.xaml.cs", 4274),
         (@"EQBuddy.Core/SessionStats.cs", 2324),
         (@"EQBuddy/OptionsWindow.xaml.cs", 1547),
         (@"EQBuddy.Core/LogParser.cs", 853),
@@ -82,26 +92,39 @@ public class ArchitectureTests
     public void HotspotFilesDoNotGrowPastTheRatchet(string relativePath, int baselineLines)
     {
         var src = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src");
-        var file = Path.GetFullPath(Path.Combine(src, relativePath));
-        Assert.True(File.Exists(file), $"Ratchet hotspot moved or vanished: {file} — " +
+        var full = Path.GetFullPath(Path.Combine(src, relativePath));
+        var dir = Path.GetDirectoryName(full)!;
+        var pattern = Path.GetFileName(full);
+        // A literal name matches exactly one file; a glob sums its whole family, so a
+        // partial can't be used to duck the limit (see the contract above).
+        var files = Directory.Exists(dir)
+            ? Directory.GetFiles(dir, pattern).OrderBy(f => f, StringComparer.Ordinal).ToList()
+            : [];
+        Assert.True(files.Count > 0, $"Ratchet hotspot moved or vanished: {full} — " +
             "update the path (or drop the entry) in ArchitectureTests.Hotspots.");
 
-        var lines = File.ReadLines(file).Count();
+        var perFile = files.ToDictionary(Path.GetFileName, f => File.ReadLines(f).Count());
+        var lines = perFile.Values.Sum();
         var limit = (int)(baselineLines * AllowedGrowth);
+        var breakdown = perFile.Count > 1
+            ? " (" + string.Join(" + ", perFile.Select(kv => $"{kv.Key} {kv.Value}")) + ")"
+            : "";
 
         Assert.True(lines <= limit,
-            $"{relativePath} is {lines} lines — past its ratchet limit of {limit} " +
+            $"{relativePath} is {lines} lines{breakdown} — past its ratchet limit of {limit} " +
             $"(baseline {baselineLines} + 10%). Extract the new logic into Core/UI.Shared, " +
-            "or bump the baseline in ArchitectureTests.Hotspots as a deliberate, " +
-            "reviewed decision in this same PR.");
+            "or lift a whole surface into its own class the way QuestChecklistView was. " +
+            "Splitting the file into another partial will not help: this entry sums them. " +
+            "Failing that, bump the baseline in ArchitectureTests.Hotspots as a " +
+            "deliberate, reviewed decision in this same PR.");
 
         // The other direction: a file that shrank well below baseline means someone
         // did the hard work — bank it. Warning-only would be invisible in CI, so
         // this fails too, asking for the baseline to be lowered to match.
         var slack = (int)(baselineLines * 0.85);
         Assert.True(lines >= slack,
-            $"{relativePath} is {lines} lines, well under its {baselineLines} baseline. " +
-            "Nice. Lower the baseline in ArchitectureTests.Hotspots so the freed " +
-            "headroom can't quietly refill.");
+            $"{relativePath} is {lines} lines{breakdown}, well under its {baselineLines} " +
+            "baseline. Nice. Lower the baseline in ArchitectureTests.Hotspots so the " +
+            "freed headroom can't quietly refill.");
     }
 }

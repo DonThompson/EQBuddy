@@ -144,4 +144,36 @@ public sealed class EndToEndTests
         Assert.True(screenCap > 0, "monitor-derived cap should be set; dump was: " + app.Artifacts());
         Assert.Equal(screenCap, app.DumpValue("sectionMaxH"));
     }
+
+    /// <summary>
+    /// The quest-checklist surface, pinned here on 2026-08-15 immediately BEFORE it was
+    /// lifted out of MainWindow into its own class.
+    ///
+    /// The WPF layer has no unit tests (docs/TestPlan.md §5), so an 800-line extraction
+    /// has nothing to prove it moved the behaviour rather than just the lines. This is
+    /// that proof: it renders one tab per class, the tab the player asked for is the one
+    /// selected, and that tab shows the rows the catalog says it has. Ran green before
+    /// the move and had to stay green after it.
+    ///
+    /// Bard is the seeded class because its epic is the one whose rows we have argued
+    /// about most (#150 / #139), so a wrong count here is a number someone recognizes.
+    /// </summary>
+    [Fact]
+    public void TheQuestChecklistRendersATabPerClassAndTheSelectedClassesRows()
+    {
+        using var app = new AppHarness(s => s.EpicQuestClass = "Bard");
+        app.Launch();
+
+        Assert.Equal(EQBuddy.Core.QuestClassFilter.Classes.Length, app.DumpValue("epicTabs"));
+
+        // The seeded class's own rows, not a placeholder tab: the catalog ships Bard's
+        // epic, so an empty selected tab means the selection or the render broke.
+        Assert.True(app.DumpValue("epicRows") > 0,
+            "the seeded Bard tab should show its epic's rows; dump was: " + app.Artifacts());
+
+        // Sky tabs are grouped from the checklist rather than fixed per class, so the
+        // invariant is only that the surface built itself at all.
+        Assert.True(app.DumpValue("skyTabs") > 0,
+            "sky quest tabs should render from the default checklist; dump was: " + app.Artifacts());
+    }
 }

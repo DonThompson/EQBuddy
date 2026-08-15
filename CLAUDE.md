@@ -73,7 +73,8 @@ retrying, because a killed run may already have built, signed and copied.
 | Zone map geometry, aliases | `Core/ZoneMap.cs` (holds `ZoneMap`, `ZoneMapFiles`) |
 | Spawn points / timers | `Core/SpawnPointLedger.cs`, `Core/SpawnTimers.cs` |
 | Wiki lookups + contribution packs | `Core/EqlWikiMobs.cs`, `Core/WikiContribution.cs` |
-| The widget itself | `EQBuddy/MainWindow.xaml.cs` (5.2k lines — the hotspot) |
+| The widget itself | `EQBuddy/MainWindow.xaml.cs` (4.3k lines — the hotspot) |
+| Epic / Sky quest checklists | `EQBuddy/QuestChecklistView.cs` (lifted out of MainWindow) |
 | Desktop zone map | `EQBuddy/MapWindow.cs` |
 | Mobile server + projection | `Companion/CompanionHost.cs`, `CompanionProjection*.cs` |
 | The mobile page | `Companion/Web/index.html` (one self-contained file) |
@@ -158,4 +159,16 @@ has no unit tests — gets covered at all beyond pure arithmetic.
 extract it into `UI.Shared` and unit-test it there instead of fixing it in place. Both
 bugs that reached players on 2026-08-14 were sums. The WPF layer has no test project
 (see [docs/TestPlan.md](docs/TestPlan.md) §5), so this is the only way its logic gets
-covered at all.
+covered at all. **If a fix exists in `UI.Shared`, both UIs must use it** — the Avalonia
+chip stacks shipped a hand-copied older version of the WPF anchor and carried #122 and
+#152 to Linux and macOS after Windows had already paid for both.
+
+**When MainWindow runs out of ratchet room, lift a surface out — don't split the file.**
+The hotspot entry is a glob and `ArchitectureTests` **sums** its matches, so another
+partial buys nothing; that is deliberate, because a partial leaves exactly as much
+untestable window logic as before. `QuestChecklistView.cs` is the worked example: 992
+lines, and it only ever touched settings, its own state and eleven named controls.
+Pin the behaviour in E2E *before* the move (facts into `EQBUDDY_EXPAND`, asserted from
+`tests/EQBuddy.E2E`) — with no unit tests down there, that assertion is the only thing
+between a move and a silent regression. Then lower the baseline in the same commit, or
+the room you freed quietly refills.

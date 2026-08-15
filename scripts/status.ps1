@@ -58,9 +58,11 @@ $arch = Get-Content "$repo\tests\EQBuddy.Tests\ArchitectureTests.cs" -Raw
 foreach ($m in [regex]::Matches($arch, '\(@"([^"]+)",\s*(\d+)\)')) {
     $rel = $m.Groups[1].Value -replace '\\', '/'
     $base = [int]$m.Groups[2].Value
-    $file = Join-Path $repo "src/$rel"
-    if (-not (Test-Path $file)) { continue }
-    $now = (Get-Content $file).Count
+    # A hotspot path may be a glob, and then the ratchet sums its matches — a partial
+    # must not be able to make this readout look roomier than the gate.
+    $files = @(Get-ChildItem (Join-Path $repo "src/$rel") -File -ErrorAction SilentlyContinue)
+    if ($files.Count -eq 0) { continue }
+    $now = ($files | ForEach-Object { (Get-Content $_.FullName).Count } | Measure-Object -Sum).Sum
     $limit = [int]($base * 1.1)
     $left = $limit - $now
     $colour = if ($left -lt 60) { 'Red' } elseif ($left -lt 200) { 'Yellow' } else { 'Gray' }
