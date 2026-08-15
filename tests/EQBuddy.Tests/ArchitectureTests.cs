@@ -103,7 +103,7 @@ public class ArchitectureTests
         Assert.True(files.Count > 0, $"Ratchet hotspot moved or vanished: {full} — " +
             "update the path (or drop the entry) in ArchitectureTests.Hotspots.");
 
-        var perFile = files.ToDictionary(Path.GetFileName, f => File.ReadLines(f).Count());
+        var perFile = files.ToDictionary(f => Path.GetFileName(f)!, f => File.ReadLines(f).Count());
         var lines = perFile.Values.Sum();
         var limit = (int)(baselineLines * AllowedGrowth);
         var breakdown = perFile.Count > 1

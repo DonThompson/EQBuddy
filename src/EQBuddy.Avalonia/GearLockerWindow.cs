@@ -165,10 +165,12 @@ public sealed class GearLockerWindow : Window
                 var line = new StackPanel { Margin = new Thickness(6, 0, 0, 3) };
                 var name = new TextBlock
                 {
-                    Text = row.Count > 1 ? $"{row.Name} ×{row.Count}" : row.Name,
+                    Text = (row.Worn ? "★ " : row.UpgradeOver.Length > 0 ? "⬆ " : "")
+                        + (row.Count > 1 ? $"{row.Name} ×{row.Count}" : row.Name),
                     FontSize = 12,
                     TextTrimming = TextTrimming.CharacterEllipsis,
-                    Foreground = row.OutclassedBy.Length > 0 ? AppTheme.DimBrush : AppTheme.TextBrush,
+                    Foreground = row.UpgradeOver.Length > 0 ? AppTheme.GoodBrush
+                        : row.OutclassedBy.Length > 0 ? AppTheme.DimBrush : AppTheme.TextBrush,
                 };
                 if (_wikiItems.CachedStatsText(row.BaseName) is { } tip)
                     ToolTip.SetTip(name, tip);
@@ -177,6 +179,7 @@ public sealed class GearLockerWindow : Window
                 var detailParts = new List<string> { row.Where };
                 if (row.StatLine.Length > 0) detailParts.Add(row.StatLine);
                 if (row.ClassNote.Length > 0) detailParts.Add(row.ClassNote);
+                if (row.UpgradeOver.Length > 0) detailParts.Add($"⬆ upgrade over worn {row.UpgradeOver}");
                 if (row.OutclassedBy.Length > 0) detailParts.Add($"⬇ outclassed by {row.OutclassedBy}");
                 if (_unresolvable.Contains(row.BaseName))
                     detailParts.Add("no stats on its wiki page — nothing to fetch");
@@ -185,7 +188,8 @@ public sealed class GearLockerWindow : Window
                     Text = string.Join("  ·  ", detailParts),
                     FontSize = 10.5,
                     TextTrimming = TextTrimming.CharacterEllipsis,
-                    Foreground = row.OutclassedBy.Length > 0 ? AppTheme.WarnBrush : AppTheme.DimBrush,
+                    Foreground = row.UpgradeOver.Length > 0 ? AppTheme.GoodBrush
+                        : row.OutclassedBy.Length > 0 ? AppTheme.WarnBrush : AppTheme.DimBrush,
                 };
                 ToolTip.SetTip(detail, string.Join("\n", detailParts));
                 line.Children.Add(detail);
@@ -194,9 +198,12 @@ public sealed class GearLockerWindow : Window
         }
 
         _panel.Children.Add(AppTheme.DimText(
-            "\"Outclassed\" = another item you own is at least as good on every stat "
-            + "both carry and better on one — a dump candidate by arithmetic, not taste. "
-            + "Items class-locked away from you never outclass anything of yours.",
+            "★ = what you're wearing. ⬆ = something in your bags beats it on every stat "
+            + "both carry — the swap worth making. \"Outclassed\" is the same test among "
+            + "everything you own: a dump candidate by arithmetic, not taste. Items "
+            + "class-locked away from you never outclass anything of yours, and a plain "
+            + "item never claims to beat a worn \"+N\" — the wiki lists base stats, so an "
+            + "upgraded item reads lower here than it really is.",
             new Thickness(0, 8, 0, 0)));
     }
 
