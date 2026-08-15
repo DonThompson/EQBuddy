@@ -21,7 +21,7 @@ public sealed class ItemInfoWindow : Window
     private string? _currentUrl;
     private int _requestSequence;
 
-    public ItemInfoWindow(EqlWikiItemService service)
+    public ItemInfoWindow(EqlWikiItemService service, AppSettings settings)
     {
         _service = service;
         Title = "EQBuddy Item Info";
@@ -34,6 +34,7 @@ public sealed class ItemInfoWindow : Window
         ShowInTaskbar = false;
         CanResize = false;
         Content = BuildContent();
+        WindowZoom.Attach(this, "iteminfo", settings);
         Opened += (_, _) =>
         {
             if (Screens.Primary is { } screen)
@@ -109,7 +110,7 @@ public sealed class ItemInfoWindow : Window
         return new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = AppTheme.BorderBrush,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(8),
             Padding = new Thickness(12),

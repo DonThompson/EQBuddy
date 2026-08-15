@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.LogicalTree;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
@@ -78,6 +80,76 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains(headings, h => h.Contains("Combat"));
         Assert.Contains(headings, h => h.Contains("Healing"));
         Assert.Contains(headings, h => h.Contains("Kills"));
+        window.Close();
+    }
+
+    /// <summary>The Epics card exists at all — until it did, the "epic" key sat in the
+    /// shared OverlaySections catalog with nothing here to build it, which is what
+    /// crashed startup, and then (once guarded) left a dead row in Options.</summary>
+    [AvaloniaFact]
+    public void TheEpicsCardRendersItsClassTabsAndClassicLens()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot());
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("⚔ Epics", text);
+        Assert.Contains(text, t => t.StartsWith("BRD "));   // a class tab with its score
+        Assert.Contains(window.GetLogicalDescendants().OfType<CheckBox>(),
+            c => (c.Content as string) == "Classic-doable only");
+        window.Close();
+    }
+
+    /// <summary>The classic lens hides non-classic steps from the LIST and the COUNTS
+    /// alike (#71d21ea) — a score that counted steps it wasn't showing would be the
+    /// dishonest half of the feature.</summary>
+    [AvaloniaFact]
+    public void TheClassicLensMovesTheEpicsScoreNotJustTheList()
+    {
+        var window = new MainWindow();
+        window.Show();
+        window.RenderSnapshotForTest(new StatsSnapshot());
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var lens = window.GetLogicalDescendants().OfType<CheckBox>()
+            .First(c => (c.Content as string) == "Classic-doable only");
+        var header = window.GetVisualDescendants().OfType<TextBlock>()
+            .First(t => t.Text is { } s && s.Contains('/') && s.EndsWith(EpicTotal(window).ToString()));
+
+        var before = header.Text;
+        lens.IsChecked = true;
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        // Classic-only is a strict subset, so the denominator can only shrink or hold.
+        Assert.NotNull(header.Text);
+        Assert.True(Denominator(header.Text!) <= Denominator(before!),
+            $"classic lens grew the total: {before} → {header.Text}");
+        window.Close();
+    }
+
+    private static int Denominator(string headerText) =>
+        int.Parse(headerText.Split('/')[1]);
+
+    private static int EpicTotal(MainWindow window) =>
+        window.Settings.EpicQuestChecklist.Count;
+
+    /// <summary>The Gear card's WHERE-TO-GO pivot (#122abd6) reached this UI: the
+    /// toggle has to exist in the tree, or the by-zone view is unreachable here even
+    /// though the rollup it draws is shared and tested.</summary>
+    [AvaloniaFact]
+    public void TheGearCardOffersTheByZonePivot()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        var checks = window.GetLogicalDescendants().OfType<CheckBox>()
+            .Select(c => c.Content as string ?? "").ToList();
+
+        Assert.Contains(checks, c => c.Contains("Group by farm zone"));
         window.Close();
     }
 
@@ -195,8 +267,10 @@ public class WidgetRenderTests : IDisposable
             new MezState("an orc centurion", "Mesmerize", "You", now.AddSeconds(-8), now.AddSeconds(22)),
             new MezState("an orc oracle", "Entrance", "Aenari", now.AddSeconds(-5), null),
         };
-        var chips = new MezChipsWindow(settings);
-        chips.RefreshChips(mezzes, now);
+        // The clock-source ctor is the only shape left (WPF parity): the stack asks
+        // its source at refresh time; BuildChips remains the shared mez builder.
+        var chips = new MezChipsWindow(settings, at => MezChipsWindow.BuildChips(mezzes, at));
+        chips.RefreshChips(now);
         chips.Show();
 
         Assert.NotNull(chips.CaptureRenderedFrame());
@@ -223,7 +297,7 @@ public class WidgetRenderTests : IDisposable
     {
         var service = new EqlWikiItemService(Path.Combine(_profile, "item-cache"),
             _ => Task.FromResult<string?>(null));
-        var window = new ItemInfoWindow(service);
+        var window = new ItemInfoWindow(service, new AppSettings());
         window.Render(new ItemLookupResult(new ItemInfo
         {
             Name = "Cloak of Flames",
@@ -411,26 +485,107 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
+    /// <summary>AA display since the 2026-08-11 rethink: session-new AAs lead, the full
+    /// character ledger folds behind the ▸ label (Pet-abilities idiom, WPF parity).</summary>
     [AvaloniaFact]
-    public void ProgressCardShowsPersistentAaLedger()
+    public void ProgressCardFoldsTheAaLedgerBehindAToggle()
     {
         var window = new MainWindow();
         window.Show();
-        window.RenderSnapshotForTest(new StatsSnapshot
+        var snapshot = new StatsSnapshot
         {
+            SessionStart = new DateTime(2026, 8, 8),
             AaAbilities =
             [
-                new AaAbilityInfo("Spell Casting Mastery", 3, new DateTime(2026, 8, 8)),
+                new AaAbilityInfo("Spell Casting Mastery", 3, new DateTime(2026, 8, 8, 1, 0, 0)),
                 new AaAbilityInfo("Natural Durability", 1, new DateTime(2026, 8, 7)),
             ],
-        });
+        };
+
+        window.Settings.ShowAllAAs = false;
+        window.RenderSnapshotForTest(snapshot);
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        // Learned this session: leads unfolded; the pre-session AA stays folded away.
+        Assert.Contains("AA learned this session", text);
+        Assert.Contains("Spell Casting Mastery", text);
+        Assert.Contains("rank 3", text);
+        Assert.Contains("▸ All AA abilities (2)", text);
+        Assert.DoesNotContain("Natural Durability", text);
+
+        window.Settings.ShowAllAAs = true;
+        window.RenderSnapshotForTest(snapshot);
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("▾ All AA abilities", text);
+        Assert.Contains("Natural Durability", text);
+        window.Close();
+    }
+
+    /// <summary>The ⏳ Buff set breakout (#120 stage 2): per-class sections with each
+    /// pick's honesty state, and the ✕ that removes from THAT bucket only. Without a
+    /// named character the whole surface degrades to its honest locked state, so both
+    /// halves are asserted here.</summary>
+    [AvaloniaFact]
+    public void BuffSetBreakoutShowsPerClassSectionsAndRemovesFromOneBucket()
+    {
+        var main = new MainWindow();
+        main.BuffSetIdentityForTests = () => ("tester_p1999", "Tester", ["Shaman"], true);
+        main.Show();
+        BuffSetStore.Add(main.Settings.BuffSetsByClass, "tester_p1999", "Shaman", "Spirit of Wolf");
+        BuffSetStore.Add(main.Settings.BuffSetsByClass, "tester_p1999", BuffSetStore.AnyClass, "Strength");
+
+        var window = new BreakoutWindow(main.Settings, BreakoutKind.Buffs) { BuffHost = main };
+        window.Show();
+        window.Update(main.CurrentSnapshot());
+        Dispatcher.UIThread.RunJobs();
 
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("AA abilities", text);
-        Assert.Contains("Spell Casting Mastery", text);
-        Assert.Contains("rank 3", text);
+        Assert.Contains("⏳ Buff set", text);
+        Assert.Contains("Spirit of Wolf", text);
+        Assert.Contains("Strength", text);
+        // The class combination is named, and says it was picked rather than inferred.
+        Assert.Contains(text, t => t.StartsWith("Tester ·") && !t.Contains("inferred"));
+        // Neither has landed this session, so both read as the honest "not seen" state
+        // rather than being claimed active.
+        Assert.Contains("not seen", text);
+
+        // ✕ on the Shaman row takes it out of that bucket only — (any class) survives.
+        var remove = window.GetVisualDescendants().OfType<Button>()
+            .First(b => ToolTip.GetTip(b) is string tip && tip == "Remove Spirit of Wolf from Shaman");
+        remove.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
+
+        var stored = main.Settings.BuffSetsByClass["tester_p1999"];
+        Assert.DoesNotContain("Spirit of Wolf", BuffSetStore.SpellsFor(stored, "Shaman"));
+        Assert.Contains("Strength", BuffSetStore.SpellsFor(stored, BuffSetStore.AnyClass));
         window.Close();
+        main.Close();
+    }
+
+    /// <summary>No character named yet: the set can't be keyed, so the window says so
+    /// and locks its editor instead of showing an empty set that looks configurable.</summary>
+    [AvaloniaFact]
+    public void BuffSetBreakoutLocksItselfUntilTheLogNamesACharacter()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var window = new BreakoutWindow(main.Settings, BreakoutKind.Buffs) { BuffHost = main };
+        window.Show();
+        window.Update(main.CurrentSnapshot());
+        Dispatcher.UIThread.RunJobs();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("No character detected yet", text);
+        var addBox = window.GetVisualDescendants().OfType<TextBox>()
+            .Single(b => b.Watermark == "add a buff…");
+        Assert.False(addBox.IsEnabled);
+        window.Close();
+        main.Close();
     }
 
     [AvaloniaFact]
@@ -452,7 +607,9 @@ public class WidgetRenderTests : IDisposable
             .Select(t => t.Text ?? "").ToList();
         Assert.Contains("⚔ Your damage", text);
         Assert.Contains("Backstab", text);
-        Assert.Contains("100 · 10 dps", text);
+        // BreakdownRows layout: "100" is the semibold headline, the columns read dim beside it.
+        Assert.Contains("100", text);
+        Assert.Contains("×2 · avg 50 · 10 dps", text);
         window.Close();
     }
 
@@ -468,6 +625,74 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("💡 Feature request", text);
         Assert.Contains("🐛 Bug report", text);
         Assert.Contains(text, t => t.Contains("nothing is sent from the app"));
+        window.Close();
+    }
+
+    /// <summary>The KPI strip (2026-08-11 modernization): the headline numbers are
+    /// always painted, before any card opens.</summary>
+    [AvaloniaFact]
+    public void KpiStripShowsTheHeadlineNumbers()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot
+        {
+            CurrentDps = 42, YourKillCount = 7, LootTotal = 3, XpPerHour = 12.5,
+        });
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("XP/HR", text);   // the strip's captions (SectionLabel uppercases)
+        Assert.Contains("42", text);      // current DPS leads while fighting
+        Assert.Contains("7", text);
+        Assert.Contains("12.5%", text);
+        window.Close();
+    }
+
+    /// <summary>The Sky Quest card: class tabs from the embedded checklist, the state
+    /// lens vocabulary, and live checkboxes on the selected tab.</summary>
+    [AvaloniaFact]
+    public void SkyQuestCardRendersClassTabsWithChecklists()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot());
+        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("☁ Sky Quest", text);
+        // The tab header is now the D/R/P state count (#3d7911d), not "collected/total":
+        // the class abbreviation leads, then the three metric labels beside it.
+        Assert.Contains(text, t => t.StartsWith("BRD"));
+        Assert.Contains("D", text);
+        Assert.Contains("R", text);
+        Assert.Contains("P", text);
+        Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(),
+            combo => combo.Items.Contains("ready") && combo.Items.Contains("open"));
+        Assert.Contains(window.GetVisualDescendants().OfType<CheckBox>(),
+            check => check.IsEnabled);   // the selected tab's item boxes are live
+        window.Close();
+    }
+
+    /// <summary>Buffs and Raids cards stay where Options put them, with honest empty
+    /// states instead of vanishing (David's 1.66.2 verdict).</summary>
+    [AvaloniaFact]
+    public void BuffsAndRaidsCardsShowHonestEmptyStates()
+    {
+        var window = new MainWindow();
+        window.Show();
+
+        window.RenderSnapshotForTest(new StatsSnapshot());
+
+        var text = window.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("⏳ Buffs", text);
+        Assert.Contains(text, t => t.StartsWith("Nothing running"));
+        Assert.Contains("🐉 Raids", text);
+        Assert.Contains(text, t => t.StartsWith("Nothing defeated yet"));
         window.Close();
     }
 
@@ -506,5 +731,27 @@ public class WidgetRenderTests : IDisposable
             Assert.NotEqual(default, AppTheme.TextBrush.Color);
         }
         AppTheme.Apply("ParchmentBrass");
+    }
+
+    /// <summary>The toggleAll hotkey's restore loop must skip a window that closed while
+    /// hidden (a chip stack whose timers ran out, a tracker torn down by its owner) —
+    /// Avalonia throws "Cannot re-show a closed window" where WPF just checked IsLoaded.</summary>
+    [AvaloniaFact]
+    public void HotkeyRestoreSurvivesAWindowClosedWhileHidden()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var satellite = new Window { Width = 120, Height = 60 };
+        satellite.Show();
+        // Headless has no desktop lifetime, so the capture list comes from the seam.
+        main.WindowEnumeratorForTests = () => [main, satellite];
+
+        main.HandleHotkeyAction("toggleAll");
+        Assert.False(satellite.IsVisible);   // proves the hide pass actually captured it
+        satellite.Close();                   // closes while hidden
+
+        main.HandleHotkeyAction("toggleAll");   // restore must not throw on the corpse
+        Assert.True(main.IsVisible);
+        main.Close();
     }
 }

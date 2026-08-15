@@ -12,6 +12,7 @@ internal static class ClickThrough
 {
     public static bool Set(Window window, bool enabled)
     {
+        if (OperatingSystem.IsWindows()) return WinClickThrough.Set(window, enabled);
         if (OperatingSystem.IsMacOS()) return MacClickThrough.Set(window, enabled);
         if (OperatingSystem.IsLinux()) return X11ClickThrough.Set(window, enabled);
 

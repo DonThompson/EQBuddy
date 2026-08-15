@@ -33,7 +33,7 @@ public sealed class SpawnChipsWindow : Window
     private PixelPoint _lastVisiblePosition;
     private bool _haveVisiblePosition;
 
-    public SpawnChipsWindow(MainWindow main, SpawnsViewModel vm)
+    public SpawnChipsWindow(MainWindow main, SpawnsViewModel vm, Action<double>? setChipScale = null)
     {
         _main = main;
         _vm = vm;
@@ -47,7 +47,13 @@ public sealed class SpawnChipsWindow : Window
         ShowInTaskbar = false;
         ShowActivated = false;
         CanResize = false;
-        Content = _panel;
+        Content = ChipScale.Host(_panel);
+        ChipScale.Apply(this, _settings.ChipScale);
+        // Ctrl+wheel drives the shared chip-scale setter (which clamps, applies to
+        // every open family window, and persists on its own) — WPF's WindowZoom.Route.
+        if (setChipScale is not null)
+            WindowZoom.Route(this, () => _settings.ChipScale, setChipScale);
+        ChipAnchor.Attach(this, () => _settings.SpawnChipsGrowUp);
 
         Opened += (_, _) =>
         {
@@ -135,15 +141,40 @@ public sealed class SpawnChipsWindow : Window
             row.Children.Add(countdown);
             _countdowns.Add(countdown);
 
+            // The countdown made visual (2026-08-11): a progress track along the chip's
+            // bottom edge — elapsed share fills in accent, DUE fills solid in the warn
+            // red. A stack of chips reads as a stack of gauges.
+            var host = new StackPanel();
+            host.Children.Add(row);
+            if (chip.Fraction is not null || chip.IsDue)
+            {
+                var track = new Grid { Height = 2.5, Margin = new Thickness(0, 3, 0, 0) };
+                track.Children.Add(new Border
+                {
+                    CornerRadius = new CornerRadius(1.25),
+                    Background = TrackBrush(),
+                });
+                var fill = new Border
+                {
+                    CornerRadius = new CornerRadius(1.25),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Width = 0,
+                    Background = chip.IsDue ? AppTheme.BadBrush : AppTheme.AccentBrush,
+                };
+                track.Children.Add(fill);
+                var frac = chip.IsDue ? 1.0 : chip.Fraction!.Value;
+                track.SizeChanged += (_, se) => fill.Width = Math.Max(0, se.NewSize.Width * frac);
+                host.Children.Add(track);
+            }
             var border = new Border
             {
-                Child = row,
+                Child = host,
                 Tag = chip,
                 Background = AppTheme.BgBrush,
                 BorderBrush = chip.IsDue ? AppTheme.WarnBrush : AppTheme.BorderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(6),
-                Padding = new Thickness(8, 3),
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(8, 3, 8, 4),
                 Margin = new Thickness(0, 0, 0, 3),
                 Cursor = new Cursor(StandardCursorType.Hand),
             };
@@ -182,6 +213,8 @@ public sealed class SpawnChipsWindow : Window
             BeginMoveDrag(e);
         }
     }
+
+    private static IBrush TrackBrush() => AppTheme.TrackBrush;
 
     internal void DismissChip(SpawnChip chip)
     {

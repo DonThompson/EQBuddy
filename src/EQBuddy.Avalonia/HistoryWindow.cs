@@ -16,7 +16,7 @@ public sealed partial class HistoryWindow : Window
     private readonly HistoryViewModel _viewModel;
     private bool _refreshing;
 
-    public HistoryWindow(SessionRepository repository)
+    public HistoryWindow(SessionRepository repository, AppSettings settings)
     {
         Resources["BgBrush"] = AppTheme.BgBrush;
         Resources["PanelBrush"] = AppTheme.PanelBrush;
@@ -29,7 +29,9 @@ public sealed partial class HistoryWindow : Window
         Resources["ComboBoxBrush"] = AppTheme.ComboBoxBrush;
         _viewModel = new HistoryViewModel(repository);
         InitializeComponent();
+        WindowZoom.Attach(this, "history", settings);
         DataContext = _viewModel;
+        Opened += (_, _) => RenderProgress();   // needs real canvas widths
     }
 
     private void OnFilterChanged(object? sender, SelectionChangedEventArgs e)
@@ -37,6 +39,7 @@ public sealed partial class HistoryWindow : Window
         if (_refreshing || CharFilter.SelectedItem is not HistoryFilterOption selected) return;
         _viewModel.SelectedFilter = selected;
         RefreshSessions();
+        RenderProgress();
     }
 
     private void OnSearchChanged(object? sender, TextChangedEventArgs e)
@@ -309,5 +312,62 @@ public sealed partial class HistoryWindow : Window
     {
         if (_graphTimeline is { } timeline && e.NewSize.Width > 0)
             RenderDpsGraph(timeline);
+    }
+
+    /// <summary>
+    /// Character progress: level and cumulative AA as step charts across every stored
+    /// session of the filtered character (Companion-parity — theirs was the idea of
+    /// showing it, ours mines it from the history DB that already existed). Only for a
+    /// single-character filter; "All characters" would braid unrelated ladders. Levels
+    /// come from ding lines (exact times); AA totals from each session's last AA event,
+    /// so sessions that saw no AA hold the previous value — a hold, not a lie.
+    /// </summary>
+    internal void RenderProgress()
+    {
+        var show = _viewModel.FilterIsSingleCharacter;
+        var points = show ? _viewModel.ProgressSeries() : [];
+        var dings = points.SelectMany(p => p.Dings)
+            .Select(d => (d.Time, (double)d.Level)).ToList();
+        var aa = points.Where(p => p.AaTotal > 0)
+            .Select(p => (p.EndLocal, (double)p.AaTotal)).ToList();
+
+        var width = LevelChartCanvas.Bounds.Width > 0 ? LevelChartCanvas.Bounds.Width : 300;
+        var levelGraph = HistoryPresentation.BuildStepGraph(dings, width, LevelChartCanvas.Height - 4);
+        var aaGraph = HistoryPresentation.BuildStepGraph(aa, width, AaChartCanvas.Height - 4);
+        var visible = show && (levelGraph is not null || aaGraph is not null);
+        ProgressLabel.IsVisible = ProgressBorder.IsVisible = visible;
+        if (!visible) return;
+
+        ProgressLabel.Text = "Character progress — every stored session";
+        DrawStep(LevelChartCanvas, LevelChartCaption, levelGraph, AppTheme.AccentBrush,
+            levelGraph is null ? "" :
+            $"Level {dings.Min(d => d.Item2):0} → {dings.Max(d => d.Item2):0} " +
+            $"({levelGraph.Start:MMM d}–{levelGraph.End:MMM d}, {dings.Count} dings)");
+        DrawStep(AaChartCanvas, AaChartCaption, aaGraph, AppTheme.GoodBrush,
+            aaGraph is null ? "" :
+            $"AA earned, cumulative — {aa[^1].Item2:0} total ({aaGraph.Start:MMM d}–{aaGraph.End:MMM d})");
+    }
+
+    private static void DrawStep(Canvas canvas, TextBlock caption, HistoryGraph? graph,
+        IBrush brush, string text)
+    {
+        canvas.Children.Clear();
+        caption.Text = text;
+        caption.IsVisible = canvas.IsVisible = graph is not null;
+        if (graph is null) return;
+        var line = new Polyline
+        {
+            Stroke = brush,
+            StrokeThickness = 1.5,
+            StrokeJoin = PenLineJoin.Miter,
+        };
+        foreach (var (x, y) in graph.Points)
+            line.Points.Add(new Point(x, y + 2));
+        canvas.Children.Add(line);
+    }
+
+    private void OnProgressSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (e.NewSize.Width > 0) RenderProgress();
     }
 }

@@ -31,6 +31,27 @@ internal static class AppTheme
     public static readonly SolidColorBrush GoodWashBrush = new();
     public static readonly SolidColorBrush WarnWashBrush = new();
 
+    // Chart-series brushes (the 2026-08-13 approved chart pass): deeper cuts than the
+    // ambient accents, colorblind-validated, one row per theme in ThemePalettes (and
+    // fixed steps under the Custom theme). Live-mutated like every other brush here, so
+    // the timeline and the sparkline repaint on a theme switch.
+    public static readonly SolidColorBrush ChartYouBrush = new();
+    public static readonly SolidColorBrush ChartPetBrush = new();
+    public static readonly SolidColorBrush ChartIncomingBrush = new();
+    public static readonly SolidColorBrush ChartCritBrush = new();
+
+    // Derived tones of the 2026-08-11 WPF modernization — alpha/level variations of
+    // palette keys, recomputed on every Apply so all themes (and Custom) get them for
+    // free. Same formulas as the WPF ThemeManager, so the two UIs render alike:
+    //   Hairline — card borders: the accent at a whisper instead of a solid line.
+    //   Track    — the empty part of a stat bar, under the accent-filled part.
+    //   Raised   — chips and tiles, one step above panel.
+    //   AccentDeep — gradient start for bar fills, accent pulled toward the ground.
+    public static readonly SolidColorBrush HairlineBrush = new();
+    public static readonly SolidColorBrush TrackBrush = new();
+    public static readonly SolidColorBrush RaisedBrush = new();
+    public static readonly SolidColorBrush AccentDeepBrush = new();
+
     /// <summary>Palette key → the brush it drives. Keys this UI doesn't style (scrollbar
     /// thumbs, toggle highlights — Avalonia's own control themes handle those) are simply
     /// absent, and <see cref="Apply"/> skips them.</summary>
@@ -50,6 +71,10 @@ internal static class AppTheme
         ["ComboBoxBrush"] = ComboBoxBrush,
         ["GoodWashBrush"] = GoodWashBrush,
         ["WarnWashBrush"] = WarnWashBrush,
+        ["ChartYouBrush"] = ChartYouBrush,
+        ["ChartPetBrush"] = ChartPetBrush,
+        ["ChartIncomingBrush"] = ChartIncomingBrush,
+        ["ChartCritBrush"] = ChartCritBrush,
     };
 
     static AppTheme() => Apply("ParchmentBrass");
@@ -57,19 +82,26 @@ internal static class AppTheme
     /// <summary>Repaints every control holding one of the brushes above. An unrecognized
     /// key (e.g. from an older settings.json) falls back to the first theme rather than
     /// throwing — same behavior as the WPF app's ThemeManager.</summary>
-    public static void Apply(string themeKey)
-    {
-        foreach (var (key, hex) in ThemePalettes.For(themeKey))
-            if (ByKey.TryGetValue(key, out var brush)) brush.Color = Color.Parse(hex);
-    }
+    public static void Apply(string themeKey) => ApplyPalette(ThemePalettes.For(themeKey));
 
     /// <summary>Settings-aware overload: applies the Custom theme's derived palette when
-    /// it's selected (colors are edited in the WPF app's Options; this side follows the
-    /// stored values), otherwise the selected catalog theme.</summary>
-    public static void Apply(Core.AppSettings settings)
+    /// it's selected (colors are edited in either UI's Options; both follow the stored
+    /// values), otherwise the selected catalog theme.</summary>
+    public static void Apply(Core.AppSettings settings) => ApplyPalette(CustomTheme.PaletteFor(settings));
+
+    private static void ApplyPalette(IEnumerable<(string Key, string Hex)> palette)
     {
-        foreach (var (key, hex) in CustomTheme.PaletteFor(settings))
+        foreach (var (key, hex) in palette)
             if (ByKey.TryGetValue(key, out var brush)) brush.Color = Color.Parse(hex);
+
+        var accent = AccentBrush.Color;
+        var panel = PanelBrush.Color;
+        HairlineBrush.Color = Color.FromArgb(0x26, accent.R, accent.G, accent.B);
+        TrackBrush.Color = Color.FromArgb(0x1E, accent.R, accent.G, accent.B);
+        RaisedBrush.Color = Color.FromArgb(
+            (byte)Math.Min(255, panel.A * 3 / 2), panel.R, panel.G, panel.B);
+        AccentDeepBrush.Color = Color.FromArgb(accent.A,
+            (byte)(accent.R * 6 / 10), (byte)(accent.G * 6 / 10), (byte)(accent.B * 6 / 10));
     }
 
     // Tint comes from the current theme's BgBrush rather than a fixed color, so this
@@ -167,6 +199,73 @@ internal static class AppTheme
         Foreground = brush ?? AccentBrush,
     };
 
+    /// <summary>Micro-label: the small-caps section eyebrow ("DAMAGE BY SOURCE") that
+    /// organizes dense data without spending a heading's height. WPF uses AllSmallCaps;
+    /// Avalonia has no Typography knob, so uppercase text plus a little tracking carries
+    /// the same look.</summary>
+    public static TextBlock SectionLabel(string text) => new()
+    {
+        Text = text.ToUpperInvariant(),
+        FontSize = 10.5,
+        FontWeight = FontWeight.SemiBold,
+        LetterSpacing = 0.5,
+        Foreground = DimBrush,
+        Margin = new Thickness(0, 6, 0, 2),
+    };
+
+    /// <summary>Labeled dialog button, the WPF Theming.Button counterpart: default
+    /// buttons render pale-gray-on-pale-gray against the dark themes (David's contrast
+    /// pass, 2026-08-10), so labeled buttons pull from the live palette instead.</summary>
+    public static Button ActionButton(string label, string? tip = null)
+    {
+        var button = new Button
+        {
+            Content = label,
+            Padding = new Thickness(12, 2),
+            BorderThickness = new Thickness(1),
+            FontSize = 12,
+            Background = PanelBrush,
+            Foreground = TextBrush,
+            BorderBrush = AccentBrush,
+            Cursor = new Cursor(StandardCursorType.Hand),
+        };
+        if (tip is not null) ToolTip.SetTip(button, tip);
+        return button;
+    }
+
+    /// <summary>Raised tile chrome (2026-08-11 modernization; David's call: pills yes,
+    /// ovals/capsules no): a rounded-RECT card one step above panel with a hairline
+    /// border. Callers recolor BorderBrush for due/alarm states.</summary>
+    public static Border RaisedCard(Control child) => new()
+    {
+        Child = child,
+        Background = RaisedBrush,
+        BorderBrush = HairlineBrush,
+        BorderThickness = new Thickness(1),
+        CornerRadius = new CornerRadius(9),
+        Padding = new Thickness(9, 6, 9, 7),
+    };
+
+    /// <summary>Small countdown/status pill, matching the WPF MapWindow chrome: radius 4
+    /// (a rounded rect, never an oval), track-wash background, bold accent text.
+    /// Callers restyle Background/Foreground for due states.</summary>
+    public static Border Pill(string text)
+    {
+        return new Border
+        {
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(7, 1, 7, 2),
+            Background = TrackBrush,
+            Child = new TextBlock
+            {
+                Text = text,
+                FontSize = 10.5,
+                FontWeight = FontWeight.Bold,
+                Foreground = AccentBrush,
+            },
+        };
+    }
+
     public static IBrush Brush(string color) => new SolidColorBrush(Color.Parse(color));
 
     private static PathIcon CreateIcon(AppIcon icon, IBrush brush, double size = 14)
@@ -182,6 +281,14 @@ internal static class AppTheme
             AppIcon.StarFilled => "M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27Z",
             AppIcon.ChevronRight => "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41Z",
             AppIcon.ChevronDown => "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41Z",
+            // Glyphs for the ported feature windows (map/quests/gear/timeline/tray/charts)
+            // so those views draw from one catalog instead of ad-hoc emoji.
+            AppIcon.Map => "M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5ZM15 19l-6-2.11V5l6 2.11V19Z",
+            AppIcon.Quest => "M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6Z",
+            AppIcon.Gear => "M12 1 3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4Zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8Z",
+            AppIcon.Timeline => "M23 8c0 1.1-.9 2-2 2-.18 0-.35-.02-.51-.07l-3.56 3.55c.05.16.07.34.07.52 0 1.1-.9 2-2 2s-2-.9-2-2c0-.18.02-.36.07-.52l-2.55-2.55c-.16.05-.34.07-.52.07s-.36-.02-.52-.07l-4.55 4.56c.05.16.07.33.07.51 0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2c.18 0 .35.02.51.07l4.56-4.55C8.02 9.36 8 9.18 8 9c0-1.1.9-2 2-2s2 .9 2 2c0 .18-.02.36-.07.52l2.55 2.55c.16-.05.34-.07.52-.07s.36.02.52.07l3.55-3.56C19.02 8.35 19 8.18 19 8c0-1.1.9-2 2-2s2 .9 2 2Z",
+            AppIcon.Tray => "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2Zm0 12h-4c0 1.66-1.35 3-3 3s-3-1.34-3-3H5V5h14v10Z",
+            AppIcon.Chart => "M5 9.2h3V19H5V9.2ZM10.6 5h2.8v14h-2.8V5Zm5.6 8H19v6h-2.8v-6Z",
             _ => throw new ArgumentOutOfRangeException(nameof(icon), icon, null),
         };
 
@@ -206,6 +313,12 @@ internal enum AppIcon
     StarFilled,
     ChevronRight,
     ChevronDown,
+    Map,
+    Quest,
+    Gear,
+    Timeline,
+    Tray,
+    Chart,
 }
 
 internal sealed class SectionPanel : Border
@@ -213,15 +326,22 @@ internal sealed class SectionPanel : Border
     private readonly Border _body;
     private readonly PathIcon _chevron;
 
+    /// <summary>Fires whenever the card opens or closes — MainWindow uses the open
+    /// edge to render a just-expanded card immediately instead of waiting out the
+    /// full-render gate (WPF's Expander.Expanded hook, integration pass).</summary>
+    public event Action<bool>? ExpandedChanged;
+
     public bool IsExpanded
     {
         get => _body.IsVisible;
         set
         {
+            var changed = _body.IsVisible != value;
             _body.IsVisible = value;
             _chevron.Data = StreamGeometry.Parse(value
                 ? "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41Z"
                 : "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41Z");
+            if (changed) ExpandedChanged?.Invoke(value);
         }
     }
 

@@ -66,6 +66,21 @@ public class UpdateOfferTests
         Assert.Contains("EQBuddy-linux-x64.tar.gz", UpdateOffer.OpenedText(WindowsOnlyRelease, isWindows: false));
     }
 
+    /// <summary>#119: a portable Windows copy must never silent-install — the installer
+    /// lands elsewhere and the portable exe stays old, reading as the update
+    /// "reverting" on every relaunch. Browser flow, portable-zip wording.</summary>
+    [Fact]
+    public void PortableWindowsCopiesNeverAutoInstall()
+    {
+        Assert.False(UpdateOffer.CanAutoInstall(FullRelease, isWindows: true, isInstalled: false));
+        Assert.Contains("EQBuddy-portable.zip",
+            UpdateOffer.OfferText(FullRelease, isWindows: true, isInstalled: false));
+        Assert.Contains("EQBuddy-portable.zip",
+            UpdateOffer.OpenedText(FullRelease, isWindows: true, isInstalled: false));
+        Assert.Equal(UpdateChecker.GitHubLatestPage,
+            UpdateOffer.BrowserTarget(FullRelease, isWindows: true));
+    }
+
     /// <summary>Windows without a verifiable installer (fail-closed path) is browser-bound
     /// too, but goes to the release page, not the Linux tarball.</summary>
     [Fact]

@@ -105,7 +105,7 @@ public sealed class WhatsNewWindow : Window
         return new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = AppTheme.BorderBrush,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
             Child = content,

@@ -40,6 +40,8 @@ public sealed class SpawnsWindow : Window
     private string _signature = "";
     private bool _syncingZone;
     private string? _lastFollowedZone;
+    private bool _restoredSaved;
+    private PixelPoint _placed;
 
     public SpawnsWindow(MainWindow main, SpawnsViewModel vm, string? initialZone = null)
     {
@@ -63,6 +65,7 @@ public sealed class SpawnsWindow : Window
         _followCheck.IsChecked = _settings.SpawnFollowZone;
 
         Content = BuildContent();
+        WindowZoom.Attach(this, "spawns", _settings);
         SelectZone(initialZone
             ?? (_settings.SpawnFollowZone ? _vm.CurrentZoneName : null)
             ?? FirstNonEmpty(_settings.SpawnZone, _vm.ZoneNames.FirstOrDefault() ?? ""));
@@ -77,8 +80,10 @@ public sealed class SpawnsWindow : Window
         Opened += (_, _) =>
         {
             UpdateHeightLimit();
-            if (ScreenGuard.OnScreen(this, _settings.SpawnLeft, _settings.SpawnTop, Width, Height))
+            _restoredSaved = ScreenGuard.OnScreen(this, _settings.SpawnLeft, _settings.SpawnTop, Width, Height);
+            if (_restoredSaved)
                 Position = new PixelPoint((int)_settings.SpawnLeft, (int)_settings.SpawnTop);
+            _placed = Position;
         };
         // Follow the window between monitors; primary-only/open-time caps waste most of
         // a portrait secondary's height.
@@ -86,8 +91,10 @@ public sealed class SpawnsWindow : Window
         Closed += (_, _) =>
         {
             _tick.Stop();
-            _settings.SpawnLeft = Position.X;
-            _settings.SpawnTop = Position.Y;
+            // Never let an unmoved fallback overwrite a real saved spot (#117).
+            (_settings.SpawnLeft, _settings.SpawnTop) = WindowPlacement.PositionToPersist(
+                _restoredSaved, _placed.X, _placed.Y, Position.X, Position.Y,
+                _settings.SpawnLeft, _settings.SpawnTop);
             _settings.Save();
         };
         RefreshRows();
@@ -162,7 +169,7 @@ public sealed class SpawnsWindow : Window
         return new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = AppTheme.BorderBrush,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
             Child = layout,

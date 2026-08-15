@@ -69,10 +69,10 @@ public class OptionsRenderTests : IDisposable
     }
 
     /// <summary>The window's body scroller. Every TextBox and open ComboBox brings its own
-    /// ScrollViewer, so it is picked out by what it holds: the one margined panel.</summary>
+    /// ScrollViewer, so it is picked out by what it holds: the one margined tab body.</summary>
     private static ScrollViewer ContentScroll(OptionsWindow options) =>
         options.GetVisualDescendants().OfType<ScrollViewer>()
-            .Single(s => s.Content is StackPanel { Margin.Left: 16 });
+            .Single(s => s.Content is Grid { Margin.Left: 16 });
 
     [AvaloniaFact]
     public void OptionsRendersAFrame()
@@ -131,7 +131,7 @@ public class OptionsRenderTests : IDisposable
     {
         var (main, options) = Open();
         var targetDrops = options.GetVisualDescendants().OfType<CheckBox>()
-            .Single(c => (c.Content as TextBlock)?.Text?.Contains("known drops") == true);
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("target drops") == true);
         Assert.True(targetDrops.IsChecked);
         targetDrops.IsChecked = false;
         Assert.False(main.Settings.ShowTargetDrops);
@@ -150,6 +150,8 @@ public class OptionsRenderTests : IDisposable
     {
         var main = new MainWindow();
         main.Show();
+        // The rules live on the Watch tab — it must be the open tab for its height to count.
+        main.Settings.OptionsTab = "watch";
         for (var i = 0; i < 30; i++)
             main.Settings.TrackedRules.Add(new TrackedRule
             {
@@ -185,6 +187,77 @@ public class OptionsRenderTests : IDisposable
 
         Assert.Equal(main.Settings.TrackedRules.Count, soundPickers.Count); // one per rule
         Assert.NotEqual(soundPickers[0].SelectedIndex, soundPickers[1].SelectedIndex);
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The same drift as the sound picker, one feature over: SpeechVoice, SpeechRate
+    /// and SpeechVolume existed in settings.json with nothing on this side to set them, so the
+    /// only way to slow a too-fast voice down was a text editor. Asserts the controls exist and
+    /// write through.</summary>
+    [AvaloniaFact]
+    public void SpeechVoiceAndSlidersArePresentAndPersist()
+    {
+        var (main, options) = Open();
+
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "Alert voice");
+        var voice = options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(OptionsViewModel.DefaultVoiceChoice));
+        // Voice enumeration is Windows-only, so the list is as long as this machine's
+        // voices allow — one entry off Windows, more on it (the CI runner has several).
+        // What holds everywhere: the default leads and is selected, and the honest empty
+        // state is a picker left visible but disabled, exactly when it offers no choice.
+        Assert.Equal(OptionsViewModel.DefaultVoiceChoice, voice.Items[0]);
+        Assert.Equal(0, voice.SelectedIndex);
+        Assert.Equal(voice.Items.Count > 1, voice.IsEnabled);
+
+        var rate = options.GetVisualDescendants().OfType<Slider>()
+            .Single(s => s.Minimum == SpokenAlerts.MinRate && s.Maximum == SpokenAlerts.MaxRate);
+        rate.Value = -2;
+        Assert.Equal(-2, main.Settings.SpeechRate);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "-2");
+
+        var volume = options.GetVisualDescendants().OfType<Slider>()
+            .Single(s => s.Minimum == 0 && s.Maximum == 100);
+        volume.Value = 60;
+        Assert.Equal(60, main.Settings.SpeechVolume);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            text => text.Text == "60%");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The per-rule phrase box: one per rule, revealed by that rule's S toggle, and
+    /// saved on the way out. Empty keeps the old behaviour of speaking the alert's own label.</summary>
+    [AvaloniaFact]
+    public void TheSpokenPhraseBoxFollowsTheSpeechToggle()
+    {
+        var (main, options) = Open();
+
+        var speechToggles = options.GetVisualDescendants()
+            .OfType<global::Avalonia.Controls.Primitives.ToggleButton>()
+            .Where(t => Equals(t.Content, "S"))
+            .ToList();
+        Assert.Equal(main.Settings.TrackedRules.Count, speechToggles.Count);
+
+        var row = Assert.IsType<Grid>(speechToggles[0].Parent);
+        var phrase = row.Children.OfType<TextBox>().Single(b => Grid.GetColumn(b) == 7);
+        Assert.False(phrase.IsVisible);   // the rule doesn't speak yet
+
+        speechToggles[0].IsChecked = true;
+        Assert.True(phrase.IsVisible);
+
+        phrase.Text = "Recast charm now";
+        // The box saves on LostFocus. Focus() is a no-op in this headless window (no active
+        // top level to hand focus to), so the event is raised directly — with the
+        // FocusChangedEventArgs its handlers are typed for, not a bare RoutedEventArgs.
+        phrase.RaiseEvent(new global::Avalonia.Input.FocusChangedEventArgs(
+            global::Avalonia.Input.InputElement.LostFocusEvent));
+        Assert.Equal("Recast charm now", main.Settings.TrackedRules[0].SpokenPhrase);
+
         options.Close();
         main.Close();
     }
@@ -386,6 +459,257 @@ public class OptionsRenderTests : IDisposable
         var right = options.Position.X + (int)Math.Round(options.Bounds.Width * options.RenderScaling);
         Assert.True(Math.Abs(right - startRight) <= 1,
             $"right edge moved from {startRight} to {right}");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>The tabbed layout (WPF 1.67.0): all five panels exist, and the saved
+    /// OptionsTab decides which one is open — a stale key falls back to Look.</summary>
+    [AvaloniaTheory]
+    [InlineData("behavior", "behavior")]
+    [InlineData("cards", "cards")]
+    [InlineData("bogus-tab", "look")]
+    public void TheSavedTabIsTheOpenOne(string saved, string effective)
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.OptionsTab = saved;
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        var links = options.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.Text is "Look" or "Alerts & chips" or "Watch rules" or "Cards & windows" or "Behavior")
+            .ToList();
+        Assert.Equal(5, links.Count);
+        // Exactly one link is underlined-active, and it matches the effective tab.
+        var active = links.Single(l => l.TextDecorations is not null);
+        var expected = effective switch
+        {
+            "behavior" => "Behavior", "cards" => "Cards & windows", _ => "Look",
+        };
+        Assert.Equal(expected, active.Text);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Share-string import: paste → preview → confirm, nothing landing unseen.
+    /// The string comes from the same WatchRuleShare the ⤴ buttons use.</summary>
+    [AvaloniaFact]
+    public void ImportingAShareStringPreviewsThenAddsTheRule()
+    {
+        var (main, options) = Open();
+        var before = main.Settings.TrackedRules.Count;
+        var share = WatchRuleShare.Encode(
+            [new TrackedRule { Name = "guildie's rule", Pattern = "FTE", Kind = WatchKind.Text }]);
+
+        var importBox = options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => ToolTip.GetTip(t) is string tip && tip.Contains("EQB1"));
+        importBox.Text = share;
+        var importBtn = options.GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(b.Content, "Import…"));
+        importBtn.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        var confirm = options.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Content is string s && s.StartsWith("✔"));
+        Assert.True(confirm.IsVisible);
+        Assert.Equal(before, main.Settings.TrackedRules.Count);   // preview adds nothing
+
+        confirm.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.Equal(before + 1, main.Settings.TrackedRules.Count);
+        Assert.Equal("guildie's rule", main.Settings.TrackedRules[^1].Name);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>New shared settings reached the port: chip scale (Look), archive-before-
+    /// empty (Behavior), and the hide-while-game-not-running opt-in (#114).</summary>
+    [AvaloniaFact]
+    public void ChipScaleArchiveAndHideTogglesPersist()
+    {
+        var (main, options) = Open();
+
+        var chipScale = options.GetVisualDescendants().OfType<Slider>()
+            .Single(s => Math.Abs(s.Minimum - 0.8) < 0.001 && Math.Abs(s.Maximum - 2.0) < 0.001);
+        chipScale.Value = 1.4;
+        Assert.Equal(1.4, main.Settings.ChipScale, 3);
+
+        var archive = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("timestamped copy") == true);
+        Assert.False(archive.IsChecked);
+        archive.IsChecked = true;
+        Assert.True(main.Settings.ArchiveLogs);
+
+        var hideNotRunning = options.GetVisualDescendants().OfType<CheckBox>()
+            .Single(c => (c.Content as TextBlock)?.Text?.Contains("isn't running at all") == true);
+        hideNotRunning.IsChecked = true;
+        Assert.True(main.Settings.HideWhenGameNotRunning);
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Hotkeys are opt-in (#100): every action shows an unbound recorder until
+    /// the player binds it, and a saved gesture is displayed on its button.</summary>
+    [AvaloniaFact]
+    public void HotkeyRowsShowUnboundRecordersAndSavedGestures()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.Settings.Hotkeys["toggleMap"] = "Ctrl+Alt+M";
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        var recorders = options.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.Content is string s
+                && (s == "not bound — click to set" || s == "Ctrl+Alt+M"))
+            .ToList();
+        Assert.Equal(6, recorders.Count);   // one per HotkeyManager action
+        Assert.Single(recorders, b => Equals(b.Content, "Ctrl+Alt+M"));
+
+        options.Close();
+        main.Close();
+    }
+
+    // ---- buff set (#120, Frankthetankk) ----
+
+    private const string BuffSetKey = "tester_p1999";
+
+    /// <summary>The editor needs a named character and a class combination. The headless
+    /// log pipeline never names one, so MainWindow's test identity seam supplies it —
+    /// the same answer the card and the ⏳ breakout read, so all three agree here too.
+    /// </summary>
+    private static (MainWindow Main, OptionsWindow Options) OpenWithBuffSet(
+        IReadOnlyList<string> classes, params (string Class, string Spell)[] stored)
+    {
+        var main = new MainWindow();
+        main.BuffSetIdentityForTests = () => (BuffSetKey, "Tester", classes, true);
+        main.Show();
+        foreach (var (cls, spell) in stored)
+            BuffSetStore.Add(main.Settings.BuffSetsByClass, BuffSetKey, cls, spell);
+        var options = new OptionsWindow(main);
+        options.Show();
+        options.RefreshBuffSetEditor();
+        return (main, options);
+    }
+
+    /// <summary>The search popup's list. It hangs off the Popup rather than the window's
+    /// visual tree, because an open popup lives in its own top level — and it is picked out
+    /// by its content, since every templated ComboBox brings a Popup of its own.</summary>
+    private static ListBox BuffSetMatches(OptionsWindow options) =>
+        options.GetVisualDescendants().OfType<global::Avalonia.Controls.Primitives.Popup>()
+            .Select(p => (p.Child as Border)?.Child as ListBox)
+            .Single(list => list is { MaxWidth: 480 })!;
+
+    private static TextBox BuffSetAddBox(OptionsWindow options) =>
+        options.GetVisualDescendants().OfType<TextBox>()
+            .Single(t => ToolTip.GetTip(t) is string tip && tip.Contains("seen casting"));
+
+    /// <summary>Stage 2's honesty rule: a bucket whose class isn't in the current
+    /// combination is still shown — parked, dimmed and labelled — because this editor is
+    /// the one place a parked pick can be removed. Hiding it would make the picks look
+    /// lost when they are only waiting for the swap back.</summary>
+    [AvaloniaFact]
+    public void ParkedClassBucketsStayVisibleAndAreMarkedAsParked()
+    {
+        var (main, options) = OpenWithBuffSet(["Shaman"],
+            (BuffSetStore.AnyClass, "Talisman of the Cat"),
+            ("Shaman", "Talisman of the Beast"),
+            ("Rogue", "Talisman of the Brute"));
+
+        var headers = options.GetVisualDescendants().OfType<TextBlock>()
+            .Where(t => t.FontWeight == global::Avalonia.Media.FontWeight.SemiBold
+                && t.FontSize == 11 && t.Text is not null)
+            .Select(t => (t.Text!, t.Foreground))
+            .ToList();
+        Assert.Contains((BuffSetStore.AnyClass, (global::Avalonia.Media.IBrush)AppTheme.AccentBrush), headers);
+        Assert.Contains(("Shaman", (global::Avalonia.Media.IBrush)AppTheme.AccentBrush), headers);
+        var parked = Assert.Single(headers, h => h.Item1.StartsWith("Rogue"));
+        Assert.Contains("kept for the swap back", parked.Item1);
+        Assert.Same(AppTheme.DimBrush, parked.Item2);   // dimmed, not silently dropped
+
+        // Every stored pick has a row, active or parked.
+        var rows = options.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text).ToList();
+        Assert.Contains("Talisman of the Cat", rows);
+        Assert.Contains("Talisman of the Beast", rows);
+        Assert.Contains("Talisman of the Brute", rows);
+        // The note names the character and the combination it assembles from.
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text?.Contains("Saved for Tester") == true && t.Text.Contains("SHM"));
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Typing in the add box ranks the catalog into the popup, and picking a match
+    /// writes it into the selected class bucket and saves.</summary>
+    [AvaloniaFact]
+    public void AddingABuffThroughTheSearchWritesItToTheSelectedBucket()
+    {
+        var (main, options) = OpenWithBuffSet(["Shaman"]);
+        var classBox = options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(BuffSetStore.AnyClass));
+        // The full class list is offered, not just the active one, so a coming swap can be
+        // configured in advance.
+        Assert.Equal(QuestClassFilter.Classes.Length + 1, classBox.Items.Count);
+        Assert.Equal(BuffSetStore.AnyClass, classBox.SelectedItem);
+        classBox.SelectedItem = "Shaman";
+
+        BuffSetAddBox(options).Text = "of the Cat";
+
+        var matches = BuffSetMatches(options);
+        var pick = matches.Items.Cast<ListBoxItem>().Single(i => Equals(i.Tag, "Talisman of the Cat"));
+        matches.SelectedItem = pick;
+
+        Assert.Equal(["Talisman of the Cat"], main.Settings.BuffSetsByClass[BuffSetKey]["Shaman"]);
+        Assert.Contains("Talisman of the Cat",
+            File.ReadAllText(Path.Combine(_profile, "settings.json")));
+        Assert.Equal("", BuffSetAddBox(options).Text);
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text == "Talisman of the Cat");   // the panel repainted at once
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>A row's ✕ removes that one pick from that one bucket and saves.</summary>
+    [AvaloniaFact]
+    public void RemovingARowWritesThrough()
+    {
+        var (main, options) = OpenWithBuffSet(["Shaman"],
+            (BuffSetStore.AnyClass, "Talisman of the Cat"),
+            ("Shaman", "Talisman of the Beast"));
+
+        var remove = options.GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(ToolTip.GetTip(b), "Remove Talisman of the Beast from Shaman"));
+        remove.RaiseEvent(new global::Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        // Emptied buckets are pruned, so settings JSON never accumulates hollow entries.
+        Assert.False(main.Settings.BuffSetsByClass[BuffSetKey].ContainsKey("Shaman"));
+        Assert.Equal(["Talisman of the Cat"],
+            main.Settings.BuffSetsByClass[BuffSetKey][BuffSetStore.AnyClass]);
+        Assert.DoesNotContain(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text == "Talisman of the Beast");
+
+        options.Close();
+        main.Close();
+    }
+
+    /// <summary>Without a character there is nowhere to save: the editor says so and stays
+    /// disabled rather than quietly writing into a nameless key.</summary>
+    [AvaloniaFact]
+    public void WithNoCharacterTheBuffSetEditorSaysSoAndStaysDisabled()
+    {
+        var (main, options) = Open();
+
+        Assert.Contains(options.GetVisualDescendants().OfType<TextBlock>(),
+            t => t.Text?.StartsWith("No character detected yet") == true);
+        Assert.False(BuffSetAddBox(options).IsEnabled);
+        Assert.False(options.GetVisualDescendants().OfType<ComboBox>()
+            .Single(c => c.Items.Contains(BuffSetStore.AnyClass)).IsEnabled);
 
         options.Close();
         main.Close();

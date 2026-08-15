@@ -22,7 +22,7 @@ public sealed class HistoryRenderTests : IDisposable
     public void HistoryDrawsTheSharedDpsTimeline()
     {
         var repository = new SessionRepository(Path.Combine(_profile, "history.db"));
-        var window = new HistoryWindow(repository);
+        var window = new HistoryWindow(repository, new AppSettings());
         window.Show();
         window.RenderDpsGraph(
         [
@@ -44,7 +44,7 @@ public sealed class HistoryRenderTests : IDisposable
     public void HistoryRendersAndExpandsCompleteEncounterDetail()
     {
         var repository = new SessionRepository(Path.Combine(_profile, "encounters.db"));
-        var window = new HistoryWindow(repository);
+        var window = new HistoryWindow(repository, new AppSettings());
         window.Show();
         var fight = new EncounterInfo("Orc pawn", new DateTime(2026, 8, 3, 15, 0, 0),
             10, 100, 24, 10, "Killed", 0)
