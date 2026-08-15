@@ -122,7 +122,7 @@ Your final turn-in will be a note, your own Paladin Testimony, the [[Glowing Swo
 *Give the Testimony of Truth you looted off Lucan's skeletal form to Valeron Dushire, and he will hand you the ''[[Brilliant Sword of Faith]]''.
 
 ;The Turn-in
-*Invis down to the jail cells of [[Splitpaw Lair]] (it is recommended that you bring some invis potions for the journey). At the end you will find [[Brother Hayle]]. Please ensure that you are of adequate faction with the [[Priests of Life]] - high warmly (just max it). The final turn-in can be MQd, but everyone must be of sufficient faction.
+*Invis down to the jail cells of [[Splitpaw Lair]] (it is recommended that you bring some invis potions for the journey). At the end you will find [[Brother Hayle]]. Please ensure that you are of adequate faction with the [[Priests of Life]] - high warmly (just max it).
 
 *Turn in the [[Sealed Note]] '''ALONE'''. He will hand it back, opened.
 *'''Now''' turn in together the [[Note|opened note]], your [[Testimony of Truth]], the [[Glowing Sword Hilt]], and the [[Brilliant Sword of Faith]]. Congratulations! You have received {{:SoulFire}}.

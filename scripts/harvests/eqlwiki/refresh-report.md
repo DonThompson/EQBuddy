@@ -1,269 +1,337 @@
 # Knowledge refresh report
 
-- Window: `2026-08-10T09:04:52Z` → `2026-08-14T02:05:02Z`
-- Changed wiki pages: 247
+- Window: `2026-08-14T02:01:27Z` → `2026-08-15T18:28:42Z`
+- Changed wiki pages: 311
 - Changed templates: 0
-- Cache evictions: 43
+- Cache evictions: 120
 
 ## Promoted catalogs
 
 - `FadeMessages.json`: UPDATED
+- `SlowSpells.json`: unchanged
+- `BuffDurations.json`: UPDATED
+- `DebuffLandings.json`: unchanged
 - `QuestCatalog.json`: UPDATED
 - `ZoneGraph.json`: unchanged
 - `ItemCatalog.json.gz`: UPDATED
+- `SpellLevels.json`: UPDATED
 
 ## Curated catalogs (never auto-written — review these)
 
-- `SpawnCatalog.json` mentions changed pages: Akksstaff, BoneCracker, Brother Qwinn, Brother Zephyl, Coercer T`vala, Ekeros, Kedge Keep, Lasna Cheroon, Linara Parlone, Lord Nagafen, Lynada the Exiled, Magus Rokyl …
-- `AaCatalog.json` mentions changed pages: Shaman, (the Alternate Advancement page itself)
-- `CcSpells.json` mentions changed pages: Call of Sky Strike
+- `SpawnCatalog.json` mentions changed pages: Bindlegrob, Chief Goonda, Dark Assassin, Kirran Mirrah, Maestro of Rancor, Plane of Sky, a shadowknight (Troll)
+- `AaCatalog.json` mentions changed pages: Ranger, Shaman, Warrior, (the Alternate Advancement page itself)
+- `SkyQuestDefaults.cs` mentions changed pages: Azarack Blood, Large Sky Lapis, Ranger, Shaman, Staff of Elemental Mastery: Air, Warrior
 
 ## Changed pages
 
-- A Box of Bones
-- A Broom
-- A Disciple of Innoruuk
-- A Giant Black Widow
-- A Magician
-- A Strategic Map of Kithicor
+- A Greater Kobold Shaman
+- A Spite Golem
 - A Teir`Dal priest
 - A Teir`Dal ranger
 - A Teir`Dal rogue
 - A Teir`Dal shadowknight
-- A catfisher
-- A dread skeleton
-- A ferocious hammerhead
-- A jungle spider
-- A jungle spiderling
-- A large skeleton
-- Aid the Kerrans of Kerra Isle
-- Akksstaff
+- A reanimated hand (Lower Guk)
+- A shadowknight (Dark Elf Male)
+- A shadowknight (Troll)
+- Allia Moondancer
 - Alternate Advancement
-- Amulet of Necropotence
-- An Earth Elemental
-- An Initiate Familiar
-- An Injured Halfling
-- An Ogre Guard
-- An undine spirit
-- Azarack Skin
-- Bard Plane of Sky Tests
-- Beastlord Plane of Sky Tests
-- Berill Gladeleaper
-- Berserker Monk Rogue Guide
-- Berserker Plane of Sky Tests
-- Black Spider Silk
-- Block of Permafrost
-- BoneCracker
-- Box For Bones
-- Box of Bones
-- Brother Qwinn
-- Brother Zephyl
-- Call of Sky
-- Call of Sky Strike
-- Catfish Tail
-- Catman Alliance
-- Celent Newmist
-- Centaur courser
-- Cleric Plane of Sky Tests
-- Coercer T`vala
-- Conjuration: Earth Summon
-- Corroded Buckler
-- Crushbone Shoulderpads
-- Cyclops Eye
-- Cyclops Toes
-- Cyria Lorewhisper
-- Dagas
-- Dason Goldblade
-- Druid Enchanter Shadow Knight Guide
+- Animal Trainer Visop
+- Army Ant Potion
+- Assa Leafwind
+- Auraline
+- Azarack Blood
+- Benefit Awareness I
+- Benefit Awareness I (Spell)
+- Benefit Awareness II
+- Benefit Awareness II (Spell)
+- Benefit Awareness III
+- Benefit Awareness III (Spell)
+- Benefit Awareness IV
+- Benefit Awareness IV (Spell)
+- Bindlegrob
+- Black Sapphire
+- Blessed Arrow Heads
+- Blessed Champion Arrows
+- Broom Of Trilon Quest
+- Broom of Trilon
+- Cake Round
+- Cancel Magic
+- Celest Palestream
+- Chief Goonda
+- Clay Bracelet
+- Clay Bracelet Quest
+- Cold Awareness I
+- Cold Awareness I (Spell)
+- Cold Awareness II
+- Cold Awareness II (Spell)
+- Cold Awareness III
+- Cold Awareness III (Spell)
+- Cold Awareness IV
+- Cold Awareness IV (Spell)
+- Cure Poison
+- Dark Assassin
+- Disease Awareness I
+- Disease Awareness I (Spell)
+- Disease Awareness II
+- Disease Awareness II (Spell)
+- Disease Awareness III
+- Disease Awareness III (Spell)
+- Disease Awareness IV
+- Disease Awareness IV (Spell)
+- Distillate of Alacrity I
+- Distillate of Alacrity II
+- Distillate of Alacrity III
+- Distillate of Alacrity IV
+- Distillate of Alacrity IX
+- Distillate of Alacrity VI
+- Distillate of Celestial Healing I
+- Distillate of Celestial Healing II
+- Distillate of Celestial Healing III
+- Distillate of Celestial Healing IV
+- Distillate of Celestial Healing IX
+- Distillate of Celestial Healing VI
+- Distillate of Clarity I
+- Distillate of Clarity II
+- Distillate of Clarity III
+- Distillate of Clarity IV
+- Distillate of Clarity IX
+- Distillate of Clarity VI
+- Distillate of Divine Healing I
+- Distillate of Divine Healing II
+- Distillate of Divine Healing III
+- Distillate of Divine Healing IV
+- Distillate of Divine Healing IX
+- Distillate of Divine Healing VI
+- Distillate of Replenishment I
+- Distillate of Replenishment II
+- Distillate of Replenishment III
+- Distillate of Replenishment IV
+- Distillate of Replenishment IX
+- Distillate of Replenishment VI
+- Distillate of Spirituality I
+- Distillate of Spirituality II
+- Distillate of Spirituality III
+- Distillate of Spirituality IV
+- Distillate of Spirituality IX
+- Distillate of Spirituality VI
+- Divine Endurance
+- Donlo's Dementia
 - Druid Necromancer Shaman Guide
-- Druid Plane of Sky Tests
-- Earthshaker
-- Efreeti Great Staff
-- Ekeros
-- Elle Leafdancer
-- Elytan Rantas
-- Emil Parsini
-- Enchanter Plane of Sky Tests
-- Erudite Prisoners
-- Est Treewalker
-- Ethereal Mist Greaves
-- Evil Research
-- Familiar Ring
-- Feraniel Leafsway
-- Fine Steel Long Sword
-- Fine Steel Spear
-- Fire Beetle Eye
+- Elixir of Clarity I
+- Elixir of Clarity II
+- Elixir of Clarity III
+- Elixir of Clarity IV
+- Elixir of Clarity IX
+- Elixir of Clarity VI
+- Elixir of Divine Endurance
+- Elixir of Healing I
+- Elixir of Healing II
+- Elixir of Healing III
+- Elixir of Healing IV
+- Elixir of Healing IX
+- Elixir of Healing VI
+- Elixir of Replenishment I
+- Elixir of Replenishment II
+- Elixir of Replenishment III
+- Elixir of Replenishment IV
+- Elixir of Replenishment IX
+- Elixir of Replenishment VI
+- Elixir of Speed I
+- Elixir of Speed II
+- Elixir of Speed III
+- Elixir of Speed IV
+- Elixir of Speed IX
+- Elixir of Speed VI
+- Elixir of Spiritualism I
+- Elixir of Spiritualism II
+- Elixir of Spiritualism III
+- Elixir of Spiritualism IV
+- Elixir of Spiritualism IX
+- Elixir of Spiritualism VI
+- Emissary of Zebuxoruk
+- Empyran jerkin
+- Endure Cold
+- Endure Fire
+- Endure Magic
+- Enduring Breath
+- Essence of Barbarian (Wormwood)
+- Essence of Dark Elf (Wormwood)
+- Essence of Dwarf (Wormwood)
+- Essence of Erudite (Wormwood)
+- Essence of Froglok
+- Essence of Gnome (Wormwood)
+- Essence of Gukta (Wormwood)
+- Essence of Half Elf (Wormwood)
+- Essence of Halfling (Wormwood)
+- Essence of High Elf (Wormwood)
+- Essence of Human (Wormwood)
+- Essence of Ogre (Wormwood)
+- Essence of Troll (Wormwood)
+- Essence of Wood Elf (Wormwood)
+- Essence of wind
+- Feir`Dal Fletching Kit
+- Feir`Dal Forge
 - Fire Opal
-- Fishmonger Jassa
-- Game Mechanics
-- Gem of Invigoration
-- Gharin's Note (evil)
-- Gnome Tinkered Toy
-- Gorgon Head
-- Greater Conjuration: Earth Summon
-- Gren Frikniller
-- Griff Candleflame
-- Guja Master Therik
-- Heretic's Toy
-- High Council of Erudin
-- Hill Giant Toes
-- Hilt of the Nobleman
-- Holy Dirt of Brell
-- Ice Giant Toes
-- Icon List
-- Ilanic`s skeleton
-- Ilanics Skeleton
-- Imbued Ogre War Bracer (Cazic Thule)
-- Imbued Ogre War Bracer (Rallos Zek)
-- Inferno Shock
-- Inkeeper Freegraze
-- Innkeep Danin
-- Iron Visor
-- Item Upgrade System
-- Jarah Reskan
-- Josin Faithbringer
-- Jras Solsier
-- Kedge Keep
-- Langseax Quest
-- Lasna Cheroon
-- Leatherfoot Raider Skullcap (drop)
-- Left Goblin Ears
-- Linara Parlone
-- Living Heart of a Brell Minion
-- Lord Nagafen
-- Lumi Stergnon
-- Lustrous Russet Greaves
-- Lynada the Exiled
-- Magician Plane of Sky Tests
-- Magus Rokyl
-- Mammoth Calf Hides
-- Mandrake Root
-- Marza T`Kix
-- Merchant Silspin
-- Merchant Sorintal
-- Merchant Tyslin (South Felwithe)
-- Merchant Yisasan
-- Merchants of Erudin
-- Midnight Clad Leggings
+- Frenzy
+- Full Heal
+- Gate
+- Gate Potion
+- Greater Mystical Infusion
+- Greater Mystical Infusion (Spell)
+- Grow
+- Half Elf Meat
+- Hawk's Eye Tonic
+- Hawks Eye Tonic
+- Healing Potion I
+- Healing Potion II
+- Healing Potion III
+- Healing Potion IV
+- Healing Potion IX
+- Healing Potion VI
+- Heat Awareness I
+- Heat Awareness I (Spell)
+- Heat Awareness II
+- Heat Awareness II (Spell)
+- Heat Awareness III
+- Heat Awareness III (Spell)
+- Heat Awareness IV
+- Heat Awareness IV (Spell)
+- Hp to Mana
+- Illusion: Barbarian
+- Illusion: Dark Elf
+- Illusion: Dwarf
+- Illusion: Erudite
+- Illusion: Froglok
+- Illusion: Gnome
+- Illusion: Guktan
+- Illusion: Half-Elf
+- Illusion: Halfling
+- Illusion: High Elf
+- Illusion: Human
+- Illusion: Ogre
+- Illusion: Troll
+- Illusion: Wood Elf
+- Imbrued Platemail Gauntlets
+- Invisibility versus Undead
+- Janam Rekish
+- Jewelcrafting
+- Key Compendium
+- Kirran Mirrah
+- Klok Nylsi
+- Large Sky Lapis
+- Levity
+- Lute of the Gypsy Princess
+- Maestro of Rancor
+- Magic Awareness I
+- Magic Awareness I (Spell)
+- Magic Awareness II
+- Magic Awareness II (Spell)
+- Magic Awareness III
+- Magic Awareness III (Spell)
+- Magic Awareness IV
+- Magic Awareness IV (Spell)
+- Mana to Hp
+- Merchant Lanin
+- Merchant Linolyen
+- Merchant Tissan
 - Minor Conjuration: Air Summon
 - Minor Conjuration: Earth Summon
 - Minor Conjuration: Fire Summon
 - Minor Conjuration: Water Summon
-- Monk Plane of Sky Tests
-- Moosh
-- Najena (NPC)
-- Necromancer Plane of Sky Tests
-- Nestess Branchtop
-- Osisa Goldenspear
-- Paineel Splinted Cloak
-- Paineel Steel Bracers
+- Mistmoore Battle Drums
+- Mithril Bundled Arrow Shafts
+- Mithril Fletchings
+- Mithril Working Knife
+- Muddy Trinket
+- Mugwart
+- Mystical Infusion
+- Mystical Infusion (Spell)
+- Nullify Magic
+- Oathbreaker's Curse
+- Ogre Meat
+- Overseer Rael
+- Paineel Plate Gauntlets
+- Paineel Platemail Helm
+- Paineel Steel Plate Boots
 - Paladin Plane of Sky Tests
-- Peacekeeper Staff Quest
-- Permafrost
-- Personal Instance
+- Paladins of Underfoot
 - Pet Guide
 - Phosphorous Powder
-- Phosphorous Powder for Zok Zribb
 - Plane of Sky
-- Platinum Bar
-- Players:Planar Gear
-- Poacher's Head Quest (Erudin)
-- Potion of Mystical Aptitude
-- Prickly Pear
-- Protector of Sky
-- Quana Rainsparkle
-- Quiss Stormseeker
-- Rain Caller
-- Ranger Arrow Upgrade Chart
-- Ranger Plane of Sky Tests
-- Rathe Mountains
-- Rathyl
-- Rathyl reincarnate
-- Recommended Levels and ZEM List
-- Red Dragonscale Armor Quest
-- Reff Truewood
-- Ringmail Boots
-- Ringmail Bracelet
-- Ringmail Coat
-- Ringmail Coif
-- Ringmail Gloves
-- Ringmail Mantle
-- Ringmail Neckguard
-- Rogue Plane of Sky Tests
-- Rotting Faydark Mask
-- Ruathey
-- Russet Oxide
-- Sentinel Drom
-- Seren the Swift
-- Serri Moonwatcher
-- Shadow Knight Plane of Sky Tests
-- Shadowed Book
+- Poison Awareness I
+- Poison Awareness I (Spell)
+- Poison Awareness II
+- Poison Awareness II (Spell)
+- Poison Awareness III
+- Poison Awareness III (Spell)
+- Poison Awareness IV
+- Poison Awareness IV (Spell)
+- Potion Skin of Ro
+- Potion of Charming Deceit
+- Potion of Copal's Demis
+- Potion of Copal's Demise
+- Potion of Fleeting Languor
+- Potion of Frosty Insurgency
+- Potion of Gnomish Boils
+- Potion of Gorging Toxin
+- Potion of Gulon's Impunity
+- Potion of Hathcoat's Spirit
+- Potion of Shumar's Breath
+- Potion of Vampiric Spirit
+- Potion of Vox's Vitality
+- Potion of Wolves Blood
+- Potion of Wrackbane
+- Ranger
+- Reconstitution
+- Renouncing Your Faith
+- Runescale Cloak Quest
+- Sands of Ro
+- Seleni Treekeeper
+- Serpent Sight
+- Sethena
 - Shaman
-- Shaman Plane of Sky Tests
-- Shimmering Ruby Stiletto
-- Shintar Vinlail
-- Skeleton Killing
+- Shimmering Bracer of Protection
+- Shovel Of Ponz Quest
+- Shovel of Ponz
 - Skill Alchemy
-- Skill Dual Wield
-- Skill Forage
-- Smith Tv`ysa
-- Soft Leather Shoes
-- Soldier's Brooch Quest
-- Soldier's Brooch of the Arcane
-- Soldier's Brooch of the Corrupt
-- Soldier's Brooch of the Darkened
-- Soldier's Brooch of the Robust
-- Soldier's Brooch of the Spirited
-- Soldier's Brooch of the Stalwart
-- Soldier's Brooch of the Stealthy
-- Soldier's Brooch of the Virtuous
-- Spear of Harmony
-- Spell Upgrade System
-- Spiderling Eye
-- Spiderling Legs
-- Srell Tumblebrook
-- Steel Knuckles
-- Stormy
-- Stylla Parsini
-- Supplies for the New Sebilisian Expedition
-- Sven Felligan
-- Sylvani Leaf
-- Tam Slyspan
-- Teir`Dal Sai
-- Tentacle Terror
-- Terror Spines
-- Test Page
-- The Frikniller Family
-- The Seax
-- The Sword of Nobility
-- The Torrid Corruptor
-- The froglok shin lord
-- Tier'Dal Arcane Insignia
-- Tier'Dal Priest Insignia
-- Torn Page of Mastery Wind
-- Torn, Frost covered book
-- Torn, burnt book
-- Totemic Armor Quests
-- Tran Lilspin
-- Troll Basher Insignia
-- Troll Greenblood Insignia
-- Tyle Songwhisper
-- Umbral Platemail Greaves
-- Valorium Bracers
-- Valorium Chestplate
-- Valorium Greaves
-- Vellera Wintergreen
+- Skill Block
+- Skill Fishing
+- Slime Blood of Cazic Thule
+- Slime Blood of Cazic-Thule
+- Snakes Head Iris
+- Spirit of Snake
+- Staff of Elemental Mastery: Air
+- Staff of Elemental Mastery: Earth
+- Staff of Elemental Mastery: Fire
+- Staff of Elemental Mastery: Water
+- Stein Of Ulissa Quest
+- Stein of Ulissa
+- String Resonance 14
+- Symbol of Pinzarn
+- Terri Woodshape
+- Test Dummy
+- The Bones of Darak Lightforge
+- The Falchion
+- The Lost Snake
+- The Oasis of Marr
+- Throwing Boulder
+- Titan Potion
+- Torch Of Alna Quest
+- Torch of Alna
+- Trainer's Bauble
+- Training Dummy
+- Translocators
+- Tumpy Tonics
+- Turtle Skin
+- Turtle's Drink
+- Ultravision
+- Unfired Cake Round
+- Valorium Gauntlets
+- Vampire Dust
+- Vampire Teeth
 - VerifiedPages
-- Vial of Swirling Smoke
-- Warrior Plane of Sky Tests
-- What Happened Here?
-- Whirl Bolt
-- Whirlwind
-- Wiltin Windwalker
-- Wind Rune Neza
-- Wizard Plane of Sky Tests
-- Woven Shadow Greaves
-- Wu's Fighting Armor Set
-- Xylania Rainsparkle
+- Vira
+- Warrior
+- Wellin Brookleap
+- Wind Resonance 14
 - Zimel's Blades (SoulFire)
-- Zok Zribb

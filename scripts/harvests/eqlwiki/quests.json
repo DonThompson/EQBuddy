@@ -3926,7 +3926,7 @@
   "url": "https://eqlwiki.com/Broom_Of_Trilon_Quest",
   "startZone": "Temple of Solusek Ro",
   "questGiver": "Vira",
-  "minLevel": 33,
+  "minLevel": 20,
   "classes": "Magician Quest is doable and spell confirmed usable by SHM and SHD.",
   "items": [
    {
@@ -3957,7 +3957,7 @@
   "relatedZones": [
    "Najena"
   ],
-  "era": "Temple",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -4931,7 +4931,7 @@
    "Ocean of Tears",
    "Rathe Mountains"
   ],
-  "era": "Temple",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -25400,16 +25400,24 @@
   "name": "Paladin Plane of Sky Tests",
   "url": "https://eqlwiki.com/Paladin_Plane_of_Sky_Tests",
   "startZone": "",
-  "questGiver": "Dason Goldblade",
+  "questGiver": "",
   "minLevel": 0,
   "classes": "",
   "items": [
+   {
+    "name": "Aldryn, Blade of the Ocean",
+    "qty": 1
+   },
    {
     "name": "Bixie Sword Blade",
     "qty": 1
    },
    {
     "name": "Efreeti Zweihander",
+    "qty": 1
+   },
+   {
+    "name": "Girdle of Faith",
     "qty": 1
    },
    {
@@ -25426,6 +25434,14 @@
    },
    {
     "name": "Sphinx Claw",
+    "qty": 1
+   },
+   {
+    "name": "Thelvorn, Blade of Light",
+    "qty": 1
+   },
+   {
+    "name": "Truvinan",
     "qty": 1
    },
    {
@@ -25447,16 +25463,26 @@
   ],
   "rewards": [
    "Aldryn, Blade of the Ocean",
+   "Bixie Sword Blade",
+   "Efreeti Zweihander",
    "Girdle of Faith",
+   "Golden Hilt",
+   "Ivory Sky Diamond",
+   "Large Sky Diamond",
+   "Sphinx Claw",
    "Thelvorn, Blade of Light",
-   "Truvinan"
+   "Truvinan",
+   "Wind Rune Geza",
+   "Wind Rune Izah",
+   "Wind Rune Lena",
+   "Wind Rune Ozah"
   ],
   "categories": [
    "Paladin Quests",
    "Plane of Sky"
   ],
   "relatedZones": [],
-  "era": "Classic",
+  "era": "",
   "repeatable": false
  },
  {
@@ -29298,6 +29324,28 @@
   "repeatable": false
  },
  {
+  "name": "Renouncing Your Faith",
+  "url": "https://eqlwiki.com/Renouncing_Your_Faith",
+  "startZone": "",
+  "questGiver": "Emissary of Zebuxoruk",
+  "minLevel": 46,
+  "classes": "All",
+  "items": [],
+  "rewards": [
+   "Agnostic"
+  ],
+  "categories": [
+   "All Classes Quests",
+   "Oasis of Marr"
+  ],
+  "relatedZones": [
+   "Plane of Fear",
+   "Plane of Hate"
+  ],
+  "era": "",
+  "repeatable": false
+ },
+ {
   "name": "Request of the Arcane",
   "url": "https://eqlwiki.com/Request_of_the_Arcane",
   "startZone": "Temple of Veeshan",
@@ -29979,7 +30027,7 @@
    "Crystal Mask",
    "Griffon Wing Spauldors",
    "Renard's Belt of Quickness",
-   "Scintillating Bracer of Protection",
+   "Shimmering Bracer of Protection",
    "Thornstinger",
    "Wispy Choker of Vigor"
   ],
@@ -30530,7 +30578,16 @@
   "questGiver": "Vilissia",
   "minLevel": 28,
   "classes": "Wizard",
-  "items": [],
+  "items": [
+   {
+    "name": "Lizardscale Cloak",
+    "qty": 1
+   },
+   {
+    "name": "Rune of Scale",
+    "qty": 1
+   }
+  ],
   "rewards": [
    "Runescale Cloak"
   ],
@@ -33928,7 +33985,7 @@
   "url": "https://eqlwiki.com/Shovel_Of_Ponz_Quest",
   "startZone": "Temple of Solusek Ro",
   "questGiver": "Vira",
-  "minLevel": 33,
+  "minLevel": 20,
   "classes": "Magician",
   "items": [
    {
@@ -33957,7 +34014,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
-  "era": "Temple",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -34861,7 +34918,7 @@
   "url": "https://eqlwiki.com/Stein_Of_Ulissa_Quest",
   "startZone": "Temple of Solusek Ro",
   "questGiver": "Vira",
-  "minLevel": 33,
+  "minLevel": 20,
   "classes": "Magician",
   "items": [
    {
@@ -34894,7 +34951,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
-  "era": "Temple",
+  "era": "Classic",
   "repeatable": false
  },
  {
@@ -37065,6 +37122,26 @@
   "repeatable": false
  },
  {
+  "name": "The Lost Snake",
+  "url": "https://eqlwiki.com/The_Lost_Snake",
+  "startZone": "",
+  "questGiver": "Animal Trainer Visop",
+  "minLevel": 1,
+  "classes": "ALL",
+  "items": [],
+  "rewards": [
+   "Trainer's Bauble"
+  ],
+  "categories": [
+   "Rathe Mountains"
+  ],
+  "relatedZones": [
+   "Rathe Mountains"
+  ],
+  "era": "Classic",
+  "repeatable": false
+ },
+ {
   "name": "The Lost Tome",
   "url": "https://eqlwiki.com/The_Lost_Tome",
   "startZone": "Plane of Growth",
@@ -39021,7 +39098,7 @@
   "url": "https://eqlwiki.com/Torch_Of_Alna_Quest",
   "startZone": "Temple of Solusek Ro",
   "questGiver": "Vira",
-  "minLevel": 33,
+  "minLevel": 20,
   "classes": "Magician",
   "items": [
    {
@@ -39050,7 +39127,7 @@
    "Temple of Solusek Ro"
   ],
   "relatedZones": [],
-  "era": "Temple",
+  "era": "Classic",
   "repeatable": false
  },
  {

@@ -1,11 +1,11 @@
 # Quest harvest report
 
-- Quest Items category members: 4010
-- Pages enumerated: 922
-- Parsed: 1172 (empty pages: 0)
-- With turn-in items: 850
-- Unique turn-in item names: 2407
-- Missing quest giver: 25
+- Quest Items category members: 4012
+- Pages enumerated: 924
+- Parsed: 1174 (empty pages: 0)
+- With turn-in items: 851
+- Unique turn-in item names: 2413
+- Missing quest giver: 26
 - Collection pages split: 57 (250 step quests)
 - Backoff events: 0
 
@@ -586,10 +586,10 @@
 - Rathmana's Traveling Offer
 - Ratskin Gloves Quest
 - Reebo's Carrots
+- Renouncing Your Faith
 - Research Aid
 - Reserve Militia
 - Rogue Errands
-- Runescale Cloak Quest
 - Rusted Black Boxes
 - Sad Klandicar
 - Scout Blade
@@ -635,6 +635,7 @@
 - The First Arcane Test
 - The Loom
 - The Lost Circle
+- The Lost Snake
 - The Lottery Ticket
 - The Mudtoes
 - The Painting
@@ -696,6 +697,7 @@
 - Muffin Quests
 - Necromancer Plane of Sky Tests
 - Orc Belt Quests
+- Paladin Plane of Sky Tests
 - Scroll of G'han
 - The Bread Shipment
 - The Mighty Snowfang Hero

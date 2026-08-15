@@ -88,7 +88,7 @@ Every class in EQL has Archetype AAs, some classes have more than others. The Ar
 |-
 | Ambidexterity || 1 || 9 || This passive ability increases your chance to successfully dual wield by 32%. Requirements: level 1.
 |-
-| Burst of Power || 3 || 3/6/? || This passive ability increases your flurry chance (up to two extra attacks after a primary slot triple attack) by 7/11/?%. Requirements: level 46.
+| Burst of Power || 3 || 3/6/9 || This passive ability increases your flurry chance (up to two extra attacks after a primary slot triple attack) by 7/11/?%. Requirements: level 46.
 |-
 | Companion's Discipline || 1 || 2 || This passive ability allows you to give your pet advanced commands. Hotkeys for these commands can be created using the pet control window. Hold and Greater Hold - /pet hold -or- /pet ghold. When your pet is in the hold state, your pet will only attack something when you tell it to, and your pet will continue to attack anything on its hate list after that point. Once the encounter is finished, your pet will automatically go back to a held state. If your pet is never told to exclusively attack anything, your pet will never attack anything, even if something is attacking it. The greater hold state forces your pet to not add anything to its hatelist unless specifically added by you. You can add a target to your pet's hatelist with either /pet attack or /pet qattack. Requirements: level 1.
 |-
