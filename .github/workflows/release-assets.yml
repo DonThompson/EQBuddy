@@ -119,7 +119,12 @@ jobs:
           cp README.md docs/FeatureGuide.md stage/
           # ditto, not zip: it preserves the bundle so Finder expands it back into an
           # app rather than a folder of parts.
-          ditto -c -k --sequesterRsrc --keepParent stage "EQBuddy-${{ matrix.rid }}.zip"
+          #
+          # NOT --keepParent: that embeds the source directory's own name as the
+          # archive's top level, so everyone would unzip a folder called "stage".
+          # Zipping the CONTENTS means Finder names the expanded folder after the
+          # archive instead, which is what a Mac user expects.
+          ditto -c -k --sequesterRsrc stage "EQBuddy-${{ matrix.rid }}.zip"
 
       - name: Upload to release
         env:
