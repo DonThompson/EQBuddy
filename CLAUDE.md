@@ -62,6 +62,42 @@ retrying, because a killed run may already have built, signed and copied.
 - Silent no-ops are broken. Cards always show. Settings live in Options — except
   EQBuddy Mobile, which David wanted as its own title-bar button.
 
+## Which surface does it go on? (David, 2026-08-15)
+
+**The game is on the player's monitor. Everything else goes somewhere else.** This is the
+product direction, and it is a filter — a feature that fits no surface is a feature that
+shouldn't be built. Use it before writing code, not after.
+
+The deciding question is **not** "is this important?" — everything here is important. It is:
+
+> **Is there something the player must do, and a moment by which they must do it?**
+
+| Surface | For | Examples |
+|---|---|---|
+| **In-game overlay** | A deadline with an action. Must be small enough to ignore. | Mez/charm chips, spawn-due chips, Watch alerts, buff-expiring |
+| **Phone / tablet** | Anything worth *looking away* for. | Map, quests, item lookup, gear, loot, DPS, session totals |
+| **Desktop** | Before and after play: research, compare, configure, review history. | Gear Locker, history, Options, wiki packs |
+
+**DPS goes off-screen**, which surprises people. Nothing about seeing 412 rather than 438
+changes what you do in the next second — it is retrospective by nature. Competitors keep
+it on the overlay partly so players can compare themselves against the raid, and
+[we don't do that](#rules-that-are-not-up-for-renegotiation); without the comparison the
+number has almost no claim on space over the game. The *binary* "am I actually attacking /
+is my pet idle" does pass the test — keep that separate from the DPS board if it gets built.
+
+**Breakout windows straddle the line and were built before the rule existed.**
+`BreakoutKind` is `{ Damage, Healing, Pet, Watch, Loot, Buffs }`; by the test above Watch
+and Buffs earn the overlay (both are deadlines) and Damage/Healing/Pet/Loot are review
+surfaces. Change defaults rather than delete — `AppSettings.DisabledBreakouts` already
+gates them per kind, and David uses the damage one.
+
+**Why this is the strategy and not just tidiness:** verified 2026-08-15, every competitor
+has an overlay and a DPS meter, and *none* of them has a phone, tablet or remote surface —
+BasaBots' FAQ denies it outright. Log-only is table stakes now, not a moat. The second
+screen and the Linux/macOS builds are the only uncontested ground EQBuddy holds, so
+anything that makes the phone better is worth more than anything that makes the overlay
+busier.
+
 ## Where things live
 
 | Need | Go to |
