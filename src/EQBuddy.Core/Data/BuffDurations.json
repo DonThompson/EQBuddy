@@ -150,10 +150,6 @@
      "durationSeconds": 3240.0
     },
     {
-     "name": "Symbol of Pinzarn",
-     "durationSeconds": 2700.0
-    },
-    {
      "name": "Symbol of Transal",
      "durationSeconds": 1620.0
     }
@@ -410,6 +406,16 @@
     {
      "name": "Call of the Predator",
      "durationSeconds": 4524.0
+    }
+   ]
+  },
+  {
+   "message": "The symbol of Pinzarn flashes before your eyes.",
+   "label": "Symbol of Pinzarn",
+   "spells": [
+    {
+     "name": "Symbol of Pinzarn",
+     "durationSeconds": 2700.0
     }
    ]
   },

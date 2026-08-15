@@ -1,6 +1,6 @@
 # Buff-duration catalog report
 
-- 305 buffs across 192 landing lines (41 shared)
+- 305 buffs across 193 landing lines (41 shared)
 
 ## Shared landing lines (cast correlation resolves; unresolved = est)
 
@@ -9,8 +9,8 @@
 - 'You feel stronger.': 10 spells
 - 'You are surrounded by a thorny barrier.': 6 spells
 - 'You feel your skin tingle.': 6 spells
-- 'A mystic symbol flashes before your eyes.': 5 spells
 - 'Your eyes tingle.': 5 spells
+- 'A mystic symbol flashes before your eyes.': 4 spells
 - 'You begin to radiate.': 4 spells
 - 'You begin to regenerate.': 4 spells
 - 'You feel dexterous.': 4 spells
