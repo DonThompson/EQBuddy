@@ -176,4 +176,25 @@ public sealed class EndToEndTests
         Assert.True(app.DumpValue("skyTabs") > 0,
             "sky quest tabs should render from the default checklist; dump was: " + app.Artifacts());
     }
+
+    /// <summary>
+    /// EQBuddy Mobile's 20 Hz pump costs nothing when nobody is paired.
+    ///
+    /// `CompanionPumpGateTests` proves the gate returns false; it cannot prove the real
+    /// timer is wired to the real gate in the real app. That is the half worth checking
+    /// here, because the failure is silent: a mis-wired pump doesn't break a feature, it
+    /// rebuilds a snapshot twenty times a second forever, for nobody — and the only
+    /// symptom is a fan. This profile never pairs a device, and the fixture replay makes
+    /// the session version move plenty, so any push at all is a wiring bug.
+    /// </summary>
+    [Fact]
+    public void TheMobilePumpRunsAndCostsNothingWithNoDevicePaired()
+    {
+        using var app = new AppHarness();
+        app.Launch();
+
+        Assert.True(app.DumpValue("companionPumpTicks") > 0,
+            "the mobile pump should be running at all; dump was: " + app.Artifacts());
+        Assert.Equal(0, app.DumpValue("companionPushes"));
+    }
 }

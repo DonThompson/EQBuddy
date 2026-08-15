@@ -126,6 +126,23 @@ catalog's (`Splitpaw Lair`), and the map file's (`paw.txt`). `ZoneMapFiles` and
 reference; `CompanionSnapshot.ForClient` withholds it from a device already holding the
 stamp. A device parked in one zone receives the picture exactly once.
 
+**Mobile cadence — two paths, on purpose.** The *latency* path is `PumpCompanion`, a
+50 ms `DispatcherTimer` gated by `UI.Shared/CompanionPumpGate`: it pushes as soon as
+`SessionStats.CurrentVersion` moves. The *correctness* path is the `CompanionHost.Tick`
+inside `RefreshUi`, still once a second, which is what keeps `ForcedPushInterval`
+reconciliation running through a camp quiet enough that the version never moves.
+
+Mobile rode the 1 Hz redraw until 1.85.0, which added up to a second to every update for
+no reason but shared plumbing — the tailer polls at 150 ms. Pumping at 20 Hz is
+affordable because it is nearly always a no-op: unpaired costs a bool read, unchanged
+costs a long compare, and a rebuild is 0.081 ms (`IngestBenchmark.SnapshotRebuildCost`),
+so continuous change costs ~1.6 ms/s of one core. The gate is unit-tested; that the real
+timer is wired to it, and pushes nothing when unpaired, is asserted from `EQBuddy.E2E`.
+
+Countdowns are unaffected by any of this — devices compute them locally from
+authoritative timestamps, and they are excluded from the section fingerprints. A ticking
+clock is not news, and including one would wake every device on every pump.
+
 ## 5. Known limits, stated honestly
 
 - Position updates only when a `/loc` reaches the log — there is no live feed. The

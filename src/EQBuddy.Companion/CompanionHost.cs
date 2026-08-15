@@ -71,6 +71,11 @@ public sealed class CompanionHost : IDisposable
     public bool Running => _server is not null;
     public int ClientCount => _server?.ClientCount ?? 0;
 
+    /// <summary>Is anyone actually looking? The mobile pump asks this before doing any
+    /// work at all, so an unpaired EQBuddy pays one field read per pump and nothing
+    /// else — the same "zero cost while idle" contract <see cref="Tick"/> keeps.</summary>
+    public bool HasClients => _server is { ClientCount: > 0 };
+
     /// <summary>Why the last Start failed (port in use, no permission), for the
     /// pairing window to show honestly; null when all is well.</summary>
     public string? LastError { get; private set; }

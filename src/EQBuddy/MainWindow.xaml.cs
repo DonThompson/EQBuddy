@@ -23,6 +23,7 @@ public partial class MainWindow : Window
     private readonly SessionArchiver _archiver;
     private DateTime _lastCheckpoint = DateTime.MinValue;
     private readonly DispatcherTimer _uiTimer;
+    private readonly DispatcherTimer _companionPump;
     private DateTime _lastCharScan = DateTime.MinValue;
     private DateTime _lastJanitorRun = DateTime.MinValue;
     private DateTime _lastUpdateCheck = DateTime.MinValue;
@@ -374,7 +375,53 @@ public partial class MainWindow : Window
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
+
+        // EQBuddy Mobile's own cadence. The desktop redraws once a second because that
+        // is how often a human wants a card to change under their eyes; a phone showing
+        // a mez breaking wants to hear about it as soon as the log does. Riding the 1 Hz
+        // redraw put up to a second between the two for no reason but shared plumbing.
+        _companionPump = new DispatcherTimer(DispatcherPriority.Send)
+        { Interval = CompanionPumpInterval };
+        _companionPump.Tick += (_, _) => PumpCompanion();
+        _companionPump.Start();
     }
+
+    /// <summary>The mobile coalescing window. 50 ms caps pushes at 20/s however fast the
+    /// log arrives, so a raid's event storm cannot turn into a message storm — and it is
+    /// affordable: a snapshot REBUILD measures 0.081 ms (`IngestBenchmark`), so 20 Hz of
+    /// continuous change costs ~1.6 ms/s of one core, and nothing at all while the state
+    /// is still or nobody is paired.</summary>
+    private static readonly TimeSpan CompanionPumpInterval = TimeSpan.FromMilliseconds(50);
+
+    /// <summary>Whether a pump tick has anything to do. The decision lives in UI.Shared
+    /// so the "free when idle" claim is unit-tested rather than trusted.</summary>
+    private readonly EQBuddy.UI.Shared.CompanionPumpGate _companionGate = new();
+
+    /// <summary>
+    /// Push to paired devices as soon as the session actually moves, instead of waiting
+    /// for the next desktop redraw.
+    ///
+    /// This does NOT replace the tick inside <see cref="RefreshUi"/>. That one still runs
+    /// every second and is what drives <c>ForcedPushInterval</c> reconciliation, so the
+    /// correctness path is untouched and this is purely a latency path. Countdowns are
+    /// unaffected either way: they are computed on the device from authoritative
+    /// timestamps, and are deliberately excluded from the section fingerprints — a
+    /// ticking clock is not news, and including one would wake every phone every pump.
+    /// </summary>
+    private void PumpCompanion()
+    {
+        _companionPumpTicks++;
+        if (!_companionGate.ShouldPush(_companion.HasClients, _stats.CurrentVersion)) return;
+        _companionPushes++;
+        _companion.Tick(_stats.Snapshot(), _spawnTimers, _stats.CharacterName ?? "", DateTime.Now);
+    }
+
+    // For the EQBUDDY_EXPAND dump: how many times the pump ran, and how many of those
+    // did any work. E2E asserts the second is zero while no device is paired — the
+    // "free when idle" claim is the one that costs a core if it's wrong, and a unit
+    // test of the gate can't show that the real timer is wired to the real gate.
+    private long _companionPumpTicks;
+    private long _companionPushes;
 
     public AppSettings Settings => _settings;
     /// <summary>
@@ -2139,6 +2186,12 @@ public partial class MainWindow : Window
         // EQBuddy Mobile rides the same shared snapshot as every desktop card, and
         // must keep flowing while the widget hides for focus (the phone is exactly the
         // screen you look at then). Free unless a device is actually connected.
+        //
+        // The latency path is PumpCompanion, which pushes as soon as the session moves.
+        // This call remains the reconciliation one: it is what keeps ForcedPushInterval
+        // running through a camp so quiet that nothing bumps the version at all. Record
+        // the version it covered, so the pump doesn't immediately repeat this push.
+        _companionGate.Observe(s.Version);
         _companion.Tick(s, _spawnTimers, _stats.CharacterName ?? "", DateTime.Now);
 
         // Hidden while the game is unfocused: everything the player can't see stops
@@ -2550,7 +2603,11 @@ public partial class MainWindow : Window
                     $"epicTabs={EpicTabs.Items.Count} " +
                     $"epicRows={TabRowCount(EpicTabs)} " +
                     $"skyTabs={SkyQuestTabs.Items.Count} " +
-                    $"skyRows={TabRowCount(SkyQuestTabs)}";
+                    $"skyRows={TabRowCount(SkyQuestTabs)} " +
+                    // EQBuddy Mobile's pump: it should be running, and it should be
+                    // doing nothing, because this profile has no paired device.
+                    $"companionPumpTicks={_companionPumpTicks} " +
+                    $"companionPushes={_companionPushes}";
                 System.IO.File.WriteAllText(Core.AppPaths.File("debug.txt"), dump);
             }
             catch { }
@@ -4265,6 +4322,8 @@ public partial class MainWindow : Window
         if (_reviewPath is null)   // a review session is already history (#74)
             _archiver.FinalizeActiveSync(_stats.Snapshot(), "ApplicationExit");
         _watcher.Dispose();
+        _uiTimer.Stop();
+        _companionPump.Stop();   // before the host: no pump into a disposed listener
         ThemeManager.PaletteApplied -= _companion.SetTheme;
         _companion.Dispose();   // stop the LAN listener with the app, not after it
         _repo.Dispose();

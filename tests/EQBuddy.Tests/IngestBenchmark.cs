@@ -68,19 +68,59 @@ public class IngestBenchmark(ITestOutputHelper output)
         Assert.True(sw.ElapsedMilliseconds < 60_000);   // sanity ceiling only
     }
 
+    /// <summary>
+    /// Repeated snapshots at the SAME version — i.e. the perf-audit-#12 cache doing its
+    /// job. This is what an idle tick pays, and it is the number that stays flat however
+    /// often you tick.
+    /// </summary>
     [Fact]
-    public void SnapshotCost()
+    public void SnapshotCostWhenNothingChanged()
     {
-        var lines = FightLog(30_000);
-        var stats = new SessionStats();
-        foreach (var line in lines)
-            if (LogParser.Parse(line) is { } evt) stats.Apply(evt);
+        var stats = Loaded(30_000);
 
         var sw = Stopwatch.StartNew();
-        for (var i = 0; i < 100; i++) _ = stats.Snapshot();
+        for (var i = 0; i < 1_000; i++) _ = stats.Snapshot();
         sw.Stop();
-        output.WriteLine($"snapshot: 100 builds in {sw.ElapsedMilliseconds:N0} ms " +
-            $"= {sw.ElapsedMilliseconds / 100.0:N2} ms each (a 1 Hz tick pays this every second)");
+        output.WriteLine($"snapshot (cached): 1,000 reads in {sw.ElapsedMilliseconds:N0} ms " +
+            $"= {sw.Elapsed.TotalMilliseconds / 1_000:N4} ms each");
         Assert.True(sw.ElapsedMilliseconds < 60_000);
+    }
+
+    /// <summary>
+    /// The number that actually governs how fast EQBuddy Mobile may tick: a REBUILD,
+    /// forced by advancing the version between every snapshot. The old version of this
+    /// benchmark looped at one version and so measured 999 cache hits and one build,
+    /// then described the result as what a 1 Hz tick pays — which understated a rebuild
+    /// by the cache's whole benefit. Corrected 2026-08-15 while sizing the mobile
+    /// coalescing window; a wrong number here would have picked that interval blind.
+    /// </summary>
+    [Fact]
+    public void SnapshotRebuildCost()
+    {
+        var stats = Loaded(30_000);
+        var hit = LogParser.Parse(
+            "[Wed Aug 12 20:30:00 2026] You slash a gnoll pup for 100 points of damage.")!;
+
+        var sw = Stopwatch.StartNew();
+        for (var i = 0; i < 1_000; i++)
+        {
+            stats.Apply(hit);        // bumps the version, so the next call must rebuild
+            _ = stats.Snapshot();
+        }
+        sw.Stop();
+        var each = sw.Elapsed.TotalMilliseconds / 1_000;
+        output.WriteLine($"snapshot (rebuild): 1,000 builds in {sw.ElapsedMilliseconds:N0} ms " +
+            $"= {each:N3} ms each");
+        output.WriteLine($"  -> a 20 Hz mobile pump costs at most {each * 20:N1} ms/s of one core " +
+            "when state changes continuously; 0 while nothing changes or nobody is paired.");
+        Assert.True(sw.ElapsedMilliseconds < 60_000);
+    }
+
+    private static SessionStats Loaded(int lines)
+    {
+        var stats = new SessionStats();
+        foreach (var line in FightLog(lines))
+            if (LogParser.Parse(line) is { } evt) stats.Apply(evt);
+        return stats;
     }
 }
