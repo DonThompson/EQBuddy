@@ -1,5 +1,15 @@
 [
  {
+  "version": "1.84.0",
+  "date": "2026-08-15",
+  "highlights": [
+   "LINUX AND MACOS CATCH UP (huge thanks to quasarj, who did the work). Everything Windows gained across 1.74-1.81 is now in the cross-platform build too: the EPICS checklist card with its per-class tabs and undoable \"Epic complete\" master check; BUFF SETS in full, including the breakout window, the \"lost this session\" history and the Options editor; VOICE CONTROL's voice picker, rate, volume and per-rule spoken phrases; LEVEL-UP UNLOCKS on the Progress card; the Gear card's farm-zone grouping and self-ticking wishes; Sky Quest turn-in NPCs with per-tab counts and the cross-class Ready tab; right-click spawn-point curation on the zone map; copy buttons on every in-game command EQBuddy asks you to run; the tray icon; global hotkeys; and per-window Ctrl+wheel zoom. EQBuddy Mobile stays Windows-only for now.",
+   "FIXED - MEZ AND SPAWN CHIPS CREPT UP THE SCREEN ON LINUX AND MACOS, one chip's height per reopen, if you use \"grow upwards\". This is the same pair of bugs Windows fixed in 1.82.0 (discussions #122 and #152, thanks Snagglefern) - the cross-platform build had been written against the older code and inherited both. Both builds now share one piece of anchoring logic, so a fix in either place can only ever land in both.",
+   "SPAWN TIMER - A NISCH MAS MENDER in Splitpaw Lair now has a respawn timer of 7m51s (thanks to the shared-knowledge pack in discussion #147). This fills a blank rather than replacing a published figure: the wiki has no number for it. It rests on a single sample, so if you camp that Mender, Map → Share zone knowledge and post it on #147 - a second independent set is what turns this from a good guess into a fact.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.83.0",
   "date": "2026-08-14",
   "highlights": [

@@ -8793,11 +8793,11 @@
         },
         {
           "name": "A Nisch Mas Mender",
-          "respawnSeconds": null,
+          "respawnSeconds": 471,
           "variance": "",
           "placeholder": "",
-          "source": "eqlwiki",
-          "note": "Gnoll cleric, lvl 30, 100% @ (104, -146); drops Cap of Mending / Nisch Mas Ilkvel; added from chaosrah's Reddit report 2026-08-05 (was missing from the harvest)"
+          "source": "player-report",
+          "note": "Gnoll cleric, lvl 30, 100% @ (104, -146); drops Cap of Mending / Nisch Mas Ilkvel; added from chaosrah's Reddit report 2026-08-05 (was missing from the harvest). Timer 471s from a shared-knowledge pack in discussion #147, archived at (116, -150) — the same camp. ONE sample filling a blank the wiki has no number for, not overriding a published figure; a second independent set would confirm it."
         },
         {
           "name": "Nisch Val Torash Mashk",
