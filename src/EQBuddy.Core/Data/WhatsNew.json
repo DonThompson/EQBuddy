@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.86.0",
+  "date": "2026-08-15",
+  "highlights": [
+   "BUFF TIMERS NAME THE SPELL LINE INSTEAD OF QUOTING THE GAME (discussion #162, thanks DeusSilvam). A tracked buff used to be labelled with whatever the game printed - \"You feel much faster\" - while other lines already showed a proper name. 37 of the 163 tracked lines were like that; they now read \"Haste line\", \"Cleric AC line\", \"Thorns damage shield\", \"Levitation\" and so on. Nothing you have configured moves: these are display names only.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.85.0",
   "date": "2026-08-15",
   "highlights": [
