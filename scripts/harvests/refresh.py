@@ -17,11 +17,20 @@ What one run does:
      proportional to what actually changed, not catalog size
   4. re-runs the deterministic promotions:
        spells.json  -> FadeMessages.json   (fades-harvest.py)
+       spells.json  -> SlowSpells.json     (slows-harvest.py)
+       spells.json  -> BuffDurations.json  (buffs-harvest.py)
+       spells.json  -> DebuffLandings.json (debuffs-harvest.py)
        spells.json  -> SpellLevels.json    (spell-levels-promote.py)
        quests.json  -> QuestCatalog.json   (quests-promote.py)
        zones.json   -> ZoneGraph.json      (../eqltools/zones-merge.py; the
                        eqltools half is a committed extract — browser-fetched,
                        see ../eqltools/README.md — and stays as-is)
+     The first four are order-sensitive: the exact-match catalogs partition the
+     message space, and each later one excludes lines the earlier ones claimed
+     (fades exclude landing lines, buffs exclude fade/slow/regen claims,
+     debuffs exclude everything the other three took). Issue #167 found the
+     gap this closes: 170 new alchemy potion/spell pages landed on the wiki
+     and no scheduled run would ever have carried them into BuffDurations.
   5. flags CURATED catalogs whose source pages changed (SpawnCatalog, AaCatalog,
      MezSpells, CcSpells, RegenSpells) — those carry human judgment and are
      never auto-written; the flag goes in the report for a person to act on
@@ -66,13 +75,18 @@ TITLE_LISTS = ["quest-titles.json", "quest-items.json", "titles.json", "zone-tit
 # only refetches pages whose revision moved.
 HARVESTERS = ["spells-harvest.py", "quests-harvest.py", "zones-harvest.py", "aas-harvest.py",
               "items-harvest.py"]
-PROMOTIONS = [WIKI / "fades-harvest.py", WIKI / "quests-promote.py",
+# fades -> slows -> buffs -> debuffs is load-bearing: each excludes messages
+# the ones before it claimed (see module docstring; issue #167).
+PROMOTIONS = [WIKI / "fades-harvest.py", WIKI / "slows-harvest.py",
+              WIKI / "buffs-harvest.py", WIKI / "debuffs-harvest.py",
+              WIKI / "quests-promote.py",
               HERE / "eqltools" / "zones-merge.py",
               WIKI / "items-promote.py",
               WIKI / "spell-levels-promote.py"]
 
 # Written by promotions above; diffed for the report.
-PROMOTED = ["FadeMessages.json", "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz",
+PROMOTED = ["FadeMessages.json", "SlowSpells.json", "BuffDurations.json", "DebuffLandings.json",
+            "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz",
             "SpellLevels.json"]
 # Human-curated; never auto-written, only flagged when their sources move.
 CURATED = ["SpawnCatalog.json", "AaCatalog.json", "MezSpells.json",
