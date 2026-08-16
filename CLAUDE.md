@@ -31,20 +31,6 @@ returning a bare exit 1 with no output. **A silent failure is not proof nothing
 happened** — check `git tag`, `gh release list`, and the OneDrive timestamp before
 retrying, because a killed run may already have built, signed and copied.
 
-## Open blocker: Linux/macOS has no Epic/Sky checklist UI (2026-08-16)
-
-Consolidating the widget's two quest cards into one **Quests** launcher removed the only
-Epic/Sky checklist surface the Avalonia build had — and unlike WPF, its `QuestsWindow`
-has no General / Epic 1.0 / Plane of Sky tabs to inherit the job (it carries only the
-mode strip: mine / zone / all / held / done). The data is unharmed: both lists still
-auto-tick from loot, the achievements import still works, and the widget's Quests card
-still reports both scores. There is simply nowhere on Linux/macOS to *look at* or
-hand-tick them.
-
-**This must land before any release that ships the Linux/macOS builds.** Build the tabs
-from Core's `QuestSurface` exactly as `EQBuddy/QuestsWindow.xaml.cs` does — that type
-exists so the UIs cannot disagree — and bring the "Classic-doable only" lens with them.
-
 ## Rules that are not up for renegotiation
 
 - **Never measure other players.** No DPS meters for the group, no rankings, no

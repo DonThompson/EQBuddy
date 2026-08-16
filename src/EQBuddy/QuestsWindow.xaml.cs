@@ -135,8 +135,11 @@ public partial class QuestsWindow : Window
             TabStrip.Children.Add(tile);
             _tabTiles.Add((tile, label, badge, header.Tab));
         }
-        ApplyTabVisual();
+        // Chips first, THEN the paint: ApplyTabVisual colours the chip list, so colouring
+        // before rebuilding it left every freshly-built chip unstyled until the next
+        // unrelated refresh — including the selected one, which is the whole signal.
         BuildClassStrip();
+        ApplyTabVisual();
     }
 
     /// <summary>Any · one of your classes. The ⚙ popup still decides WHICH classes you
@@ -711,10 +714,16 @@ public partial class QuestsWindow : Window
     }
 
     /// <summary>The Epic and Sky tabs. Rows come straight from the same settings lists
-    /// the main widget's sections read, so ticking in either place is the same tick —
-    /// this is a second VIEW, never a second copy of the data. The search box keeps
-    /// working here: on a 100-row class list, "Wakizashi" beating your eyes down the
-    /// page is the same value it has on the catalog tab.</summary>
+    /// the loot auto-checkers tick and EQBuddy Mobile reads, so ticking here, on the
+    /// tablet, or by looting the thing are all the same tick — this is a second VIEW,
+    /// never a second copy of the data. The search box keeps working here: on a 100-row
+    /// class list, "Wakizashi" beating your eyes down the page is the same value it has
+    /// on the catalog tab.
+    ///
+    /// The rows are TICKABLE, and have to be: hand-ticking used to live on the widget's
+    /// Epic and Sky cards, and when those became one launcher (2026-08-16) this became
+    /// the only place on the desktop to say "I already have that". Read-only rows here
+    /// would have quietly moved the job to the phone.</summary>
     private void RenderChecklist(QuestTab tab, string filter, List<string> classes)
     {
         var rows = tab == QuestTab.Epic
@@ -723,10 +732,20 @@ public partial class QuestsWindow : Window
                 .Select(i =>
                 (i.ClassName, Group: i.Section.Length > 0 ? i.Section : "Checklist",
                  Title: i.QuestName.Length > 0 ? i.QuestName : i.Reward,
-                 Detail: i.QuestItem, i.Acquired))
+                 Detail: i.QuestItem, i.Acquired, Set: (Action<bool>)(done =>
+                 {
+                     i.Acquired = done;
+                     // The player deciding IS the resolution of an unassigned auto-tick,
+                     // exactly as the old card's toggle treated it.
+                     i.AcquiredUnassigned = false;
+                 })))
             : _settings.SkyQuestChecklist.Select(i =>
                 (i.ClassName, Group: i.Npc.Length > 0 ? i.Npc : "Sky",
-                 Title: i.Reward, Detail: i.QuestItem, i.Acquired));
+                 Title: i.Reward, Detail: i.QuestItem, i.Acquired, Set: (Action<bool>)(done =>
+                 {
+                     i.Acquired = done;
+                     i.AcquiredUnassigned = false;
+                 })));
 
         // The ⚙ picker chooses WHICH classes are in view — including ones you don't play,
         // because "we may be helping a friend" (David, 2026-08-15). The chips then narrow
@@ -779,14 +798,27 @@ public partial class QuestsWindow : Window
                 var text = new TextBlock
                 {
                     FontSize = 12, TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(10, 1, 0, 1),
-                    Text = row.Detail.Length > 0
-                        ? $"{(row.Acquired ? "✓" : "○")}  {row.Title}  —  {row.Detail}"
-                        : $"{(row.Acquired ? "✓" : "○")}  {row.Title}",
+                    Text = row.Detail.Length > 0 ? $"{row.Title}  —  {row.Detail}" : row.Title,
                 };
                 text.SetResourceReference(TextBlock.ForegroundProperty,
                     row.Acquired ? "DimBrush" : "TextBrush");
-                QuestsPanel.Children.Add(text);
+                var check = new CheckBox
+                {
+                    Content = text,
+                    IsChecked = row.Acquired,
+                    Margin = new Thickness(10, 1, 0, 1),
+                };
+                var set = row.Set;
+                check.Checked += (_, _) => Tick(true);
+                check.Unchecked += (_, _) => Tick(false);
+                QuestsPanel.Children.Add(check);
+
+                void Tick(bool done)
+                {
+                    set(done);
+                    _settings.Save();
+                    Refresh(force: true);
+                }
             }
         }
     }

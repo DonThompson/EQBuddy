@@ -79,6 +79,38 @@ public sealed class QuestsWindow : Window
     };
     private readonly List<(TextBlock Tab, string Key)> _modeTabs = [];
 
+    // ---- top-level tabs: General · Epic 1.0 · Plane of Sky ----
+    //
+    // Built from Core's QuestSurface, exactly as the WPF window builds them, so the two
+    // desktops and EQBuddy Mobile cannot disagree about which tabs exist, their order or
+    // their names — the reason that type lives in Core at all.
+    //
+    // These arrived on Avalonia a day after WPF (2026-08-16): consolidating the widget's
+    // Epic and Sky cards into one launcher left this build with nowhere to view or tick
+    // those checklists, which is a regression rather than the usual Avalonia lag.
+    private QuestTab _tab = QuestTab.General;
+    private readonly StackPanel _tabStrip = new()
+    {
+        Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6),
+    };
+    private readonly List<(Border Tile, TextBlock Label, TextBlock Badge, QuestTab Tab)> _tabTiles = [];
+    /// <summary>Which single class the view is narrowed to, or null for all of yours.
+    /// Session-scoped like the search box: a sticky lens reads as a broken tracker
+    /// tomorrow when you have swapped classes.</summary>
+    private string? _classLens;
+    private readonly StackPanel _classStrip = new()
+    {
+        Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 4),
+    };
+    private readonly List<(Border Chip, TextBlock Label, string? Class)> _classChips = [];
+    /// <summary>The Epic tab's classic-era lens, which followed the widget's Epic card
+    /// here. Persisted, because EQBuddy Mobile's Epic tab honors the same setting.</summary>
+    private readonly CheckBox _classicOnlyCheck = new()
+    {
+        Content = "Classic-doable only", FontSize = 11, VerticalAlignment = VerticalAlignment.Center,
+    };
+    private Control? _modeStripControl;
+
     public QuestsWindow(IQuestsHost main)
     {
         _main = main;
@@ -233,9 +265,30 @@ public sealed class QuestsWindow : Window
         modeStrip.HorizontalAlignment = HorizontalAlignment.Right;
         Grid.SetColumn(modeStrip, 3);
         filterRow.Children.Add(modeStrip);
+        _modeStripControl = modeStrip;
+        // Shares the last column with the mode strip: the two are never visible at once,
+        // because one is a catalog control and the other is the Epic tab's own lens.
+        _classicOnlyCheck.Foreground = AppTheme.DimBrush;
+        _classicOnlyCheck.Margin = new Thickness(8, 0, 0, 0);
+        _classicOnlyCheck.IsVisible = false;
+        _classicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
+        ToolTip.SetTip(_classicOnlyCheck,
+            "Show only the steps doable on a classic-era server — the rest are hidden "
+            + "from both the list and the counts, so the score means what it says.");
+        _classicOnlyCheck.IsCheckedChanged += (_, _) =>
+        {
+            if (_settings.EpicQuestClassicOnly == (_classicOnlyCheck.IsChecked == true)) return;
+            _settings.EpicQuestClassicOnly = _classicOnlyCheck.IsChecked == true;
+            _settings.Save();
+            Refresh(force: true);
+        };
+        Grid.SetColumn(_classicOnlyCheck, 3);
+        filterRow.Children.Add(_classicOnlyCheck);
 
         var entry = new StackPanel { Margin = new Thickness(16, 0, 16, 4) };
+        entry.Children.Add(_tabStrip);
         entry.Children.Add(searchRow);
+        entry.Children.Add(_classStrip);
         entry.Children.Add(filterRow);
 
         _bodyScroll.Margin = new Thickness(10, 2, 4, 0);
@@ -279,6 +332,248 @@ public sealed class QuestsWindow : Window
             CornerRadius = new CornerRadius(10),
             Child = layout,
         };
+    }
+
+    /// <summary>Build the strip from Core's <see cref="QuestSurface"/> so this window,
+    /// the WPF one and EQBuddy Mobile cannot disagree about which tabs exist, their
+    /// order or their names.</summary>
+    private void BuildTabs()
+    {
+        _tabStrip.Children.Clear();
+        _tabTiles.Clear();
+        foreach (var header in QuestSurface.Tabs(EpicCounts(), SkyCounts()))
+        {
+            // Tiles, not text (David, 2026-08-15: "I couldn't tell they were tabs at
+            // first glance"). Colour comes from the live theme brushes, which are
+            // mutated in place on a swap, so a tile follows the player's palette.
+            var label = new TextBlock
+            {
+                Text = header.Label, FontSize = 12.5, FontWeight = FontWeight.SemiBold,
+            };
+            var badge = new TextBlock
+            {
+                Text = header.Badge ?? "", FontSize = 10.5, Margin = new Thickness(7, 1, 0, 0),
+                IsVisible = header.Badge is not null,
+            };
+            var content = new StackPanel { Orientation = Orientation.Horizontal };
+            content.Children.Add(label);
+            content.Children.Add(badge);
+            var tile = new Border
+            {
+                Child = content,
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(12, 5),
+                Margin = new Thickness(0, 0, 6, 0),
+                BorderThickness = new Thickness(1),
+                Cursor = new Cursor(StandardCursorType.Hand),
+            };
+            var tab = header.Tab;
+            tile.PointerPressed += (_, e) =>
+            {
+                e.Handled = true;
+                _tab = tab;
+                ApplyTabVisual();
+                Refresh(force: true);
+            };
+            _tabStrip.Children.Add(tile);
+            _tabTiles.Add((tile, label, badge, tab));
+        }
+        // Chips first, THEN the paint: ApplyTabVisual colours the chip list, so colouring
+        // before rebuilding it would leave every fresh chip unstyled — including the
+        // selected one, which is the whole signal.
+        BuildClassStrip();
+        ApplyTabVisual();
+    }
+
+    /// <summary>Any · one of your classes. The class picker still decides WHICH classes
+    /// you have; this decides which of them you are looking at right now, which is a
+    /// different question and wanted far more often.</summary>
+    private void BuildClassStrip()
+    {
+        _classStrip.Children.Clear();
+        _classChips.Clear();
+        var mine = _main.QuestLedger?.ClassesFor(_main.QuestCharacterKey) ?? [];
+        if (mine.Count == 0
+            && _main.CurrentSnapshot().InferredClass is { Length: > 0 } inferred)
+            mine = [inferred];
+        // One class and no lens to offer: a strip reading "Any · BRD" chooses nothing.
+        if (mine.Count < 2) { _classStrip.IsVisible = false; return; }
+        _classStrip.IsVisible = true;
+
+        Add(null, "Any");
+        foreach (var cls in mine) Add(cls, QuestClassFilter.Abbrev(cls));
+
+        void Add(string? cls, string text)
+        {
+            var label = new TextBlock { Text = text, FontSize = 11 };
+            var chip = new Border
+            {
+                Child = label,
+                CornerRadius = new CornerRadius(11),
+                Padding = new Thickness(11, 3),
+                Margin = new Thickness(0, 0, 5, 0),
+                BorderThickness = new Thickness(1),
+                Cursor = new Cursor(StandardCursorType.Hand),
+            };
+            ToolTip.SetTip(chip, cls is null
+                ? "Every class you play"
+                : $"Show only {cls} — quests, Epic and Plane of Sky alike");
+            chip.PointerPressed += (_, e) =>
+            {
+                e.Handled = true;
+                _classLens = cls;
+                Refresh(force: true);
+            };
+            _classStrip.Children.Add(chip);
+            _classChips.Add((chip, label, cls));
+        }
+    }
+
+    private (int Done, int Total)? EpicCounts()
+    {
+        var items = _settings.EpicQuestChecklist;
+        return items.Count == 0 ? null : (items.Count(i => i.Acquired), items.Count);
+    }
+
+    private (int Done, int Total)? SkyCounts()
+    {
+        var items = _settings.SkyQuestChecklist;
+        return items.Count == 0 ? null : (items.Count(i => i.Acquired), items.Count);
+    }
+
+    private void ApplyTabVisual()
+    {
+        foreach (var (tile, label, badge, tab) in _tabTiles)
+        {
+            var on = tab == _tab;
+            // Selected: the accent fills the tile and the text inverts onto it, which is
+            // what makes a tab read as a tab at a glance. Unselected still gets a filled
+            // panel and a border, so the row looks like a set of controls rather than a
+            // line of prose.
+            tile.Background = on ? AppTheme.AccentBrush : AppTheme.PanelHoverBrush;
+            tile.BorderBrush = on ? AppTheme.AccentBrush : AppTheme.BorderBrush;
+            label.Foreground = on ? AppTheme.BgBrush : AppTheme.TextBrush;
+            badge.Foreground = on ? AppTheme.BgBrush : AppTheme.DimBrush;
+            badge.Opacity = on ? 0.85 : 1;
+        }
+        foreach (var (chip, label, cls) in _classChips)
+        {
+            var on = cls == _classLens;
+            chip.Background = on ? AppTheme.AccentBrush : AppTheme.PanelHoverBrush;
+            chip.BorderBrush = on ? AppTheme.AccentBrush : AppTheme.BorderBrush;
+            label.Foreground = on ? AppTheme.BgBrush : AppTheme.DimBrush;
+        }
+        // Era, state and the mode strip are catalog concepts — meaningless against a
+        // fixed checklist. The CLASS picker is not: David, 2026-08-15, "we may be
+        // helping a friend", so every tab must be able to reach a class you don't play.
+        var catalogOnly = _tab == QuestTab.General;
+        _eraCombo.IsVisible = catalogOnly;
+        _stateCombo.IsVisible = catalogOnly;
+        if (_modeStripControl is { } strip) strip.IsVisible = catalogOnly;
+        _classicOnlyCheck.IsVisible = _tab == QuestTab.Epic;
+        _classBtn.IsVisible = true;
+    }
+
+    /// <summary>The Epic and Sky tabs. Rows come straight from the same settings lists
+    /// the loot auto-checkers tick and EQBuddy Mobile reads, so ticking here, on the
+    /// tablet, or by looting the thing are all the same tick — a second VIEW, never a
+    /// second copy of the data.
+    ///
+    /// The rows are TICKABLE, and have to be: hand-ticking used to live on the widget's
+    /// Epic and Sky cards, and when those became one launcher this became the only place
+    /// on the desktop to say "I already have that".</summary>
+    private void RenderChecklist(QuestTab tab, string filter, List<string> classes)
+    {
+        var rows = tab == QuestTab.Epic
+            ? _settings.EpicQuestChecklist
+                .Where(i => !_settings.EpicQuestClassicOnly || i.AvailableInClassic)
+                .Select(i =>
+                    (i.ClassName, Group: i.Section.Length > 0 ? i.Section : "Checklist",
+                     Title: i.QuestName.Length > 0 ? i.QuestName : i.Reward,
+                     Detail: i.QuestItem, i.Acquired, Set: (Action<bool>)(done =>
+                     {
+                         i.Acquired = done;
+                         // The player deciding IS the resolution of an unassigned
+                         // auto-tick, exactly as the old card's toggle treated it.
+                         i.AcquiredUnassigned = false;
+                     })))
+            : _settings.SkyQuestChecklist.Select(i =>
+                (i.ClassName, Group: i.Npc.Length > 0 ? i.Npc : "Sky",
+                 Title: i.Reward, Detail: i.QuestItem, i.Acquired, Set: (Action<bool>)(done =>
+                 {
+                     i.Acquired = done;
+                     i.AcquiredUnassigned = false;
+                 })));
+
+        // The picker chooses WHICH classes are in view — including ones you don't play,
+        // because "we may be helping a friend" (David, 2026-08-15). The chips then narrow
+        // to one of them. An empty pick means every class, never an empty window.
+        var matching = rows
+            .Where(r => classes.Count == 0
+                || classes.Contains(r.ClassName, StringComparer.OrdinalIgnoreCase))
+            .Where(r => _classLens is null
+                || r.ClassName.Equals(_classLens, StringComparison.OrdinalIgnoreCase))
+            .Where(r => filter.Length == 0
+                || r.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.Detail.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.ClassName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.Group.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matching.Count == 0)
+        {
+            _questsPanel.Children.Add(new TextBlock
+            {
+                Text = filter.Length > 0
+                    ? "Nothing on this checklist matches that search."
+                    : "This checklist is empty — it fills in from the wiki catalog and "
+                      + "your own progress. ⧉ scan bags or import achievements to catch it up.",
+                FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(6, 8, 0, 8), Foreground = AppTheme.DimBrush,
+            });
+            return;
+        }
+
+        foreach (var group in matching
+                     .GroupBy(r => (r.ClassName, r.Group))
+                     .OrderBy(g => g.Key.ClassName, StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(g => g.Key.Group, StringComparer.OrdinalIgnoreCase))
+        {
+            var done = group.Count(r => r.Acquired);
+            _questsPanel.Children.Add(new TextBlock
+            {
+                Text = $"{group.Key.ClassName} · {group.Key.Group}   {done}/{group.Count()}",
+                FontSize = 11.5, FontWeight = FontWeight.SemiBold,
+                Margin = new Thickness(2, 8, 0, 3), Foreground = AppTheme.AccentBrush,
+            });
+
+            foreach (var row in group.OrderBy(r => r.Title, StringComparer.OrdinalIgnoreCase))
+            {
+                var text = new TextBlock
+                {
+                    FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                    Text = row.Detail.Length > 0 ? $"{row.Title}  —  {row.Detail}" : row.Title,
+                    Foreground = row.Acquired ? AppTheme.DimBrush : AppTheme.TextBrush,
+                };
+                var check = new CheckBox
+                {
+                    Content = text,
+                    IsChecked = row.Acquired,
+                    Margin = new Thickness(10, 1, 0, 1),
+                };
+                var set = row.Set;
+                var was = row.Acquired;
+                check.IsCheckedChanged += (_, _) =>
+                {
+                    var now = check.IsChecked == true;
+                    if (now == was) return;   // our own repaint, not a click
+                    set(now);
+                    _settings.Save();
+                    Refresh(force: true);
+                };
+                _questsPanel.Children.Add(check);
+            }
+        }
     }
 
     // mine = your items + 📌 pins · zone = doable where you're standing ·
@@ -337,6 +632,16 @@ public sealed class QuestsWindow : Window
         _filterBox.Text = item;
         Refresh(force: true);
         Activate();
+    }
+
+    /// <summary>Programmatic tab switch, for the same reasons <see cref="SetMode"/>
+    /// exists — a screenshot hook, and the handle the render tests drive the checklist
+    /// tabs by (clicking a Border in a headless test proves layout, not behaviour).</summary>
+    internal void SetTab(QuestTab tab)
+    {
+        _tab = tab;
+        ApplyTabVisual();
+        Refresh(force: true);
     }
 
     /// <summary>Programmatic mode switch (screenshot hook + the 🗺 badge path).</summary>
@@ -473,7 +778,16 @@ public sealed class QuestsWindow : Window
             classes = [inf];
         }
 
-        var sig = $"{key}|{filter}|{_mode}|st:{_state}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
+        // The lens narrows to ONE of the classes you play. Everything downstream reads
+        // `classes`, so narrowing here covers the catalog, the zone view and the two
+        // checklist tabs at once. A stale lens (you dropped that class) is ignored
+        // rather than emptying the window.
+        if (_classLens is { } lens && classes.Contains(lens, StringComparer.OrdinalIgnoreCase))
+            classes = [lens];
+        else if (_classLens is not null && !classes.Contains(_classLens, StringComparer.OrdinalIgnoreCase))
+            _classLens = null;
+
+        var sig = $"{key}|{filter}|{_tab}|{_mode}|st:{_state}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
             $"|{string.Join(";", tracked.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", hidden.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", completed.Select(kv => $"{kv.Key}:{kv.Value}"))}" +
@@ -484,6 +798,12 @@ public sealed class QuestsWindow : Window
         _questsPanel.Children.Clear();
         _rendered = 0;
         _suppressed = 0;
+        BuildTabs();
+        if (_tab != QuestTab.General)
+        {
+            RenderChecklist(_tab, filter, classes);
+            return;
+        }
         if (inferred.Length > 0)
         {
             var note = new TextBlock
