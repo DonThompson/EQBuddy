@@ -318,25 +318,12 @@ public sealed partial class SessionStats
     /// ("Your Polished Mithril Mask (Exaltation) feels alive with power." then the
     /// Bolt of Flame hit, same second in the field snippet).</summary>
     private static readonly TimeSpan ProcItemWindow = TimeSpan.FromSeconds(2.5);
-    // ---- inferred class (David, 2026-08-11): class-unique signals, frequency-weighted ----
-    /// <summary>Abilities and spells only one class has. Deliberately small and certain:
-    /// a wrong inference filters quests wrongly, so ambiguous signals (Kick, Bash,
-    /// generic nukes) stay out and clickies lose by volume. Labeled "(inferred)"
-    /// everywhere it's used — players swap classes, so this is a reading, not a fact.</summary>
-    private static readonly Dictionary<string, string> ClassSignals = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Backstab"] = "Rogue",
-        ["Harm Touch"] = "Shadow Knight",
-        ["Lay on Hands"] = "Paladin",
-        ["Lay Hands"] = "Paladin",
-        ["Flying Kick"] = "Monk", ["Round Kick"] = "Monk", ["Tiger Claw"] = "Monk",
-        ["Eagle Strike"] = "Monk", ["Dragon Punch"] = "Monk",
-        ["Frenzy"] = "Berserker",
-    };
-    private readonly Dictionary<string, int> _classEvidence = new(StringComparer.OrdinalIgnoreCase);
-    /// <summary>Three sightings before an inference exists at all — one clicky or one
-    /// mis-parsed line must not relabel a character.</summary>
-    private const int ClassEvidenceFloor = 3;
+    // ---- inferred class (David, 2026-08-11; rebuilt for #120, Frankthetankk) ----
+    /// <summary>Which class the log looks like. The table of signals, the recency
+    /// weighting and the "don't know" rules all live in <see cref="ClassInference"/>,
+    /// where they can be tested without a log: the first version knew only melee skills,
+    /// so a caster who once produced a melee-ish line could never out-vote it.</summary>
+    private readonly ClassInference _classInference = new();
 
     private readonly Dictionary<string, (int Count, long Damage)> _procs = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DateTime> _spellCastAt = new(StringComparer.OrdinalIgnoreCase);
@@ -749,14 +736,15 @@ public sealed partial class SessionStats
                     // Songs correlate (bard charms/mezzes ARE songs) but stay out of the
                     // cast-completion stats — twisting would swamp them.
                     if (!started.Song) _castsStarted++;
-                    else _classEvidence["Bard"] = _classEvidence.GetValueOrDefault("Bard") + 1;
                     {
                         var outKey = SpellCatalog.BaseName(started.Spell);
                         var so = _spellOutcomes.GetValueOrDefault(outKey);
                         _spellOutcomes[outKey] = (so.Casts + 1, so.Resists, so.Blocked);
+                        // Class evidence (#120): a song proves Bard whatever it is called —
+                        // only bards sing — while a cast is judged on the spell's own name.
+                        if (started.Song) _classInference.RecordSong(outKey, started.Time);
+                        else _classInference.RecordCast(outKey, started.Time);
                     }
-                    if (ClassSignals.TryGetValue(SpellCatalog.BaseName(started.Spell), out var castCls))
-                        _classEvidence[castCls] = _classEvidence.GetValueOrDefault(castCls) + 1;
                     _pendingCast = (started.Spell, started.Time);
                     // Proc detection reads this: damage "by <Spell>" with no cast-start
                     // for that spell on record is a proc (#85).
@@ -866,11 +854,13 @@ public sealed partial class SessionStats
                     AddTimelineDamage(dd.Time, dd.Amount);
                     if (dd.Kind == DamageKind.Melee) _meleeDamage += dd.Amount; else _spellDamage += dd.Amount;
                     // Class inference (David, 2026-08-11): class-unique abilities vote,
-                    // most-used wins — a rogue clicky in a warrior's hand loses to ten
-                    // thousand real swings. Character-scoped, cleared on switch.
-                    if (dd.Kind == DamageKind.Melee
-                        && ClassSignals.TryGetValue(dd.Source, out var cls))
-                        _classEvidence[cls] = _classEvidence.GetValueOrDefault(cls) + 1;
+                    // recent use wins — a rogue clicky in a warrior's hand loses to ten
+                    // thousand real swings. Character-scoped, cleared on switch. Both
+                    // damage kinds are offered: the touches print as SPELL damage ("… for
+                    // 751 points of magic damage by Harm Touch"), so the old melee-only
+                    // guard meant the Shadow Knight and Paladin rows could never fire.
+                    // ClassInference itself drops anything an item proc could have cast.
+                    _classInference.RecordAbilityUse(dd.Source, dd.Time);
                     // Damage spells label themselves by line shape, so classification is
                     // observed rather than looked up in a table.
                     if (dd.Kind == DamageKind.Spell && !dd.IsAux)
@@ -1794,7 +1784,7 @@ public sealed partial class SessionStats
         lock (_lock)
         {
             _aaAbilities.Clear();
-            _classEvidence.Clear();   // the next character's swings vote fresh
+            _classInference.Clear();   // the next character's swings vote fresh
             _version++;   // both feed snapshots — the memo must not serve stale ones
         }
     }
@@ -2183,10 +2173,7 @@ public sealed partial class SessionStats
                     .Where(kv => kv.Value.Resists > 0 || kv.Value.Blocked > 0)
                     .Select(kv => (kv.Key, kv.Value.Casts, kv.Value.Resists, kv.Value.Blocked))
                     .OrderByDescending(x => x.Resists + x.Blocked).ToList(),
-                InferredClass = _classEvidence
-                    .Where(kv => kv.Value >= ClassEvidenceFloor)
-                    .OrderByDescending(kv => kv.Value)
-                    .Select(kv => kv.Key).FirstOrDefault() ?? "",
+                InferredClass = _classInference.Current(),
                 CurrentStance = _currentStance ?? "",
                 Stances = _stanceAgg
                     .Select(kv => new StanceInfo(kv.Key, kv.Value.Seconds, kv.Value.Damage,

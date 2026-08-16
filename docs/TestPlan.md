@@ -41,6 +41,9 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | Pet damage is attributed to the pet, never to your accuracy or crit counters | **Auto** — `SessionStatsTests`, `SpellTrackingTests` |
 | A charm cast confirms a pet; an interrupted or faded charm never claims one | **Auto** — `SessionStatsTests` |
 | Crit, miss, resist, fizzle and block counts follow the log's own words | **Auto** — `LogParserTests`, `StackingTests` |
+| **Every one of the sixteen classes can produce class evidence**, so an inference can always be argued back down (#120) | **Auto** — `ClassInferenceTests` |
+| Class evidence decays with a 10-minute half-life: a swap converges on what is being played now, and silence alone never flips a reading | **Auto** — `ClassInferenceTests` |
+| A class is named only from 3+ sightings, with two distinct spells where an item could have cast them, and a 2× lead — otherwise **no** inference | **Auto** — `ClassInferenceTests` |
 
 ## 3. Knowledge and catalogs
 

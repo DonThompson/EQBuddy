@@ -110,6 +110,7 @@ busier.
 |---|---|
 | Parse a log line | `Core/LogParser.cs` — one regex per line type |
 | Aggregate / DPS / encounters | `Core/SessionStats.cs` (+ `.Tracked.cs`) |
+| Which class the log looks like | `Core/ClassInference.cs` — signals derived from the shipped catalogs |
 | Tail the file | `Core/LogWatcher.cs` — 150 ms polls, offset-based |
 | Settings + profile paths | `Core/AppSettings.cs`, `Core/AppPaths.cs` (`EQBUDDY_APPDATA`) |
 | Zone map geometry, aliases | `Core/ZoneMap.cs` (holds `ZoneMap`, `ZoneMapFiles`) |
@@ -174,6 +175,16 @@ Read this list before touching the areas it names. Every entry cost a release.
     decision now lives in `UI.Shared/AlertSoundPlan.cs` and is unit-tested with no audio
     device: a missing file substitutes a built-in *at the chosen volume* and names the
     file so the UI can say so.
+11. **A table of evidence that only one side can produce is a verdict, not a vote.** Class
+    inference weighed class-unique signals and took the most-used — but every signal in
+    the table was a melee skill, so a caster who once produced a melee-ish line wore that
+    class for the session: there was nothing in the table he could ever do to argue back
+    (#120, Frankthetankk). Frequency-weighting looked like a safeguard and was doing
+    nothing, because the other side had no votes to cast.
+    → **Before trusting a scoring rule, check that every outcome it can name has a way to
+    be named** — and that yesterday can be outweighed by today. `Core/ClassInference.cs`
+    derives signals for all sixteen classes from the shipped catalogs, decays them, and
+    answers "" when the evidence is thin or split.
 
 ## Tooling notes that cost time when ignored
 
