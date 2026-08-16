@@ -36,6 +36,7 @@ public partial class QuestsWindow : Window
         _main = main;
         _settings = main.Settings;
         WindowZoom.Attach(this, "quests", _settings);
+        EpicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
         BuildClassChecks();
         EraCombo.Items.Add("Any era");
         foreach (var era in QuestEraLadder.Eras) EraCombo.Items.Add($"≤ {era}");
@@ -238,6 +239,9 @@ public partial class QuestsWindow : Window
         EraCombo.Visibility = catalogOnly;
         StateCombo.Visibility = catalogOnly;
         ModeStrip.Visibility = catalogOnly;
+        // The Epic tab's own lens, which followed the Epic card here when the widget
+        // consolidated its quest cards (2026-08-16).
+        EpicClassicOnlyCheck.Visibility = _tab == QuestTab.Epic ? Visibility.Visible : Visibility.Collapsed;
         ClassBtn.Visibility = Visibility.Visible;
         FilterRow.Visibility = Visibility.Visible;
     }
@@ -321,6 +325,15 @@ public partial class QuestsWindow : Window
 
     private void OnClassBtn(object sender, RoutedEventArgs e) =>
         ClassPopup.IsOpen = !ClassPopup.IsOpen;
+
+    /// <summary>The Epic tab's classic-era lens. Persisted, because EQBuddy Mobile's
+    /// Epic tab honors the same setting — one filter, both screens.</summary>
+    private void OnEpicClassicOnlyToggled(object sender, RoutedEventArgs e)
+    {
+        _settings.EpicQuestClassicOnly = EpicClassicOnlyCheck.IsChecked == true;
+        _settings.Save();
+        Refresh(force: true);
+    }
 
     // The state filter (Reddit ask, 2026-08-11): cuts across every tab and search —
     // session-scoped on purpose, like the search box; a sticky "done" filter would
@@ -705,7 +718,9 @@ public partial class QuestsWindow : Window
     private void RenderChecklist(QuestTab tab, string filter, List<string> classes)
     {
         var rows = tab == QuestTab.Epic
-            ? _settings.EpicQuestChecklist.Select(i =>
+            ? _settings.EpicQuestChecklist
+                .Where(i => !_settings.EpicQuestClassicOnly || i.AvailableInClassic)
+                .Select(i =>
                 (i.ClassName, Group: i.Section.Length > 0 ? i.Section : "Checklist",
                  Title: i.QuestName.Length > 0 ? i.QuestName : i.Reward,
                  Detail: i.QuestItem, i.Acquired))

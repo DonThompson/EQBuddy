@@ -115,7 +115,11 @@ public static class OverlaySections
     [
         ("combat", "Combat"), ("healing", "Healing"), ("kills", "Kills"), ("loot", "Loot"),
         ("motes", "Motes"),
-        ("sky", "Sky Quest"), ("gear", "Gear"), ("epic", "Epics"),
+        // One card for every quest surface (David, 2026-08-16). It replaced the separate
+        // "Sky Quest" and "Epics" cards, which each carried a full tabbed checklist on the
+        // widget — a review surface, not a glance one, and now a click away in the Quest
+        // Tracker window. AppSettings.MigrateQuestSections folds the two old keys onto it.
+        ("quests", "Quests"), ("gear", "Gear"),
         // Key stays "tracked" — it's persisted in SectionOrder/HiddenSections. Only the
         // label follows the feature's rename from tracked loot to watch rules (#5).
         ("tracked", "Watch"), ("buffs", "Buffs"), ("raids", "Raids"), ("money", "Money"), ("progress", "Progress"),

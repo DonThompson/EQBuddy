@@ -96,6 +96,16 @@ only ever touched settings, its own state and eleven named controls, so it was a
 component that had never been separated rather than logic that was truly entangled. The
 baseline came down with it, banking the room instead of leaving it to refill.
 
+A year's worth of that room came back for free on 2026-08-16, by a different route: the
+widget's "Sky Quest" and "Epics" cards became a single **Quests** card that opens the
+Quest Tracker window, which had grown the same three tabs. Roughly 780 of
+`QuestChecklistView`'s lines were rendering for cards that no longer exist, and deleting
+a surface beats extracting one. What stayed is the part that was never about the cards —
+the loot auto-checkers and the achievements import — and it now runs with nothing on
+screen at all, because it only ever read and wrote settings. The lesson worth keeping is
+that "which surface does this belong on?" is a decomposition tool as much as a product
+one: the cheapest code to maintain is the code a surface decision deletes.
+
 That is the pattern to repeat, and there is more of it: the render family (`RefreshUi`
 at 551 lines, `RenderTracked` at 181) is the next candidate. Two rules make it safe.
 **Pin the behaviour in E2E first** — add the facts to the `EQBUDDY_EXPAND` dump and

@@ -77,7 +77,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private DateTime? _autoCheckSessionStart;
     // Rebuilding 200+ checkboxes every UI tick is the one thing this overlay never
     // does elsewhere — the checklist re-renders only when a box actually changed.
-    private bool _skyQuestDirty = true;
     private bool _gearChecklistDirty = true;
     private readonly DispatcherTimer _uiTimer;
     private readonly LayoutTransformControl _scaleRoot = new();
@@ -115,29 +114,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     /// window's signature idiom).</summary>
     private readonly List<(TextBlock Clock, string Label)> _buffClocks = [];
     private string _buffsSignature = "";
-    private readonly ComboBox _skyStateCombo = new() { Width = 96, FontSize = 11 };
-    private readonly TextBox _skySearchBox = new()
-    {
-        FontSize = 11, Margin = new Thickness(6, 0, 0, 0), Padding = new Thickness(5, 3),
-        Background = AppTheme.ComboBoxBrush, Foreground = AppTheme.TextBrush,
-        CaretBrush = AppTheme.TextBrush, BorderBrush = AppTheme.BorderBrush,
-        BorderThickness = new Thickness(1),
-    };
-    private readonly ScrollViewer _skySearchScroll = new()
-    {
-        IsVisible = false,
-        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-        Padding = new Thickness(0, 0, 4, 0),
-    };
-    private readonly StackPanel _skySearchResults = new();
-    private readonly TabControl _skyQuestTabs = new() { Margin = new Thickness(0, 2, 0, 0), Padding = new Thickness(0) };
-    // ---- the Epics card (#121/#138) ----
-    private readonly TextBlock _epicHeader = AppTheme.StatValue("0/0");
-    private readonly TabControl _epicTabs = new() { Margin = new Thickness(0, 2, 0, 0), Padding = new Thickness(0) };
-    private readonly CheckBox _epicClassicOnlyCheck = new() { Content = "Classic-doable only" };
     private readonly Dictionary<string, int> _epicQuestLootSeen = new(StringComparer.OrdinalIgnoreCase);
-    private bool _epicQuestDirty = true;
     private readonly TextBlock _kpiDps = Kpi(accent: true);
     private readonly TextBlock _kpiKills = Kpi();
     private readonly TextBlock _kpiLoot = Kpi();
@@ -257,7 +234,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private readonly ItemsControl _markerList = new();
     private readonly Button _gearBtn = AppTheme.IconButton(AppIcon.Settings, "Settings");
     private readonly Dictionary<string, Button> _stars = new();
-    private readonly Dictionary<string, SectionPanel> _sections = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SectionCard> _sections = new(StringComparer.OrdinalIgnoreCase);
     private readonly StackPanel _sectionsPanel = new();
     private TextBlock _dmgOutSortTotal = null!;
     private TextBlock? _dmgOutSortDps;
@@ -419,7 +396,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             section.ExpandedChanged += _ =>
             {
                 _lastRenderedVersion = -1;
-                _skyQuestDirty = true;
                 Dispatcher.UIThread.Post(RefreshUi, DispatcherPriority.Background);
             };
         FollowActiveCharacter();
@@ -882,9 +858,18 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         AddSection("kills", "kills", "Kills", _killsHeader, BuildKillsSection(), "Show kills in mini dashboard");
         AddSection("loot", "loot", "Loot", _lootHeader, BuildLootSection(), "Show loot count in mini dashboard");
         AddSection("motes", "motes", "Motes", _motesHeader, BuildMotesSection(), "Show motes in mini dashboard");
-        _sections["sky"] = AppTheme.Section(Header("☁ Sky Quest", _skyQuestHeader), BuildSkyQuestSection());
+        // ONE card for every quest surface (David, 2026-08-16). It replaced the "Sky
+        // Quest" and "Epics" cards, each of which carried a full tabbed checklist on the
+        // widget — a review surface by the rule in CLAUDE.md, not a glance one. The Quest
+        // Tracker window owns that job, and this card is the way in, which is also why
+        // the ⚙ menu no longer carries a Quest tracker line. The header still reports
+        // both checklists, so the glance survives.
+        _sections["quests"] = AppTheme.SectionLink(Header("🗺 Quests", _questsHeader),
+            () => ShowQuestsWindow());
+        ToolTip.SetTip(_sections["quests"],
+            "Open the Quest Tracker — search every quest by reward, item, quest giver or "
+            + "zone, and work your Epic 1.0 and Plane of Sky checklists");
         _sections["gear"] = AppTheme.Section(Header("🛡 Gear", _gearHeader), BuildGearSection());
-        _sections["epic"] = AppTheme.Section(Header("⚔ Epics", _epicHeader), BuildEpicSection());
         _sections["tracked"] = AppTheme.Section(Header("Watch", _trackedHeader), _trackedPanel);
         // The ⭐ opens the Buff set breakout while minimized (#120 stage 2). Unlike the
         // other stars this one gates a window only — "buffs" is not a mini-chip stat.
@@ -908,53 +893,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         _motesSummary.Margin = new Thickness(0, 2, 0, 4);
         panel.Children.Add(_motesSummary);
         panel.Children.Add(_motesList);
-        return panel;
-    }
-
-    private Control BuildSkyQuestSection()
-    {
-        var panel = new StackPanel();
-        var bar = new Grid { Margin = new Thickness(0, 2, 0, 2) };
-        bar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-        bar.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        // Same state lens as the quest tracker (David, 2026-08-11): ready means every
-        // piece collected and the turn-in still to make.
-        ToolTip.SetTip(_skyStateCombo,
-            "any · open (still missing items) · ready (every item collected — go turn it in) · done (turned in)");
-        _skyStateCombo.SelectionChanged += OnSkyStateChanged;
-        bar.Children.Add(_skyStateCombo);
-        // #108 (bjstrange): find a dropped item without touring 14 class tabs. Search
-        // crosses every class and ignores the state lens — filters shape tabs, never search.
-        ToolTip.SetTip(_skySearchBox,
-            "Type an item (or reward) name — every class's matching rows appear at once, "
-            + "checkboxes included. Clear to go back to the tabs.");
-        _skySearchBox.TextChanged += OnSkySearchChanged;
-        Grid.SetColumn(_skySearchBox, 1);
-        bar.Children.Add(_skySearchBox);
-        panel.Children.Add(bar);
-        _skySearchScroll.Content = _skySearchResults;
-        panel.Children.Add(_skySearchScroll);
-        _skyQuestTabs.SelectionChanged += OnSkyQuestTabChanged;
-        panel.Children.Add(_skyQuestTabs);
-        return panel;
-    }
-
-    private Control BuildEpicSection()
-    {
-        var panel = new StackPanel();
-        // #71d21ea: an epic's later steps need expansions this server may not have.
-        // The lens is honest about it rather than listing steps you cannot start.
-        _epicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
-        _epicClassicOnlyCheck.FontSize = 10;
-        _epicClassicOnlyCheck.Margin = new Thickness(0, 2, 0, 4);
-        _epicClassicOnlyCheck.Foreground = AppTheme.DimBrush;
-        ToolTip.SetTip(_epicClassicOnlyCheck,
-            "Show only the steps doable on a classic-era server — the rest are hidden "
-            + "from both the list and the counts, so the score means what it says.");
-        _epicClassicOnlyCheck.IsCheckedChanged += OnEpicClassicOnlyToggled;
-        panel.Children.Add(_epicClassicOnlyCheck);
-        _epicTabs.SelectionChanged += OnEpicQuestTabChanged;
-        panel.Children.Add(_epicTabs);
         return panel;
     }
 
@@ -1334,7 +1272,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             "Your zone's map with your last /log position — type /loc in game to update the marker"));
         menu.Items.Add(Item("Travel route…", OnTravelRoute,
             "Hop-by-hop directions from where you are to any zone"));
-        menu.Items.Add(Item("Quest tracker…", OnQuestsWindow));
         menu.Items.Add(Item("Spawn timers…", (_, _) => ShowSpawnsWindow()));
         menu.Items.Add(Item("Inventory…", OnInventoryWindow,
             "Your worn gear by slot and what's in each bag — from the game's /outputfile inventory dump (type it in game, the file appears, EQBuddy reads it)"));
@@ -2114,16 +2051,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             FillList(_motesList, motes.Tiers.Select(t => (t.Item, $"x{t.Count}")),
                 onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
         }
-        if (_sections["sky"].IsExpanded && _skyQuestDirty)
-        {
-            RenderSkyQuestChecklist();
-            _skyQuestDirty = false;
-        }
-        if (_sections["epic"].IsExpanded && _epicQuestDirty)
-        {
-            RenderEpicQuestChecklist();
-            _epicQuestDirty = false;
-        }
+        // The Quests card is a launcher, not a checklist: its one line reports both
+        // checklists so the glance survives, and the work happens in the window.
+        _questsHeader.Text = QuestsSummaryLine();
         if (_sections["gear"].IsExpanded && _gearChecklistDirty)
         {
             RenderGearChecklist();
@@ -3831,8 +3761,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         {
             AchievementsImport.Apply(matches, _settings);
             _settings.Save();
-            UpdateSkyQuestHeaderOnly();
-            _skyQuestDirty = true;
             win.Close();
         };
         var cancel = ZoneTheming.Button("Cancel", isCancel: true);
@@ -3853,24 +3781,27 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         win.ShowDialog(this);
     }
 
-    private readonly TextBlock _skyQuestHeader = AppTheme.StatValue("0/0");
+    private readonly TextBlock _questsHeader = AppTheme.StatValue("");
 
-    private void UpdateSkyQuestHeaderOnly()
+    /// <summary>The Quests card's one line: both checklists at a glance, so folding two
+    /// cards into a launcher costs no information. Empty when neither checklist has been
+    /// built yet — a card reading "0/0 · 0/0" would look broken rather than unstarted.</summary>
+    private string QuestsSummaryLine()
     {
-        var total = _settings.SkyQuestChecklist.Count;
-        var acquired = _settings.SkyQuestChecklist.Count(i => i.Acquired);
-        _skyQuestHeader.Text = $"{acquired}/{total}";
+        var epic = _settings.EpicQuestChecklist;
+        var sky = _settings.SkyQuestChecklist;
+        var parts = new List<string>(2);
+        if (epic.Count > 0) parts.Add($"Epic {epic.Count(i => i.Acquired)}/{epic.Count}");
+        if (sky.Count > 0) parts.Add($"Sky {sky.Count(i => i.Acquired)}/{sky.Count}");
+        return string.Join(" · ", parts);
     }
 
     private void UpdateSkyQuestChecklist(StatsSnapshot s)
     {
-        var changed = AutoCheckSkyQuestLoot(s);
-        UpdateSkyQuestHeaderOnly();
-        if (changed)
-        {
-            _skyQuestDirty = true;
-            _settings.Save();
-        }
+        // No card to repaint any more: the widget's Quests line recomputes its counts
+        // from these same lists every tick, and the Quest Tracker window reads them
+        // directly. Persisting the tick is the whole job here.
+        if (AutoCheckSkyQuestLoot(s)) _settings.Save();
     }
 
     private bool AutoCheckSkyQuestLoot(StatsSnapshot s)
@@ -3901,307 +3832,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         return changed;
     }
 
-    // ---- the Epics card (#121/#138) ----
-
-    private void RenderEpicQuestChecklist()
-    {
-        var selectedClass = (_epicTabs.SelectedItem as TabItem)?.Tag as string
-            ?? (_settings.EpicQuestClass.Length > 0 ? _settings.EpicQuestClass : null);
-        _epicTabs.Items.Clear();
-
-        foreach (var className in QuestClassFilter.Classes)
-        {
-            var allClassItems = _settings.EpicQuestChecklist
-                .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
-                .OrderBy(i => i.Order)
-                .ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var classItems = FilterEpicQuestRows(allClassItems).ToList();
-            var done = classItems.Count(i => i.Acquired);
-            var total = classItems.Count;
-            var quest = EpicQuestDefaults.FindQuest(QuestCatalog, className);
-            var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
-
-            if (quest is null || allClassItems.Count == 0)
-            {
-                panel.Children.Add(new TextBlock
-                {
-                    Text = "No Epic 1.0 quest found in the catalog for this class yet.",
-                    FontSize = 11,
-                    Foreground = AppTheme.DimBrush,
-                    TextWrapping = TextWrapping.Wrap,
-                });
-            }
-            else
-            {
-                panel.Children.Add(new TextBlock
-                {
-                    Text = quest.Name,
-                    FontSize = 11,
-                    FontWeight = FontWeight.SemiBold,
-                    Foreground = AppTheme.AccentBrush,
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                });
-                if (classItems.Count > 0 && classItems[0].Reward.Length > 0)
-                    panel.Children.Add(new TextBlock
-                    {
-                        Text = "Reward: " + classItems[0].Reward,
-                        FontSize = 10,
-                        Foreground = AppTheme.DimBrush,
-                        TextWrapping = TextWrapping.Wrap,
-                    });
-                var source = EpicQuestDefaults.SourceLine(quest);
-                if (source.Length > 0)
-                    panel.Children.Add(new TextBlock
-                    {
-                        Text = source,
-                        FontSize = 10,
-                        Foreground = AppTheme.DimBrush,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(0, 1, 0, 4),
-                    });
-
-                if (classItems.Count == 0)
-                    panel.Children.Add(new TextBlock
-                    {
-                        Text = "No classic-doable steps are tagged for this class yet.",
-                        FontSize = 11,
-                        Foreground = AppTheme.DimBrush,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(0, 8, 0, 4),
-                    });
-
-                var completed = IsEpicQuestCompleted(className);
-                var completeCheck = new CheckBox
-                {
-                    IsChecked = completed,
-                    Margin = new Thickness(0, 8, 0, 4),
-                    Content = new TextBlock
-                    {
-                        Text = completed ? "Complete" : "Epic complete",
-                        FontSize = 11,
-                        FontWeight = FontWeight.SemiBold,
-                        Foreground = AppTheme.AccentBrush,
-                    },
-                };
-                ToolTip.SetTip(completeCheck, "Check when the final epic turn-in is finished.");
-                completeCheck.IsCheckedChanged += (box, _) => OnEpicQuestCompletedToggled(
-                    className, allClassItems, ((CheckBox)box!).IsChecked == true, completeCheck);
-                panel.Children.Add(completeCheck);
-
-                foreach (var sectionGroup in classItems.GroupBy(i => i.Section.Length > 0 ? i.Section : "Checklist"))
-                {
-                    if (!sectionGroup.Key.Equals("Checklist", StringComparison.OrdinalIgnoreCase)
-                        || classItems.Select(i => i.Section).Distinct().Count() > 1)
-                        panel.Children.Add(new TextBlock
-                        {
-                            Text = sectionGroup.Key,
-                            FontSize = 12,
-                            FontWeight = FontWeight.SemiBold,
-                            Foreground = AppTheme.AccentBrush,
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(0, 8, 0, 2),
-                        });
-
-                    foreach (var item in sectionGroup)
-                        panel.Children.Add(EpicItemCheckBox(item, completed));
-                }
-            }
-
-            var tab = new TabItem
-            {
-                Header = total > 0 ? $"{ClassAbbrev(className)} {done}/{total}" : $"{ClassAbbrev(className)} -",
-                Tag = className,
-                FontSize = 11,
-                Content = new ScrollViewer
-                {
-                    Content = panel,
-                    MaxHeight = SkyQuestListMaxHeight(),
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                    Padding = new Thickness(0, 0, 4, 0),
-                },
-            };
-            ToolTip.SetTip(tab, className);
-            _epicTabs.Items.Add(tab);
-            if (string.Equals(selectedClass, className, StringComparison.Ordinal))
-                _epicTabs.SelectedItem = tab;
-        }
-
-        if (_epicTabs.SelectedIndex < 0 && _epicTabs.Items.Count > 0)
-            _epicTabs.SelectedIndex = 0;
-    }
-
-    private CheckBox EpicItemCheckBox(EpicQuestChecklistItem item, bool completed)
-    {
-        // * = the auto-tick parked a multi-class item here because no class lens
-        // claimed it (the Sky #106 contract) — the player decides where it belongs.
-        var text = new TextBlock
-        {
-            Text = item.AcquiredUnassigned ? item.QuestItem + " *" : item.QuestItem,
-            FontSize = 11,
-            Foreground = AppTheme.TextBrush,
-            TextWrapping = TextWrapping.Wrap,
-        };
-
-        var tip = $"{item.QuestName}: {item.QuestItem}";
-        if (item.AcquiredUnassigned)
-        {
-            var others = _settings.EpicQuestChecklist
-                .Where(i => !i.ClassName.Equals(item.ClassName, StringComparison.OrdinalIgnoreCase)
-                         && i.ItemNames.Any(n => item.ItemNames.Contains(n, StringComparer.OrdinalIgnoreCase)))
-                .Select(i => i.ClassName).Distinct().ToList();
-            tip += "\n* Auto-ticked here, but the looted item is also wanted by: "
-                + string.Join(", ", others)
-                + ". Untick it and tick the right class if this guess is wrong.";
-        }
-
-        var check = new CheckBox
-        {
-            IsChecked = item.Acquired,
-            Content = text,
-            Margin = new Thickness(0, 2, 0, 2),
-            IsEnabled = !completed,
-            Opacity = completed ? 0.55 : 1.0,
-        };
-        ToolTip.SetTip(check, tip);
-        check.IsCheckedChanged += (box, _) => OnEpicQuestToggled(item, ((CheckBox)box!).IsChecked == true);
-        return check;
-    }
-
-    private bool IsEpicQuestCompleted(string className) =>
-        _settings.EpicQuestCompleted.Contains(className, StringComparer.OrdinalIgnoreCase);
-
-    private IEnumerable<EpicQuestChecklistItem> FilterEpicQuestRows(IEnumerable<EpicQuestChecklistItem> items) =>
-        _settings.EpicQuestClassicOnly ? items.Where(i => i.AvailableInClassic) : items;
-
-    private void OnEpicClassicOnlyToggled(object? sender, RoutedEventArgs e)
-    {
-        var value = _epicClassicOnlyCheck.IsChecked == true;
-        if (_settings.EpicQuestClassicOnly == value) return;
-
-        _settings.EpicQuestClassicOnly = value;
-        _settings.Save();
-        UpdateEpicQuestHeaderOnly();
-        RepaintEpicCard();
-    }
-
-    /// <summary>True while a cancelled master check is being flipped back in code —
-    /// the resulting change event is not a toggle and must not restore anything.</summary>
-    private bool _epicCompleteReverting;
-
-    private async void OnEpicQuestCompletedToggled(string className, List<EpicQuestChecklistItem> items,
-        bool done, CheckBox master)
-    {
-        if (_epicCompleteReverting) return;
-        try
-        {
-            if (done)
-            {
-                // One stray click here flips every unchecked row (#138, aodgizmo) — bulk
-                // enough to warrant the one confirmation this card has. All rows already
-                // checked by hand means nothing gets overwritten: no dialog.
-                var remaining = EQBuddy.UI.Shared.EpicCompleteToggle.CountUnchecked(items);
-                if (remaining > 0 && !await ConfirmDialog.Ask(this, "Epic complete",
-                        $"Mark all {remaining} remaining {className} steps complete?",
-                        "Mark complete"))
-                {
-                    _epicCompleteReverting = true;
-                    master.IsChecked = false;
-                    _epicCompleteReverting = false;
-                    return;
-                }
-                if (!_settings.EpicQuestCompleted.Contains(className, StringComparer.OrdinalIgnoreCase))
-                    _settings.EpicQuestCompleted.Add(className);
-                // Snapshot what the bulk check overwrites, so unchecking can undo it.
-                _settings.EpicQuestPreCompleteAcquired[className] =
-                    EQBuddy.UI.Shared.EpicCompleteToggle.Snapshot(items);
-                EQBuddy.UI.Shared.EpicCompleteToggle.CheckAll(items);
-            }
-            else
-            {
-                _settings.EpicQuestCompleted.RemoveAll(k =>
-                    string.Equals(k, className, StringComparison.OrdinalIgnoreCase));
-                // Restore what the bulk check overwrote. No snapshot (completed before
-                // the undo existed) leaves the rows as they are — the old behavior.
-                if (_settings.EpicQuestPreCompleteAcquired.Remove(className, out var acquiredIds))
-                    EQBuddy.UI.Shared.EpicCompleteToggle.Restore(items, acquiredIds);
-            }
-
-            _settings.Save();
-            UpdateEpicQuestHeaderOnly();
-            RepaintEpicCard();
-        }
-        catch (Exception ex) { App.LogError(ex); }
-    }
-
-    private void OnEpicQuestToggled(EpicQuestChecklistItem item, bool acquired)
-    {
-        item.Acquired = acquired;
-        // The player deciding IS the resolution of an auto-parked tick (#106) —
-        // whichever way they toggled, the * has served its purpose.
-        item.AcquiredUnassigned = false;
-        _settings.Save();
-        UpdateEpicQuestHeaderOnly();
-        UpdateEpicQuestTabHeader(item.ClassName);
-    }
-
-    private void OnEpicQuestTabChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if ((_epicTabs.SelectedItem as TabItem)?.Tag is string cls
-            && !string.Equals(_settings.EpicQuestClass, cls, StringComparison.Ordinal))
-        {
-            _settings.EpicQuestClass = cls;
-            _settings.Save();
-        }
-    }
-
-    /// <summary>Repaint now if the card is open, otherwise mark it for the next
-    /// expand — the same dirty-render gate the Sky and Gear cards use.</summary>
-    private void RepaintEpicCard()
-    {
-        if (_sections["epic"].IsExpanded)
-        {
-            RenderEpicQuestChecklist();
-            _epicQuestDirty = false;
-        }
-        else
-        {
-            _epicQuestDirty = true;
-        }
-    }
-
-    private void UpdateEpicQuestTabHeader(string className)
-    {
-        foreach (var tab in _epicTabs.Items.OfType<TabItem>())
-            if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
-            {
-                var classItems = FilterEpicQuestRows(_settings.EpicQuestChecklist
-                    .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal)))
-                    .ToList();
-                var done = classItems.Count(i => i.Acquired);
-                var total = classItems.Count;
-                tab.Header = total > 0
-                    ? $"{ClassAbbrev(className)} {done}/{total}"
-                    : $"{ClassAbbrev(className)} -";
-            }
-    }
-
-    private void UpdateEpicQuestHeaderOnly()
-    {
-        var items = FilterEpicQuestRows(_settings.EpicQuestChecklist).ToList();
-        _epicHeader.Text = $"{items.Count(i => i.Acquired)}/{items.Count}";
-    }
-
     private void UpdateEpicQuestChecklist(StatsSnapshot s)
     {
-        var changed = AutoCheckEpicQuestLoot(s);
-        UpdateEpicQuestHeaderOnly();
-        if (changed)
-        {
-            _epicQuestDirty = true;
-            _settings.Save();
-        }
+        // Same as Sky: no card left to repaint, only the settings list to keep true.
+        if (AutoCheckEpicQuestLoot(s)) _settings.Save();
     }
 
     private bool AutoCheckEpicQuestLoot(StatsSnapshot s)
@@ -4361,485 +3995,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             UpdateGearHeaderOnly();
         }
     }
-
-    /// <summary>Sky state lens (David, 2026-08-11): same vocabulary as the quest
-    /// tracker's filter — "ready" is the Sky-specific prize: every piece collected,
-    /// the turn-in still to make. Session-scoped like the tracker's.</summary>
-    private string _skyState = "any state";
-
-    private void OnSkyStateChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_skyStateCombo.SelectedItem is not string s) return;
-        _skyState = s;
-        _skyQuestDirty = true;
-    }
-
-    private void OnSkySearchChanged(object? sender, EventArgs e)
-    {
-        _skyQuestDirty = true;
-        RenderSkyQuestChecklist();
-    }
-
-    private void RenderSkyQuestChecklist()
-    {
-        if (_skyStateCombo.Items.Count == 0)
-        {
-            foreach (var s in new[] { "any state", "open", "ready", "done" }) _skyStateCombo.Items.Add(s);
-            _skyStateCombo.SelectedIndex = 0;
-        }
-
-        // Search (#108, bjstrange): one box instead of a fourteen-tab tour. Crosses
-        // every class and ignores the state lens — filters shape tabs, never search
-        // (the tracker's rule since 1.57.4). Clearing the box restores the tabs.
-        var query = (_skySearchBox.Text ?? "").Trim();
-        _skySearchScroll.IsVisible = query.Length > 0;
-        _skyQuestTabs.IsVisible = query.Length == 0;
-        if (query.Length > 0)
-        {
-            RenderSkySearch(query);
-            return;
-        }
-        // Live selection wins; the persisted class restores the tab across restarts.
-        var selectedClass = (_skyQuestTabs.SelectedItem as TabItem)?.Tag as string
-            ?? (_settings.SkyQuestClass.Length > 0 ? _settings.SkyQuestClass : null);
-        _skyQuestTabs.Items.Clear();
-        AddSkyReadyAllTab(selectedClass);
-
-        foreach (var classGroup in _settings.SkyQuestChecklist.GroupBy(i => i.ClassName).OrderBy(g => g.Key))
-        {
-            var classTotal = classGroup.Count();
-            var classDone = classGroup.Count(i => i.Acquired);
-            var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
-            // #14ed6a2: the tab says WHO to hand it to, so the last step isn't a
-            // separate wiki trip.
-            var turnInNpc = classGroup.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0);
-            if (!string.IsNullOrWhiteSpace(turnInNpc))
-            {
-                var npcRow = new TextBlock
-                {
-                    Text = "Turn-in NPC: " + turnInNpc,
-                    FontSize = 10.5,
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                    Margin = new Thickness(0, 0, 0, 4),
-                    Foreground = AppTheme.DimBrush,
-                };
-                ToolTip.SetTip(npcRow, $"{classGroup.Key} Plane of Sky turn-in NPC: {turnInNpc}");
-                panel.Children.Add(npcRow);
-            }
-
-            // Unfinished quests float to the top (Reddit, 2026-08-11), and within
-            // the unfinished, CLOSEST TO DONE leads — the question a tab answers is
-            // "which quest is actually in reach". The ✔ rows are trophies and read
-            // fine from the bottom of the list.
-            foreach (var rewardGroup in classGroup.GroupBy(i => i.Reward)
-                         .OrderBy(g => IsSkyRewardCompleted(classGroup.Key, g.Key))
-                         .ThenByDescending(g => (double)g.Count(i => i.Acquired) / g.Count())
-                         .ThenBy(g => g.Key))
-            {
-                // The reward line is itself a checkbox: "I turned this in" (#73).
-                // Manual only — the log shows nothing reliable at the NPC hand-over.
-                var completed = IsSkyRewardCompleted(classGroup.Key, rewardGroup.Key);
-                var stateOk = _skyState switch
-                {
-                    "open" => !completed && rewardGroup.Any(i => !i.Acquired),
-                    "ready" => !completed && rewardGroup.All(i => i.Acquired),
-                    "done" => completed,
-                    _ => true,
-                };
-                if (!stateOk) continue;
-                var rewardItems = rewardGroup.ToList();
-                // The header carries the quest's own score — "2/3" says how close
-                // without opening anything; "ready" says the running is over.
-                var have = rewardItems.Count(i => i.Acquired);
-                var progress = completed ? "" : have == rewardItems.Count
-                    ? " · ready" : $" · {have}/{rewardItems.Count}";
-                var rewardCheck = new CheckBox
-                {
-                    IsChecked = completed,
-                    Margin = new Thickness(0, panel.Children.Count == 0 ? 0 : 6, 0, 1),
-                    Content = new TextBlock
-                    {
-                        Text = (completed ? $"✔ {rewardGroup.Key}" : rewardGroup.Key) + progress,
-                        FontSize = 11,
-                        FontWeight = FontWeight.SemiBold,
-                        Foreground = AppTheme.AccentBrush,
-                        TextTrimming = TextTrimming.CharacterEllipsis,
-                    },
-                };
-                ToolTip.SetTip(rewardCheck, $"{rewardGroup.Key} - {rewardGroup.First().Npc}\n" +
-                    "Check when you've turned everything in — quest complete.");
-                var (cls, reward) = (classGroup.Key, rewardGroup.Key);
-                rewardCheck.IsCheckedChanged += (box, _) =>
-                    OnSkyRewardToggled(cls, reward, rewardItems, ((CheckBox)box!).IsChecked == true);
-                panel.Children.Add(rewardCheck);
-
-                // Within a quest, what's MISSING leads; what's banked follows.
-                foreach (var item in rewardGroup.OrderBy(i => i.Acquired).ThenBy(i => i.QuestItem))
-                    panel.Children.Add(SkyItemCheckBox(item, completed));
-            }
-
-            if (panel.Children.Count == 0)
-                panel.Children.Add(new TextBlock
-                {
-                    Text = _skyState == "ready"
-                        ? "Nothing fully collected yet — \"open\" shows what's still missing."
-                        : $"No {_skyState} quests for this class.",
-                    FontSize = 11, TextWrapping = TextWrapping.Wrap,
-                    Foreground = AppTheme.DimBrush,
-                    Margin = new Thickness(0, 4, 0, 4),
-                });
-
-            var tab = new TabItem
-            {
-                Header = SkyQuestTabHeader(classGroup.Key),
-                Tag = classGroup.Key,
-                FontSize = 11,
-                Content = new ScrollViewer
-                {
-                    Content = panel,
-                    MaxHeight = SkyQuestListMaxHeight(),
-                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                    Padding = new Thickness(0, 0, 4, 0),
-                },
-            };
-            ToolTip.SetTip(tab, SkyQuestTabToolTip(classGroup.Key));
-            _skyQuestTabs.Items.Add(tab);
-            if (string.Equals(selectedClass, classGroup.Key, StringComparison.Ordinal))
-                _skyQuestTabs.SelectedItem = tab;
-        }
-
-        if (_skyQuestTabs.SelectedIndex < 0 && _skyQuestTabs.Items.Count > 0)
-            _skyQuestTabs.SelectedIndex = 0;
-    }
-
-    private CheckBox SkyItemCheckBox(SkyQuestChecklistItem item, bool completed)
-    {
-        var text = new StackPanel();
-        // * = the auto-tick parked a multi-class item here because no class lens
-        // claimed it (#106) — the player decides where it belongs.
-        text.Children.Add(new TextBlock
-        {
-            Text = item.AcquiredUnassigned ? item.QuestItem + " *" : item.QuestItem,
-            FontSize = 12,
-            Foreground = AppTheme.TextBrush,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-        text.Children.Add(new TextBlock
-        {
-            Text = item.Source,
-            FontSize = 10,
-            Foreground = AppTheme.DimBrush,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-        });
-
-        var tip = $"{item.Reward}: {item.QuestItem} ({item.Source})";
-        if (item.AcquiredUnassigned)
-        {
-            var others = _settings.SkyQuestChecklist
-                .Where(i => i.QuestItem.Equals(item.QuestItem, StringComparison.OrdinalIgnoreCase)
-                         && !i.ClassName.Equals(item.ClassName, StringComparison.OrdinalIgnoreCase))
-                .Select(i => i.ClassName).Distinct().ToList();
-            tip += "\n* Auto-ticked here, but this item is also wanted by: "
-                + string.Join(", ", others)
-                + ". Untick it and tick the right class if this guess is wrong.";
-        }
-
-        var check = new CheckBox
-        {
-            IsChecked = item.Acquired,
-            Content = text,
-            Margin = new Thickness(0, 1, 0, 1),
-            // A completed quest's items are history, not a to-do list.
-            IsEnabled = !completed,
-            Opacity = completed ? 0.55 : 1.0,
-        };
-        ToolTip.SetTip(check, tip);
-        check.IsCheckedChanged += (box, _) => OnSkyQuestToggled(item, ((CheckBox)box!).IsChecked == true);
-        return check;
-    }
-
-    /// <summary>The search view: matching checklist rows across EVERY class, grouped
-    /// by item so "who wants this drop?" is answered in one glance — each class's row
-    /// keeps its live checkbox, with completed quests read-only exactly like the tabs.</summary>
-    private void RenderSkySearch(string query)
-    {
-        _skySearchScroll.MaxHeight = SkyQuestListMaxHeight();
-        _skySearchResults.Children.Clear();
-        var matches = _settings.SkyQuestChecklist
-            .Where(i => i.QuestItem.Contains(query, StringComparison.OrdinalIgnoreCase)
-                     || i.Reward.Contains(query, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        if (matches.Count == 0)
-        {
-            _skySearchResults.Children.Add(new TextBlock
-            {
-                Text = $"Nothing in Sky wants \"{query}\" — searched every class's tests.",
-                FontSize = 11, TextWrapping = TextWrapping.Wrap,
-                Foreground = AppTheme.DimBrush,
-                Margin = new Thickness(0, 4, 0, 4),
-            });
-            return;
-        }
-
-        foreach (var itemGroup in matches.GroupBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
-                     .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            var first = itemGroup.First();
-            _skySearchResults.Children.Add(new TextBlock
-            {
-                Text = itemGroup.Key,
-                FontSize = 12, FontWeight = FontWeight.SemiBold,
-                Foreground = AppTheme.AccentBrush,
-                Margin = new Thickness(0, _skySearchResults.Children.Count == 0 ? 2 : 8, 0, 0),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            if (first.Source.Length > 0)
-                _skySearchResults.Children.Add(new TextBlock
-                {
-                    Text = first.Source, FontSize = 10,
-                    Foreground = AppTheme.DimBrush,
-                    TextTrimming = TextTrimming.CharacterEllipsis,
-                });
-
-            foreach (var item in itemGroup.OrderBy(i => i.ClassName, StringComparer.OrdinalIgnoreCase))
-            {
-                var completed = IsSkyRewardCompleted(item.ClassName, item.Reward);
-                var check = new CheckBox
-                {
-                    IsChecked = item.Acquired,
-                    Margin = new Thickness(8, 1, 0, 1),
-                    IsEnabled = !completed,
-                    Opacity = completed ? 0.55 : 1.0,
-                    Content = new TextBlock
-                    {
-                        Text = $"{ClassAbbrev(item.ClassName)} · {item.Reward}{(completed ? " ✔" : "")}",
-                        FontSize = 11.5,
-                        Foreground = AppTheme.TextBrush,
-                        TextTrimming = TextTrimming.CharacterEllipsis,
-                    },
-                };
-                ToolTip.SetTip(check, $"{item.ClassName} — {item.Reward} ({item.Npc})");
-                var captured = item;
-                check.IsCheckedChanged += (box, _) => OnSkyQuestToggled(captured, ((CheckBox)box!).IsChecked == true);
-                _skySearchResults.Children.Add(check);
-            }
-        }
-    }
-
-    private double SkyQuestListMaxHeight()
-    {
-        var available = _sectionScroll.MaxHeight > 0 ? _sectionScroll.MaxHeight - 220 : 260;
-        return Math.Clamp(available, 180, 320);
-    }
-
-    /// <summary>Reward turned in (#73): completing checks the reward's items too —
-    /// they were acquired and then handed over. Unchecking reopens the quest but
-    /// leaves the item boxes as they were; the player knows what they still hold.</summary>
-    private void OnSkyRewardToggled(string className, string reward,
-        List<SkyQuestChecklistItem> items, bool done)
-    {
-        var key = SkyRewardKey(className, reward);
-        if (done)
-        {
-            if (!_settings.SkyQuestCompleted.Contains(key)) _settings.SkyQuestCompleted.Add(key);
-            foreach (var i in items) i.Acquired = true;
-        }
-        else
-        {
-            _settings.SkyQuestCompleted.Remove(key);
-        }
-        _settings.Save();
-        UpdateSkyQuestHeaderOnly();
-        _skyQuestDirty = true;   // rebuild next tick: ✔ label, dimmed items, counts
-    }
-
-    /// <summary>Manual toggle: the box itself is already right, so only the counts
-    /// need refreshing — no rebuild, the control under the cursor stays put.</summary>
-    private void OnSkyQuestToggled(SkyQuestChecklistItem item, bool acquired)
-    {
-        item.Acquired = acquired;
-        // The player deciding IS the resolution of an auto-parked tick (#106) —
-        // whichever way they toggled, the * has served its purpose.
-        item.AcquiredUnassigned = false;
-        _settings.Save();
-        UpdateSkyQuestHeaderOnly();
-        UpdateSkyQuestTabHeader(item.ClassName);
-    }
-
-    /// <summary>Persist the class tab the player works in — it scopes loot auto-check
-    /// and picks the tab shown after a restart.</summary>
-    private void OnSkyQuestTabChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        // Items.Clear() during a rebuild fires this with no selection — ignore.
-        if ((_skyQuestTabs.SelectedItem as TabItem)?.Tag is string cls &&
-            !string.Equals(_settings.SkyQuestClass, cls, StringComparison.Ordinal))
-        {
-            _settings.SkyQuestClass = cls;
-            _settings.Save();
-        }
-    }
-
-    private void UpdateSkyQuestTabHeader(string className)
-    {
-        foreach (var tab in _skyQuestTabs.Items.OfType<TabItem>())
-            if (string.Equals(tab.Tag as string, className, StringComparison.Ordinal))
-            {
-                tab.Header = SkyQuestTabHeader(className);
-                ToolTip.SetTip(tab, SkyQuestTabToolTip(className));
-            }
-    }
-
-    /// <summary>#129: one tab that answers "what can I hand in right now?" across
-    /// every class — a multi-class character otherwise toured 14 tabs to find out.
-    /// Absent entirely when nothing is ready, rather than showing an empty tab.</summary>
-    private void AddSkyReadyAllTab(string? selectedClass)
-    {
-        var ready = _settings.SkyQuestChecklist
-            .GroupBy(i => (i.ClassName, i.Reward))
-            .Where(g => g.All(i => i.Acquired)
-                && !IsSkyRewardCompleted(g.Key.ClassName, g.Key.Reward))
-            .OrderBy(g => g.Key.ClassName).ThenBy(g => g.Key.Reward)
-            .ToList();
-        if (ready.Count == 0) return;
-
-        var panel = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
-        foreach (var quest in ready)
-        {
-            var npc = quest.Select(i => i.Npc).FirstOrDefault(n => n.Length > 0) ?? "";
-            var row = new TextBlock
-            {
-                Text = $"{ClassAbbrev(quest.Key.ClassName)} — {quest.Key.Reward}"
-                    + (npc.Length > 0 ? $"  ({npc})" : ""),
-                FontSize = 11,
-                Margin = new Thickness(0, 1, 0, 1),
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Foreground = AppTheme.TextBrush,
-            };
-            ToolTip.SetTip(row,
-                $"{quest.Key.ClassName}: all {quest.Count()} item{(quest.Count() == 1 ? "" : "s")} acquired"
-                + (npc.Length > 0 ? $" — turn in to {npc}" : ""));
-            panel.Children.Add(row);
-        }
-
-        var tab = new TabItem
-        {
-            Header = new TextBlock
-            {
-                Text = $"★ Ready {ready.Count}",
-                FontSize = 10,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = AppTheme.WarnBrush,
-            },
-            Tag = "★ready-all",
-            FontSize = 11,
-            Content = new ScrollViewer
-            {
-                Content = panel,
-                MaxHeight = 300,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Padding = new Thickness(0, 0, 4, 0),
-            },
-        };
-        ToolTip.SetTip(tab,
-            $"{ready.Count} quest{(ready.Count == 1 ? "" : "s")} ready to turn in, across all classes");
-        _skyQuestTabs.Items.Add(tab);
-        if (selectedClass == "★ready-all") tab.IsSelected = true;
-    }
-
-    // ---- Sky tab state counts (#3d7911d) ----
-    // A tab said "7/22" — items collected, which answers nothing about whether any
-    // QUEST is turnable. The counts are per reward group: done (turned in), ready
-    // (every piece collected, go hand it in), partial (started).
-    private sealed record SkyQuestTabCounts(int Done, int Ready, int Partial, int Total);
-
-    private SkyQuestTabCounts SkyQuestTabCountsFor(string className)
-    {
-        var rewards = _settings.SkyQuestChecklist
-            .Where(i => string.Equals(i.ClassName, className, StringComparison.Ordinal))
-            .GroupBy(i => i.Reward)
-            .ToList();
-        var done = 0;
-        var ready = 0;
-        var partial = 0;
-        foreach (var reward in rewards)
-        {
-            if (IsSkyRewardCompleted(className, reward.Key))
-                done++;
-            else if (reward.All(i => i.Acquired))
-                ready++;
-            else if (reward.Any(i => i.Acquired))
-                partial++;
-        }
-
-        return new SkyQuestTabCounts(done, ready, partial, rewards.Count);
-    }
-
-    private Control SkyQuestTabHeader(string className)
-    {
-        var counts = SkyQuestTabCountsFor(className);
-        var header = new StackPanel { Orientation = Orientation.Horizontal };
-        header.Children.Add(new TextBlock
-        {
-            Text = ClassAbbrev(className) + " ",
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = AppTheme.TextBrush,
-        });
-        AddSkyQuestTabMetric(header, "D", counts.Done, AppTheme.GoodBrush);
-        AddSkyQuestTabMetric(header, "R", counts.Ready, AppTheme.WarnBrush);
-        // WPF asks for an "IncomingBrush" resource that project never defines, so its
-        // P metric quietly falls back to the default foreground. The intent is a third
-        // distinct tone; this theme has one, so P actually reads as its own state here.
-        AddSkyQuestTabMetric(header, "P", counts.Partial, AppTheme.ChartIncomingBrush);
-        return header;
-    }
-
-    private static void AddSkyQuestTabMetric(StackPanel header, string label, int count, IBrush brush)
-    {
-        header.Children.Add(new TextBlock
-        {
-            Text = label,
-            FontSize = 10,
-            Margin = new Thickness(header.Children.Count == 1 ? 0 : 3, 0, 0, 0),
-            Foreground = AppTheme.DimBrush,
-        });
-        header.Children.Add(new TextBlock
-        {
-            Text = count.ToString(),
-            FontSize = 10,
-            FontWeight = FontWeight.SemiBold,
-            Foreground = brush,
-        });
-    }
-
-    private string SkyQuestTabToolTip(string className)
-    {
-        var counts = SkyQuestTabCountsFor(className);
-        return $"{className}: {counts.Done} turned in, {counts.Ready} ready to turn in, " +
-               $"{counts.Partial} partially complete, {counts.Total} total quests";
-    }
-
-    private static string ClassAbbrev(string className) => className switch
-    {
-        "Bard" => "BRD",
-        "Beastlord" => "BST",
-        "Berserker" => "BER",
-        "Cleric" => "CLR",
-        "Druid" => "DRU",
-        "Enchanter" => "ENC",
-        "Magician" => "MAG",
-        "Monk" => "MNK",
-        "Necromancer" => "NEC",
-        "Paladin" => "PAL",
-        "Ranger" => "RNG",
-        "Rogue" => "ROG",
-        "Shadow Knight" => "SHD",
-        "Shaman" => "SHM",
-        "Warrior" => "WAR",
-        "Wizard" => "WIZ",
-        _ => className,
-    };
 
     // ---- the imported gear checklist card (#113) ----
 

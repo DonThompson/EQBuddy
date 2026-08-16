@@ -446,9 +446,10 @@ public sealed class AppSettings
         // across restarts rather than re-rolled every launch until some unrelated edit
         // happens to save settings.
         var changed = settings.ApplyDefaultRules();
-        changed |= settings.ApplyDefaultSkyQuestSection();
+        // Fold the two old quest cards onto one BEFORE the gear default runs — gear
+        // anchors itself to the quests slot.
+        changed |= settings.MigrateQuestSections();
         changed |= settings.ApplyDefaultGearSection();
-        changed |= settings.ApplyDefaultEpicQuestSection();
         changed |= settings.ApplyDefaultSkyQuestChecklist();
         changed |= settings.ApplyDefaultEpicQuestChecklist();
         changed |= settings.MigrateBuffSetsToClassBuckets();
@@ -510,39 +511,48 @@ public sealed class AppSettings
     }
 
     /// <summary>
-    /// One-time migration for settings saved before the Sky Quest card existed: slot
-    /// "sky" in at its catalog position (after motes) instead of letting the UI append
-    /// it last. Deliberately insert-only — ordering, dedup, and unknown-key cleanup
-    /// stay the UI layer's job (ApplySectionLayout / the cards editor), so Core never
-    /// carries its own copy of the section catalog that could drift out of sync.
-    /// A fresh install's empty order is left empty: the UI appends the catalog itself.
+    /// The "Sky Quest" and "Epics" cards became ONE "Quests" card (David, 2026-08-16).
+    /// Both used to carry a full tabbed checklist on the widget — a review surface, not
+    /// a glance one — and the Quest Tracker window now owns that on its own three tabs,
+    /// which the new card opens.
+    ///
+    /// The surviving key takes the EARLIER of the two old slots, so the card appears
+    /// where the player already looked for quests instead of arriving at the bottom of
+    /// the list, where a new card reads as missing (the 1.66 lesson recorded in
+    /// NormalizeSectionOrder). It is hidden only when BOTH old cards were hidden:
+    /// keeping either one visible was a statement that quests belong on the widget.
+    ///
+    /// Idempotent — once neither old key is present there is nothing left to fold.
     /// </summary>
-    public bool ApplyDefaultSkyQuestSection()
+    public bool MigrateQuestSections()
     {
-        if (SectionOrder.Count == 0 || SectionOrder.Contains("sky")) return false;
-        var motes = SectionOrder.IndexOf("motes");
-        SectionOrder.Insert(motes < 0 ? SectionOrder.Count : motes + 1, "sky");
-        return true;
+        var firstSlot = -1;
+        for (var i = 0; i < SectionOrder.Count && firstSlot < 0; i++)
+            if (SectionOrder[i] is "sky" or "epic") firstSlot = i;
+
+        var hidSky = HiddenSections.Remove("sky");
+        var hidEpic = HiddenSections.Remove("epic");
+        var changed = hidSky || hidEpic;
+
+        if (firstSlot >= 0)
+        {
+            SectionOrder.RemoveAll(k => k is "sky" or "epic");
+            if (!SectionOrder.Contains("quests"))
+                SectionOrder.Insert(Math.Min(firstSlot, SectionOrder.Count), "quests");
+            changed = true;
+        }
+        if (hidSky && hidEpic && !HiddenSections.Contains("quests"))
+            HiddenSections.Add("quests");
+        return changed;
     }
 
     public bool ApplyDefaultGearSection()
     {
         if (SectionOrder.Count == 0 || SectionOrder.Contains("gear")) return false;
-        var sky = SectionOrder.IndexOf("sky");
+        var quests = SectionOrder.IndexOf("quests");
         var motes = SectionOrder.IndexOf("motes");
-        var anchor = sky >= 0 ? sky : motes;
+        var anchor = quests >= 0 ? quests : motes;
         SectionOrder.Insert(anchor < 0 ? SectionOrder.Count : anchor + 1, "gear");
-        return true;
-    }
-
-    public bool ApplyDefaultEpicQuestSection()
-    {
-        if (SectionOrder.Count == 0 || SectionOrder.Contains("epic")) return false;
-        var gear = SectionOrder.IndexOf("gear");
-        var sky = SectionOrder.IndexOf("sky");
-        var motes = SectionOrder.IndexOf("motes");
-        var anchor = gear >= 0 ? gear : sky >= 0 ? sky : motes;
-        SectionOrder.Insert(anchor < 0 ? SectionOrder.Count : anchor + 1, "epic");
         return true;
     }
 

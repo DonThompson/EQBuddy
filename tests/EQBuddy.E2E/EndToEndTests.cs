@@ -146,35 +146,39 @@ public sealed class EndToEndTests
     }
 
     /// <summary>
-    /// The quest-checklist surface, pinned here on 2026-08-15 immediately BEFORE it was
-    /// lifted out of MainWindow into its own class.
+    /// The Quests card, which replaced the Epic and Sky cards on 2026-08-16.
     ///
-    /// The WPF layer has no unit tests (docs/TestPlan.md §5), so an 800-line extraction
-    /// has nothing to prove it moved the behaviour rather than just the lines. This is
-    /// that proof: it renders one tab per class, the tab the player asked for is the one
-    /// selected, and that tab shows the rows the catalog says it has. Ran green before
-    /// the move and had to stay green after it.
+    /// This test used to pin those two cards' tab and row counts — written on
+    /// 2026-08-15 to prove the QuestChecklistView extraction moved behaviour and not
+    /// just lines. Both cards are now one launcher that opens the Quest Tracker, so the
+    /// tabs it asserted no longer exist on the widget; what has to stay true is the
+    /// reason the cards existed at all. The card SHOWS (a hidden launcher is an
+    /// unreachable window), both checklists are still built and populated behind it, and
+    /// its one line is non-empty — which is the whole glance that two cards used to
+    /// carry, and the thing a consolidation can silently drop.
     ///
-    /// Bard is the seeded class because its epic is the one whose rows we have argued
+    /// Bard is still the seeded class: its epic is the one whose rows we have argued
     /// about most (#150 / #139), so a wrong count here is a number someone recognizes.
     /// </summary>
     [Fact]
-    public void TheQuestChecklistRendersATabPerClassAndTheSelectedClassesRows()
+    public void TheQuestsCardShowsAndKeepsBothChecklistsGlanceable()
     {
         using var app = new AppHarness(s => s.EpicQuestClass = "Bard");
         app.Launch();
 
-        Assert.Equal(EQBuddy.Core.QuestClassFilter.Classes.Length, app.DumpValue("epicTabs"));
+        Assert.Equal(1, app.DumpValue("questsCard"));
 
-        // The seeded class's own rows, not a placeholder tab: the catalog ships Bard's
-        // epic, so an empty selected tab means the selection or the render broke.
-        Assert.True(app.DumpValue("epicRows") > 0,
-            "the seeded Bard tab should show its epic's rows; dump was: " + app.Artifacts());
+        // The checklists still build with no card of their own to render into — they
+        // feed the Quest Tracker window and EQBuddy Mobile, and the loot auto-checkers
+        // tick them whether or not anything is on screen.
+        Assert.True(app.DumpValue("questsEpicTotal") > 0,
+            "the epic checklist should still be built behind the card; dump was: " + app.Artifacts());
+        Assert.True(app.DumpValue("questsSkyTotal") > 0,
+            "the sky checklist should still be built behind the card; dump was: " + app.Artifacts());
 
-        // Sky tabs are grouped from the checklist rather than fixed per class, so the
-        // invariant is only that the surface built itself at all.
-        Assert.True(app.DumpValue("skyTabs") > 0,
-            "sky quest tabs should render from the default checklist; dump was: " + app.Artifacts());
+        // "Epic 1/12 · Sky 3/40" — folding two cards into one must not cost the numbers.
+        Assert.True(app.DumpValue("questsSummaryLen") > 0,
+            "the Quests card should summarise both checklists; dump was: " + app.Artifacts());
     }
 
     /// <summary>
@@ -193,6 +197,12 @@ public sealed class EndToEndTests
     ///
     /// So: launch with it on, and require the app to reach a live session — the same
     /// bar every other scenario uses, which a half-built window cannot clear.
+    ///
+    /// The checkbox itself moved to the Quest Tracker's Epic tab on 2026-08-16 with the
+    /// card consolidation, so MainWindow no longer restores it and this exact crash can
+    /// no longer happen there. The scenario stays anyway: the setting is still honored
+    /// (by the Epic tab and by EQBuddy Mobile's projection), and "launches with this on"
+    /// is cheap insurance on a path that has already cost one release.
     /// </summary>
     [Fact]
     public void TheAppStartsWithTheClassicOnlyEpicFilterAlreadyOn()
@@ -200,9 +210,7 @@ public sealed class EndToEndTests
         using var app = new AppHarness(s => s.EpicQuestClassicOnly = true);
         app.Launch();   // waits for killsTotal > 0; a window that never built never gets there
 
-        Assert.True(app.DumpValue("epicTabs") > 0,
-            "the epic checklist should render with the classic-only filter on; dump was: "
-            + app.Artifacts());
+        Assert.Equal(1, app.DumpValue("questsCard"));
     }
 
     /// <summary>

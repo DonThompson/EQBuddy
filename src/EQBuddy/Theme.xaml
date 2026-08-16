@@ -144,6 +144,44 @@
     </Style>
 
     <!-- Collapsible stat section -->
+    <!-- A card that OPENS something instead of expanding (David, 2026-08-16: the Quests
+         card replaced two tabbed checklists, and the real surface is the Quest Tracker
+         window). Deliberately the same chrome as Section — same panel, same corner, same
+         hover — so the stack still reads as one row of cards; the only honest difference
+         is ↗ where the chevron would be, because this one leaves rather than unfolds. -->
+    <Style x:Key="SectionLink" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="Margin" Value="0,2,0,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="10"
+                            BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1">
+                        <Border x:Name="hb" Background="Transparent" CornerRadius="10" Padding="11,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter/>
+                                <TextBlock Grid.Column="1" Text="&#x2197;"
+                                           Foreground="{DynamicResource DimBrush}"
+                                           VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            </Grid>
+                        </Border>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="hb" Property="Background" Value="{DynamicResource PanelHoverBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="Section" TargetType="Expander">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Margin" Value="0,2,0,0"/>

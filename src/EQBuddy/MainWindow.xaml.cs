@@ -73,7 +73,6 @@ public partial class MainWindow : Window
         // 1.84.0, leaving a process with no window (#158, twidget76). Anything the
         // XAML can call must exist before the XAML is touched.
         _quests = new QuestChecklistView(this, _settings, () => _raidLedger);
-        EpicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
         GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
@@ -256,7 +255,7 @@ public partial class MainWindow : Window
 
         if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
-                         MotesSection, SkyQuestSection, GearSection, EpicSection, TrackedSection, MoneySection,
+                         MotesSection, GearSection, TrackedSection, MoneySection,
                          ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
 
@@ -270,7 +269,6 @@ public partial class MainWindow : Window
                 section.Expanded += (_, _) =>
                 {
                     _lastRenderedVersion = -1;
-                    _quests.MarkSkyDirty();
                     Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
                         RefreshUi);
                 };
@@ -391,9 +389,6 @@ public partial class MainWindow : Window
             _settings.Save();
         }
 
-        SkyQuestTabs.SelectionChanged += OnSkyQuestTabChanged;
-        EpicTabs.SelectionChanged += OnEpicQuestTabChanged;
-
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _uiTimer.Tick += (_, _) => RefreshUi();
         _uiTimer.Start();
@@ -478,8 +473,8 @@ public partial class MainWindow : Window
     private Dictionary<string, UIElement> SectionMap() => new()
     {
         ["combat"] = CombatSection, ["healing"] = HealingSection, ["kills"] = KillsSection,
-        ["loot"] = LootSection, ["motes"] = MotesSection, ["sky"] = SkyQuestSection,
-        ["gear"] = GearSection, ["epic"] = EpicSection, ["tracked"] = TrackedSection,
+        ["loot"] = LootSection, ["motes"] = MotesSection, ["quests"] = QuestsSection,
+        ["gear"] = GearSection, ["tracked"] = TrackedSection,
         ["buffs"] = BuffsSection, ["raids"] = RaidsSection,
         ["money"] = MoneySection,
         ["progress"] = ProgressSection, ["faction"] = FactionSection, ["misc"] = MiscSection,
@@ -730,8 +725,14 @@ public partial class MainWindow : Window
     {
         switch (surface)
         {
-            case EQBuddy.Companion.CompanionSurfaces.Epics: _quests.MarkEpicDirty(); break;
-            case EQBuddy.Companion.CompanionSurfaces.Sky: _quests.MarkSkyDirty(); break;
+            // A tablet ticking an Epic or Sky row edits the same settings list the Quest
+            // Tracker window is drawing from, so the window is what needs the nudge —
+            // the widget's Quests card only carries counts, and those refresh on the tick.
+            case EQBuddy.Companion.CompanionSurfaces.Quests:
+            case EQBuddy.Companion.CompanionSurfaces.Epics:
+            case EQBuddy.Companion.CompanionSurfaces.Sky:
+                _questsWindow?.MaybeRefresh();
+                break;
             case EQBuddy.Companion.CompanionSurfaces.Gear: _gearChecklistDirty = true; break;
         }
     }
@@ -2478,22 +2479,14 @@ public partial class MainWindow : Window
                 onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
         }
 
-        if (SkyQuestSection.IsExpanded && _quests.SkyDirty)
-        {
-            RenderSkyQuestChecklist();
-            _quests.ClearSkyDirty();
-        }
+        // The Quests card is a launcher, not a checklist: its one line reports both
+        // checklists so the glance survives, and the work happens in the window.
+        QuestsHeader.Text = _quests.SummaryLine();
 
         if (GearSection.IsExpanded && _gearChecklistDirty)
         {
             RenderGearChecklist();
             _gearChecklistDirty = false;
-        }
-
-        if (EpicSection.IsExpanded && _quests.EpicDirty)
-        {
-            RenderEpicQuestChecklist();
-            _quests.ClearEpicDirty();
         }
 
         if (MoneySection.IsExpanded)
@@ -2626,15 +2619,15 @@ public partial class MainWindow : Window
                     $"uiScale100={_settings.UiScale * 100:0} " +
                     $"sectionCapScreen={_sectionAutoCap:0} " +
                     $"sectionMaxH={SectionScroll.MaxHeight:0} " +
-                    // The quest-checklist surface, which is about to become its own
-                    // class (2026-08-15). Tab counts and the selected tab's row count
-                    // are what a reader actually sees; asserting them from E2E is how
-                    // the extraction proves it moved the behaviour and not just the
-                    // lines, since the WPF layer has no unit tests of its own.
-                    $"epicTabs={EpicTabs.Items.Count} " +
-                    $"epicRows={TabRowCount(EpicTabs)} " +
-                    $"skyTabs={SkyQuestTabs.Items.Count} " +
-                    $"skyRows={TabRowCount(SkyQuestTabs)} " +
+                    // The Quests card (2026-08-16). It replaced the Epic and Sky cards,
+                    // whose tab and row counts used to be asserted here. What a reader
+                    // sees now is one launcher line, so that is what E2E pins: the card
+                    // is present, and folding two cards into it kept BOTH checklists'
+                    // counts on screen rather than quietly losing the glance.
+                    $"questsCard={(QuestsSection.Visibility == Visibility.Visible ? 1 : 0)} " +
+                    $"questsEpicTotal={_settings.EpicQuestChecklist.Count} " +
+                    $"questsSkyTotal={_settings.SkyQuestChecklist.Count} " +
+                    $"questsSummaryLen={QuestsHeader.Text.Length} " +
                     // EQBuddy Mobile's pump: it should be running, and it should be
                     // doing nothing, because this profile has no paired device.
                     $"companionPumpTicks={_companionPumpTicks} " +
@@ -2664,14 +2657,6 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(() => AlertTile.ShowAlert(
             $"Log archived — {System.IO.Path.GetFileName(destination)} (Logs\\archive)"));
     }
-
-    /// <summary>Rows the selected tab is showing, for the EQBUDDY_EXPAND dump. Every
-    /// checklist row is a CheckBox; the explanatory TextBlocks around them are not
-    /// rows, so counting checkboxes is the count a player would give you.</summary>
-    private static int TabRowCount(TabControl tabs) =>
-        (tabs.SelectedItem as TabItem)?.Content is ScrollViewer { Content: Panel panel }
-            ? panel.Children.OfType<CheckBox>().Count()
-            : 0;
 
     // ---- watch rules: rendering + alerts ----
 
@@ -3133,25 +3118,16 @@ public partial class MainWindow : Window
 
     // ---- quest checklists ----
     //
-    // The Epic and Sky checklists moved into QuestChecklistView on 2026-08-15 (992
-    // lines). What stays here is the wiring XAML insists on: handlers are bound by
-    // name in MainWindow.xaml, so these forward to the component that owns them.
+    // The widget's Epic and Sky cards became one Quests launcher on 2026-08-16, so the
+    // tabbed rendering that used to live behind these went with them. What remains in
+    // QuestChecklistView is the part that was never about the cards: auto-ticking the
+    // checklists from loot, and the achievements import — both of which feed the Quest
+    // Tracker window and EQBuddy Mobile, neither of which needs a card to be open.
+    // These two forward because XAML binds the ⚙ menu handlers by name.
 
-    private void RenderEpicQuestChecklist() => _quests.RenderEpicQuestChecklist();
-    private void RenderSkyQuestChecklist() => _quests.RenderSkyQuestChecklist();
     private void UpdateEpicQuestChecklist(StatsSnapshot s) => _quests.UpdateEpicQuestChecklist(s);
     private void UpdateSkyQuestChecklist(StatsSnapshot s) => _quests.UpdateSkyQuestChecklist(s);
 
-    private void OnEpicQuestTabChanged(object sender, SelectionChangedEventArgs e) =>
-        _quests.OnEpicQuestTabChanged(sender, e);
-    private void OnSkyQuestTabChanged(object sender, SelectionChangedEventArgs e) =>
-        _quests.OnSkyQuestTabChanged(sender, e);
-    private void OnSkyStateChanged(object sender, SelectionChangedEventArgs e) =>
-        _quests.OnSkyStateChanged(sender, e);
-    private void OnSkySearchChanged(object sender, TextChangedEventArgs e) =>
-        _quests.OnSkySearchChanged(sender, e);
-    private void OnEpicClassicOnlyToggled(object sender, RoutedEventArgs e) =>
-        _quests.OnEpicClassicOnlyToggled(sender, e);
     private void OnImportAchievements(object sender, RoutedEventArgs e) =>
         _quests.OnImportAchievements(sender, e);
     private void OnCopyAchievementsCommand(object sender, RoutedEventArgs e) =>

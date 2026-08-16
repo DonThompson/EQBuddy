@@ -52,9 +52,10 @@ public sealed class OptionsViewModelTests
         Assert.Equal("kills", s.SectionOrder[0]);
         Assert.Equal(OverlaySections.Catalog.Length, s.SectionOrder.Count);
         Assert.DoesNotContain("bogus", s.SectionOrder);
-        Assert.Contains(vm.Cards, c => c.Key == "sky" && c.Title == "Sky Quest");
+        Assert.Contains(vm.Cards, c => c.Key == "quests" && c.Title == "Quests");
         Assert.Contains(vm.Cards, c => c.Key == "gear" && c.Title == "Gear");
-        Assert.Contains(vm.Cards, c => c.Key == "epic" && c.Title == "Epics");
+        // The two cards "quests" replaced are gone from the catalog for good.
+        Assert.DoesNotContain(vm.Cards, c => c.Key is "sky" or "epic");
 
         vm.MoveCard("kills", -1);                        // top can't move up
         Assert.Equal("kills", s.SectionOrder[0]);
@@ -107,18 +108,37 @@ public sealed class OptionsViewModelTests
             HiddenSections = ["loot"],
         };
 
-        Assert.True(settings.ApplyDefaultSkyQuestSection());
-        Assert.Equal(["combat", "motes", "sky", "tracked", "bogus"], settings.SectionOrder);
+        // The two old quest cards fold onto one, in the EARLIER of their slots — the
+        // place the player already looked for quests.
+        settings.SectionOrder = ["combat", "motes", "sky", "gear", "epic", "tracked", "bogus"];
+        Assert.True(settings.MigrateQuestSections());
+        Assert.Equal(["combat", "motes", "quests", "gear", "tracked", "bogus"], settings.SectionOrder);
         Assert.Equal(["loot"], settings.HiddenSections);
-        Assert.False(settings.ApplyDefaultSkyQuestSection());   // idempotent
+        Assert.False(settings.MigrateQuestSections());   // idempotent
 
-        // No motes to anchor on: append; the UI's own ordering takes it from there.
-        var noMotes = new AppSettings { SectionOrder = ["combat", "kills"] };
-        Assert.True(noMotes.ApplyDefaultSkyQuestSection());
-        Assert.Equal(["combat", "kills", "sky"], noMotes.SectionOrder);
+        // Hiding BOTH old cards said quests stay off the widget, so the merged card
+        // inherits that; the dead keys leave the hidden list either way, because a key
+        // matching no catalog entry is invisible in Options and would sit there forever.
+        var hidBoth = new AppSettings
+        {
+            SectionOrder = ["combat", "sky", "epic"],
+            HiddenSections = ["sky", "epic"],
+        };
+        Assert.True(hidBoth.MigrateQuestSections());
+        Assert.Equal(["combat", "quests"], hidBoth.SectionOrder);
+        Assert.Equal(["quests"], hidBoth.HiddenSections);
+
+        // Keeping either one visible was a statement that quests belong on the widget.
+        var hidOne = new AppSettings
+        {
+            SectionOrder = ["combat", "sky", "epic"],
+            HiddenSections = ["epic"],
+        };
+        Assert.True(hidOne.MigrateQuestSections());
+        Assert.Empty(hidOne.HiddenSections);
 
         // A fresh install's empty order stays empty — the UI appends the catalog.
-        Assert.False(new AppSettings().ApplyDefaultSkyQuestSection());
+        Assert.False(new AppSettings().MigrateQuestSections());
     }
 
     [Fact]
@@ -185,35 +205,19 @@ public sealed class OptionsViewModelTests
     }
 
     [Fact]
-    public void GearSectionSlotsInAfterSky()
+    public void GearSectionSlotsInAfterQuests()
     {
-        var settings = new AppSettings { SectionOrder = ["combat", "motes", "sky", "tracked"] };
+        var settings = new AppSettings { SectionOrder = ["combat", "motes", "quests", "tracked"] };
 
         Assert.True(settings.ApplyDefaultGearSection());
-        Assert.Equal(["combat", "motes", "sky", "gear", "tracked"], settings.SectionOrder);
+        Assert.Equal(["combat", "motes", "quests", "gear", "tracked"], settings.SectionOrder);
         Assert.False(settings.ApplyDefaultGearSection());
 
-        var noSky = new AppSettings { SectionOrder = ["combat", "motes", "tracked"] };
-        Assert.True(noSky.ApplyDefaultGearSection());
-        Assert.Equal(["combat", "motes", "gear", "tracked"], noSky.SectionOrder);
+        var noQuests = new AppSettings { SectionOrder = ["combat", "motes", "tracked"] };
+        Assert.True(noQuests.ApplyDefaultGearSection());
+        Assert.Equal(["combat", "motes", "gear", "tracked"], noQuests.SectionOrder);
 
         Assert.False(new AppSettings().ApplyDefaultGearSection());
-    }
-
-    [Fact]
-    public void EpicQuestSectionSlotsInAfterSky()
-    {
-        var settings = new AppSettings { SectionOrder = ["combat", "motes", "sky", "gear", "tracked"] };
-
-        Assert.True(settings.ApplyDefaultEpicQuestSection());
-        Assert.Equal(["combat", "motes", "sky", "gear", "epic", "tracked"], settings.SectionOrder);
-        Assert.False(settings.ApplyDefaultEpicQuestSection());
-
-        var noSky = new AppSettings { SectionOrder = ["combat", "motes", "tracked"] };
-        Assert.True(noSky.ApplyDefaultEpicQuestSection());
-        Assert.Equal(["combat", "motes", "epic", "tracked"], noSky.SectionOrder);
-
-        Assert.False(new AppSettings().ApplyDefaultEpicQuestSection());
     }
 
     [Fact]

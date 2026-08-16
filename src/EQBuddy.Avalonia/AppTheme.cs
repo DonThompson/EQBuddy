@@ -191,6 +191,14 @@ internal static class AppTheme
 
     public static SectionPanel Section(Control header, Control content) => new(header, content);
 
+    /// <summary>A card that OPENS something instead of unfolding (David, 2026-08-16: one
+    /// Quests card replaced the two tabbed checklists, and the Quest Tracker window is
+    /// the real surface). Deliberately the same panel, corner, margin and padding as
+    /// <see cref="Section"/> — the stack has to keep reading as one row of cards; the
+    /// only honest difference is ↗ where the chevron would be, because this one leaves
+    /// rather than unfolds.</summary>
+    public static SectionLinkPanel SectionLink(Control header, Action onClick) => new(header, onClick);
+
     public static TextBlock Heading(string text, IBrush? brush = null) => new()
     {
         Text = text,
@@ -321,17 +329,33 @@ internal enum AppIcon
     Chart,
 }
 
-internal sealed class SectionPanel : Border
+/// <summary>What the widget's card stack is allowed to hold. Cards differ in what a
+/// click does — unfold in place, or leave for a window — but the stack, the Options
+/// show/hide pass and the render gate treat them alike, and that gate asks IsExpanded
+/// before it fills a body. A launcher answering "never open" is what keeps the question
+/// answerable at every one of those call sites without a type test.</summary>
+internal abstract class SectionCard : Border
 {
-    private readonly Border _body;
-    private readonly PathIcon _chevron;
-
     /// <summary>Fires whenever the card opens or closes — MainWindow uses the open
     /// edge to render a just-expanded card immediately instead of waiting out the
     /// full-render gate (WPF's Expander.Expanded hook, integration pass).</summary>
     public event Action<bool>? ExpandedChanged;
 
-    public bool IsExpanded
+    public virtual bool IsExpanded
+    {
+        get => false;
+        set { }
+    }
+
+    protected void RaiseExpandedChanged(bool expanded) => ExpandedChanged?.Invoke(expanded);
+}
+
+internal sealed class SectionPanel : SectionCard
+{
+    private readonly Border _body;
+    private readonly PathIcon _chevron;
+
+    public override bool IsExpanded
     {
         get => _body.IsVisible;
         set
@@ -341,7 +365,7 @@ internal sealed class SectionPanel : Border
             _chevron.Data = StreamGeometry.Parse(value
                 ? "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41Z"
                 : "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41Z");
-            if (changed) ExpandedChanged?.Invoke(value);
+            if (changed) RaiseExpandedChanged(value);
         }
     }
 
@@ -392,5 +416,54 @@ internal sealed class SectionPanel : Border
                 _body,
             },
         };
+    }
+}
+
+/// <summary>The launcher card — it sits in the stack looking like every other card and
+/// behaves like a button. Built from a Border with a pointer handler rather than a real
+/// Button because that is exactly how <see cref="SectionPanel"/>'s own header takes its
+/// click: a Button would carry Avalonia's control theme, whose hover wash comes from the
+/// system palette and not ours, and would need a template override just to say the same
+/// thing. Keyboard reach matches the sibling cards, which have none either.</summary>
+internal sealed class SectionLinkPanel : SectionCard
+{
+    public SectionLinkPanel(Control header, Action onClick)
+    {
+        Background = AppTheme.PanelBrush;
+        CornerRadius = new CornerRadius(6);
+        Margin = new Thickness(0, 2, 0, 0);
+
+        var arrow = new TextBlock
+        {
+            Text = "↗",
+            Foreground = AppTheme.DimBrush,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(6, 0, 0, 0),
+        };
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
+        grid.Children.Add(header);
+        Grid.SetColumn(arrow, 1);
+        grid.Children.Add(arrow);
+
+        var body = new Border
+        {
+            Background = Brushes.Transparent,
+            CornerRadius = new CornerRadius(6),
+            Padding = new Thickness(10, 7),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Child = grid,
+        };
+        body.PointerEntered += (_, _) => body.Background = AppTheme.PanelHoverBrush;
+        body.PointerExited += (_, _) => body.Background = Brushes.Transparent;
+        body.PointerPressed += (_, args) =>
+        {
+            onClick();
+            args.Handled = true;
+        };
+
+        Child = body;
     }
 }

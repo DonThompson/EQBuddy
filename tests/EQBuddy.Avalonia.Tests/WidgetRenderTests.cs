@@ -83,11 +83,13 @@ public class WidgetRenderTests : IDisposable
         window.Close();
     }
 
-    /// <summary>The Epics card exists at all — until it did, the "epic" key sat in the
+    /// <summary>The Quests card exists at all — until it did, the "quests" key sat in the
     /// shared OverlaySections catalog with nothing here to build it, which is what
-    /// crashed startup, and then (once guarded) left a dead row in Options.</summary>
+    /// crashed startup, and then (once guarded) left a dead row in Options. Since
+    /// 2026-08-16 it is a launcher rather than two tabbed checklists, so what it owes the
+    /// widget is the summary line that took their place.</summary>
     [AvaloniaFact]
-    public void TheEpicsCardRendersItsClassTabsAndClassicLens()
+    public void TheQuestsCardLeavesForTheTrackerAndSummarisesBothChecklists()
     {
         var window = new MainWindow();
         window.Show();
@@ -97,45 +99,19 @@ public class WidgetRenderTests : IDisposable
 
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("⚔ Epics", text);
-        Assert.Contains(text, t => t.StartsWith("BRD "));   // a class tab with its score
-        Assert.Contains(window.GetLogicalDescendants().OfType<CheckBox>(),
-            c => (c.Content as string) == "Classic-doable only");
+        Assert.Contains("🗺 Quests", text);
+        Assert.Contains("↗", text);   // this card leaves rather than unfolds
+
+        // Both checklists are seeded from the embedded catalogs, so the glance the two
+        // deleted cards used to give is still on the widget, in one line.
+        var epic = window.Settings.EpicQuestChecklist;
+        var sky = window.Settings.SkyQuestChecklist;
+        Assert.NotEmpty(epic);
+        Assert.NotEmpty(sky);
+        Assert.Contains($"Epic {epic.Count(i => i.Acquired)}/{epic.Count} · "
+            + $"Sky {sky.Count(i => i.Acquired)}/{sky.Count}", text);
         window.Close();
     }
-
-    /// <summary>The classic lens hides non-classic steps from the LIST and the COUNTS
-    /// alike (#71d21ea) — a score that counted steps it wasn't showing would be the
-    /// dishonest half of the feature.</summary>
-    [AvaloniaFact]
-    public void TheClassicLensMovesTheEpicsScoreNotJustTheList()
-    {
-        var window = new MainWindow();
-        window.Show();
-        window.RenderSnapshotForTest(new StatsSnapshot());
-        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        var lens = window.GetLogicalDescendants().OfType<CheckBox>()
-            .First(c => (c.Content as string) == "Classic-doable only");
-        var header = window.GetVisualDescendants().OfType<TextBlock>()
-            .First(t => t.Text is { } s && s.Contains('/') && s.EndsWith(EpicTotal(window).ToString()));
-
-        var before = header.Text;
-        lens.IsChecked = true;
-        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        // Classic-only is a strict subset, so the denominator can only shrink or hold.
-        Assert.NotNull(header.Text);
-        Assert.True(Denominator(header.Text!) <= Denominator(before!),
-            $"classic lens grew the total: {before} → {header.Text}");
-        window.Close();
-    }
-
-    private static int Denominator(string headerText) =>
-        int.Parse(headerText.Split('/')[1]);
-
-    private static int EpicTotal(MainWindow window) =>
-        window.Settings.EpicQuestChecklist.Count;
 
     /// <summary>The Gear card's WHERE-TO-GO pivot (#122abd6) reached this UI: the
     /// toggle has to exist in the tree, or the by-zone view is unreachable here even
@@ -647,33 +623,6 @@ public class WidgetRenderTests : IDisposable
         Assert.Contains("42", text);      // current DPS leads while fighting
         Assert.Contains("7", text);
         Assert.Contains("12.5%", text);
-        window.Close();
-    }
-
-    /// <summary>The Sky Quest card: class tabs from the embedded checklist, the state
-    /// lens vocabulary, and live checkboxes on the selected tab.</summary>
-    [AvaloniaFact]
-    public void SkyQuestCardRendersClassTabsWithChecklists()
-    {
-        var window = new MainWindow();
-        window.Show();
-
-        window.RenderSnapshotForTest(new StatsSnapshot());
-        global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-
-        var text = window.GetVisualDescendants().OfType<TextBlock>()
-            .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("☁ Sky Quest", text);
-        // The tab header is now the D/R/P state count (#3d7911d), not "collected/total":
-        // the class abbreviation leads, then the three metric labels beside it.
-        Assert.Contains(text, t => t.StartsWith("BRD"));
-        Assert.Contains("D", text);
-        Assert.Contains("R", text);
-        Assert.Contains("P", text);
-        Assert.Contains(window.GetVisualDescendants().OfType<ComboBox>(),
-            combo => combo.Items.Contains("ready") && combo.Items.Contains("open"));
-        Assert.Contains(window.GetVisualDescendants().OfType<CheckBox>(),
-            check => check.IsEnabled);   // the selected tab's item boxes are live
         window.Close();
     }
 
