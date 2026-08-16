@@ -974,7 +974,14 @@ public sealed partial class SessionStats
                     // A "pet" attacking us means the charm broke — stop crediting it.
                     // Unless the charm only just landed, in which case this is the
                     // mob's in-flight swing finishing its round (see CharmSettleSeconds).
-                    if (IsPet(dt.Attacker) && !CharmJustLanded(dt.Time)
+                    // And never a DoT TICK: a spell the creature cast before you charmed
+                    // it keeps ticking afterwards, and a tick is not a decision to attack.
+                    // The mez tracker already knew this (issue #32, and see
+                    // DamageTakenEvent.OverTime); charm never got the same guard, so
+                    // bjstrange's Choking ticked six seconds into a 5:31 charm and threw
+                    // the clock away — the real fade minutes later then had no landing to
+                    // measure and printed no hold (#135, charm5.txt).
+                    if (IsPet(dt.Attacker) && !dt.OverTime && !CharmJustLanded(dt.Time)
                         && !SameNameDuplicateKnown(dt.Time))
                     { RecordCharmBreak(dt.Time); _petName = null; }
                     _damageTaken += dt.Amount;

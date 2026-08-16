@@ -1228,6 +1228,43 @@ public class SpellTrackingTests
         Assert.Contains("held 0:56", tracked.LastItem);
     }
 
+    /// <summary>#135 (bjstrange, charm5.txt — the FOURTH distinct cause): a damage-over-
+    /// time spell the creature cast BEFORE you charmed it keeps ticking afterwards, and a
+    /// tick is not a decision to attack. Reading it as "my pet turned on me" threw the
+    /// clock away six seconds into a 5:31 charm, so the real fade minutes later had no
+    /// landing to measure and printed no hold. His charm broke cleanly with no attack at
+    /// all, which is why the earlier in-flight-swing and same-name fixes never covered it
+    /// — those both key on a genuine attack. The mez tracker already ignored DoT ticks
+    /// for the same reason (issue #32).</summary>
+    [Fact]
+    public void ADotTickFromBeforeTheCharmDoesNotBreakIt()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var tracked = Assert.Single(Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            // Cast on him before the charm landed; still ticking, well past the
+            // in-flight-swing window that CharmSettleSeconds covers.
+            At(0, 10, "You have taken 12 damage from Choking by a puma."),
+            At(0, 30, "You have taken 12 damage from Choking by a puma."),
+            At(1, 0, "Your Befriend Animal spell has worn off of a puma."))
+            .Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
+        Assert.Contains("held 0:56", tracked.LastItem);
+    }
+
+    /// <summary>The other side of that guard: a real melee swing outside the settle
+    /// window still breaks the charm, so ignoring ticks cannot hide a genuine break.</summary>
+    [Fact]
+    public void ARealSwingStillBreaksTheCharmAfterTheSettleWindow()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Befriend Animal."),
+            At(0, 4, "a puma blinks."),
+            At(0, 30, "A puma hits YOU for 12 points of damage."));
+        Assert.Null(stats.Snapshot().CharmedSince);
+    }
+
     /// <summary>#135 (bjstrange), the re-charm echo cascade: the pet's attack breaks
     /// charm A, the player re-charms the SAME creature seconds later, and only then
     /// does the game print charm A's delayed fade line. That stale line must read as
