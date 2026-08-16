@@ -96,7 +96,7 @@
                 </Popup>
                 <!-- mine = your items + 📌 pins · zone = doable where you're standing ·
                      all = the whole catalog -->
-                <Border Grid.Column="3" BorderBrush="{DynamicResource BorderBrush}"
+                <Border x:Name="ModeStrip" Grid.Column="3" BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1" CornerRadius="6" Margin="6,0,0,0"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center" Padding="1">

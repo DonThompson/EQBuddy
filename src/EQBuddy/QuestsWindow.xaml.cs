@@ -231,9 +231,15 @@ public partial class QuestsWindow : Window
             chip.SetResourceReference(Border.BorderBrushProperty, on ? "AccentBrush" : "BorderBrush");
             label.SetResourceReference(TextBlock.ForegroundProperty, on ? "BgBrush" : "DimBrush");
         }
-        // The era/class/mode row belongs to the catalog only; the checklists are a fixed
-        // set of rows, so those controls would be dead furniture on their tabs.
-        FilterRow.Visibility = _tab == QuestTab.General ? Visibility.Visible : Visibility.Collapsed;
+        // Era, state and the mode strip are catalog concepts — meaningless against a
+        // fixed checklist. The CLASS picker is not: David, 2026-08-15, "we may be
+        // helping a friend", so every tab must be able to reach a class you don't play.
+        var catalogOnly = _tab == QuestTab.General ? Visibility.Visible : Visibility.Collapsed;
+        EraCombo.Visibility = catalogOnly;
+        StateCombo.Visibility = catalogOnly;
+        ModeStrip.Visibility = catalogOnly;
+        ClassBtn.Visibility = Visibility.Visible;
+        FilterRow.Visibility = Visibility.Visible;
     }
 
     private void OnModeClick(object sender, MouseButtonEventArgs e)
@@ -396,7 +402,7 @@ public partial class QuestsWindow : Window
         BuildTabs();
         if (_tab != QuestTab.General)
         {
-            RenderChecklist(_tab, filter);
+            RenderChecklist(_tab, filter, classes);
             return;
         }
         if (inferred.Length > 0)
@@ -696,7 +702,7 @@ public partial class QuestsWindow : Window
     /// this is a second VIEW, never a second copy of the data. The search box keeps
     /// working here: on a 100-row class list, "Wakizashi" beating your eyes down the
     /// page is the same value it has on the catalog tab.</summary>
-    private void RenderChecklist(QuestTab tab, string filter)
+    private void RenderChecklist(QuestTab tab, string filter, List<string> classes)
     {
         var rows = tab == QuestTab.Epic
             ? _settings.EpicQuestChecklist.Select(i =>
@@ -707,7 +713,12 @@ public partial class QuestsWindow : Window
                 (i.ClassName, Group: i.Npc.Length > 0 ? i.Npc : "Sky",
                  Title: i.Reward, Detail: i.QuestItem, i.Acquired));
 
+        // The ⚙ picker chooses WHICH classes are in view — including ones you don't play,
+        // because "we may be helping a friend" (David, 2026-08-15). The chips then narrow
+        // to one of them. An empty pick means every class, never an empty window.
         var matching = rows
+            .Where(r => classes.Count == 0
+                || classes.Contains(r.ClassName, StringComparer.OrdinalIgnoreCase))
             .Where(r => _classLens is null
                 || r.ClassName.Equals(_classLens, StringComparison.OrdinalIgnoreCase))
             .Where(r => filter.Length == 0
