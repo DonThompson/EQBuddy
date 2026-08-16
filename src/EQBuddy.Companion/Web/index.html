@@ -117,8 +117,11 @@
                       max-height:calc(100dvh - 140px); }
     section.surface > .body { overflow:auto; min-height:0; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
     section.surface.wide { grid-column:1 / -1; }
-    /* The map fills its panel instead of falling back to an SVG's default height. */
-    section.surface.wide > .body { display:flex; flex-direction:column; overflow:hidden; }
+    /* `wide` is a LAYOUT span; `fills` is "this body draws itself and must not
+       scroll" (the map, which pans internally and would otherwise fall back to an
+       SVG's default height). They were one class until the quest list inherited the
+       map's clipping and could not be scrolled at all. */
+    section.surface.fills > .body { display:flex; flex-direction:column; overflow:hidden; }
   }
   @media (min-width:1280px) {
     #sections { grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -261,8 +264,8 @@
   /* On a tablet the map is the panel worth the room: the section claims a tall slot
      and the map fills whatever the header leaves. */
   @media (min-width:900px) {
-    section.surface.wide { min-height:min(72dvh,620px); }
-    section.surface.wide .mapwrap { height:auto; flex:1 1 auto; min-height:260px; }
+    section.surface.fills { min-height:min(72dvh,620px); }
+    section.surface.fills .mapwrap { height:auto; flex:1 1 auto; min-height:260px; }
   }
   /* Absolutely positioned AND sized: an <svg> with no viewBox falls back to its
      300×150 intrinsic size whenever a percentage height can't resolve, and inset
@@ -374,7 +377,12 @@
     body.solo section.surface { flex:1 1 auto; }
   }
   body.solo section.surface { max-height:none; min-height:0; display:flex; flex-direction:column; }
-  body.solo section.surface > .body { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  /* Solo takes the page's own scrollbar away (body is a fixed-height flex column), so
+     the lone panel's body has to provide one — otherwise a list longer than the screen
+     is simply unreachable. Only a `fills` panel clips instead, because it draws and
+     pans itself. */
+  body.solo section.surface > .body { flex:1 1 auto; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch; }
+  body.solo section.surface.fills > .body { display:flex; flex-direction:column; overflow:hidden; }
   /* The map stops being a fixed-height box and simply takes what is left. */
   body.solo .mapwrap { height:auto; flex:1 1 auto; min-height:200px; }
 </style>
@@ -430,8 +438,10 @@ const fragmentToken = location.hash.replace(/^#/, "");
 const token = fragmentToken || remembered || "";
 const tokenFromMemory = !fragmentToken && !!token;
 const PROTOCOL = 3;
+// `wide` = takes the big panel in the tablet grid. `fills` = its body draws itself
+// and must NOT scroll (the map pans internally); everything else scrolls its body.
 const SURFACE_META = {
-  map:      { label: "Zone map", wide: true },
+  map:      { label: "Zone map", wide: true, fills: true },
   spawns:   { label: "Spawn timers" },
   mez:      { label: "Mez chips" },
   buffs:    { label: "Buffs" },
@@ -664,9 +674,10 @@ function boot() {
     for (const name of wanted) {
       let p = panels[name];
       if (!p) {
-        const section = el("section", "surface" + (SURFACE_META[name] && SURFACE_META[name].wide ? " wide" : ""));
+        const meta = SURFACE_META[name] || {};
+        const section = el("section", "surface" + (meta.wide ? " wide" : "") + (meta.fills ? " fills" : ""));
         const h = el("h2");
-        h.append(el("span", null, (SURFACE_META[name] || {}).label || name), el("span", "count"));
+        h.append(el("span", null, meta.label || name), el("span", "count"));
         const body = el("div", "body");
         section.append(h, body);
         p = panels[name] = { section, body, head: h.lastChild };

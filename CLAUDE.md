@@ -148,6 +148,14 @@ Read this list before touching the areas it names. Every entry cost a release.
 8. **Fingerprints must exclude values that drift every tick.** Mobile pushes are gated
    on per-section fingerprints; including a countdown or an age would wake every device
    every second.
+9. **A layout class that also carries behaviour will hand that behaviour to the next
+   user of it.** The mobile page's `wide` meant *both* "span the big grid slot" and
+   "your body never scrolls, you draw yourself" — true only of the map. The quest
+   surface asked for the big slot, inherited `overflow:hidden`, and shipped a list
+   nobody could scroll. The two meanings are now `wide` and `fills`. Same lesson in
+   solo mode, where the page's own scrollbar is gone and only the panel body has one.
+   → **When reusing a presentation class, read every rule that selects it**, and split
+   it rather than adding an exception.
 
 ## Tooling notes that cost time when ignored
 
