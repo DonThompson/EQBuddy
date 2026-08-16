@@ -1,7 +1,7 @@
 [
  {
   "version": "1.88.0",
-  "date": "2026-08-15",
+  "date": "2026-08-16",
   "highlights": [
    "POTION BUFFS SHOW ON THE BUFF TRACKER (issue #167, thanks Liminal Warmth). Drinking a Distillate of Alacrity or Clarity never produced a timer: the potions cast Elixir spells that had no wiki page, and the buff catalog is harvested from the wiki. The whole alchemy catalog is now documented there and absorbed here - roughly 50 potion buffs join the tracker (every Distillate line, the Awareness focus potions, Turtle's Drink, the racial essences and more), and their fade lines are recognized so a chip clears the moment the buff actually drops instead of lingering at 0:00.",
    "THE QUEST TRACKER HAS ONE WAY IN NOW. Type what you actually know - the REWARD you want (\"Wakizashi of the Frozen Skies\"), an item in your bags, the quest's name, the NPC who gives it, or a zone - and the quest comes back, with 📌 to keep tracking it. That search already worked, but it sat under a \"+ I have this\" item-and-quantity row that won the eye completely; David missed the search entirely for weeks. The row is gone and the box now says what it takes.",
