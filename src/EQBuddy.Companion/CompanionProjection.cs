@@ -52,8 +52,8 @@ public static partial class CompanionProjection
                 : null,
             Loot = On(CompanionSurfaces.Loot) ? BuildLoot(stats) : null,
             Progress = On(CompanionSurfaces.Progress) ? BuildProgress(stats, input.Level, input.Unlocks) : null,
-            Epics = On(CompanionSurfaces.Epics) ? BuildEpics(input.Settings) : null,
-            Sky = On(CompanionSurfaces.Sky) ? BuildSky(input.Settings) : null,
+            Quests = On(CompanionSurfaces.Quests)
+                ? BuildQuests(input.Settings, input.Quests, input.QuestIndex) : null,
             Gear = On(CompanionSurfaces.Gear) ? BuildGear(input.Settings, input.HopsFromHere) : null,
         };
     }
@@ -158,17 +158,37 @@ public static partial class CompanionProjection
         if (snap.Progress is { } pr)
             map[CompanionSurfaces.Progress] = $"{pr.Level}|{pr.AaTotal}|{pr.Unlocks.Count}|{(int)pr.XpPercent}";
 
-        AddChecklist(map, CompanionSurfaces.Epics, snap.Epics);
-        AddChecklist(map, CompanionSurfaces.Sky, snap.Sky);
+        // Quests: everything here is a step change (a loot, a pin, a tick) — no clock
+        // drifts through it, so nothing needs excluding. The catalog itself rides only
+        // as its stamp: the payload is sticky and its identity IS the stamp.
+        if (snap.Quests is { } qs)
+            map[CompanionSurfaces.Quests] = Fold(
+                qs.CatalogStamp,
+                Join(qs.Tabs, t => $"{t.Key}:{t.Badge}"),
+                Join(qs.Mine, n => n) + "+" + qs.MineMore,
+                Join(qs.Owned.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase),
+                    kv => $"{kv.Key}={kv.Value}"),
+                Join(qs.Tracked, t => t),
+                Join(qs.Hidden, h => h),
+                Join(qs.Completed.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase),
+                    kv => $"{kv.Key}={kv.Value}"),
+                Join(qs.Classes, c => c.Abbrev),
+                qs.InferredClass,
+                ChecklistPrint(qs.Epics),
+                ChecklistPrint(qs.Sky));
+
         AddChecklist(map, CompanionSurfaces.Gear, snap.Gear);
         return map;
 
         static void AddChecklist(Dictionary<string, string> into, string surface, CompanionChecklistSection? section)
         {
             if (section is null) return;
-            into[surface] = Fold($"{section.Done}/{section.Total}",
-                Join(section.Groups, g => g.Heading + "=" + Join(g.Rows, r => $"{r.Id}:{(r.Done ? '1' : '0')}")));
+            into[surface] = ChecklistPrint(section);
         }
+
+        static string ChecklistPrint(CompanionChecklistSection section) =>
+            Fold($"{section.Done}/{section.Total}",
+                Join(section.Groups, g => g.Heading + "=" + Join(g.Rows, r => $"{r.Id}:{(r.Done ? '1' : '0')}")));
     }
 
     /// <summary>The pseudo-section for envelope-level change (who/where/the gate/the

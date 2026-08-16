@@ -29,8 +29,11 @@ public sealed record CompanionSnapshot
 {
     /// <summary>Bumped to 2 for the Phase 2 surface set: theme, map, mez, buffs,
     /// combat, loot, progress and the three checklists. A protocol-1 page and a
-    /// protocol-2 server simply don't talk — both refuse rather than half-render.</summary>
-    public const int CurrentProtocol = 2;
+    /// protocol-2 server simply don't talk — both refuse rather than half-render.
+    /// Bumped to 3 when the separate Epic/Sky sections folded into the quest surface;
+    /// a stale open page goes quiet until reloaded, and the reload is served by the
+    /// same exe, so page and server can only disagree for that one window.</summary>
+    public const int CurrentProtocol = 3;
 
     public string Kind { get; init; } = "snapshot";
     public int Protocol { get; init; } = CurrentProtocol;
@@ -62,8 +65,7 @@ public sealed record CompanionSnapshot
     public CompanionSessionSection? Session { get; init; }
     public CompanionLootSection? Loot { get; init; }
     public CompanionProgressSection? Progress { get; init; }
-    public CompanionChecklistSection? Epics { get; init; }
-    public CompanionChecklistSection? Sky { get; init; }
+    public CompanionQuestsSection? Quests { get; init; }
     public CompanionChecklistSection? Gear { get; init; }
 
     /// <summary>This snapshot reduced to what one client subscribed to:
@@ -86,8 +88,7 @@ public sealed record CompanionSnapshot
             Session = wanted.Contains(CompanionSurfaces.Session) ? Session : null,
             Loot = wanted.Contains(CompanionSurfaces.Loot) ? Loot : null,
             Progress = wanted.Contains(CompanionSurfaces.Progress) ? Progress : null,
-            Epics = wanted.Contains(CompanionSurfaces.Epics) ? Epics : null,
-            Sky = wanted.Contains(CompanionSurfaces.Sky) ? Sky : null,
+            Quests = wanted.Contains(CompanionSurfaces.Quests) ? Quests : null,
             Gear = wanted.Contains(CompanionSurfaces.Gear) ? Gear : null,
             NotOffered = missing.Count > 0 ? missing : null,
         };
@@ -116,6 +117,14 @@ public sealed record CompanionSnapshot
             }
             else state.MapGeometryStamp = map.GeometryStamp;
         }
+        if (snap.Quests is { Catalog: not null } quests)
+        {
+            // The quest catalog is the same kind of payload as map geometry — big,
+            // static, pointless to repeat — and gets the same treatment.
+            if (quests.CatalogStamp == state.QuestCatalogStamp)
+                snap = snap with { Quests = quests with { Catalog = null } };
+            else state.QuestCatalogStamp = quests.CatalogStamp;
+        }
         return snap;
     }
 
@@ -137,6 +146,7 @@ public sealed class CompanionClientState
 {
     public string? ThemeStamp { get; set; }
     public string? MapGeometryStamp { get; set; }
+    public string? QuestCatalogStamp { get; set; }
 }
 
 /// <summary>Who and where the data comes from — the page's header line.</summary>

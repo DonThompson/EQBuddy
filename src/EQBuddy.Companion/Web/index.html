@@ -197,6 +197,61 @@
   .rows input[type=checkbox] { width:22px; height:22px; flex:none; accent-color:var(--accent); }
   .rows li.done .rn { color:var(--dim); text-decoration:line-through; }
 
+  /* ---- quests ----
+     The desktop quest window's shapes, in page clothes: tab TILES (selected = the
+     accent fills the tile and the label inverts onto it — what makes a tab read as a
+     tab at a glance), a class chip row under them, one search box as the way in, and
+     one card per quest. All colors ride the theme variables, so a custom desktop
+     palette reaches these too. */
+  .qtabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .qtab { display:flex; align-items:baseline; gap:7px; border:1px solid var(--border);
+          background:var(--raised); color:var(--text); border-radius:9px; padding:9px 15px;
+          font-size:14px; font-weight:600; cursor:pointer; }
+  .qtab .badge { font-size:11px; color:var(--dim); }
+  .qtab.on { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+  .qtab.on .badge { color:var(--bg); opacity:.85; }
+  .qsearch { display:flex; gap:6px; margin-bottom:8px; }
+  .qsearch input { flex:1; min-width:0; background:var(--panel); border:1px solid var(--border);
+                   border-radius:9px; color:var(--text); font-size:15px; padding:9px 12px; }
+  .qsearch input::placeholder { color:var(--dim); }
+  .qsearch button { background:var(--raised); border:1px solid var(--border); color:var(--text);
+                    border-radius:9px; padding:0 14px; font-size:13px; cursor:pointer; white-space:nowrap; }
+  .qchips { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+  .qchip { border:1px solid var(--border); background:var(--raised); color:var(--dim);
+           border-radius:12px; padding:6px 13px; font-size:12px; cursor:pointer; }
+  .qchip.on { background:var(--accent); border-color:var(--accent); color:var(--bg); }
+  .qpick { display:none; background:var(--popup); border:1px solid var(--border);
+           border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .qpick.show { display:block; }
+  .qpick .cols { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:2px 10px; }
+  .qpick label { display:flex; align-items:center; gap:8px; font-size:14px; padding:4px 0; }
+  .qpick input { width:20px; height:20px; accent-color:var(--accent); }
+  .qpick .note { color:var(--dim); font-size:11.5px; margin-top:6px; }
+  .qscope { color:var(--dim); font-size:11.5px; margin:0 2px 8px; }
+  .qscope:empty { display:none; }
+  .qcard { background:var(--panel); border:1px solid var(--hairline); border-radius:11px;
+           padding:10px 12px; margin-bottom:7px; }
+  .qcard.ready { border-color:var(--good); }
+  .qcard.hidden { opacity:.55; }
+  .qhead { display:flex; align-items:baseline; gap:8px; }
+  .qname { flex:1; min-width:0; color:var(--accent); font-size:14.5px; font-weight:600;
+           overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }
+  .qcount { flex:none; font-size:13px; font-weight:700; color:var(--dim); }
+  .qcount.some { color:var(--accent); }
+  .qcount.ready { color:var(--good); }
+  /* A pin is a 44px-ish tap target dressed as a small glyph. */
+  .qpin { flex:none; font-size:15px; cursor:pointer; opacity:.35; padding:4px 6px; margin:-4px -6px -4px 0; }
+  .qpin.on { opacity:1; }
+  .qmeta { color:var(--dim); font-size:11.5px; margin-top:2px;
+           overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qrewards { color:var(--dim); font-size:11.5px; margin-top:2px; }
+  .qrewards b { color:var(--text); font-weight:500; }
+  .qitem { font-size:12.5px; margin:2px 0 0 6px; color:var(--dim); }
+  .qitem.met { color:var(--good); }
+  .qitem.some { color:var(--text); }
+  .qnote { color:var(--dim); font-size:11.5px; font-style:italic; margin:2px 0 0 6px; }
+  .qmore { color:var(--dim); font-size:12px; padding:8px 4px; }
+
   /* ---- map ---- */
   /* The map and its named list, side by side, as the desktop map window docks them.
      On a phone the row wraps to a column and the list simply follows the map. */
@@ -374,7 +429,7 @@ try { remembered = localStorage.getItem(TOKEN_KEY); } catch {}
 const fragmentToken = location.hash.replace(/^#/, "");
 const token = fragmentToken || remembered || "";
 const tokenFromMemory = !fragmentToken && !!token;
-const PROTOCOL = 2;
+const PROTOCOL = 3;
 const SURFACE_META = {
   map:      { label: "Zone map", wide: true },
   spawns:   { label: "Spawn timers" },
@@ -384,13 +439,12 @@ const SURFACE_META = {
   session:  { label: "Session stats" },
   loot:     { label: "Loot & watches" },
   progress: { label: "XP & AA" },
-  epics:    { label: "Epic checklist" },
-  sky:      { label: "Sky checklist" },
+  quests:   { label: "Quests", wide: true },
   gear:     { label: "Gear checklist" },
 };
 // Surfaces whose rows a tap can tick. The desktop refuses anything else anyway; this
 // is what stops the page from drawing a checkbox it has no right to draw.
-const TICKABLE = { epics: 1, sky: 1, gear: 1 };
+const TICKABLE = { quests: 1, gear: 1 };
 // Panels that must repaint every second because a clock is running in them; everything
 // else repaints only when its data actually changed, which is what keeps a scrolled
 // loot list scrolled and a half-ticked checklist from jumping under your thumb.
@@ -399,7 +453,7 @@ const TICKING = { spawns: 1, mez: 1, session: 1, map: 1 };
 // viewport (the layout breakpoint's own measure), not the window, so a fullscreen or
 // Home-Screen launch is judged by the room it actually has.
 const FIRST_RUN = innerWidth >= 900
-  ? ["map", "spawns", "mez", "session"]
+  ? ["map", "spawns", "mez", "session", "quests"]
   : ["spawns", "session"];
 
 const $ = id => document.getElementById(id);
@@ -422,6 +476,21 @@ function boot() {
   let choice = null; // { order:[names], enabled:{name:bool} }
   try { choice = JSON.parse(localStorage.getItem(storeKey)); } catch {}
   const saveChoice = () => { try { localStorage.setItem(storeKey, JSON.stringify(choice)); } catch {} };
+  // The separate Epic/Sky screens folded into "quests": carry a device's saved picks
+  // over, so a tablet that was showing its checklists keeps showing them under the
+  // new name instead of silently losing the surface.
+  if (choice && choice.order) {
+    const had = ["epics", "sky"].filter(s => choice.order.includes(s));
+    if (had.length) {
+      const at = Math.min(...had.map(s => choice.order.indexOf(s)));
+      const wanted = had.some(s => choice.enabled && choice.enabled[s]);
+      choice.order = choice.order.filter(s => s !== "epics" && s !== "sky");
+      if (!choice.order.includes("quests")) choice.order.splice(at, 0, "quests");
+      if (!("quests" in choice.enabled)) choice.enabled.quests = wanted;
+      delete choice.enabled.epics; delete choice.enabled.sky;
+      saveChoice();
+    }
+  }
 
   let offered = [];          // what the desktop is willing to send
   let latest = null;         // last snapshot message
@@ -474,6 +543,11 @@ function boot() {
       if (msg.map && !msg.map.geometry && latest && latest.map
           && latest.map.geometry && latest.map.geometryStamp === msg.map.geometryStamp)
         msg.map.geometry = latest.map.geometry;
+      // The quest catalog is sticky the same way: sent once, then withheld while the
+      // stamp matches what this device already holds.
+      if (msg.quests && !msg.quests.catalog && latest && latest.quests
+          && latest.quests.catalog && latest.quests.catalogStamp === msg.quests.catalogStamp)
+        msg.quests.catalog = latest.quests.catalog;
       latest = msg; receivedAt = Date.now();
       applyTheme(msg.theme);
       const offerChanged = JSON.stringify(msg.offered) !== JSON.stringify(offered);
@@ -604,7 +678,13 @@ function boot() {
 
       const refused = latest.notOffered && latest.notOffered.includes(name);
       const data = refused ? null : latest[name];
-      const key = refused ? "gated" : JSON.stringify(data);
+      // The quest catalog is compared by its stamp, never by content: it rides every
+      // carried-forward snapshot, and stringifying 1,200 quests once a second would
+      // be the page's biggest cost by far.
+      const key = refused ? "gated"
+        : name === "quests" && data
+          ? JSON.stringify(data, (k, v) => k === "catalog" ? undefined : v)
+          : JSON.stringify(data);
       if (!TICKING[name] && painted[name] === key) continue;
       painted[name] = key;
       p.head.textContent = "";
@@ -839,43 +919,354 @@ function boot() {
     p.body.replaceChildren(wrap);
   }
 
-  // ---------- checklists (epics / sky / gear) ----------
+  // ---------- checklists (gear, and the quest surface's Epic/Sky tabs) ----------
+  // One card builder for every checklist shape. opts.tickable draws the checkboxes,
+  // with ticks sent under `surface` — the quest tabs pass "epics"/"sky", the old
+  // names the desktop still applies. opts.filter narrows rows by text and
+  // opts.classes drops groups naming a class outside the pick, both exactly as the
+  // desktop quest window filters its own checklist tabs.
+  function checklistBody(surface, data, opts) {
+    opts = opts || {};
+    const filter = (opts.filter || "").toLowerCase();
+    const wrap = el("div", "card");
+    let any = false;
+    for (const g of data.groups) {
+      if (opts.classes && opts.classes.length && g.class
+          && !opts.classes.some(c => c.toLowerCase() === g.class.toLowerCase())) continue;
+      const rows = !filter ? g.rows : g.rows.filter(r =>
+        (r.text || "").toLowerCase().includes(filter)
+        || (r.detail || "").toLowerCase().includes(filter)
+        || (g.heading || "").toLowerCase().includes(filter));
+      if (!rows.length) continue;
+      any = true;
+      const h = el("h3", "group");
+      h.append(el("span", null, g.heading));
+      if (g.note) h.append(el("span", "note", g.note));
+      wrap.appendChild(h);
+      const ul = el("ul", "rows");
+      for (const r of rows) {
+        const li = el("li", (r.done ? "done " : "") + (opts.tickable ? "tickable" : ""));
+        const rn = el("div", "rn", r.text);
+        if (r.detail) rn.appendChild(el("span", "sub", r.detail));
+        if (opts.tickable) {
+          const cb = el("input");
+          cb.type = "checkbox"; cb.checked = !!r.done;
+          cb.onchange = () => {
+            // Optimistic: the row moves under the thumb now, the PC confirms on
+            // its next tick (and overrules us if the id was stale).
+            r.done = cb.checked;
+            li.classList.toggle("done", cb.checked);
+            sendTick(surface, r.id, cb.checked);
+          };
+          li.appendChild(cb);
+        }
+        li.appendChild(rn);
+        ul.appendChild(li);
+      }
+      wrap.appendChild(ul);
+    }
+    if (!any)
+      wrap.replaceChildren(el("div", "empty", filter
+        ? "Nothing on this checklist matches that search."
+        : "Nothing on this checklist yet — set it up on the PC."));
+    return wrap;
+  }
   function checklist(surface) {
     return function (p, data) {
-      const wrap = el("div", "card");
-      for (const g of data.groups) {
-        const h = el("h3", "group");
-        h.append(el("span", null, g.heading));
-        if (g.note) h.append(el("span", "note", g.note));
-        wrap.appendChild(h);
-        const ul = el("ul", "rows");
-        for (const r of g.rows) {
-          const li = el("li", (r.done ? "done " : "") + (TICKABLE[surface] ? "tickable" : ""));
-          const rn = el("div", "rn", r.text);
-          if (r.detail) rn.appendChild(el("span", "sub", r.detail));
-          if (TICKABLE[surface]) {
-            const cb = el("input");
-            cb.type = "checkbox"; cb.checked = !!r.done;
-            cb.onchange = () => {
-              // Optimistic: the row moves under the thumb now, the PC confirms on
-              // its next tick (and overrules us if the id was stale).
-              r.done = cb.checked;
-              li.classList.toggle("done", cb.checked);
-              sendTick(surface, r.id, cb.checked);
-            };
-            li.appendChild(cb);
-          }
-          li.appendChild(rn);
-          ul.appendChild(li);
-        }
-        wrap.appendChild(ul);
-      }
-      if (!data.groups.length)
-        wrap.replaceChildren(el("div", "empty", "Nothing on this checklist yet — set it up on the PC."));
       p.head.textContent = data.total ? data.done + " / " + data.total : "";
-      p.body.replaceChildren(wrap);
+      p.body.replaceChildren(checklistBody(surface, data, { tickable: !!TICKABLE[surface] }));
     };
   }
+
+  // ---------- quests (General · Epic 1.0 · Plane of Sky) ----------
+  // The desktop quest window, in page clothes: the same three tabs (the strip comes
+  // off the wire from Core's QuestSurface, so the two UIs cannot disagree), a class
+  // chip row on EVERY tab, the full class picker on every tab ("we may be helping a
+  // friend"), and one search box as the way in. Search runs HERE, over the catalog
+  // the PC shipped once — no round trip per keystroke — and covers the whole catalog
+  // whatever tab or class filter is active, because a search that silently honors
+  // browse filters breaks the search's promise (the desktop learned that live).
+  //
+  // Persistent chrome, like the map: the search box, tabs and chips are built once
+  // and updated in place, so a repaint never steals focus mid-word or a tap mid-aim.
+  const questsPanel = (function () {
+    const SEARCH_SETTLE = 120;  // ms — the desktop's own debounce; 250 was feelable
+    const CARD_CAP = 60;        // the desktop's RenderCap, with the same "+N more" honesty
+    let root, tabsRow, searchBox, pickBtn, pickPanel, pickCols, chipsRow, scopeLine, list;
+    let tab = "general", lens = null, filter = "", debounce = 0;
+    let d = null, catalog = null, byName = new Map();
+    // Lookups are lowercased once per push: ledger keys arrive as the log spelled
+    // them, catalog names as the wiki spells them, and the join must not care.
+    let ownedLower = {}, trackedLower = new Set(), hiddenLower = new Set(), completedLower = {};
+
+    function setCatalog(c) {
+      catalog = c;
+      byName = new Map(c.quests.map(q => [q.n.toLowerCase(), q]));
+    }
+
+    function make() {
+      root = el("div");
+      tabsRow = el("div", "qtabs");
+      const search = el("div", "qsearch");
+      searchBox = el("input");
+      searchBox.type = "search";
+      searchBox.placeholder = "Search quests, items, rewards, NPCs, zones";
+      searchBox.addEventListener("input", () => {
+        // Rebuild after typing STOPS, not per keystroke — the desktop froze before
+        // it learned this, and a tablet has less to spend.
+        clearTimeout(debounce);
+        debounce = setTimeout(() => { filter = searchBox.value.trim(); drawList(); }, SEARCH_SETTLE);
+      });
+      pickBtn = el("button", null, "Any class");
+      pickBtn.onclick = () => pickPanel.classList.toggle("show");
+      search.append(searchBox, pickBtn);
+      pickPanel = el("div", "qpick");
+      pickCols = el("div", "cols");
+      pickPanel.append(pickCols, el("div", "note",
+        "Which classes are in view — yours, or a friend's. Saved with this character "
+        + "on the PC; empty means every class, never an empty window."));
+      chipsRow = el("div", "qchips");
+      scopeLine = el("div", "qscope");
+      list = el("div");
+      root.append(tabsRow, search, pickPanel, chipsRow, scopeLine, list);
+      return root;
+    }
+
+    // The classes "in view": the picker's saved choice, else the log's inferred one
+    // (always labeled inferred where it shows), else nothing = every class.
+    function viewClasses() {
+      if (d.classes && d.classes.length) return d.classes;
+      if (d.inferredClass && catalog) {
+        const found = catalog.allClasses.find(c => c.name.toLowerCase() === d.inferredClass.toLowerCase());
+        if (found) return [found];
+      }
+      return [];
+    }
+
+    // Membership check against the index's precomputed allowed-abbrev list — the
+    // wiki's class text is never parsed here; Core's QuestClassFilter did that once
+    // at build. No list on the entry = any class.
+    function inClass(q, names) {
+      if (!q.a || !names.length || !catalog) return true;
+      const abbrevs = names
+        .map(n => catalog.allClasses.find(c => c.name.toLowerCase() === n.toLowerCase()))
+        .filter(Boolean).map(c => c.abbrev);
+      return !abbrevs.length || abbrevs.some(a => q.a.includes(a));
+    }
+
+    // Have/need over the owned counts the PC ships — the same numbers the desktop's
+    // matcher reads, so both screens call the same quest "✔ ready".
+    function progressOf(q) {
+      const items = q.i.map(it => ({ n: it.n, need: it.q || 1, have: ownedLower[it.n.toLowerCase()] || 0 }));
+      const total = items.length;
+      const have = items.filter(i => i.have > 0).length;
+      const complete = total > 0 && !q.o && items.every(i => i.have >= i.need);
+      const readyCount = total === 0 || q.o ? 0
+        : Math.min(...items.map(i => Math.floor(i.have / Math.max(1, i.need))));
+      return { items, have, total, complete, readyCount, fraction: total === 0 || q.o ? 0 : have / total };
+    }
+
+    // The desktop QuestSearch's own fields: name, start zone, giver, items, rewards.
+    function matches(q, f) {
+      return q.n.toLowerCase().includes(f) || (q.z || "").toLowerCase().includes(f)
+        || (q.g || "").toLowerCase().includes(f)
+        || q.i.some(it => it.n.toLowerCase().includes(f))
+        || q.r.some(r => r.toLowerCase().includes(f));
+    }
+
+    function card(q) {
+      const prog = progressOf(q);
+      const key = q.n.toLowerCase();
+      const tracked = trackedLower.has(key);
+      const done = completedLower[key] || 0;
+      const c = el("div", "qcard" + (prog.complete ? " ready" : "") + (hiddenLower.has(key) ? " hidden" : ""));
+      const head = el("div", "qhead");
+      const name = el("a", "qname", q.n);
+      name.href = q.u || "#"; name.target = "_blank"; name.rel = "noopener";
+      head.appendChild(name);
+      head.appendChild(el("div", "qcount" + (prog.complete ? " ready" : prog.have > 0 ? " some" : ""),
+        q.o ? "📚 set of quests"
+        : prog.total === 0 ? "steps"
+        : prog.complete ? (q.p && prog.readyCount > 1 ? "✔ ready ×" + prog.readyCount : "✔ ready")
+        : prog.have + "/" + prog.total));
+      const pin = el("div", "qpin" + (tracked ? " on" : ""), "📌");
+      pin.title = tracked ? "Stop tracking this quest" : "Track this quest";
+      pin.onclick = () => {
+        // Optimistic: the pin flips under the thumb now; the PC applies it to the
+        // same ledger the desktop window writes, and its next push is the truth.
+        const now = !trackedLower.has(key);
+        if (now) trackedLower.add(key); else trackedLower.delete(key);
+        sendTick("quests", "track|" + q.n, now);
+        drawList();
+      };
+      head.appendChild(pin);
+      c.appendChild(head);
+      if (q.r.length) {
+        const line = el("div", "qrewards");
+        line.append("Rewards: ");
+        line.appendChild(el("b", null, q.r.slice(0, 6).join(", ")));
+        if (q.r.length > 6) line.append(" +" + (q.r.length - 6) + " more");
+        c.appendChild(line);
+      }
+      const meta = [
+        q.z, q.g ? "from " + q.g : "", q.l > 0 ? "lvl " + q.l + "+" : "",
+        q.p ? "repeatable" : "",
+        done > 0 ? (q.p ? "done ×" + done : "✓ done") : "",
+      ].filter(Boolean).join(" · ") + (q.c ? " · " + q.c : "");
+      if (meta) {
+        const m = el("div", "qmeta", meta);
+        m.title = meta;   // the classes fragment is the one allowed to vanish into the ellipsis
+        c.appendChild(m);
+      }
+      for (const it of prog.items)
+        c.appendChild(el("div", "qitem" + (it.have >= it.need ? " met" : it.have > 0 ? " some" : ""),
+          (it.have >= it.need ? "✔ " : "• ") + it.n + " — " + it.have + "/" + it.need));
+      if (!q.i.length && !q.o)
+        c.appendChild(el("div", "qnote", "Dialogue or task chain — steps on the wiki page."));
+      return c;
+    }
+
+    function drawTabs() {
+      tabsRow.replaceChildren();
+      for (const t of d.tabs) {
+        const tile = el("div", "qtab" + (t.key === tab ? " on" : ""));
+        tile.append(el("span", null, t.label));
+        if (t.badge) tile.append(el("span", "badge", t.badge));
+        tile.onclick = () => { tab = t.key; redraw(); };
+        tabsRow.appendChild(tile);
+      }
+    }
+
+    function drawChips() {
+      chipsRow.replaceChildren();
+      const mine = viewClasses();
+      // One class offers no narrowing — a strip reading "Any · BRD" chooses nothing.
+      chipsRow.style.display = mine.length < 2 ? "none" : "";
+      if (mine.length < 2) return;
+      const add = (label, cls, title) => {
+        const on = cls ? lens && lens.name === cls.name : !lens;
+        const chip = el("div", "qchip" + (on ? " on" : ""), label);
+        chip.title = title;
+        chip.onclick = () => { lens = cls; redraw(); };
+        chipsRow.appendChild(chip);
+      };
+      add("Any", null, "Every class you play");
+      for (const c of mine) add(c.abbrev, c, "Show only " + c.name + " — quests, Epic and Plane of Sky alike");
+    }
+
+    function drawPicker() {
+      pickCols.replaceChildren();
+      if (!catalog) return;
+      const picked = new Set((d.classes || []).map(c => c.name.toLowerCase()));
+      for (const cls of catalog.allClasses) {
+        const label = document.createElement("label");
+        const cb = el("input");
+        cb.type = "checkbox";
+        cb.checked = picked.has(cls.name.toLowerCase());
+        cb.onchange = () => {
+          const boxes = [...pickCols.querySelectorAll("input")];
+          const names = catalog.allClasses.filter((c2, i) => boxes[i].checked).map(c2 => c2.name);
+          // Optimistic: the view narrows now; the PC saves the pick with this
+          // character (the desktop ⚙ popup's own SetClasses) and confirms next push.
+          d.classes = catalog.allClasses.filter(c2 => names.includes(c2.name));
+          if (names.length) d.inferredClass = null;
+          sendTick("quests", "classes|" + names.join(","), true);
+          redraw();
+        };
+        label.append(cb, document.createTextNode(cls.name));
+        pickCols.appendChild(label);
+      }
+      pickBtn.textContent = !d.classes || !d.classes.length ? "Any class"
+        : d.classes.length === 1 ? d.classes[0].name
+        : d.classes.map(c => c.abbrev).join(" · ");
+    }
+
+    function drawGeneral() {
+      const out = [];
+      let rendered = 0, suppressed = 0;
+      const addCard = q => { if (rendered >= CARD_CAP) { suppressed++; return; } rendered++; out.push(card(q)); };
+      if (!catalog) {
+        list.replaceChildren(el("div", "empty", "Waiting for the quest catalog from the PC…"));
+        return;
+      }
+      if (filter) {
+        const f = filter.toLowerCase();
+        // The whole catalog, no class/era/state gating — each card states its own
+        // class and the reader decides (the Blue Orc Head lesson).
+        const found = catalog.quests
+          .map(q => ({ q, p: progressOf(q), t: trackedLower.has(q.n.toLowerCase()) }))
+          .filter(x => matches(x.q, f));
+        found.sort((a, b) => (b.t - a.t) || (b.p.fraction - a.p.fraction) || a.q.n.localeCompare(b.q.n));
+        scopeLine.textContent = "🔎 " + found.length + " match" + (found.length === 1 ? "" : "es")
+          + " in the whole catalog — names, turn-in items, rewards, NPCs, zones. "
+          + "Search ignores the class filter; each card says whose it is.";
+        for (const x of found) addCard(x.q);
+        if (!found.length)
+          out.push(el("div", "empty", "Nothing matches. Searches cover quest names, turn-in "
+            + "items, rewards, quest givers, and zones — try fewer words."));
+      } else {
+        scopeLine.textContent = !d.classes || !d.classes.length
+          ? (d.inferredClass
+            ? "🎭 Filtering for " + d.inferredClass + " (inferred from your most-used skills "
+              + "— pick classes to override; inference follows you if you swap)"
+            : "")
+          : "";
+        const names = lens ? [lens.name] : viewClasses().map(c => c.name);
+        const mine = d.mine.map(n => byName.get(n.toLowerCase())).filter(Boolean);
+        // Items you LOOTED outrank the class lens: out-of-class overlaps get their
+        // own section instead of vanishing — your bags don't care whose quest it is.
+        const yours = mine.filter(q => inClass(q, names));
+        const others = mine.filter(q => !inClass(q, names));
+        for (const q of yours) addCard(q);
+        if (others.length) {
+          out.push(el("h3", "group", "For other classes — from your items (" + others.length + ")"));
+          for (const q of others) addCard(q);
+        }
+        suppressed += d.mineMore || 0;
+        if (!mine.length)
+          out.push(el("div", "empty", "Nothing yet — loot a quest item (they show green in "
+            + "the Loot list) and its quest appears here, or search a reward you want by name. "
+            + "Pin 📌 anything to keep it in front of you."));
+      }
+      // Never a silent cap: say how many are hidden and how to reach them.
+      if (suppressed > 0)
+        out.push(el("div", "qmore", "+" + suppressed + " more — showing the first "
+          + rendered + ". Keep typing to narrow it down."));
+      list.replaceChildren(...out);
+    }
+
+    function drawList() {
+      if (tab === "epic" || tab === "sky") {
+        scopeLine.textContent = "";
+        const names = lens ? [lens.name] : viewClasses().map(c => c.name);
+        list.replaceChildren(checklistBody(tab === "epic" ? "epics" : "sky",
+          tab === "epic" ? d.epics : d.sky,
+          { tickable: true, filter, classes: names }));
+        return;
+      }
+      drawGeneral();
+    }
+
+    function redraw() { drawTabs(); drawChips(); drawPicker(); drawList(); }
+
+    return {
+      render(p, section) {
+        d = section;
+        if (section.catalog) setCatalog(section.catalog);
+        ownedLower = {};
+        for (const k in (section.owned || {})) ownedLower[k.toLowerCase()] = section.owned[k];
+        trackedLower = new Set((section.tracked || []).map(s => s.toLowerCase()));
+        hiddenLower = new Set((section.hidden || []).map(s => s.toLowerCase()));
+        completedLower = {};
+        for (const k in (section.completed || {})) completedLower[k.toLowerCase()] = section.completed[k];
+        if (!root) p.body.replaceChildren(make());
+        else if (p.body.firstChild !== root) p.body.replaceChildren(root);
+        // A lens on a class that left the pick is ignored rather than emptying the view.
+        if (lens && !viewClasses().some(c => c.name === lens.name)) lens = null;
+        redraw();
+      },
+    };
+  })();
 
   // ---------- map ----------
   // Inline SVG, no library: one path per pack color (non-scaling strokes, so lines stay
@@ -1410,8 +1801,7 @@ function boot() {
     combat: renderCombat,
     loot: renderLoot,
     progress: renderProgress,
-    epics: checklist("epics"),
-    sky: checklist("sky"),
+    quests: (p, d) => questsPanel.render(p, d),
     gear: checklist("gear"),
   };
 

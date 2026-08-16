@@ -32,6 +32,7 @@ public static partial class CompanionProjection
                     ? g.Key.Section
                     : $"{g.Key.ClassName} — {g.Key.Section}",
                 Note: null,
+                Class: g.Key.ClassName,
                 Rows:
                 [
                     .. g.OrderBy(i => i.Order).ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
@@ -99,7 +100,8 @@ public static partial class CompanionProjection
                     i.Id,
                     i.QuestItem.Length > 0 ? i.QuestItem : i.Reward,
                     i.AcquiredUnassigned ? i.Npc + UnassignedMark : i.Npc,
-                    i.Acquired))])));
+                    i.Acquired))],
+                Class: g.Key.ClassName)));
 
         return new CompanionChecklistSection(scoped.Count(i => i.Acquired), scoped.Count, groups);
     }

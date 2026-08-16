@@ -72,6 +72,12 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | An edit made on a device appears on the PC map (via the ledger's `Revision`) | **Auto** — `CompanionCurationTests` |
 | The page's fade constants match `TrailFade` | **Auto** — pinned by reading the shipped page |
 | Theme reaches the page for every `var(--x)` it uses | **Auto** — `CompanionThemeTests` |
+| The quest surface's tab strip comes from Core's `QuestSurface`; General carries no badge | **Auto** — `CompanionQuestsTests` |
+| The quest catalog index ships once per device by stamp, and re-ships when any field changes | **Auto** — `CompanionQuestsTests` |
+| The general list's membership and order are Core's `QuestMatcher`'s; dismissed and completed non-repeatables are excluded | **Auto** — `CompanionQuestsTests` |
+| Class restrictions are resolved by Core's `QuestClassFilter` at index build — the page checks membership, never parses class text | **Auto** — `CompanionQuestsTests` |
+| A device's 📌 and class-picker taps land on the same `QuestLedgerStore` the desktop writes; repeats are not changes | **Auto** — `CompanionQuestsTests` |
+| Epic/Sky rows inside the quest surface still tick under their old surface names | **Auto** — `CompanionQuestsTests`, `CompanionSurfaceTests` |
 | Layout: solo panel fills the viewport; chrome shrinks in fullscreen; nothing scrolls sideways | **Manual** — §6, or the harness |
 
 ## 4b. The widget's geometry

@@ -107,4 +107,80 @@ public class ScreenshotFixtureTests
         Assert.NotEmpty(map.Named);
         Directory.Delete(dir, true);
     }
+
+    /// <summary>The quest surface's snapshot for the mobile harness and the README
+    /// shots: the REAL embedded catalog (all ~1,200 quests, so the shot carries the
+    /// real search index and its real weight), a real ledger taught by real calls,
+    /// and the shipped projection. Needs no maps folder.
+    ///   dotnet test --filter FullyQualifiedName~ScreenshotFixture -e EQBUDDY_SHOOT=1</summary>
+    [Fact]
+    public void WriteMobileQuestsSnapshot()
+    {
+        if (Environment.GetEnvironmentVariable("EQBUDDY_SHOOT") != "1") return;
+
+        var now = new DateTime(2026, 8, 16, 21, 12, 0);
+        var catalog = QuestCatalog.LoadEmbedded();
+        Assert.NotEmpty(catalog.Quests);
+
+        var dir = Path.Combine(Path.GetTempPath(), "eqb-shot-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var ledger = new QuestLedgerStore(Path.Combine(dir, "quest-ledger.json"))
+        { TrackFilter = catalog.IsTurnInItem, Normalize = QuestCatalog.BaseItemName };
+        const string key = "hugzee_legends";
+
+        // A believable mid-session ledger: some farmed stacks, one pinned goal, one
+        // dabbled class pair, one finished quest.
+        ledger.RecordLoot(key, "Bone Chips", 4, now.AddMinutes(-40));
+        ledger.SetManual(key, "Crushbone Belt", 6);
+        ledger.SetManual(key, "Blue Orc Head", 1);
+        ledger.SetClasses(key, ["Bard", "Monk"]);
+        var pinnable = catalog.Quests.FirstOrDefault(q => q.Items.Count > 0);
+        if (pinnable is not null) ledger.SetTracked(key, pinnable.Name, true);
+
+        var settings = new AppSettings
+        {
+            EpicQuestChecklist =
+            [
+                new EpicQuestChecklistItem { Id = "e1", ClassName = "Bard", Section = "Pieces", QuestItem = "Sword of the Ykesha", Order = 1, Acquired = true },
+                new EpicQuestChecklistItem { Id = "e2", ClassName = "Bard", Section = "Pieces", QuestItem = "Mace of the Shadowed Soul", Order = 2 },
+                new EpicQuestChecklistItem { Id = "e3", ClassName = "Monk", Section = "Pieces", QuestItem = "Robe of the Whistling Fists", Order = 1 },
+            ],
+            SkyQuestChecklist =
+            [
+                new SkyQuestChecklistItem { Id = "s1", ClassName = "Bard", Reward = "Singing Short Sword", Npc = "Gorgalosk", QuestItem = "Bracelet of the Sky", Acquired = true },
+                new SkyQuestChecklistItem { Id = "s2", ClassName = "Bard", Reward = "Singing Short Sword", Npc = "Gorgalosk", QuestItem = "Efreeti War Spear" },
+            ],
+        };
+
+        var request = new CompanionQuestRequest
+        {
+            Catalog = catalog,
+            Owned = ledger.For(key),
+            Tracked = ledger.TrackedFor(key),
+            Hidden = ledger.HiddenFor(key),
+            Completed = ledger.CompletedFor(key),
+            Classes = ledger.ClassesFor(key),
+        };
+        var snap = CompanionProjection.Build(new CompanionInputs
+        {
+            Character = "Hugzee",
+            AppVersion = "1.88.0",
+            Offered = [CompanionSurfaces.Quests],
+            Stats = new StatsSnapshot { CurrentZone = "Crushbone" },
+            Settings = settings,
+            Quests = request,
+            QuestIndex = CompanionQuestIndex.Build(catalog),
+            Theme = CompanionTheme.Project("ParchmentBrass",
+                EQBuddy.UI.Shared.ThemePalettes.For("ParchmentBrass")),
+        }, now);
+
+        var outPath = Environment.GetEnvironmentVariable("EQBUDDY_SHOOT_OUT")
+            ?? Path.Combine(Path.GetTempPath(), "eqbuddy-mobile-quests-snapshot.json");
+        File.WriteAllText(outPath, JsonSerializer.Serialize(snap, CompanionSnapshot.JsonOpts));
+
+        Assert.NotNull(snap.Quests);
+        Assert.NotNull(snap.Quests!.Catalog);
+        Assert.NotEmpty(snap.Quests.Mine);
+        Directory.Delete(dir, true);
+    }
 }

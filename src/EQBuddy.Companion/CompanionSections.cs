@@ -208,10 +208,14 @@ public sealed record CompanionChecklistSection(
     int Total,
     IReadOnlyList<CompanionChecklistGroup> Groups);
 
+/// <summary><see cref="Class"/> is the group's class when it has exactly one (Epic and
+/// Sky groups do; Gear's and Sky's cross-class ★ Ready group don't) — the quest
+/// surface's class lens filters on it rather than parsing headings.</summary>
 public sealed record CompanionChecklistGroup(
     string Heading,
     string? Note,
-    IReadOnlyList<CompanionChecklistRow> Rows);
+    IReadOnlyList<CompanionChecklistRow> Rows,
+    string? Class = null);
 
 /// <summary><see cref="Id"/> is what a tap sends back to tick the row — the stored
 /// item's own id for Epics/Sky, slot|item for Gear (which has no id of its own).</summary>
@@ -220,6 +224,87 @@ public sealed record CompanionChecklistRow(
     string Text,
     string? Detail,
     bool Done);
+
+// ---------------- quests (General · Epic 1.0 · Plane of Sky) ----------------
+
+/// <summary>
+/// The quest surface: the same three tabs as the desktop quest window — the strip is
+/// built from Core's QuestSurface, so the two UIs cannot disagree about which tabs
+/// exist — plus the general tracker's state and the two checklists the Epic and Sky
+/// tabs render.
+///
+/// The CATALOG is the sticky payload: ~1,200 quests compact to a few hundred KB of
+/// search index, shipped once per device and withheld while the device already holds
+/// <see cref="CatalogStamp"/> (exactly the map-geometry contract in
+/// <see cref="CompanionSnapshot.ForClient"/>). Search then runs on the device —
+/// instant, no round trip per keystroke, and identical to the desktop's because the
+/// index rows carry the same fields its search reads.
+///
+/// <see cref="Mine"/> is the desktop's "mine" view by NAME only — membership and
+/// order come from Core's QuestMatcher, and the device joins everything else (giver,
+/// zone, rewards, items) from the catalog it holds, with progress recomputed from
+/// <see cref="Owned"/>. One list on the wire, not two copies of every field.
+/// </summary>
+public sealed record CompanionQuestsSection(
+    IReadOnlyList<CompanionQuestTab> Tabs,
+    string CatalogStamp,
+    CompanionQuestCatalog? Catalog,
+    IReadOnlyList<string> Mine,
+    /// <summary>Matches beyond the shipped cap — never a silent cap; the page prints
+    /// "+N more".</summary>
+    int MineMore,
+    /// <summary>Item → owned count (looted + manual − consumed), quest-relevant items
+    /// only — what the page computes have/need and "ready" from, for searched cards
+    /// exactly as for <see cref="Mine"/> ones.</summary>
+    IReadOnlyDictionary<string, int> Owned,
+    IReadOnlyList<string> Tracked,
+    IReadOnlyList<string> Hidden,
+    IReadOnlyDictionary<string, int> Completed,
+    /// <summary>The character's picked classes (the ⚙ picker's state, from the
+    /// ledger) — the page's chip row narrows within these.</summary>
+    IReadOnlyList<CompanionQuestClass> Classes,
+    /// <summary>Set only when nothing is picked and the log's evidence suggests a
+    /// class — always labeled inferred on screen, exactly as the desktop labels it.</summary>
+    string? InferredClass,
+    CompanionChecklistSection Epics,
+    CompanionChecklistSection Sky);
+
+/// <summary>One tab tile: key/label straight from Core's QuestSurface, and the
+/// "done / total" badge — null on General, which is a catalog you search rather than
+/// a checklist you finish.</summary>
+public sealed record CompanionQuestTab(string Key, string Label, string? Badge);
+
+public sealed record CompanionQuestClass(string Name, string Abbrev);
+
+/// <summary>The searchable index of the whole shipped catalog. Single-letter members
+/// keep ~1,200 entries small on the wire; <see cref="AllClasses"/> rides here so the
+/// page's class picker lists exactly Core's classes (Berserker was once missed by a
+/// hand-kept copy — never again).</summary>
+public sealed record CompanionQuestCatalog(
+    string Stamp,
+    IReadOnlyList<CompanionQuestClass> AllClasses,
+    IReadOnlyList<CompanionQuestIndexEntry> Quests);
+
+/// <summary>One quest, pre-chewed for search and cards: name, url, giver, start zone,
+/// min level, the wiki's class text (displayed as written, never parsed on the page),
+/// the abbrevs of classes that can do it (null = any — computed by Core's
+/// QuestClassFilter at build, so the page checks membership instead of re-implementing
+/// the text rules), turn-in items, rewards, era, repeatable, collection-page.</summary>
+public sealed record CompanionQuestIndexEntry(
+    string N,
+    string U,
+    string G,
+    string Z,
+    int L,
+    string C,
+    IReadOnlyList<string>? A,
+    IReadOnlyList<CompanionQuestNeed> I,
+    IReadOnlyList<string> R,
+    string E,
+    bool P,
+    bool O);
+
+public sealed record CompanionQuestNeed(string N, int Q);
 
 // ---------------- progress ----------------
 

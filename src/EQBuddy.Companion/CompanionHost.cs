@@ -29,6 +29,15 @@ public sealed record CompanionSources
     /// wiki fallback runs through its memoized, polite lookup — the map window asks the
     /// same question the same way.</summary>
     public Func<SpawnTimerState, (double Y, double X, bool FromWiki)?>? CampFor { get; init; }
+
+    /// <summary>The quest surface's per-tick bundle: catalog + this character's
+    /// ledger slice. Asked only while the surface is offered and a device is paired.</summary>
+    public Func<CompanionQuestRequest>? Quests { get; init; }
+
+    /// <summary>The ledger a device's quest taps (pin, class picker) land on — the
+    /// same store the desktop quest window writes.</summary>
+    public QuestLedgerStore? QuestLedger { get; init; }
+    public Func<string>? QuestCharacterKey { get; init; }
 }
 
 /// <summary>
@@ -53,6 +62,9 @@ public sealed class CompanionHost : IDisposable
     private readonly ConcurrentQueue<CompanionMapAction> _mapActions = new();
     private CompanionServer? _server;
     private CompanionThemeSection? _theme;
+    /// <summary>The searchable quest index, built once from the immutable catalog on
+    /// the first offered tick and handed to every projection by reference.</summary>
+    private CompanionQuestCatalog? _questIndex;
     private Dictionary<string, string> _lastSections = [];
     private DateTime _lastPush = DateTime.MinValue;
 
@@ -65,7 +77,25 @@ public sealed class CompanionHost : IDisposable
         // The phone follows the desktop's theme from its very first frame; the WPF app
         // pushes swaps in afterwards via SetTheme (ThemeManager.PaletteApplied).
         SetTheme(settings.Theme, CustomTheme.PaletteFor(settings));
+        MigrateQuestGate(settings);
         if (settings.CompanionEnabled) Start();
+    }
+
+    /// <summary>The separate Epic/Sky surfaces folded into "quests". An owner who had
+    /// gated BOTH off had said quest data stays home, so the merged surface starts
+    /// gated too; either way the stale names leave the hidden-list, because entries
+    /// matching no known surface are invisible in Options and would sit there forever.</summary>
+    private static void MigrateQuestGate(AppSettings settings)
+    {
+        var hidden = settings.CompanionHiddenSurfaces;
+        var hadEpics = hidden.Contains(CompanionSurfaces.Epics, StringComparer.OrdinalIgnoreCase);
+        var hadSky = hidden.Contains(CompanionSurfaces.Sky, StringComparer.OrdinalIgnoreCase);
+        if (!hadEpics && !hadSky) return;
+        if (hadEpics && hadSky && !hidden.Contains(CompanionSurfaces.Quests, StringComparer.OrdinalIgnoreCase))
+            hidden.Add(CompanionSurfaces.Quests);
+        hidden.RemoveAll(s => s.Equals(CompanionSurfaces.Epics, StringComparison.OrdinalIgnoreCase)
+                           || s.Equals(CompanionSurfaces.Sky, StringComparison.OrdinalIgnoreCase));
+        settings.Save();
     }
 
     public bool Running => _server is not null;
@@ -196,6 +226,9 @@ public sealed class CompanionHost : IDisposable
         var timers = wantTimers ? spawnTimers.Snapshot(now) : [];
         var timerZone = _sources.TimerZone?.Invoke() ?? stats?.CurrentZone ?? "";
         var progress = On(CompanionSurfaces.Progress) ? _sources.Progress?.Invoke() : null;
+        var quests = On(CompanionSurfaces.Quests) ? _sources.Quests?.Invoke() : null;
+        if (quests?.Catalog is { } questCatalog)
+            _questIndex ??= CompanionQuestIndex.Build(questCatalog);
 
         var input = new CompanionInputs
         {
@@ -226,6 +259,8 @@ public sealed class CompanionHost : IDisposable
                 : null,
             Level = progress?.Level,
             Unlocks = progress?.Unlocks,
+            Quests = quests,
+            QuestIndex = quests is null ? null : _questIndex,
         };
 
         var snap = CompanionProjection.Build(input, now);
@@ -259,16 +294,30 @@ public sealed class CompanionHost : IDisposable
     private void DrainActions()
     {
         var edited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var settingsTouched = false;
         while (_actions.TryDequeue(out var action))
         {
             try
             {
-                if (CompanionActions.Apply(_settings, action)) edited.Add(action.Surface);
+                // General-quest taps (pin, class picker) write the per-character
+                // ledger, which persists itself; everything else writes settings.
+                if (string.Equals(action.Surface, CompanionSurfaces.Quests, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_sources.QuestLedger is { } ledger
+                        && _sources.QuestCharacterKey?.Invoke() is { Length: > 0 } key
+                        && CompanionActions.Apply(ledger, key, action))
+                        edited.Add(action.Surface);
+                }
+                else if (CompanionActions.Apply(_settings, action))
+                {
+                    edited.Add(action.Surface);
+                    settingsTouched = true;
+                }
             }
             catch (Exception ex) { CoreLog.Error(ex); }
         }
         if (edited.Count == 0) return;
-        _settings.Save();
+        if (settingsTouched) _settings.Save();
         foreach (var surface in edited) SurfaceEdited?.Invoke(surface);
     }
 

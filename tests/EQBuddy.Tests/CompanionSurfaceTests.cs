@@ -202,7 +202,7 @@ public class CompanionSurfaceTests
     [Fact]
     public void EpicsHonorTheClassLens()
     {
-        var epics = Build(new CompanionInputs { Settings = Checklists() }).Epics!;
+        var epics = Build(new CompanionInputs { Settings = Checklists() }).Quests!.Epics;
         Assert.Equal(2, epics.Total);          // the Paladin row is another class's
         Assert.Equal(1, epics.Done);
         Assert.Equal("Pieces", epics.Groups[0].Heading);
@@ -213,7 +213,7 @@ public class CompanionSurfaceTests
     [Fact]
     public void SkyLeadsWithTheReadyRewards()
     {
-        var sky = Build(new CompanionInputs { Settings = Checklists() }).Sky!;
+        var sky = Build(new CompanionInputs { Settings = Checklists() }).Quests!.Sky;
         Assert.Equal("★ Ready 1", sky.Groups[0].Heading);
         Assert.Contains("Shield of Rainbow Hues", sky.Groups[0].Rows[0].Text);
         // Then the per-reward groups, alphabetical and class-prefixed because no Sky
@@ -274,7 +274,7 @@ public class CompanionSurfaceTests
         Assert.NotNull(mine.Mez);
         Assert.Null(mine.Map);
         Assert.Null(mine.Loot);
-        Assert.Null(mine.Epics);
+        Assert.Null(mine.Quests);
         Assert.Null(mine.Combat);
         var json = mine.ToJson();
         Assert.Contains("\"mez\":{", json);
@@ -328,10 +328,10 @@ public class CompanionSurfaceTests
             Settings = Checklists(),
             Offered = [CompanionSurfaces.Mez],
         });
-        Assert.Null(snap.Epics);
+        Assert.Null(snap.Quests);
         Assert.Null(snap.Loot);
         Assert.Null(snap.Combat);
-        Assert.DoesNotContain(CompanionSurfaces.Epics, CompanionProjection.SectionFingerprints(snap).Keys);
+        Assert.DoesNotContain(CompanionSurfaces.Quests, CompanionProjection.SectionFingerprints(snap).Keys);
     }
 
     // ---------------- sticky payloads ----------------

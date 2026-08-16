@@ -32,6 +32,14 @@ public sealed record CompanionInputs
     /// <summary>The checklists live in settings, not in the snapshot.</summary>
     public AppSettings? Settings { get; init; }
 
+    /// <summary>The quest surface's per-tick state: the catalog plus this character's
+    /// ledger slice (owned / tracked / hidden / completed / classes).</summary>
+    public CompanionQuestRequest? Quests { get; init; }
+
+    /// <summary>The searchable catalog index, built once and cached by the host —
+    /// never rebuilt per tick, and withheld per device by its stamp.</summary>
+    public CompanionQuestCatalog? QuestIndex { get; init; }
+
     /// <summary>Zone → hops, for the gear checklist's by-zone view. Null when the
     /// zone graph can't answer (before the first zone line).</summary>
     public Func<string, int?>? HopsFromHere { get; init; }

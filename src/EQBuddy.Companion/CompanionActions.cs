@@ -76,6 +76,47 @@ public static class CompanionActions
         }
     }
 
+    /// <summary>Apply a general-quest-tab action to the per-character ledger — the
+    /// same store the desktop quest window writes, so a tap and a click are the same
+    /// edit. Ids are verb-prefixed: "track|&lt;quest name&gt;" is the 📌 pin (Done =
+    /// tracked), "classes|&lt;comma list&gt;" is the class picker (the desktop's own
+    /// SetClasses; unknown names are dropped rather than stored). False when nothing
+    /// changed — no save, no repaint, exactly like the settings overload.</summary>
+    public static bool Apply(QuestLedgerStore ledger, string characterKey, CompanionAction action)
+    {
+        if (!string.Equals(action.Surface, CompanionSurfaces.Quests, StringComparison.OrdinalIgnoreCase)
+            || characterKey.Length == 0)
+            return false;
+        var sep = action.Id.IndexOf('|');
+        if (sep <= 0) return false;
+        var arg = action.Id[(sep + 1)..];
+        switch (action.Id[..sep])
+        {
+            case "track":
+            {
+                if (arg.Length == 0) return false;
+                if (ledger.TrackedFor(characterKey).Contains(arg) == action.Done) return false;
+                ledger.SetTracked(characterKey, arg, action.Done);
+                return true;
+            }
+            case "classes":
+            {
+                var classes = arg
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(c => QuestClassFilter.Classes.Contains(c, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+                if (ledger.ClassesFor(characterKey)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase)
+                        .SetEquals(classes))
+                    return false;
+                ledger.SetClasses(characterKey, classes);
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
     /// <summary>Apply a curation tap to the spawn-point archive. Returns the sentence
     /// the desktop's own status bar would have shown — devices get told what happened,
     /// including when the answer is "nothing", because a tap that quietly does nothing

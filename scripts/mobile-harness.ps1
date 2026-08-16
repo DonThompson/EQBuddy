@@ -11,7 +11,7 @@
 
     Open the result in any browser and push a snapshot from the console:
 
-        __PUSH({ kind: "snapshot", protocol: 2, identity: {...}, offered: ["map"], map: {...} })
+        __PUSH({ kind: "snapshot", protocol: 3, identity: {...}, offered: ["map"], map: {...} })
 
     The shape is CompanionSnapshot with camelCase names; CompanionMapSourceTests is
     the authority on what the server actually sends.

@@ -140,6 +140,22 @@ public partial class MainWindow : Window
                 Progress = () => (CurrentSnapshot().LastLevel, DingUnlocks(CurrentSnapshot())),
                 CampFor = t => UI.Shared.CampLocations.Resolve(
                     t, EnsureMobLookup, n => WikiMobResult(n)?.Mob?.LocYX),
+                Quests = () => new Companion.CompanionQuestRequest
+                {
+                    Catalog = QuestCatalog,
+                    Owned = QuestLedger?.For(QuestCharacterKey)
+                        ?? new Dictionary<string, QuestLedgerStore.Entry>(StringComparer.OrdinalIgnoreCase),
+                    Tracked = QuestLedger?.TrackedFor(QuestCharacterKey)
+                        ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                    Hidden = QuestLedger?.HiddenFor(QuestCharacterKey)
+                        ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                    Completed = QuestLedger?.CompletedFor(QuestCharacterKey)
+                        ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                    Classes = QuestLedger?.ClassesFor(QuestCharacterKey) ?? [],
+                    InferredClass = CurrentSnapshot().InferredClass,
+                },
+                QuestLedger = QuestLedger,
+                QuestCharacterKey = () => QuestCharacterKey,
             });
         ThemeManager.PaletteApplied += _companion.SetTheme;
         _companion.SurfaceEdited += OnCompanionSurfaceEdited;

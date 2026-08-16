@@ -19,13 +19,20 @@ public static class CompanionSurfaces
     public const string Session = "session";
     public const string Loot = "loot";
     public const string Progress = "progress";
+    /// <summary>The three-tab quest surface (General · Epic 1.0 · Plane of Sky) —
+    /// the consolidation David asked for (2026-08-15). It REPLACED the separate
+    /// <see cref="Epics"/> and <see cref="Sky"/> surfaces in <see cref="All"/>.</summary>
+    public const string Quests = "quests";
+    /// <summary>No longer offered surfaces — the quest surface's Epic and Sky tabs
+    /// absorbed them — but still live as tick ROUTES: rows on those tabs send their
+    /// taps under the old names, so one Apply path serves both eras.</summary>
     public const string Epics = "epics";
     public const string Sky = "sky";
     public const string Gear = "gear";
 
     /// <summary>All surfaces this build knows, in default display order.</summary>
     public static readonly IReadOnlyList<string> All =
-        [Map, Spawns, Mez, Buffs, Combat, Session, Loot, Progress, Epics, Sky, Gear];
+        [Map, Spawns, Mez, Buffs, Combat, Session, Loot, Progress, Quests, Gear];
 
     /// <summary>Human label for the desktop gate checkboxes (both UIs share it;
     /// the phone page carries its own copy in its SURFACE_META table).</summary>
@@ -39,8 +46,7 @@ public static class CompanionSurfaces
         Session => "Session stats",
         Loot => "Loot & watches",
         Progress => "XP & AA",
-        Epics => "Epic checklist",
-        Sky => "Sky checklist",
+        Quests => "Quest tracker",
         Gear => "Gear checklist",
         _ => surface,
     };
@@ -57,15 +63,16 @@ public static class CompanionSurfaces
         Session => "Kills, xp/hr, session length, dps.",
         Loot => "Session loot, what you've made, and your watch counters.",
         Progress => "XP and AA rates, and what unlocked at your level.",
-        Epics => "Your Epic quest checklist — tappable from EQBuddy Mobile.",
-        Sky => "Your Sky quest checklist — tappable from EQBuddy Mobile.",
+        Quests => "Your quest tracker — the searchable catalog with your progress and pins, " +
+                  "plus the Epic and Plane of Sky checklists, tappable from EQBuddy Mobile.",
         Gear => "Your gear checklist, by slot and by farm zone.",
         _ => "",
     };
 
     /// <summary>Surfaces whose rows a phone may TICK. Everything else is read-only —
-    /// the phone gets no write the desktop doesn't already offer, and no write at all
-    /// beyond these two checklists.</summary>
+    /// the phone gets no write the desktop doesn't already offer. Epics and Sky stay
+    /// listed even though they left <see cref="All"/>: the quest surface's Epic and
+    /// Sky tabs still send their row taps under those names.</summary>
     public static bool AcceptsTicks(string surface) =>
-        surface is Epics or Sky or Gear;
+        surface is Quests or Epics or Sky or Gear;
 }
