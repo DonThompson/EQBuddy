@@ -89,7 +89,12 @@ public partial class QuestsWindow : Window
     // ---- top-level tabs: General · Epic 1.0 · Plane of Sky ----
 
     private QuestTab _tab = QuestTab.General;
-    private readonly List<(TextBlock Label, QuestTab Tab)> _tabLabels = [];
+    private readonly List<(Border Tile, TextBlock Label, TextBlock Badge, QuestTab Tab)> _tabTiles = [];
+    /// <summary>Which single class the view is narrowed to, or null for all of yours.
+    /// Session-scoped like the search box: a sticky lens reads as a broken tracker
+    /// tomorrow when you have swapped classes.</summary>
+    private string? _classLens;
+    private readonly List<(Border Chip, TextBlock Label, string? Class)> _classChips = [];
 
     /// <summary>Build the strip from Core's <see cref="QuestSurface"/> so the desktop and
     /// EQBuddy Mobile cannot disagree about which tabs exist, their order or their
@@ -97,20 +102,87 @@ public partial class QuestsWindow : Window
     private void BuildTabs()
     {
         TabStrip.Children.Clear();
-        _tabLabels.Clear();
+        _tabTiles.Clear();
         foreach (var header in QuestSurface.Tabs(EpicCounts(), SkyCounts()))
         {
+            // Tiles, not text (David, 2026-08-15: "I couldn't tell they were tabs at
+            // first glance"). Colour comes from the live theme brushes, so a tile
+            // follows whatever palette the player picked rather than hard-coding one.
             var label = new TextBlock
             {
-                Text = header.Badge is { } b ? $"{header.Label}  {b}" : header.Label,
-                FontSize = 12.5, Padding = new Thickness(10, 3, 10, 3), Cursor = Cursors.Hand,
+                Text = header.Label, FontSize = 12.5, FontWeight = FontWeights.SemiBold,
+            };
+            var badge = new TextBlock
+            {
+                Text = header.Badge ?? "", FontSize = 10.5, Margin = new Thickness(7, 1, 0, 0),
+                Visibility = header.Badge is null ? Visibility.Collapsed : Visibility.Visible,
+            };
+            var content = new StackPanel { Orientation = Orientation.Horizontal };
+            content.Children.Add(label);
+            content.Children.Add(badge);
+            var tile = new Border
+            {
+                Child = content,
+                CornerRadius = new CornerRadius(7),
+                Padding = new Thickness(12, 5, 12, 5),
+                Margin = new Thickness(0, 0, 6, 0),
+                BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand,
                 Tag = header.Tab,
             };
-            label.MouseLeftButtonDown += OnTabClick;
-            TabStrip.Children.Add(label);
-            _tabLabels.Add((label, header.Tab));
+            tile.MouseLeftButtonDown += OnTabClick;
+            TabStrip.Children.Add(tile);
+            _tabTiles.Add((tile, label, badge, header.Tab));
         }
         ApplyTabVisual();
+        BuildClassStrip();
+    }
+
+    /// <summary>Any · one of your classes. The ⚙ popup still decides WHICH classes you
+    /// have; this decides which of them you're looking at right now, which is a
+    /// different question and wanted far more often.</summary>
+    private void BuildClassStrip()
+    {
+        ClassStrip.Children.Clear();
+        _classChips.Clear();
+        var key = _main.QuestCharacterKey;
+        var mine = _main.QuestLedger?.ClassesFor(key) ?? [];
+        if (mine.Count == 0
+            && _main.CurrentSnapshot().InferredClass is { Length: > 0 } inferred)
+            mine = [inferred];
+        // One class and no lens to offer: a strip reading "Any · BRD" chooses nothing.
+        if (mine.Count < 2) { ClassStrip.Visibility = Visibility.Collapsed; return; }
+        ClassStrip.Visibility = Visibility.Visible;
+
+        Add(null, "Any");
+        foreach (var cls in mine) Add(cls, QuestClassFilter.Abbrev(cls));
+
+        void Add(string? cls, string text)
+        {
+            var label = new TextBlock { Text = text, FontSize = 11 };
+            var chip = new Border
+            {
+                Child = label,
+                CornerRadius = new CornerRadius(11),
+                Padding = new Thickness(11, 3, 11, 3),
+                Margin = new Thickness(0, 0, 5, 0),
+                BorderThickness = new Thickness(1),
+                Cursor = Cursors.Hand,
+                Tag = cls ?? "",
+                ToolTip = cls is null
+                    ? "Every class you play"
+                    : $"Show only {cls} — quests, Epic and Plane of Sky alike",
+            };
+            chip.MouseLeftButtonDown += (s, e) =>
+            {
+                e.Handled = true;
+                _classLens = ((string)((FrameworkElement)s).Tag) is { Length: > 0 } picked
+                    ? picked : null;
+                Refresh(force: true);
+            };
+            ClassStrip.Children.Add(chip);
+            _classChips.Add((chip, label, cls));
+        }
     }
 
     private (int Done, int Total)? EpicCounts()
@@ -136,13 +208,28 @@ public partial class QuestsWindow : Window
 
     private void ApplyTabVisual()
     {
-        foreach (var (label, tab) in _tabLabels)
+        foreach (var (tile, label, badge, tab) in _tabTiles)
         {
-            label.SetResourceReference(TextBlock.ForegroundProperty,
-                tab == _tab ? "AccentBrush" : "DimBrush");
-            label.FontWeight = tab == _tab ? FontWeights.SemiBold : FontWeights.Normal;
-            if (tab == _tab) label.SetResourceReference(TextBlock.BackgroundProperty, "ToggleHighlightBrush");
-            else label.Background = Brushes.Transparent;
+            var on = tab == _tab;
+            // Selected: the accent fills the tile and the text inverts onto it, which is
+            // what makes a tab read as a tab at a glance. Unselected still gets a filled
+            // panel and a border, so the row looks like a set of controls rather than a
+            // line of prose.
+            tile.SetResourceReference(Border.BackgroundProperty,
+                on ? "AccentBrush" : "ToggleHighlightBrush");
+            tile.SetResourceReference(Border.BorderBrushProperty,
+                on ? "AccentBrush" : "BorderBrush");
+            label.SetResourceReference(TextBlock.ForegroundProperty, on ? "BgBrush" : "TextBrush");
+            badge.SetResourceReference(TextBlock.ForegroundProperty, on ? "BgBrush" : "DimBrush");
+            badge.Opacity = on ? 0.85 : 1;
+        }
+        foreach (var (chip, label, cls) in _classChips)
+        {
+            var on = cls == _classLens;
+            chip.SetResourceReference(Border.BackgroundProperty,
+                on ? "AccentBrush" : "ToggleHighlightBrush");
+            chip.SetResourceReference(Border.BorderBrushProperty, on ? "AccentBrush" : "BorderBrush");
+            label.SetResourceReference(TextBlock.ForegroundProperty, on ? "BgBrush" : "DimBrush");
         }
         // The era/class/mode row belongs to the catalog only; the checklists are a fixed
         // set of rows, so those controls would be dead furniture on their tabs.
@@ -286,6 +373,14 @@ public partial class QuestsWindow : Window
             inferred = inf;
             classes = [inf];
         }
+        // The lens narrows to ONE of the classes you play. Everything downstream reads
+        // `classes`, so narrowing it here covers the catalog, the zone view and the
+        // item-driven tabs at once. A stale lens (you dropped that class) is ignored
+        // rather than emptying the window.
+        if (_classLens is { } lens && classes.Contains(lens, StringComparer.OrdinalIgnoreCase))
+            classes = [lens];
+        else if (_classLens is not null && !classes.Contains(_classLens, StringComparer.OrdinalIgnoreCase))
+            _classLens = null;
 
         var sig = $"{key}|{filter}|{_mode}|st:{_state}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
             $"|{string.Join(";", tracked.Order(StringComparer.OrdinalIgnoreCase))}" +
@@ -613,6 +708,8 @@ public partial class QuestsWindow : Window
                  Title: i.Reward, Detail: i.QuestItem, i.Acquired));
 
         var matching = rows
+            .Where(r => _classLens is null
+                || r.ClassName.Equals(_classLens, StringComparison.OrdinalIgnoreCase))
             .Where(r => filter.Length == 0
                 || r.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
                 || r.Detail.Contains(filter, StringComparison.OrdinalIgnoreCase)

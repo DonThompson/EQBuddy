@@ -35,10 +35,11 @@
                  so the main widget stops carrying Epic and Sky as separate lines.
                  Labels and order come from Core's QuestSurface so mobile shows the
                  same three in the same order. -->
-            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
-                    Margin="0,0,0,8" Padding="0,0,0,4">
-                <StackPanel x:Name="TabStrip" Orientation="Horizontal"/>
-            </Border>
+            <StackPanel x:Name="TabStrip" Orientation="Horizontal" Margin="0,0,0,7"/>
+            <!-- Class lens, on EVERY tab (David, 2026-08-15). A 486-row Epic list is
+                 exactly where narrowing to one of your three classes matters most, and
+                 the old filter row was hidden on those tabs entirely. -->
+            <StackPanel x:Name="ClassStrip" Orientation="Horizontal" Margin="0,0,0,7"/>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
