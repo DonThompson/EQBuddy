@@ -7,6 +7,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
@@ -33,7 +34,7 @@ public interface IQuestsHost
 /// <summary>
 /// The standalone Quest Tracker (QUEST-*, David's spec 2026-08-07): every wiki quest
 /// whose turn-in items overlap what this character owns — looted since the ledger began,
-/// or declared via "+ I have this" for pre-EQBuddy inventory. One card per quest,
+/// or read from the game's own /outputfile inventory dump (bags and bank). One per quest,
 /// most-complete first; expanding a card lists each item as have/need; the quest name
 /// opens the eqlwiki walkthrough. "all quests" flips from the overlap view to the whole
 /// catalog for browsing ahead.
@@ -54,15 +55,6 @@ public sealed class QuestsWindow : Window
     private readonly TextBlock _titleText = new()
     {
         Text = "🗺 Quest Tracker", FontWeight = FontWeight.Bold, FontSize = 14,
-    };
-    private readonly TextBox _addItemBox = InputBox(
-        "Item you already have in inventory (from before EQBuddy could see it)");
-    private readonly TextBox _addQtyBox = InputBox("How many");
-    private readonly ListBox _suggestList = new()
-    {
-        MaxHeight = 120, FontSize = 12, IsVisible = false,
-        Background = AppTheme.ComboBoxBrush, Foreground = AppTheme.TextBrush,
-        BorderBrush = AppTheme.BorderBrush,
     };
     private readonly TextBox _filterBox = InputBox(
         "Search the whole catalog — quest names, turn-in items, rewards, quest givers, " +
@@ -154,48 +146,47 @@ public sealed class QuestsWindow : Window
         header.Children.Add(_titleText);
         header.Children.Add(close);
 
-        // "I already have this" entry: item name + count, suggestions from the quest
-        // catalog so the name lands exactly as the wiki spells it.
-        var addRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,52,Auto") };
-        addRow.Children.Add(_addItemBox);
-        _addQtyBox.Text = "1";
-        _addQtyBox.Margin = new Thickness(6, 0, 0, 0);
-        _addQtyBox.TextAlignment = TextAlignment.Center;
-        Grid.SetColumn(_addQtyBox, 1);
-        addRow.Children.Add(_addQtyBox);
-        var addBtn = ActionButton("+ I have this");
-        addBtn.Margin = new Thickness(6, 0, 0, 0);
-        addBtn.Click += (_, _) => OnAddItem();
-        Grid.SetColumn(addBtn, 2);
-        addRow.Children.Add(addBtn);
-
-        _addItemBox.TextChanged += (_, _) => OnAddItemTyped();
-        _addItemBox.KeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Enter) { OnAddItem(); e.Handled = true; }
-            if (e.Key == Key.Escape) _suggestList.IsVisible = false;
-        };
-        _suggestList.PointerReleased += (_, _) => OnSuggestPicked();
+        // One search box is the way in (David, 2026-08-15). The "+ I have this"
+        // item/quantity/button row that used to sit here won the eye and hid the search
+        // completely — "it exists but is so compressed I missed it". Declaring owned
+        // items by hand is also the worse half of that trade: /outputfile inventory reads
+        // bags AND bank exactly, and the ⧉ beside the box hands over the command.
+        var searchRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        _filterBox.FontSize = 13;
+        _filterBox.Padding = new Thickness(6, 4);
+        // Avalonia has a real watermark, so no overlay is needed (WPF's needs one).
+        _filterBox.Watermark = "🔍  Search a reward, item, quest, or NPC…";
+        ToolTip.SetTip(_filterBox,
+            "Search the whole catalog by anything you know — the reward you want "
+            + "(\"Wakizashi of the Frozen Skies\"), a turn-in item, the quest name, the "
+            + "quest giver, a zone. Search ignores the class/era/state filters. "
+            + "Pin 📌 a result to track it.");
+        _filterBox.TextChanged += (_, _) => Refresh(force: true);
+        searchRow.Children.Add(_filterBox);
+        var scanBtn = ActionButton("⧉ scan bags");
+        scanBtn.Margin = new Thickness(6, 0, 0, 0);
+        ToolTip.SetTip(scanBtn,
+            "Copy /outputfile inventory — paste it in the game's chat, and EQBuddy reads "
+            + "what your bags and bank already hold. The held tab then shows every quest "
+            + "you could turn in right now.");
+        scanBtn.Click += async (_, _) => await CopyInventoryCmdAsync(scanBtn);
+        Grid.SetColumn(scanBtn, 1);
+        searchRow.Children.Add(scanBtn);
 
         var filterRow = new Grid
         {
             Margin = new Thickness(0, 6, 0, 0),
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,Auto,*"),
         };
-        _filterBox.MinWidth = 110;
-        _filterBox.TextChanged += (_, _) => Refresh(force: true);
-        filterRow.Children.Add(_filterBox);
         ToolTip.SetTip(_eraCombo,
             "Hide quests from later eras than the world has (unmarked quests always show)");
-        _eraCombo.Margin = new Thickness(6, 0, 0, 0);
-        Grid.SetColumn(_eraCombo, 1);
         filterRow.Children.Add(_eraCombo);
         // State filter (Reddit ask, 2026-08-11): every tab and search can narrow to
         // open / ready / completed.
         ToolTip.SetTip(_stateCombo,
             "Any state · open (not yet completed) · ready (turn-ins in hand) · done (marked completed)");
         _stateCombo.Margin = new Thickness(6, 0, 0, 0);
-        Grid.SetColumn(_stateCombo, 2);
+        Grid.SetColumn(_stateCombo, 1);
         filterRow.Children.Add(_stateCombo);
         // Multiclass filter (Legends: up to 3 active classes): a checkbox flyout
         // (WPF's Popup, StaysOpen=false → light dismiss), selection remembered
@@ -214,15 +205,15 @@ public sealed class QuestsWindow : Window
                 Child = _classCheckPanel,
             },
         };
-        Grid.SetColumn(_classBtn, 3);
+        Grid.SetColumn(_classBtn, 2);
         filterRow.Children.Add(_classBtn);
         var modeStrip = ModeStrip();
-        Grid.SetColumn(modeStrip, 4);
+        modeStrip.HorizontalAlignment = HorizontalAlignment.Right;
+        Grid.SetColumn(modeStrip, 3);
         filterRow.Children.Add(modeStrip);
 
         var entry = new StackPanel { Margin = new Thickness(16, 0, 16, 4) };
-        entry.Children.Add(addRow);
-        entry.Children.Add(_suggestList);
+        entry.Children.Add(searchRow);
         entry.Children.Add(filterRow);
 
         _bodyScroll.Margin = new Thickness(10, 2, 4, 0);
@@ -231,7 +222,8 @@ public sealed class QuestsWindow : Window
         var footer = new StackPanel { Margin = new Thickness(16, 8, 16, 14) };
         footer.Children.Add(AppTheme.DimText(
             "Counts what you loot, minus what the log sees leave (sales, merges, destroys), " +
-            "plus what you add above. Hand-ins aren't in the log — click ✔ ready when you " +
+            "plus whatever ⧉ scan bags reads from your bags and bank. Hand-ins aren't in the " +
+            "log — click ✔ ready when you " +
             "turn in, or right-click an item row to clear it. Click a quest name for the " +
             "full wiki walkthrough."));
         // The accuracy contract, said plainly (David, 2026-08-11): we mirror the wiki,
@@ -729,10 +721,10 @@ public sealed class QuestsWindow : Window
                 }
                 if (shown.Count == 0 && othersMine.Count == 0)
                     EmptyNote(matches.Count == 0
-                        ? "Nothing yet — loot a quest item (they show green in the Loot list)\n" +
-                          "or add what you already carry with \"+ I have this\" above.\n" +
-                          "Try \"zone\" for what's workable here, or \"all\" to browse."
-                        : "No quest matches that filter.");
+                        ? "Nothing yet — loot a quest item (they show green in the Loot list),\n" +
+                          "or ⧉ scan bags to read what you already carry.\n" +
+                          "Search a reward you want by name, or try \"zone\" and \"all\" to browse."
+                        : "No quest matches that search — try a reward name, an item, or an NPC.");
                 break;
             }
         }
@@ -1059,42 +1051,25 @@ public sealed class QuestsWindow : Window
         Refresh(force: true);
     }
 
-    // ---- "+ I have this" ----
+    // ---- inventory scan ----
 
-    private List<string> Suggestions(string typed) =>
-        _main.QuestCatalog.ByItem().Keys
-            .Where(n => n.Contains(typed, StringComparison.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(n => !n.StartsWith(typed, StringComparison.OrdinalIgnoreCase))
-            .ThenBy(n => n, StringComparer.OrdinalIgnoreCase)
-            .Take(8).ToList();
-
-    private void OnAddItemTyped()
+    /// <summary>Same ⧉ contract as every other place EQBuddy reads a game command's
+    /// output: we never type in your client, so the most we can do is put the exact
+    /// command on your clipboard. Flashes ✓ so a silent clipboard write isn't a silent
+    /// no-op — and a clipboard can genuinely be unavailable here (a headless or
+    /// clipboard-less X session), which is worth not crashing over.</summary>
+    private async Task CopyInventoryCmdAsync(Button button)
     {
-        var typed = (_addItemBox.Text ?? "").Trim();
-        if (typed.Length < 2) { _suggestList.IsVisible = false; return; }
-        var suggestions = Suggestions(typed);
-        _suggestList.ItemsSource = suggestions;
-        _suggestList.IsVisible = suggestions.Count > 0;
-    }
-
-    private void OnSuggestPicked()
-    {
-        if (_suggestList.SelectedItem is not string picked) return;
-        _addItemBox.Text = picked;
-        _suggestList.IsVisible = false;
-        _addQtyBox.Focus();
-    }
-
-    private void OnAddItem()
-    {
-        var item = (_addItemBox.Text ?? "").Trim();
-        if (item.Length == 0) return;
-        if (!int.TryParse((_addQtyBox.Text ?? "").Trim(), out var qty) || qty < 1) qty = 1;
-        AdjustManual(item, qty);
-        _addItemBox.Text = "";
-        _addQtyBox.Text = "1";
-        _suggestList.IsVisible = false;
+        try
+        {
+            if (Clipboard is not { } clip) return;
+            await clip.SetTextAsync(GameCommands.OutputfileInventory);
+        }
+        catch (Exception ex) { CoreLog.Error(ex); return; }
+        button.Content = "✓ copied";
+        var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
+        t.Tick += (_, _) => { button.Content = "⧉ scan bags"; t.Stop(); };
+        t.Start();
     }
 
     // ---- shared bits ----

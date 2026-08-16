@@ -25,50 +25,55 @@
                     HorizontalAlignment="Right" Click="OnClose"/>
         </Grid>
 
-        <!-- "I already have this" entry: item name + count, suggestions from the quest
-             catalog so the name lands exactly as the wiki spells it. -->
+        <!-- One way in (David, 2026-08-15): search the catalog by whatever you happen to
+             know — the reward you want, an item in your bags, the quest's name, the NPC.
+             The old "+ I have this" item/qty/button row is gone: declaring pre-EQBuddy
+             inventory by hand is what /outputfile inventory does properly, and the ⧉
+             beside the box hands you that command. -->
         <StackPanel Grid.Row="1" Margin="16,0,16,4">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="52"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="AddItemBox" Grid.Column="0" Style="{StaticResource InputBox}"
-                         TextChanged="OnAddItemTyped" KeyDown="OnAddItemKey"
-                         ToolTip="Item you already have in inventory (from before EQBuddy could see it)"/>
-                <TextBox x:Name="AddQtyBox" Grid.Column="1" Style="{StaticResource InputBox}" Text="1"
-                         Margin="6,0,0,0" HorizontalContentAlignment="Center"
-                         ToolTip="How many"/>
-                <Button x:Name="AddBtn" Grid.Column="2" Content="+ I have this"
-                        Style="{StaticResource ActionButton}" Margin="6,0,0,0" Click="OnAddItem"/>
+                <!-- The placeholder is the feature (David, 2026-08-15: "it exists but is
+                     so compressed I missed it"). An empty box teaches nothing; this one
+                     names what it accepts, so the reward-first way in is discoverable
+                     without a tooltip nobody hovers. -->
+                <Grid Grid.Column="0">
+                    <TextBox x:Name="FilterBox" Style="{StaticResource InputBox}"
+                             FontSize="13" Padding="6,4"
+                             TextChanged="OnFilterChanged"
+                             ToolTip="Search the whole catalog by anything you know — the reward you want (&quot;Wakizashi of the Frozen Skies&quot;), a turn-in item, the quest name, the quest giver, a zone. Search ignores the class/era/state filters. Pin 📌 a result to track it."/>
+                    <TextBlock x:Name="FilterHint" IsHitTestVisible="False"
+                               Text="🔍  Search a reward, item, quest, or NPC…"
+                               FontSize="13" Margin="10,0,0,0" Opacity="0.55"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextBrush}"/>
+                </Grid>
+                <Button x:Name="CopyInvBtn" Grid.Column="1" Content="⧉ scan bags"
+                        Style="{StaticResource ActionButton}" FontSize="11" Padding="8,2"
+                        Margin="6,0,0,0" Click="OnCopyInventoryCmd"
+                        ToolTip="Copy /outputfile inventory — paste it in the game's chat, and EQBuddy reads what your bags and bank already hold. The held tab then shows every quest you could turn in right now."/>
             </Grid>
-            <ListBox x:Name="SuggestList" MaxHeight="120" FontSize="12" Visibility="Collapsed"
-                     Background="{DynamicResource ComboBoxBrush}" Foreground="{DynamicResource TextBrush}"
-                     BorderBrush="{DynamicResource BorderBrush}"
-                     MouseUp="OnSuggestPicked"/>
             <Grid Margin="0,6,0,0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="FilterBox" Grid.Column="0" Style="{StaticResource InputBox}" MinWidth="110"
-                         TextChanged="OnFilterChanged"
-                         ToolTip="Search the whole catalog — quest names, turn-in items, rewards, quest givers, zones. Search ignores the class/era/state filters. Pin 📌 a result to track it."/>
-                <ComboBox x:Name="EraCombo" Grid.Column="1" Width="104" FontSize="11"
-                          Margin="6,0,0,0" SelectionChanged="OnEraChanged"
+                <ComboBox x:Name="EraCombo" Grid.Column="0" Width="104" FontSize="11"
+                          SelectionChanged="OnEraChanged"
                           ToolTip="Hide quests from later eras than the world has (unmarked quests always show)"/>
                 <!-- State filter (Reddit ask, 2026-08-11): every tab and search can
                      narrow to open / ready / completed. -->
-                <ComboBox x:Name="StateCombo" Grid.Column="2" Width="86" FontSize="11"
+                <ComboBox x:Name="StateCombo" Grid.Column="1" Width="86" FontSize="11"
                           Margin="6,0,0,0" SelectionChanged="OnStateChanged"
                           ToolTip="Any state · open (not yet completed) · ready (turn-ins in hand) · done (marked completed)"/>
                 <!-- Multiclass filter (Legends: up to 3 active classes): a checkbox
                      popup, selection remembered per character. -->
-                <Button x:Name="ClassBtn" Grid.Column="3" Content="Any class"
+                <Button x:Name="ClassBtn" Grid.Column="2" Content="Any class"
                         Style="{StaticResource ActionButton}" FontSize="11" Padding="8,2"
                         Margin="6,0,0,0" Click="OnClassBtn"
                         ToolTip="Pick your class(es) — quests any of them can do stay visible"/>
@@ -82,8 +87,9 @@
                 </Popup>
                 <!-- mine = your items + 📌 pins · zone = doable where you're standing ·
                      all = the whole catalog -->
-                <Border Grid.Column="4" BorderBrush="{DynamicResource BorderBrush}"
+                <Border Grid.Column="3" BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1" CornerRadius="6" Margin="6,0,0,0"
+                        HorizontalAlignment="Right"
                         VerticalAlignment="Center" Padding="1">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock x:Name="ModeMine" Text="mine" Tag="mine" FontSize="10.5"
@@ -113,7 +119,7 @@
 
         <StackPanel Grid.Row="3" Margin="16,8,16,14">
             <TextBlock Style="{StaticResource Dim}" TextWrapping="Wrap"
-                       Text="Counts what you loot, minus what the log sees leave (sales, merges, destroys), plus what you add above. Hand-ins aren't in the log — click ✔ ready when you turn in, or right-click an item row to clear it. Click a quest name for the full wiki walkthrough."/>
+                       Text="Counts what you loot, minus what the log sees leave (sales, merges, destroys), plus whatever ⧉ scan bags reads from your bags and bank. Hand-ins aren't in the log — click ✔ ready when you turn in, or right-click an item row to clear it. Click a quest name for the full wiki walkthrough."/>
             <!-- The accuracy contract, said plainly (David, 2026-08-11): we mirror the
                  wiki, we're exactly as right as it is, and the door to fixing BOTH
                  swings from here. -->

@@ -3,17 +3,24 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy;
 
 /// <summary>
 /// The standalone Quest Tracker (QUEST-*, David's spec 2026-08-07): every wiki quest
 /// whose turn-in items overlap what this character owns — looted since the ledger began,
-/// or declared via "+ I have this" for pre-EQBuddy inventory. One card per quest,
-/// most-complete first; expanding a card lists each item as have/need; the quest name
-/// opens the eqlwiki walkthrough. "all quests" flips from the overlap view to the whole
-/// catalog for browsing ahead.
+/// or read from the game's own /outputfile inventory dump (bags and bank). One card per
+/// quest, most-complete first; expanding a card lists each item as have/need; the quest
+/// name opens the eqlwiki walkthrough. "all quests" flips from the overlap view to the
+/// whole catalog for browsing ahead.
+///
+/// One search box is the way in (David, 2026-08-15) — it matches rewards, turn-in items,
+/// quest names, givers and zones, so "I want the Wakizashi of the Frozen Skies" is a
+/// first-class question. It used to share the header with a "+ I have this" item/quantity
+/// row that dominated it visually; that row is gone, and its job belongs to the dump.
 /// </summary>
 public partial class QuestsWindow : Window
 {
@@ -485,10 +492,10 @@ public partial class QuestsWindow : Window
                 }
                 if (shown.Count == 0 && othersMine.Count == 0)
                     EmptyNote(matches.Count == 0
-                        ? "Nothing yet — loot a quest item (they show green in the Loot list)\n" +
-                          "or add what you already carry with \"+ I have this\" above.\n" +
-                          "Try \"zone\" for what's workable here, or \"all\" to browse."
-                        : "No quest matches that filter.");
+                        ? "Nothing yet — loot a quest item (they show green in the Loot list),\n" +
+                          "or ⧉ scan bags to read what you already carry.\n" +
+                          "Search a reward you want by name, or try \"zone\" and \"all\" to browse."
+                        : "No quest matches that search — try a reward name, an item, or an NPC.");
                 break;
             }
         }
@@ -884,51 +891,33 @@ public partial class QuestsWindow : Window
         catch (Exception ex) { CoreLog.Error(ex); }
     }
 
-    // ---- "+ I have this" ----
+    // ---- search + inventory scan ----
 
-    private List<string> Suggestions(string typed) =>
-        _main.QuestCatalog.ByItem().Keys
-            .Where(n => n.Contains(typed, StringComparison.OrdinalIgnoreCase))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(n => !n.StartsWith(typed, StringComparison.OrdinalIgnoreCase))
-            .ThenBy(n => n, StringComparer.OrdinalIgnoreCase)
-            .Take(8).ToList();
-
-    private void OnAddItemTyped(object sender, TextChangedEventArgs e)
+    /// <summary>The one way in. "+ I have this" used to sit above this box with a
+    /// button and a quantity field, and won the eye by sheer weight — David missed the
+    /// search entirely because of it (2026-08-15). Declaring owned items by hand is also
+    /// the worse half of that trade: /outputfile inventory reads bags AND bank exactly,
+    /// with no spelling to get right, and <see cref="OnCopyInventoryCmd"/> hands over
+    /// the command.</summary>
+    private void OnFilterChanged(object sender, TextChangedEventArgs e)
     {
-        var typed = AddItemBox.Text.Trim();
-        if (typed.Length < 2) { SuggestList.Visibility = Visibility.Collapsed; return; }
-        var suggestions = Suggestions(typed);
-        SuggestList.ItemsSource = suggestions;
-        SuggestList.Visibility = suggestions.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        FilterHint.Visibility = FilterBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
+        Refresh(force: true);
     }
 
-    private void OnSuggestPicked(object sender, MouseButtonEventArgs e)
+    /// <summary>Same ⧉ contract as every other place EQBuddy reads a game command's
+    /// output: we never type in your client, so the most we can do is put the exact
+    /// command on your clipboard. Flashes ✓ so a silent clipboard write isn't a
+    /// silent no-op.</summary>
+    private void OnCopyInventoryCmd(object sender, RoutedEventArgs e)
     {
-        if (SuggestList.SelectedItem is not string picked) return;
-        AddItemBox.Text = picked;
-        SuggestList.Visibility = Visibility.Collapsed;
-        AddQtyBox.Focus();
+        try { Clipboard.SetText(GameCommands.OutputfileInventory); }
+        catch (Exception ex) { CoreLog.Error(ex); return; }
+        CopyInvBtn.Content = "✓ copied";
+        var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
+        t.Tick += (_, _) => { CopyInvBtn.Content = "⧉ scan bags"; t.Stop(); };
+        t.Start();
     }
-
-    private void OnAddItemKey(object sender, KeyEventArgs e)
-    {
-        if (e.Key == Key.Enter) { OnAddItem(sender, e); e.Handled = true; }
-        if (e.Key == Key.Escape) SuggestList.Visibility = Visibility.Collapsed;
-    }
-
-    private void OnAddItem(object sender, RoutedEventArgs e)
-    {
-        var item = AddItemBox.Text.Trim();
-        if (item.Length == 0) return;
-        if (!int.TryParse(AddQtyBox.Text.Trim(), out var qty) || qty < 1) qty = 1;
-        AdjustManual(item, qty);
-        AddItemBox.Clear();
-        AddQtyBox.Text = "1";
-        SuggestList.Visibility = Visibility.Collapsed;
-    }
-
-    private void OnFilterChanged(object sender, TextChangedEventArgs e) => Refresh(force: true);
     private void OnClose(object sender, RoutedEventArgs e) => Close();
 
     private void OnDrag(object sender, MouseButtonEventArgs e)
