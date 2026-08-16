@@ -275,7 +275,7 @@
   },
   {
    "message": "An aura of beneficial awareness surrounds you.",
-   "label": "An aura of beneficial awareness surrounds you",
+   "label": "Benefit Awareness line",
    "spells": [
     {
      "name": "Benefit Awareness I",
@@ -297,7 +297,7 @@
   },
   {
    "message": "An aura of cold awareness surrounds you.",
-   "label": "An aura of cold awareness surrounds you",
+   "label": "Cold Awareness line",
    "spells": [
     {
      "name": "Cold Awareness I",
@@ -319,7 +319,7 @@
   },
   {
    "message": "An aura of disease awareness surrounds you.",
-   "label": "An aura of disease awareness surrounds you",
+   "label": "Disease Awareness line",
    "spells": [
     {
      "name": "Disease Awareness I",
@@ -351,7 +351,7 @@
   },
   {
    "message": "An aura of heat awareness surrounds you.",
-   "label": "An aura of heat awareness surrounds you",
+   "label": "Heat Awareness line",
    "spells": [
     {
      "name": "Heat Awareness I",
@@ -373,7 +373,7 @@
   },
   {
    "message": "An aura of magical awareness surrounds you.",
-   "label": "An aura of magical awareness surrounds you",
+   "label": "Magic Awareness line",
    "spells": [
     {
      "name": "Magic Awareness I",
@@ -395,7 +395,7 @@
   },
   {
    "message": "An aura of poison awareness surrounds you.",
-   "label": "An aura of poison awareness surrounds you",
+   "label": "Poison Awareness line",
    "spells": [
     {
      "name": "Poison Awareness I",
@@ -417,7 +417,7 @@
   },
   {
    "message": "An aura of spiritualism envelops you.",
-   "label": "An aura of spiritualism envelops you",
+   "label": "Spiritualism elixir line",
    "spells": [
     {
      "name": "Elixir of Spiritualism I",
@@ -1829,7 +1829,7 @@
   },
   {
    "message": "You feel very fast.",
-   "label": "You feel very fast",
+   "label": "Speed elixir line",
    "spells": [
     {
      "name": "Elixir of Speed I",
@@ -2329,7 +2329,7 @@
   },
   {
    "message": "Your mind begins to clear.",
-   "label": "Your mind begins to clear",
+   "label": "Clarity elixir line",
    "spells": [
     {
      "name": "Elixir of Clarity I",
@@ -2369,7 +2369,7 @@
   },
   {
    "message": "Your mind expands.",
-   "label": "Your mind expands",
+   "label": "Mystical Infusion line",
    "spells": [
     {
      "name": "Greater Mystical Infusion",

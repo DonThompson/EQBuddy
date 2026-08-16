@@ -176,6 +176,17 @@ SHARED_LINE_NAMES = {
     "Your skin turns hard as wood.": "Wood skin",
     "Your spirit drifts from your body.": "Bind sight line",
     "Your thoughts begin to race and flow faster.": "Gift line",
+    # Alchemy potion lines — each shared across the effect's tiers (I..IX).
+    "An aura of beneficial awareness surrounds you.": "Benefit Awareness line",
+    "An aura of cold awareness surrounds you.": "Cold Awareness line",
+    "An aura of disease awareness surrounds you.": "Disease Awareness line",
+    "An aura of heat awareness surrounds you.": "Heat Awareness line",
+    "An aura of magical awareness surrounds you.": "Magic Awareness line",
+    "An aura of poison awareness surrounds you.": "Poison Awareness line",
+    "An aura of spiritualism envelops you.": "Spiritualism elixir line",
+    "You feel very fast.": "Speed elixir line",
+    "Your mind begins to clear.": "Clarity elixir line",
+    "Your mind expands.": "Mystical Infusion line",
 }
 
 
