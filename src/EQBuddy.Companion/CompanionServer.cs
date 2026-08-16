@@ -95,34 +95,42 @@ public sealed class CompanionServer : IDisposable
     public event Action<CompanionMapAction>? MapActionReceived;
 
     /// <summary>The machine's LAN IPv4s: up interfaces, skipping loopback and
-    /// link-local (169.254 — an address that means "no network"). Order: private
-    /// ranges first, so BoundAddresses[0] is the one to print on the QR.</summary>
+    /// link-local (169.254 — an address that means "no network"). Ordered by
+    /// <see cref="LanAddressRank"/>, so BoundAddresses[0] is the one to print on the QR.
+    ///
+    /// <para>Ordering used to be "private first", which ranked a Hyper-V/VirtualBox host
+    /// adapter equal to the real LAN and let NIC enumeration order decide the QR — a
+    /// scan that silently reaches nothing (David, 2026-08-15). A default gateway is what
+    /// separates them, so the ranking asks for one.</para></summary>
     public static IReadOnlyList<IPAddress> LanAddresses()
     {
-        var result = new List<IPAddress>();
+        var result = new List<(IPAddress Address, int Score)>();
         try
         {
             foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (nic.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up) continue;
                 if (nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
-                foreach (var addr in nic.GetIPProperties().UnicastAddresses)
+                var props = nic.GetIPProperties();
+                // A gateway of 0.0.0.0 is a placeholder some adapters report; it routes
+                // nowhere, so it must not count as one.
+                var hasGateway = props.GatewayAddresses
+                    .Any(g => g.Address is { } a
+                        && a.AddressFamily == AddressFamily.InterNetwork
+                        && !a.Equals(IPAddress.Any));
+                foreach (var addr in props.UnicastAddresses)
                 {
                     if (addr.Address.AddressFamily != AddressFamily.InterNetwork) continue;
                     var bytes = addr.Address.GetAddressBytes();
                     if (bytes[0] == 169 && bytes[1] == 254) continue;
-                    result.Add(addr.Address);
+                    result.Add((addr.Address,
+                        LanAddressRank.Score(addr.Address.ToString(), hasGateway, nic.Description)));
                 }
             }
         }
         catch (Exception ex) { CoreLog.Error(ex); }
-        return [.. result.OrderByDescending(IsPrivate)];
-
-        static bool IsPrivate(IPAddress ip)
-        {
-            var b = ip.GetAddressBytes();
-            return b[0] == 192 && b[1] == 168 || b[0] == 10 || (b[0] == 172 && b[1] >= 16 && b[1] <= 31);
-        }
+        // OrderBy is stable, so equally-ranked addresses keep enumeration order.
+        return [.. result.OrderBy(r => r.Score).Select(r => r.Address)];
     }
 
     /// <summary>Bind and begin accepting. Throws SocketException if the port is taken

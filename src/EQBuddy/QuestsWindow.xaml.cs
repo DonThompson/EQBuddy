@@ -233,6 +233,8 @@ public partial class QuestsWindow : Window
         _signature = sig;
 
         QuestsPanel.Children.Clear();
+        _rendered = 0;
+        _suppressed = 0;
         if (inferred.Length > 0)
         {
             var note = new TextBlock
@@ -268,8 +270,18 @@ public partial class QuestsWindow : Window
             return new QuestMatch(quest, progress.Count(p => p.Have > 0), progress.Count,
                 progress, tracked.Contains(quest.Name));
         }
-        void AddCard(QuestMatch m) => QuestsPanel.Children.Add(
-            Card(m, hidden.Contains(m.Quest.Name), completed.GetValueOrDefault(m.Quest.Name)));
+        // Every branch funnels through here, so the render cap lives here too. Building
+        // a card is not free — each one lays out item rows and wires wiki tooltips — and
+        // "all" hands this the entire 1,172-quest catalog. Doing that per keystroke is
+        // what froze the window (David, 2026-08-15: "typing in the search box is
+        // extremely slow, it sort of freezes up the window").
+        void AddCard(QuestMatch m)
+        {
+            if (_rendered >= RenderCap) { _suppressed++; return; }
+            _rendered++;
+            QuestsPanel.Children.Add(
+                Card(m, hidden.Contains(m.Quest.Name), completed.GetValueOrDefault(m.Quest.Name)));
+        }
         void EmptyNote(string text)
         {
             var note = new TextBlock
@@ -498,6 +510,20 @@ public partial class QuestsWindow : Window
                         : "No quest matches that search — try a reward name, an item, or an NPC.");
                 break;
             }
+        }
+
+        // Never a silent cap (CLAUDE.md): say how many are hidden and how to reach them.
+        if (_suppressed > 0)
+        {
+            var more = new TextBlock
+            {
+                Text = $"+{_suppressed} more — showing the first {RenderCap}. "
+                     + "Keep typing to narrow it down.",
+                FontSize = 11, TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(6, 6, 0, 8),
+            };
+            more.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            QuestsPanel.Children.Add(more);
         }
     }
 
@@ -899,10 +925,37 @@ public partial class QuestsWindow : Window
     /// the worse half of that trade: /outputfile inventory reads bags AND bank exactly,
     /// with no spelling to get right, and <see cref="OnCopyInventoryCmd"/> hands over
     /// the command.</summary>
+    /// <summary>How many cards a single view will build. Each card lays out its item
+    /// rows and wires wiki tooltips, and "all" offers the whole 1,172-quest catalog —
+    /// rendering that is seconds of UI thread, per keystroke.</summary>
+    private const int RenderCap = 60;
+    private int _rendered;
+    private int _suppressed;
+
+    /// <summary>Rebuild after typing STOPS, not on every character. WPF raises
+    /// TextChanged per keystroke and the rebuild is synchronous, so "Wakizashi" used to
+    /// mean nine full catalog rebuilds — the window appeared to hang (David, 2026-08-15).
+    /// A quarter-second is below the threshold where a search feels laggy and above the
+    /// gap between keystrokes for any normal typing speed.</summary>
+    private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(250);
+    private DispatcherTimer? _searchDebounce;
+
     private void OnFilterChanged(object sender, TextChangedEventArgs e)
     {
+        // The hint is pure paint — never make it wait on the debounce.
         FilterHint.Visibility = FilterBox.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-        Refresh(force: true);
+        _searchDebounce ??= Build();
+        // Restarting is what makes it a debounce rather than a throttle: only a pause
+        // in typing fires it.
+        _searchDebounce.Stop();
+        _searchDebounce.Start();
+
+        DispatcherTimer Build()
+        {
+            var t = new DispatcherTimer { Interval = SearchSettle };
+            t.Tick += (_, _) => { t.Stop(); Refresh(force: true); };
+            return t;
+        }
     }
 
     /// <summary>Same ⧉ contract as every other place EQBuddy reads a game command's

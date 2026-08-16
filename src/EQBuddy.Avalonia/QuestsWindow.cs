@@ -51,6 +51,13 @@ public sealed class QuestsWindow : Window
     /// <summary>The last on-screen position, so Closed never persists a torn-down
     /// window's 0,0 (#169).</summary>
     private LastVisiblePosition _seen;
+    /// <summary>Cards built per view, and how many were withheld — the whole catalog is
+    /// 1,172 quests and each card is real layout work.</summary>
+    private const int RenderCap = 60;
+    private int _rendered;
+    private int _suppressed;
+    private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(250);
+    private DispatcherTimer? _searchDebounce;
 
     private readonly TextBlock _titleText = new()
     {
@@ -161,7 +168,22 @@ public sealed class QuestsWindow : Window
             + "(\"Wakizashi of the Frozen Skies\"), a turn-in item, the quest name, the "
             + "quest giver, a zone. Search ignores the class/era/state filters. "
             + "Pin 📌 a result to track it.");
-        _filterBox.TextChanged += (_, _) => Refresh(force: true);
+        // Rebuild after typing STOPS, not per keystroke — the rebuild is synchronous and
+        // "all" hands it the whole catalog, so nine characters meant nine full rebuilds
+        // and an apparently hung window (David, 2026-08-15). Mirrors WPF's debounce.
+        _filterBox.TextChanged += (_, _) =>
+        {
+            _searchDebounce ??= BuildDebounce();
+            _searchDebounce.Stop();
+            _searchDebounce.Start();
+        };
+
+        DispatcherTimer BuildDebounce()
+        {
+            var t = new DispatcherTimer { Interval = SearchSettle };
+            t.Tick += (_, _) => { t.Stop(); Refresh(force: true); };
+            return t;
+        }
         searchRow.Children.Add(_filterBox);
         var scanBtn = ActionButton("⧉ scan bags");
         scanBtn.Margin = new Thickness(6, 0, 0, 0);
@@ -460,6 +482,8 @@ public sealed class QuestsWindow : Window
         _signature = sig;
 
         _questsPanel.Children.Clear();
+        _rendered = 0;
+        _suppressed = 0;
         if (inferred.Length > 0)
         {
             var note = new TextBlock
@@ -495,8 +519,16 @@ public sealed class QuestsWindow : Window
             return new QuestMatch(quest, progress.Count(p => p.Have > 0), progress.Count,
                 progress, tracked.Contains(quest.Name));
         }
-        void AddCard(QuestMatch m) => _questsPanel.Children.Add(
-            Card(m, hidden.Contains(m.Quest.Name), completed.GetValueOrDefault(m.Quest.Name)));
+        // Render cap and its "+N more" note mirror WPF exactly (#quest-search perf,
+        // David 2026-08-15): "all" offers the whole 1,172-quest catalog, and building
+        // that many cards per keystroke hangs the window.
+        void AddCard(QuestMatch m)
+        {
+            if (_rendered >= RenderCap) { _suppressed++; return; }
+            _rendered++;
+            _questsPanel.Children.Add(
+                Card(m, hidden.Contains(m.Quest.Name), completed.GetValueOrDefault(m.Quest.Name)));
+        }
         void EmptyNote(string text)
         {
             var note = new TextBlock
