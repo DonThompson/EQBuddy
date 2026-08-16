@@ -274,12 +274,174 @@
    ]
   },
   {
+   "message": "An aura of beneficial awareness surrounds you.",
+   "label": "An aura of beneficial awareness surrounds you",
+   "spells": [
+    {
+     "name": "Benefit Awareness I",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Benefit Awareness II",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Benefit Awareness III",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Benefit Awareness IV",
+     "durationSeconds": 11700.0
+    }
+   ]
+  },
+  {
+   "message": "An aura of cold awareness surrounds you.",
+   "label": "An aura of cold awareness surrounds you",
+   "spells": [
+    {
+     "name": "Cold Awareness I",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Cold Awareness II",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Cold Awareness III",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Cold Awareness IV",
+     "durationSeconds": 11700.0
+    }
+   ]
+  },
+  {
+   "message": "An aura of disease awareness surrounds you.",
+   "label": "An aura of disease awareness surrounds you",
+   "spells": [
+    {
+     "name": "Disease Awareness I",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Disease Awareness II",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Disease Awareness III",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Disease Awareness IV",
+     "durationSeconds": 11700.0
+    }
+   ]
+  },
+  {
    "message": "An aura of fortitude fills you.",
    "label": "Fortitude",
    "spells": [
     {
      "name": "Fortitude",
      "durationSeconds": 8640.0
+    }
+   ]
+  },
+  {
+   "message": "An aura of heat awareness surrounds you.",
+   "label": "An aura of heat awareness surrounds you",
+   "spells": [
+    {
+     "name": "Heat Awareness I",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Heat Awareness II",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Heat Awareness III",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Heat Awareness IV",
+     "durationSeconds": 11700.0
+    }
+   ]
+  },
+  {
+   "message": "An aura of magical awareness surrounds you.",
+   "label": "An aura of magical awareness surrounds you",
+   "spells": [
+    {
+     "name": "Magic Awareness I",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Magic Awareness II",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Magic Awareness III",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Magic Awareness IV",
+     "durationSeconds": 11700.0
+    }
+   ]
+  },
+  {
+   "message": "An aura of poison awareness surrounds you.",
+   "label": "An aura of poison awareness surrounds you",
+   "spells": [
+    {
+     "name": "Poison Awareness I",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Poison Awareness II",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Poison Awareness III",
+     "durationSeconds": 11700.0
+    },
+    {
+     "name": "Poison Awareness IV",
+     "durationSeconds": 11700.0
+    }
+   ]
+  },
+  {
+   "message": "An aura of spiritualism envelops you.",
+   "label": "An aura of spiritualism envelops you",
+   "spells": [
+    {
+     "name": "Elixir of Spiritualism I",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Spiritualism II",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Spiritualism III",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Spiritualism IV",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Spiritualism IX",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Spiritualism VI",
+     "durationSeconds": 1800.0
     }
    ]
   },
@@ -722,6 +884,30 @@
     {
      "name": "Chloroplast",
      "durationSeconds": 960.0
+    },
+    {
+     "name": "Elixir of Replenishment I",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Replenishment II",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Replenishment III",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Replenishment IV",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Replenishment IX",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Replenishment VI",
+     "durationSeconds": 1800.0
     },
     {
      "name": "Pack Chloroplast",
@@ -1294,6 +1480,16 @@
    ]
   },
   {
+   "message": "You feel resistant.",
+   "label": "Divine Endurance",
+   "spells": [
+    {
+     "name": "Divine Endurance",
+     "durationSeconds": 1200.0
+    }
+   ]
+  },
+  {
    "message": "You feel resolute.",
    "label": "Resolution",
    "spells": [
@@ -1612,12 +1808,52 @@
    ]
   },
   {
+   "message": "You feel very amphibious.",
+   "label": "Illusion: Guktan",
+   "spells": [
+    {
+     "name": "Illusion: Guktan",
+     "durationSeconds": 2160.0
+    }
+   ]
+  },
+  {
    "message": "You feel very brave.",
    "label": "Bravery",
    "spells": [
     {
      "name": "Bravery",
      "durationSeconds": 2700.0
+    }
+   ]
+  },
+  {
+   "message": "You feel very fast.",
+   "label": "You feel very fast",
+   "spells": [
+    {
+     "name": "Elixir of Speed I",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Speed II",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Speed III",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Speed IV",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Speed IX",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Speed VI",
+     "durationSeconds": 1800.0
     }
    ]
   },
@@ -1716,6 +1952,16 @@
     {
      "name": "Scale Skin",
      "durationSeconds": 1620.0
+    }
+   ]
+  },
+  {
+   "message": "You have a sudden desire to Froak.",
+   "label": "Illusion: Froglok",
+   "spells": [
+    {
+     "name": "Illusion: Froglok",
+     "durationSeconds": 2160.0
     }
    ]
   },
@@ -1832,6 +2078,16 @@
     {
      "name": "Voice of Shadows",
      "durationSeconds": 600.0
+    }
+   ]
+  },
+  {
+   "message": "Your aim improves.",
+   "label": "Hawk's Eye Tonic",
+   "spells": [
+    {
+     "name": "Hawk's Eye Tonic",
+     "durationSeconds": 1200.0
     }
    ]
   },
@@ -1960,6 +2216,10 @@
     {
      "name": "Levitation",
      "durationSeconds": 960.0
+    },
+    {
+     "name": "Levity",
+     "durationSeconds": 1230.0
     }
    ]
   },
@@ -2068,12 +2328,56 @@
    ]
   },
   {
+   "message": "Your mind begins to clear.",
+   "label": "Your mind begins to clear",
+   "spells": [
+    {
+     "name": "Elixir of Clarity I",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Clarity II",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Clarity III",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Clarity IV",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Clarity IX",
+     "durationSeconds": 1800.0
+    },
+    {
+     "name": "Elixir of Clarity VI",
+     "durationSeconds": 1800.0
+    }
+   ]
+  },
+  {
    "message": "Your mind clears.",
    "label": "Brilliance",
    "spells": [
     {
      "name": "Brilliance",
      "durationSeconds": 2400.0
+    }
+   ]
+  },
+  {
+   "message": "Your mind expands.",
+   "label": "Your mind expands",
+   "spells": [
+    {
+     "name": "Greater Mystical Infusion",
+     "durationSeconds": 1200.0
+    },
+    {
+     "name": "Mystical Infusion",
+     "durationSeconds": 1200.0
     }
    ]
   },
