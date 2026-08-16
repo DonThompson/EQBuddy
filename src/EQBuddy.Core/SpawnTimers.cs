@@ -18,6 +18,15 @@ public sealed record SpawnTimerState(
     /// deserialize null. Values are the /loc's own (Y, X) order.</summary>
     public double? CampLocY { get; init; }
     public double? CampLocX { get; init; }
+
+    /// <summary>The creature whose death actually started this clock, as the kill
+    /// line named it — the named itself, an alias, or a placeholder. Learning needs
+    /// the distinction (2026-08-16, Sol A: a trash kill that matched CWG Model EXG
+    /// started his clock, and killing the REAL EXG 93s later "measured" a 93-second
+    /// respawn — the gap between two different mobs is walk time, not a cycle).
+    /// Timers persisted before this existed deserialize null: no evidence either
+    /// way, so nothing learns from them.</summary>
+    public string? KilledName { get; init; }
 }
 
 /// <summary>
@@ -149,12 +158,16 @@ public sealed class SpawnTimers
                 // Multi-spawn names (Royal Guard pops in a number of places — David,
                 // 2026-08-09) get NO sighting treatment at all: the acting creature
                 // may be any of its siblings, so only kills drive their clocks.
-                if (zone.Named.FirstOrDefault(e =>
-                        e.Name.Equals(t.Name, StringComparison.OrdinalIgnoreCase))
-                    is { MultiSpawn: true }) return;
+                var entry = zone.Named.FirstOrDefault(e =>
+                    e.Name.Equals(t.Name, StringComparison.OrdinalIgnoreCase));
+                if (entry is { MultiSpawn: true }) return;
 
                 Upsert(t with { DurationSeconds = Math.Floor(elapsed) });
-                LearnFromSighting(zone, t.Name, elapsed);
+                // The chip completes either way — the mob is provably up — but only
+                // a clock the named's OWN death started measures a cycle. On a
+                // placeholder-started clock the named may have been up the whole
+                // time (Sol A, 2026-08-16), so its elapsed teaches nothing.
+                if (StartedByNamedKill(t, entry)) LearnFromSighting(zone, t.Name, elapsed);
                 return;
             }
         }
@@ -198,9 +211,11 @@ public sealed class SpawnTimers
                 {
                     var o = _overrides.Find(zone.Zone, entry.Name);
                     var placeholder = o?.Placeholder ?? entry.Placeholder;
-                    if (!Matches(entry.Name, k.Target, fuzzy)
-                        && !MatchesAnyPlaceholder(placeholder, k.Target, fuzzy)
-                        && !entry.Aliases.Any(a => Matches(a, k.Target, fuzzy))) continue;
+                    // Whether the named ITSELF died (name or alias) or only its
+                    // placeholder decides what this kill may teach below.
+                    var namedKill = Matches(entry.Name, k.Target, fuzzy)
+                        || entry.Aliases.Any(a => Matches(a, k.Target, fuzzy));
+                    if (!namedKill && !MatchesAnyPlaceholder(placeholder, k.Target, fuzzy)) continue;
 
                     // Raid-instance bosses, and ANY kill inside an INSTANCED RAID
                     // zone (#109): the kill is real — the Raids card records it — but
@@ -235,11 +250,14 @@ public sealed class SpawnTimers
                     var duration = o?.RespawnSeconds ?? SpawnCatalog.EffectiveSeconds(zone, entry);
                     // Re-kill gaps teach nothing about multi-spawn names either: the
                     // "re"-kill may be a sibling across the zone, not this camp again.
-                    if (!trusted && !entry.MultiSpawn)
-                        duration = LearnFromRekill(zone.Zone, entry.Name, k.Time, duration);
+                    // And only a named-kill-to-named-kill gap is a cycle at all — a
+                    // placeholder death on either end makes the gap walk time between
+                    // two different mobs (Sol A's 93-second EXG, 2026-08-16).
+                    if (!trusted && !entry.MultiSpawn && namedKill)
+                        duration = LearnFromRekill(zone, entry, k.Time, duration);
                     var (cy, cx) = CampFor(zone.Zone, entry.Name, k.Time);
                     Upsert(new SpawnTimerState(Server, zone.Zone, entry.Name, k.Time, duration)
-                        { CampLocY = cy, CampLocX = cx });
+                        { CampLocY = cy, CampLocX = cx, KilledName = k.Target });
                     return;
                 }
 
@@ -249,7 +267,7 @@ public sealed class SpawnTimers
                         && !Matches(o.Placeholder ?? "", k.Target, fuzzy)) continue;
                     var (ccy, ccx) = CampFor(zone.Zone, name, k.Time);
                     Upsert(new SpawnTimerState(Server, zone.Zone, name, k.Time, o.RespawnSeconds)
-                        { CampLocY = ccy, CampLocX = ccx });
+                        { CampLocY = ccy, CampLocX = ccx, KilledName = k.Target });
                     return;
                 }
             }
@@ -284,16 +302,19 @@ public sealed class SpawnTimers
     /// the same named again SOONER than its timer says is possible proves the respawn
     /// is at most that gap, so the gap becomes a learned override. Manual edits are
     /// never touched, learning never loosens, and learned values keep tightening as
-    /// better evidence arrives.
+    /// better evidence arrives. Callers only send named kills here; the running timer
+    /// must ALSO have been started by the named's own death, or the "gap" spans two
+    /// different mobs and measures nothing.
     /// </summary>
-    private double? LearnFromRekill(string zone, string name, DateTime killedAt, double? currentDuration)
+    private double? LearnFromRekill(SpawnZone zone, SpawnEntry entry, DateTime killedAt, double? currentDuration)
     {
         if (currentDuration is not { } d) return currentDuration;
-        if (!_timers.TryGetValue(Key(Server, zone, name), out var prev)) return currentDuration;
+        if (!_timers.TryGetValue(Key(Server, zone.Zone, entry.Name), out var prev)) return currentDuration;
+        if (!StartedByNamedKill(prev, entry)) return currentDuration;
         var gap = (killedAt - prev.KilledAt).TotalSeconds;
         if (gap < MinLearnSeconds || gap >= d) return currentDuration;
 
-        var o = _overrides.GetOrAdd(zone, name);
+        var o = _overrides.GetOrAdd(zone.Zone, entry.Name);
         if (o.RespawnSeconds is not null && !o.Learned) return currentDuration; // manual edit wins
         o.RespawnSeconds = Math.Floor(gap);
         o.Learned = true;
@@ -301,12 +322,29 @@ public sealed class SpawnTimers
         return o.RespawnSeconds;
     }
 
+    /// <summary>True when this timer's clock was started by the named creature's own
+    /// death (name or alias) rather than a placeholder's. Only such clocks measure
+    /// the named's cycle; a null <see cref="SpawnTimerState.KilledName"/> (persisted
+    /// before the field existed) is no evidence, so it answers false.</summary>
+    private static bool StartedByNamedKill(SpawnTimerState t, SpawnEntry? entry) =>
+        t.KilledName is { } killed
+        && (SpawnCatalog.NameMatches(t.Name, killed)
+            || entry?.Aliases.Any(a => SpawnCatalog.NameMatches(a, killed)) == true);
+
     /// <summary>The ▶ button: the player saw (or heard about) the kill themselves.
     /// <paramref name="elapsed"/> covers "it died five minutes ago".</summary>
     public void StartManual(string zone, string name, double? durationSeconds, TimeSpan elapsed = default)
     {
         lock (_lock)
-            Upsert(new SpawnTimerState(Server, zone, name, DateTime.Now - elapsed, durationSeconds));
+        {
+            // Drop any running timer first: Upsert's replay guard refuses older kill
+            // times, which would silently swallow a backdated manual start whenever a
+            // (possibly placeholder-started) clock was already running. The player's
+            // word always wins. Their attested kill counts as the named's own.
+            _timers.Remove(Key(Server, zone, name));
+            Upsert(new SpawnTimerState(Server, zone, name, DateTime.Now - elapsed, durationSeconds)
+                { KilledName = name });
+        }
     }
 
     /// <summary>Re-derives the countdown after a duration edit, from the original kill.</summary>

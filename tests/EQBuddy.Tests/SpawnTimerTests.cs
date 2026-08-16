@@ -169,6 +169,13 @@ public class SpawnTimerTests
     // different creature. Trainee kills were restarting the Trainer clock (David,
     // live in Crushbone 2026-08-09).
     [InlineData("Orc Trainer", "orc trainee", false)]
+    // Serial families change the last word's LENGTH too, dodging the same-length
+    // rule: Sol A's trash clockworks sat two edits from the named CWG Model EXG, so
+    // ordinary kills ran his clock (2026-08-16). A shared prefix with a different
+    // last word is a sibling unless one last word truncates the other (Gynok Molto).
+    [InlineData("CWG Model EXG", "CWG Model XB", false)]
+    [InlineData("CWG Model EXG", "CWG Model XA", false)]
+    [InlineData("CWG Model EXG", "CWG Model XC", false)]
     public void FuzzyMatchingToleratesTyposWithoutInventingThem(string a, string b, bool expected) =>
         Assert.Equal(expected, SpawnCatalog.NameMatchesFuzzy(a, b));
 
@@ -398,6 +405,8 @@ public class SpawnTimerTests
             var reborn = Tracker(path: path);
             var timer = Assert.Single(reborn.Snapshot(T0.AddMinutes(1)));
             Assert.Equal(T0, timer.KilledAt);
+            // What started the clock survives too — learning depends on it.
+            Assert.Equal("froglok ghoul lord", timer.KilledName);
         }
         finally { File.Delete(path); }
     }
@@ -684,6 +693,90 @@ public class SpawnTimerTests
         timers.Apply(new KillEvent(T0.AddMinutes(10), "kor ghoul wizard", "You"));
         timers.Apply(new KillEvent(T0.AddMinutes(11), "kor ghoul wizard", "You"));
         Assert.Null(overrides.Find("Lower Guk", "the ghoul arch magi"));
+    }
+
+    // ---- cross-mob learning poison (LW's Sol A session, 2026-08-16: trash
+    // clockwork kills fuzzy-bridged onto CWG Model EXG's clock, then killing the
+    // REAL EXG 93s later "learned" a 93-second respawn — walk time between two
+    // different mobs, not a cycle. Learning now demands the named's own death on
+    // BOTH ends of the gap.) ----
+
+    /// <summary>End to end against the shipped catalog: the trash clockworks that
+    /// actually bridged (XB/XA from the live log) start nothing, the named himself
+    /// still runs the zone's 18-minute clock.</summary>
+    [Fact]
+    public void TrashClockworksStartNoClockButTheNamedStillDoes()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(SpawnCatalog.LoadEmbedded(), overrides) { Server = "oggok" };
+        t.Apply(LogParser.Parse("[Sun Aug 16 15:17:23 2026] You have entered Solusek's Eye 2 (Adaptive).")!);
+        t.Apply(LogParser.Parse("[Sun Aug 16 15:33:41 2026] You have slain CWG Model XB!")!);
+        t.Apply(LogParser.Parse("[Sun Aug 16 15:34:58 2026] You have slain CWG Model XA!")!);
+        Assert.Empty(t.Snapshot(DateTime.Parse("2026-08-16T15:35:00")));
+
+        t.Apply(LogParser.Parse("[Sun Aug 16 15:36:54 2026] You have slain CWG Model EXG!")!);
+        var timer = Assert.Single(t.Snapshot(DateTime.Parse("2026-08-16T15:36:55")));
+        Assert.Equal("CWG Model EXG", timer.Name);
+        Assert.Equal(1080, timer.DurationSeconds);
+        Assert.Null(overrides.Find("Solusek's Eye", "CWG Model EXG"));
+    }
+
+    /// <summary>A placeholder death restarts the clock (that part is the feature),
+    /// but the gap from a placeholder kill to the named's kill teaches nothing —
+    /// only a named-to-named gap is a cycle.</summary>
+    [Fact]
+    public void PlaceholderToNamedGapsTeachNothingButNamedToNamedStillDo()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(TestCatalog(), overrides) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "kor ghoul wizard", "You"));   // PH: 1680s zone clock
+
+        // The named was up the whole time; you reach him 200s later.
+        t.Apply(new KillEvent(T0.AddSeconds(200), "the ghoul arch magi", "You"));
+        Assert.Null(overrides.Find("Lower Guk", "the ghoul arch magi"));
+        var timer = Assert.Single(t.Snapshot(T0.AddSeconds(201)));
+        Assert.Equal(1680, timer.DurationSeconds);               // full clock, restarted
+        Assert.Equal(T0.AddSeconds(200), timer.KilledAt);
+
+        // Named again 300s after the named: that IS a measured cycle.
+        t.Apply(new KillEvent(T0.AddSeconds(500), "the ghoul arch magi", "You"));
+        Assert.Equal(300, overrides.Find("Lower Guk", "the ghoul arch magi")!.RespawnSeconds);
+    }
+
+    /// <summary>A final-window sighting on a placeholder-started clock still flips
+    /// the chip (the mob is provably up) but learns nothing: measured from the
+    /// placeholder's death, the elapsed time is not the named's cycle.</summary>
+    [Fact]
+    public void SightingsOnAPlaceholderStartedClockCompleteTheChipButNeverLearn()
+    {
+        var overrides = new SpawnOverrides();
+        var t = new SpawnTimers(TestCatalog(), overrides) { Server = "freeport" };
+        t.Apply(new ZoneEvent(T0, "Lower Guk"));
+        t.Apply(new KillEvent(T0, "kor ghoul wizard", "You"));   // PH: 1680s zone clock
+
+        // 1400s in (final fifth starts at 1344), the arch magi is already casting.
+        t.Apply(new DamageDealtEvent(T0.AddSeconds(1400), "the ghoul arch magi", 50,
+            DamageKind.Melee, "Slash", false));
+        var timer = Assert.Single(t.Snapshot(T0.AddSeconds(1401)));
+        Assert.True(timer.IsDue(T0.AddSeconds(1401)));
+        Assert.Null(overrides.Find("Lower Guk", "the ghoul arch magi"));
+    }
+
+    /// <summary>The ▶ button must never silently lose to a running clock: a manual
+    /// start backdated by "died an hour ago" is the player's word, and it replaces
+    /// a newer automatic timer instead of being swallowed by the replay guard.</summary>
+    [Fact]
+    public void ABackdatedManualStartReplacesARunningTimer()
+    {
+        var t = Tracker();
+        var now = DateTime.Now;
+        t.Apply(new ZoneEvent(now, "Permafrost Keep"));
+        t.Apply(new KillEvent(now, "Lady Vox", "You"));          // clock just started
+
+        t.StartManual("Permafrost Keep", "Lady Vox", 604800, elapsed: TimeSpan.FromHours(1));
+        var timer = Assert.Single(t.Snapshot(now));
+        Assert.True(timer.KilledAt <= now - TimeSpan.FromMinutes(59));
     }
 
     // ---- duration text ----
