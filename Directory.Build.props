@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!-- THE version, single-sourced for every project. The Avalonia csproj used to carry
        its own hardcoded copy, which release.ps1 never bumped — so the v1.27/1.28 Linux
        tarballs identified as 1.26.0 and nagged their own users to update forever

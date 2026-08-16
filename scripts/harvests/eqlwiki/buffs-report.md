@@ -1,29 +1,29 @@
 # Buff-duration catalog report
 
-- 305 buffs across 193 landing lines (41 shared)
+- 361 buffs across 207 landing lines (51 shared)
 
 ## Shared landing lines (cast correlation resolves; unresolved = est)
 
 - 'You feel different.': 25 spells
 - 'You drink the potion.': 11 spells
+- 'You begin to regenerate.': 10 spells
 - 'You feel stronger.': 10 spells
+- 'You feel your skin tingle.': 7 spells
+- 'An aura of spiritualism envelops you.': 6 spells
 - 'You are surrounded by a thorny barrier.': 6 spells
-- 'You feel your skin tingle.': 6 spells
+- 'You feel very fast.': 6 spells
+- 'Your mind begins to clear.': 6 spells
 - 'Your eyes tingle.': 5 spells
 - 'A mystic symbol flashes before your eyes.': 4 spells
+- 'An aura of beneficial awareness surrounds you.': 4 spells
+- 'An aura of cold awareness surrounds you.': 4 spells
+- 'An aura of disease awareness surrounds you.': 4 spells
+- 'An aura of heat awareness surrounds you.': 4 spells
+- 'An aura of magical awareness surrounds you.': 4 spells
+- 'An aura of poison awareness surrounds you.': 4 spells
 - 'You begin to radiate.': 4 spells
-- 'You begin to regenerate.': 4 spells
 - 'You feel dexterous.': 4 spells
 - 'You feel much faster.': 4 spells
-- 'You feel the favor of the gods upon you.': 4 spells
-- 'You feel tough.': 4 spells
-- 'You vanish.': 4 spells
-- 'You are enveloped by flame.': 3 spells
-- 'You feel your body pulse with energy.': 3 spells
-- 'Your eyes feel stronger.': 3 spells
-- 'Your thoughts begin to race and flow faster.': 3 spells
-- 'A coat of shimmering runes surround you.': 2 spells
-- 'A cool breeze slips through your mind.': 2 spells
 
 ## Excluded
 
@@ -56,6 +56,12 @@
 - Divine Barrier: duration 18s < 60s
 - Efflorescing Heal: duration 24s < 60s
 - Elemental Rhythms: duration 18s < 60s
+- Elixir of Healing I: duration 30s < 60s
+- Elixir of Healing II: duration 30s < 60s
+- Elixir of Healing III: duration 30s < 60s
+- Elixir of Healing IV: duration 30s < 60s
+- Elixir of Healing IX: duration 30s < 60s
+- Elixir of Healing VI: duration 30s < 60s
 - Ethereal Cleansing: duration 24s < 60s
 - Expedience: no cast-on-you message on the wiki page
 - Eye of Tallon: no cast-on-you message on the wiki page
