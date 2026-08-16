@@ -29,6 +29,9 @@ public sealed class FightTimelineWindow : Window
     private bool _userSized;
     private bool _restored;
     private (double Left, double Top) _placed;
+    /// <summary>The last on-screen position, so Closed never persists a torn-down
+    /// window's 0,0 (#169).</summary>
+    private LastVisiblePosition _seen;
 
     private readonly Border _chrome;
     private readonly TextBlock _title = new();
@@ -188,12 +191,16 @@ public sealed class FightTimelineWindow : Window
         Content = new Panel { Children = { _chrome, tipCanvas } };
 
         Opened += (_, _) => { RestorePlacement(); Refresh(); };
+        PositionChanged += (_, _) => _seen.Observe(Position.X, Position.Y, IsVisible);
         Closed += (_, _) =>
         {
             _tick.Stop();
+            // A closing window reports 0,0 on X11/Wayland; persist only what was seen
+            // while it was on screen, else leave the saved spot alone (#169).
+            var (curX, curY) = _seen.Or(_settings.TimelineLeft, _settings.TimelineTop);
             // Never let an unmoved fallback overwrite a real saved spot (#117).
             (_settings.TimelineLeft, _settings.TimelineTop) = WindowPlacement.PositionToPersist(
-                _restored, _placed.Left, _placed.Top, Position.X, Position.Y,
+                _restored, _placed.Left, _placed.Top, curX, curY,
                 _settings.TimelineLeft, _settings.TimelineTop);
             _settings.TimelineWidth = Width; _settings.TimelineHeight = Height;
             _settings.Save();

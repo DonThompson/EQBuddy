@@ -47,6 +47,9 @@ public sealed class QuestsWindow : Window
     private string _mode = "mine";   // mine = items+pins · zone = current zone · all
     private bool _restored;
     private PixelPoint _placed;
+    /// <summary>The last on-screen position, so Closed never persists a torn-down
+    /// window's 0,0 (#169).</summary>
+    private LastVisiblePosition _seen;
 
     private readonly TextBlock _titleText = new()
     {
@@ -123,11 +126,18 @@ public sealed class QuestsWindow : Window
                     screen.WorkingArea.Y + 80);
             _placed = Position;
         };
-        PositionChanged += (_, _) => UpdateHeightLimit();
+        PositionChanged += (_, _) =>
+        {
+            UpdateHeightLimit();
+            _seen.Observe(Position.X, Position.Y, IsVisible);
+        };
         Closed += (_, _) =>
         {
+            // A closing window reports 0,0 on X11/Wayland; persist only what was seen
+            // while it was on screen, else leave the saved spot alone (#169).
+            var (curX, curY) = _seen.Or(_settings.QuestsLeft, _settings.QuestsTop);
             (_settings.QuestsLeft, _settings.QuestsTop) = WindowPlacement.PositionToPersist(
-                _restored, _placed.X, _placed.Y, Position.X, Position.Y,
+                _restored, _placed.X, _placed.Y, curX, curY,
                 _settings.QuestsLeft, _settings.QuestsTop);
             _settings.Save();
         };

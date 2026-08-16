@@ -42,6 +42,9 @@ public sealed class SpawnsWindow : Window
     private string? _lastFollowedZone;
     private bool _restoredSaved;
     private PixelPoint _placed;
+    /// <summary>The last on-screen position, so Closed never persists a torn-down
+    /// window's 0,0 (#169).</summary>
+    private LastVisiblePosition _seen;
 
     public SpawnsWindow(MainWindow main, SpawnsViewModel vm, string? initialZone = null)
     {
@@ -87,13 +90,22 @@ public sealed class SpawnsWindow : Window
         };
         // Follow the window between monitors; primary-only/open-time caps waste most of
         // a portrait secondary's height.
-        PositionChanged += (_, _) => UpdateHeightLimit();
+        PositionChanged += (_, _) =>
+        {
+            UpdateHeightLimit();
+            _seen.Observe(Position.X, Position.Y, IsVisible);
+        };
         Closed += (_, _) =>
         {
             _tick.Stop();
+            // Never read Position here — a closing window can report 0,0 on X11/Wayland
+            // and that zero lands in settings.json as a real choice (#169). Only a
+            // position seen while the window was on screen counts; with none seen, the
+            // saved spot stands.
+            var (curX, curY) = _seen.Or(_settings.SpawnLeft, _settings.SpawnTop);
             // Never let an unmoved fallback overwrite a real saved spot (#117).
             (_settings.SpawnLeft, _settings.SpawnTop) = WindowPlacement.PositionToPersist(
-                _restoredSaved, _placed.X, _placed.Y, Position.X, Position.Y,
+                _restoredSaved, _placed.X, _placed.Y, curX, curY,
                 _settings.SpawnLeft, _settings.SpawnTop);
             _settings.Save();
         };

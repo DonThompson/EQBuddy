@@ -525,7 +525,11 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         };
         // A portrait secondary can be much taller than the primary. Recalculate after
         // every move so crossing a monitor boundary updates the available card height.
-        PositionChanged += (_, _) => UpdateWindowHeightLimit();
+        PositionChanged += (_, _) =>
+        {
+            UpdateWindowHeightLimit();
+            _seenPosition.Observe(Position.X, Position.Y, IsVisible);
+        };
     }
 
     /// <summary>Records the running version before displaying release notes, so an
@@ -1384,6 +1388,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     // placement must never overwrite a real saved position).
     private bool _restoredSavedPosition;
     private PixelPoint _placedPosition;
+    /// <summary>The last on-screen position, so OnClosed never persists a torn-down
+    /// window's 0,0 (#169).</summary>
+    private LastVisiblePosition _seenPosition;
 
     private void RestorePosition()
     {
@@ -5876,10 +5883,15 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         _gridOverlay?.Close();
         _cursorRing?.Close();
         foreach (var breakout in _breakouts.Values) breakout.Close();
+        // A closing window reports 0,0 on X11/Wayland, and that zero reached
+        // settings.json as if the player had parked the widget there (#169). Persist
+        // only a position seen while the widget was on screen; with none seen, the
+        // saved spot stands.
+        var (curLeft, curTop) = _seenPosition.Or(_settings.WindowLeft, _settings.WindowTop);
         // Never let an unmoved fallback overwrite a real saved spot (#117).
         (_settings.WindowLeft, _settings.WindowTop) = WindowPlacement.PositionToPersist(
             _restoredSavedPosition, _placedPosition.X, _placedPosition.Y,
-            Position.X, Position.Y, _settings.WindowLeft, _settings.WindowTop);
+            curLeft, curTop, _settings.WindowLeft, _settings.WindowTop);
         _settings.Save();
         if (_clickThrough)
             ClickThrough.Set(this, enabled: false);

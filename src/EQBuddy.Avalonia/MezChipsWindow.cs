@@ -22,8 +22,9 @@ public sealed class MezChipsWindow : Window
     private readonly List<(Grid Track, Border Fill)> _gauges = [];
     private List<SpawnChip> _chips = [];
     private string _signature = "";
-    private PixelPoint _lastVisiblePosition;
-    private bool _haveVisiblePosition;
+    /// <summary>The last position we can vouch for — the spot asked for at open, or a
+    /// drag. Never a read taken while the window is opening or closing (#169).</summary>
+    private LastVisiblePosition _seen;
     // Fallback placements must never persist (#117): where the window was placed at
     // open and whether that was the player's saved spot.
     private bool _restoredSaved;
@@ -71,8 +72,11 @@ public sealed class MezChipsWindow : Window
                 _restoredSaved && _settings.MezChipsGrowUp && !double.IsNaN(_settings.MezChipsBottom)
                     ? _settings.MezChipsBottom : null);
             _openedOnce = true;
-            _lastVisiblePosition = Position;
-            _haveVisiblePosition = true;
+            // The spot we ASKED for, not a read-back: the window manager applies a
+            // programmatic move asynchronously, so reading Position here can hand back
+            // 0,0 on X11/Wayland and that zero becomes the stack's saved home (#169).
+            if (_restoredSaved)
+                _seen.Observe(_settings.MezChipsLeft, _settings.MezChipsTop, visible: true);
         };
         PositionChanged += (_, _) =>
         {
@@ -80,16 +84,15 @@ public sealed class MezChipsWindow : Window
             // has actually STARTED A DRAG (#117; coordinate deltas can't tell a drag
             // from the WM's or anchor's own writes — 2026-08-13 review).
             if (!IsVisible || !_openedOnce || !_userMoved) return;
-            _lastVisiblePosition = Position;
-            _haveVisiblePosition = true;
+            _seen.Observe(Position.X, Position.Y, visible: true);
             _settings.MezChipsLeft = Position.X;
             _settings.MezChipsTop = Position.Y;
         };
         Closed += (_, _) =>
         {
-            var current = _haveVisiblePosition ? _lastVisiblePosition : Position;
+            var (curX, curY) = _seen.Or(_settings.MezChipsLeft, _settings.MezChipsTop);
             (_settings.MezChipsLeft, _settings.MezChipsTop) = WindowPlacement.PositionToPersist(
-                _restoredSaved, _userMoved, current.X, current.Y,
+                _restoredSaved, _userMoved, curX, curY,
                 _settings.MezChipsLeft, _settings.MezChipsTop);
             // The anchor's own bottom, never a measurement taken here: a closing window
             // reports a zero height, and "bottom" then means the top edge (#152).
