@@ -998,9 +998,17 @@ public partial class MainWindow : Window
             var cpu = _self.TotalProcessorTime;
             if (_perfSampledAt != default)
             {
-                var pct = (cpu - _perfCpuAt).TotalMilliseconds
-                          / ((now - _perfSampledAt).TotalMilliseconds * Environment.ProcessorCount) * 100;
-                PerfLabel.Text = $"{Math.Max(0, pct):0.0}% · {_self.WorkingSet64 / (1024.0 * 1024.0):0} MB";
+                // Through UI.Shared, and fixed-width, for the reason #173 found on the
+                // Avalonia side: this string used to grow a character at 9→10% or
+                // 999→1000 MB, and the widget sizes itself to its contents, so a
+                // diagnostic readout resized a real always-on-top window every three
+                // seconds forever. Harmless on Windows — but this is the hand-copied
+                // inline arithmetic that carried #122 and #152 to Linux, so it goes
+                // through the same tested helper rather than staying a near-copy.
+                PerfLabel.Text = EQBuddy.UI.Shared.PerfReadout.Format(
+                    EQBuddy.UI.Shared.PerfReadout.CpuPercent(
+                        cpu - _perfCpuAt, now - _perfSampledAt, Environment.ProcessorCount),
+                    _self.WorkingSet64);
                 PerfLabel.Visibility = Visibility.Visible;
             }
             _perfSampledAt = now;

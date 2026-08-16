@@ -185,6 +185,25 @@ Read this list before touching the areas it names. Every entry cost a release.
     be named** — and that yesterday can be outweighed by today. `Core/ClassInference.cs`
     derives signals for all sixteen classes from the shipped catalogs, decays them, and
     answers "" when the evidence is thin or split.
+12. **Both widgets are `SizeToContent`, so text width IS window geometry.** A label whose
+    string changes width makes the app ask the windowing system to resize a transparent,
+    always-on-top window. On Windows that is invisible; on X11 it is a geometry change on
+    a window stacked over a fullscreen game, and #173 (KoboldCoterie, CachyOS) is that the
+    title-bar CPU/RAM readout — which redraws every 3 s *whether or not anything else
+    changed* — cost EverQuest its keyboard. Player-driven changes are fine; **a timer that
+    changes measured size is not.**
+    → **Now guarded:** `UI.Shared/PerfReadout.cs` formats to a fixed shape and the label
+    reserves a fixed width, so a sample repaints and measures identically. If you add
+    anything else that updates on a clock, give it a reserved size.
+13. **A settings save writes the WHOLE file from the snapshot loaded at startup.** So a
+    second writer's changes are reverted wholesale, with no error and nothing on screen —
+    which is exactly how "my tick-boxes won't stay ticked" (#169) presents. The Avalonia
+    build had no single-instance guard off Windows (the old one was a named mutex), so
+    every Linux/macOS launch started another full copy — and two undecorated always-on-top
+    widgets restore to the same saved position, so you cannot see that there are two.
+    → **Now guarded:** `UI.Shared/SingleInstance.cs` (one copy per profile everywhere, and
+    a stale lock can never stop a launch), and `AppSettings.Save` logs once when it is
+    about to overwrite a file that changed underneath it.
 
 ## Tooling notes that cost time when ignored
 

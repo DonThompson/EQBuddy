@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
@@ -554,6 +555,57 @@ public class OptionsRenderTests : IDisposable
 
         options.Close();
         main.Close();
+    }
+
+    /// <summary>
+    /// #169 (joma65, Linux): the two hide tick-boxes would not stay ticked across launches.
+    ///
+    /// The suspected cause is outside this window — a second copy of EQBuddy on the same
+    /// profile, which nothing stopped off Windows until SingleInstance — but "the box
+    /// silently fails to persist" is the shape that had to be ruled out first, and nothing
+    /// covered it. This walks the player's actual journey rather than assigning IsChecked:
+    /// the Behavior tab, a real click on each box, Options closed and reopened (a fresh
+    /// window reading the stored value back), then the widget closed and settings reloaded
+    /// from disk. The #158 failure — a handler firing during construction and writing the
+    /// default back over the loaded value — would fail at the reopen assertion.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheHideTickBoxesSurviveAClickACloseAndAReload()
+    {
+        var main = new MainWindow();
+        main.Settings.OptionsTab = "behavior";   // the tab they live on, so a click lands
+        main.Show();
+        var options = new OptionsWindow(main);
+        options.Show();
+
+        static CheckBox Box(OptionsWindow w, string fragment) =>
+            w.GetVisualDescendants().OfType<CheckBox>()
+                .Single(c => (c.Content as TextBlock)?.Text?.Contains(fragment) == true);
+
+        void Click(CheckBox box)
+        {
+            var point = box.TranslatePoint(new global::Avalonia.Point(6, box.Bounds.Height / 2), options);
+            Assert.True(point.HasValue, "the Behavior tab is not showing — the box cannot be clicked");
+            options.MouseDown(point!.Value, MouseButton.Left);
+            options.MouseUp(point!.Value, MouseButton.Left);
+        }
+
+        Click(Box(options, "not focused"));
+        Click(Box(options, "isn't running at all"));
+        Assert.True(main.Settings.HideWhenGameUnfocused);
+        Assert.True(main.Settings.HideWhenGameNotRunning);
+        options.Close();
+
+        var reopened = new OptionsWindow(main);
+        reopened.Show();
+        Assert.True(Box(reopened, "not focused").IsChecked);
+        Assert.True(Box(reopened, "isn't running at all").IsChecked);
+        reopened.Close();
+        main.Close();   // OnClosed persists — the last chance to lose them
+
+        var fromDisk = AppSettings.Load();
+        Assert.True(fromDisk.HideWhenGameUnfocused, "hide-while-unfocused did not survive the restart");
+        Assert.True(fromDisk.HideWhenGameNotRunning, "hide-while-not-running did not survive the restart");
     }
 
     /// <summary>Hotkeys are opt-in (#100): every action shows an unbound recorder until

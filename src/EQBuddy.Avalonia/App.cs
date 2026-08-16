@@ -1,19 +1,19 @@
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Threading;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy.Avalonia;
 
 public sealed class App : Application
 {
     private static readonly string ErrorLog = Core.AppPaths.File("error.log");
-    private Mutex? _instanceLock;
-    private EventWaitHandle? _showRequest;
+
+    // Held for the process's lifetime and deliberately never read again: this is the
+    // profile claim, and letting it go out of scope would let the finalizer close the
+    // handle and release the lock while EQBuddy is still running.
+    private IDisposable? _instanceLock;
 
     public static void LogError(object? ex)
     {
@@ -44,7 +44,7 @@ public sealed class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            if (!ClaimSingleInstance(desktop))
+            if (!ClaimSingleInstance())
             {
                 desktop.Shutdown();
                 return;
@@ -58,36 +58,29 @@ public sealed class App : Application
     /// <summary>
     /// Second launches surface the running copy instead of starting a twin — the usual
     /// reason to relaunch is that the widget is hidden behind a fullscreen game
-    /// (mirrors the WPF App). Named kernel objects are a Windows facility; elsewhere
-    /// every launch simply runs (same degradation the WPF app never had to face).
-    /// Keyed on the profile directory, not the machine, so an isolated EQBUDDY_APPDATA
-    /// instance still runs alongside a normal one — that's how the app gets tested.
+    /// (mirrors the WPF App). This used to be a named mutex, which is a Windows
+    /// facility, so on Linux and macOS EVERY launch started a full second copy: two
+    /// tailers on one log, two competitors for the hotkeys, and two whole-file writers
+    /// racing on settings.json where the loser's changes vanish without a word.
+    /// <see cref="SingleInstance"/> now carries it on every platform, keyed on the
+    /// profile directory so an isolated EQBUDDY_APPDATA instance still runs alongside a
+    /// normal one — that's how the app gets tested. The running copy picks the request
+    /// up on its own tick (see MainWindow), so there is no waiter thread.
     /// </summary>
-    private bool ClaimSingleInstance(IClassicDesktopStyleApplicationLifetime desktop)
+    private bool ClaimSingleInstance()
     {
-        if (!OperatingSystem.IsWindows()) return true;
         try
         {
-            var key = Convert.ToHexString(SHA256.HashData(
-                Encoding.UTF8.GetBytes(Core.AppPaths.Dir.ToLowerInvariant())))[..16];
-            _instanceLock = new Mutex(initiallyOwned: true, $"Local\\EQBuddy_{key}", out var isFirst);
-            _showRequest = new EventWaitHandle(false, EventResetMode.AutoReset, $"Local\\EQBuddyShow_{key}");
+            _instanceLock = SingleInstance.TryClaim(Core.AppPaths.Dir);
+            if (_instanceLock is not null) return true;
 
-            if (!isFirst)
-            {
-                _showRequest.Set();   // ask the running copy to surface, then stand down
+            // Held — but only stand down if a live copy actually answers. A stale lock
+            // file must never be the reason EQBuddy won't launch.
+            if (SingleInstance.AskRunningCopyToShow(Core.AppPaths.Dir, TimeSpan.FromSeconds(4)))
                 return false;
-            }
 
-            // Background waiter: no UI thread cost while idle.
-            var waiter = new Thread(() =>
-            {
-                while (_showRequest.WaitOne())
-                    Dispatcher.UIThread.Post(() =>
-                        (desktop.MainWindow as MainWindow)?.RestoreFromAnotherInstance());
-            })
-            { IsBackground = true, Name = "EQBuddy single-instance listener" };
-            waiter.Start();
+            LogError("Another EQBuddy holds this profile's lock but did not answer a " +
+                "show request; starting anyway.");
             return true;
         }
         catch (Exception ex)

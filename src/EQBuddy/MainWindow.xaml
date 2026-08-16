@@ -113,7 +113,11 @@
                 <!-- #112 (Frankthetankk): EQBuddy's own footprint, on the record — off
                      by default, refreshed every few seconds when on. Its own column,
                      so a long character name ellipsizes instead of colliding. -->
-                <TextBlock x:Name="PerfLabel" Grid.Column="2"
+                <!-- Fixed width, matching UI.Shared/PerfReadout.ReservedWidth: the widget
+                     sizes itself to its contents, so a readout that grows a character at
+                     9→10% used to resize the window every three seconds (#173). -->
+                <TextBlock x:Name="PerfLabel" Grid.Column="2" Width="100"
+                           TextAlignment="Right" TextTrimming="CharacterEllipsis"
                            Margin="0,0,6,0" VerticalAlignment="Center" FontSize="10"
                            Foreground="{DynamicResource DimBrush}" Visibility="Collapsed"
                            ToolTip="EQBuddy's own CPU (all cores) and memory — enable/disable under Options → Behavior"/>

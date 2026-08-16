@@ -441,6 +441,7 @@ public sealed class AppSettings
             CoreLog.Error(ex); // corrupted settings — start fresh, but say so
             settings = new AppSettings();
         }
+        settings._fileStamp = StampOf(FilePath);
         // Non-short-circuiting on purpose: rules saved before ids existed get theirs
         // assigned at construction, and persisting them NOW is what makes the id stable
         // across restarts rather than re-rolled every launch until some unrelated edit
@@ -635,12 +636,58 @@ public sealed class AppSettings
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+            WarnIfClobberingAnotherWriter();
             File.WriteAllText(FilePath, JsonSerializer.Serialize(this, JsonOpts));
+            _fileStamp = StampOf(FilePath);
         }
         catch (Exception ex)
         {
             CoreLog.Error(ex); // non-fatal, but visible
         }
+    }
+
+    // ---- "who else is writing this file?" (#169) ----
+    //
+    // A save writes the WHOLE object from a snapshot taken at load, so anything that
+    // changed the file since then is reverted — every setting at once, with no error
+    // and nothing on screen. That is the exact shape of "my tick-boxes won't stay
+    // ticked", and until now it left no trace at all to distinguish from a bug in the
+    // saving. It cannot be repaired here (this object has no idea which of its
+    // properties the user meant to change), but it can stop being invisible.
+    //
+    // Not serialized: System.Text.Json only touches public members.
+
+    private (DateTime WriteUtc, long Length)? _fileStamp;
+    private bool _clobberLogged;
+
+    private static (DateTime WriteUtc, long Length)? StampOf(string path)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            return info.Exists ? (info.LastWriteTimeUtc, info.Length) : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>Logs once per process when the file changed between our last read or
+    /// write and this one — a second EQBuddy sharing the profile, or the file being
+    /// hand-edited while EQBuddy runs.</summary>
+    private void WarnIfClobberingAnotherWriter()
+    {
+        if (_clobberLogged || _fileStamp is not { } known) return;
+        var current = StampOf(FilePath);
+        if (current is null || current == known) return;
+        _clobberLogged = true;
+        CoreLog.Error(
+            $"settings.json changed underneath this EQBuddy (was {known.Length} bytes at " +
+            $"{known.WriteUtc:O}, now {current.Value.Length} bytes at {current.Value.WriteUtc:O}) " +
+            "and is about to be overwritten with this copy's values. Another EQBuddy sharing " +
+            "this profile, or the file edited by hand while EQBuddy was running, would both " +
+            "look like this — and either one silently reverts settings changed elsewhere.");
     }
 }
 

@@ -1,0 +1,109 @@
+using EQBuddy.Core;
+using Xunit;
+
+namespace EQBuddy.Tests;
+
+/// <summary>
+/// A settings save writes the WHOLE object from a snapshot taken at load. Anything that
+/// changed the file since then is reverted — every setting at once, no error, nothing on
+/// screen. That is precisely how joma65's hide tick-boxes behaved in #169, and until now
+/// it was indistinguishable from a bug in the saving itself.
+///
+/// It cannot be repaired at this layer (an AppSettings has no idea which of its two
+/// hundred properties the user meant to change), so the goal here is narrower and
+/// sufficient: it must stop being invisible, so the next report says which of the two it
+/// is instead of leaving us guessing.
+///
+/// These tests write settings.json inside the throwaway profile TestProfileIsolation
+/// hands every test; no other test in the suite touches that file.
+/// </summary>
+public class SettingsClobberTests : IDisposable
+{
+    private readonly Action<object?>? _sink = CoreLog.Sink;
+    private readonly List<string> _logged = [];
+    private static string SettingsPath => AppPaths.File("settings.json");
+
+    public SettingsClobberTests()
+    {
+        CoreLog.Sink = message => _logged.Add(message?.ToString() ?? "");
+        Delete();
+    }
+
+    public void Dispose()
+    {
+        CoreLog.Sink = _sink;
+        Delete();
+    }
+
+    private static void Delete()
+    {
+        try { File.Delete(SettingsPath); } catch { /* best effort */ }
+    }
+
+    /// <summary>The ordinary case: one writer, many saves, and never a word about it.</summary>
+    [Fact]
+    public void OurOwnRepeatedSavesAreNotAClobber()
+    {
+        var settings = AppSettings.Load();
+        settings.HideWhenGameUnfocused = true;
+        settings.Save();
+        settings.HideWhenGameNotRunning = true;
+        settings.Save();
+        settings.Save();
+
+        Assert.DoesNotContain(_logged, m => m.Contains("changed underneath"));
+        var reloaded = AppSettings.Load();
+        Assert.True(reloaded.HideWhenGameUnfocused);
+        Assert.True(reloaded.HideWhenGameNotRunning);
+    }
+
+    /// <summary>Two copies of EQBuddy on one profile, in miniature: the second reads the
+    /// file, the first writes it, and the second's next save takes the settings back.
+    /// The revert still happens — but now it says so.</summary>
+    [Fact]
+    public void AForeignWriteBetweenLoadAndSaveIsReported()
+    {
+        var mine = AppSettings.Load();
+
+        var theirs = AppSettings.Load();
+        theirs.HideWhenGameUnfocused = true;
+        theirs.HideWhenGameNotRunning = true;
+        theirs.Save();
+
+        mine.UiScale = 1.15;   // any change at all is enough to trigger the save
+        mine.Save();
+
+        Assert.Contains(_logged, m => m.Contains("changed underneath"));
+        // And the report is true: the other copy's tick-boxes are gone.
+        Assert.False(AppSettings.Load().HideWhenGameUnfocused);
+    }
+
+    /// <summary>Once per process. A widget saves on card toggles, drags, auto-ticks and
+    /// exit; a line per save would bury the one that matters.</summary>
+    [Fact]
+    public void TheReportIsLoggedOnce()
+    {
+        var mine = AppSettings.Load();
+        for (var i = 0; i < 3; i++)
+        {
+            var theirs = AppSettings.Load();
+            theirs.WindowLeft = 100 + i;
+            theirs.Save();
+            mine.UiScale = 1.0 + i * 0.05;
+            mine.Save();
+        }
+
+        Assert.Single(_logged, m => m.Contains("changed underneath"));
+    }
+
+    /// <summary>A profile with no settings.json yet has nothing to clobber.</summary>
+    [Fact]
+    public void TheVeryFirstSaveIsSilent()
+    {
+        var fresh = AppSettings.Load();
+        fresh.UiScale = 1.2;
+        fresh.Save();
+
+        Assert.DoesNotContain(_logged, m => m.Contains("changed underneath"));
+    }
+}

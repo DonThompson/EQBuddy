@@ -97,6 +97,24 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | A drag moves the anchor; a grow-down stack is never repositioned | **Auto** — `ChipStackAnchorTests` |
 | The card list's cap is converted at the point of assignment, in the real app at a real scale | **Auto** — `EndToEndTests` (E2E; #144's other half) |
 | The chip anchor is actually wired to the window's events | **Manual** — §6 items 2–3 |
+| **Nothing on a timer may change the widget's measured size.** The title-bar CPU/memory readout formats to a fixed shape and its label reserves a fixed width, so a new sample repaints and never asks the windowing system to resize | **Auto** — `PerfReadoutTests`, `WidgetRenderTests` (#173) |
+| The readout stays off by default and costs no title-bar width until it is turned on | **Auto** — `WidgetRenderTests` (#112) |
+| That an always-on-top widget resizing does not disturb a fullscreen game underneath | **Manual** — §6 item 10; no headless test can see it |
+
+## 4d. Settings, and who is allowed to write them
+
+A save serialises the **whole** `AppSettings` from the snapshot loaded at startup, so any
+second writer's changes are reverted wholesale. That is cheap and fine with one writer —
+and it was silent with two, which is what made #169 so hard to place.
+
+| Expectation | Held by |
+|---|---|
+| One EQBuddy per profile on **every** platform; a second launch surfaces the running copy rather than starting a twin | **Auto** — `SingleInstanceTests` (#169) |
+| An isolated `EQBUDDY_APPDATA` profile still runs alongside a normal install | **Auto** — `SingleInstanceTests` |
+| A stale lock that nobody answers never stops EQBuddy from launching | **Auto** — `SingleInstanceTests` |
+| A save that is about to overwrite another writer's changes says so in `error.log` instead of reverting in silence | **Auto** — `SettingsClobberTests` (#169) |
+| …and says it once per process, not once per save | **Auto** — `SettingsClobberTests` |
+| The two hide-the-widget tick-boxes survive a real click, a reopened Options window, and a restart | **Auto** — `OptionsRenderTests` (#169) |
 
 ## 4c. Alert sounds
 
@@ -194,6 +212,15 @@ Fixture logs: see [FeatureGuide.md](FeatureGuide.md) §"Testing without playing"
 8. **Mobile layout** — one surface picked fills the screen on both a phone and a tablet;
    fullscreen shrinks the chrome; no sideways scroll at 375 px.
 9. **Off switch** — set `CompanionEnabled=false`, restart, confirm nothing is listening.
+10. **The readout over a fullscreen game** (Linux especially) — play fullscreen, tick
+    Options → Behavior → "Show EQBuddy's own CPU & memory", and keep playing for a few
+    minutes. Keyboard and mouse must both keep reaching the game, and the widget must not
+    visibly change width as the numbers move. (#173 — the readout used to resize a real
+    always-on-top window every three seconds.)
+11. **Second launch** — with EQBuddy already running, launch it again. Exactly one widget
+    exists afterwards, the running one comes to the front, and settings changed just
+    before the second launch are still set. (#169 — off Windows there was no guard at
+    all, and the loser of the race lost every setting it had changed.)
 
 ## 6b. The docs check themselves
 

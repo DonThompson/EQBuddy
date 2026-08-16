@@ -125,6 +125,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     {
         FontSize = 10, Foreground = AppTheme.DimBrush, IsVisible = false,
         VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0),
+        // Fixed width, not measured width — see PerfReadout. This label lives in an
+        // Auto column of a SizeToContent window, so letting it measure its own text
+        // would resize the native window every few seconds (#173).
+        Width = EQBuddy.UI.Shared.PerfReadout.ReservedWidth,
+        TextAlignment = global::Avalonia.Media.TextAlignment.Right,
+        TextTrimming = TextTrimming.CharacterEllipsis,
     };
     private readonly Grid _combatSparkHost = new() { Height = 34, Margin = new Thickness(0, 2, 0, 4), IsVisible = false };
     private readonly Polyline _combatSpark = new()
@@ -1381,7 +1387,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     /// <summary>CPU% (share of ALL cores, so 100% = the whole machine) and working
     /// set, sampled every 3 s from the process's own counters — cheap enough that
     /// measuring the app doesn't meaningfully show up in the measurement. Off by
-    /// default; the label collapses without leaving a gap (#112).</summary>
+    /// default; the label collapses without leaving a gap (#112).
+    ///
+    /// Nothing here may change the widget's measured size: the label carries a fixed
+    /// width and the text a fixed shape (see <see cref="EQBuddy.UI.Shared.PerfReadout"/>),
+    /// so a new sample repaints and never asks the windowing system for a resize.
+    /// #173 (KoboldCoterie, CachyOS) is what a resize every three seconds costs an
+    /// always-on-top window sitting over a fullscreen X11 game.</summary>
     private readonly Process _self = Process.GetCurrentProcess();
     private DateTime _perfSampledAt;
     private TimeSpan _perfCpuAt;
@@ -1401,9 +1413,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             var cpu = _self.TotalProcessorTime;
             if (_perfSampledAt != default)
             {
-                var pct = (cpu - _perfCpuAt).TotalMilliseconds
-                          / ((now - _perfSampledAt).TotalMilliseconds * Environment.ProcessorCount) * 100;
-                _perfLabel.Text = $"{Math.Max(0, pct):0.0}% · {_self.WorkingSet64 / (1024.0 * 1024.0):0} MB";
+                _perfLabel.Text = EQBuddy.UI.Shared.PerfReadout.Format(
+                    EQBuddy.UI.Shared.PerfReadout.CpuPercent(
+                        cpu - _perfCpuAt, now - _perfSampledAt, Environment.ProcessorCount),
+                    _self.WorkingSet64);
                 _perfLabel.IsVisible = true;
             }
             _perfSampledAt = now;
@@ -1695,6 +1708,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private void RefreshUi()
     {
         EnsureOverlayLevel();
+        AnswerSecondLaunch();
         UpdateFocusHide();
         ReassertTopmost();
         _stats.RegenPerTickOverride = _settings.RegenPerTickOverride;
@@ -4389,6 +4403,17 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
                 FocusNative.SetWindowPos(handle.Handle, FocusNative.HwndTopmost, 0, 0, 0, 0,
                     FocusNative.SwpNoMove | FocusNative.SwpNoSize | FocusNative.SwpNoActivate);
         }
+    }
+
+    /// <summary>A second launch left a request in the profile directory rather than
+    /// starting a twin (see <see cref="EQBuddy.UI.Shared.SingleInstance"/>). Answering it
+    /// is also what tells that launch somebody is home — a request nobody consumes times
+    /// out and the second copy starts normally, so this must run on every tick and not
+    /// only while the widget is visible.</summary>
+    private void AnswerSecondLaunch()
+    {
+        if (EQBuddy.UI.Shared.SingleInstance.ConsumeShowRequest(AppPaths.Dir))
+            RestoreFromAnotherInstance();
     }
 
     /// <summary>

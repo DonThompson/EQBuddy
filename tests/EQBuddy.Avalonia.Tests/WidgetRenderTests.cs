@@ -703,4 +703,65 @@ public class WidgetRenderTests : IDisposable
         Assert.True(main.IsVisible);
         main.Close();
     }
+
+    // ---- the title-bar CPU/memory readout must not resize the window (#173) ----
+
+    private static TextBlock PerfLabel(MainWindow main) =>
+        main.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => ToolTip.GetTip(t) is string tip && tip.Contains("own CPU (all cores)"));
+
+    /// <summary>
+    /// #173 (KoboldCoterie, CachyOS): turning the readout on took EverQuest's keyboard away.
+    ///
+    /// The widget is SizeToContent and the readout sits in an Auto column of the title bar,
+    /// so before the fix each new sample re-measured the text and asked the windowing system
+    /// to resize the window — every three seconds, forever, on an always-on-top transparent
+    /// window over a fullscreen X11 game. Nothing headless can see that symptom, so this
+    /// asserts the property that makes the mechanism impossible: a new sample must not change
+    /// the readout's measured size, whatever the digits do.
+    ///
+    /// It is measured on the label rather than the window because the widget is only as
+    /// narrow as its title bar in the minimized pill — with cards open the cards are wider
+    /// and would hide the regression.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheCpuReadoutNeverChangesItsMeasuredWidth()
+    {
+        var main = new MainWindow();
+        main.Show();
+        var label = PerfLabel(main);
+        label.IsVisible = true;
+
+        var arranged = new SortedSet<double>();
+        var desired = new SortedSet<double>();
+        foreach (var (cpu, mb) in new (double, long)[]
+                 { (0, 40), (9.9, 99), (10, 100), (99.9, 999), (100, 4096) })
+        {
+            label.Text = PerfReadout.Format(cpu, mb * 1024 * 1024);
+            main.UpdateLayout();
+            arranged.Add(label.Bounds.Width);
+            desired.Add(label.DesiredSize.Width);
+        }
+
+        Assert.True(arranged.Count == 1 && desired.Count == 1,
+            "the readout re-measures per sample, so every sample resizes the window: "
+            + string.Join(", ", arranged));
+        main.Close();
+    }
+
+    /// <summary>Off by default and collapsed without leaving a gap (#112) — the reserved
+    /// width must not become a permanent hole in the title bar.</summary>
+    [AvaloniaFact]
+    public void TheCpuReadoutIsOffAndCostsNothingUntilItIsTurnedOn()
+    {
+        var main = new MainWindow();
+        main.Show();
+        main.UpdateLayout();
+        var label = PerfLabel(main);
+
+        Assert.False(main.Settings.ShowPerfStats);
+        Assert.False(label.IsVisible);
+        Assert.Equal(0, label.Bounds.Width);
+        main.Close();
+    }
 }
