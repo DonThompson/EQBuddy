@@ -95,6 +95,21 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | The card list's cap is converted at the point of assignment, in the real app at a real scale | **Auto** — `EndToEndTests` (E2E; #144's other half) |
 | The chip anchor is actually wired to the window's events | **Manual** — §6 items 2–3 |
 
+## 4c. Alert sounds
+
+Which clip an alert plays, and at what volume, is decided in `UI.Shared/AlertSoundPlan.cs`
+so it can be pinned without an audio device. Both UIs obey the same plan.
+
+| Expectation | Held by |
+|---|---|
+| A rule's own sound beats the shared choice; a muted rule resolves to nothing; legacy SystemSounds names map onto the palette | **Auto** — `AlertSoundTests` |
+| A built-in resolves to this platform's own file; "Off" plays nothing and reports nothing | **Auto** — `AlertSoundPlanTests` |
+| **Every audible outcome carries the Options volume** — built-in, custom, and substitute alike. There is no route left that makes a noise the slider cannot reach | **Auto** — `AlertSoundPlanTests` (#153) |
+| A custom file that has gone missing substitutes Ding *at the chosen volume* and names the missing file so the UI can say so — never a silent swap | **Auto** — `AlertSoundPlanTests` (#153) |
+| A gap in the platform's own sound theme substitutes without blaming the player | **Auto** — `AlertSoundPlanTests` |
+| A stored volume of NaN or out of range is clamped rather than handed to the player | **Auto** — `AlertSoundPlanTests` |
+| That the plan is actually audible — the player, the device, the clip | **Manual** — §6 item 6 |
+
 ## 5. The gap — read this before trusting the suite
 
 **`src/EQBuddy` (the WPF app, 14,432 lines across 37 files) has no automated coverage.
@@ -167,7 +182,9 @@ Fixture logs: see [FeatureGuide.md](FeatureGuide.md) §"Testing without playing"
 5. **Focus-hide / click-through / see-through** — each toggles cleanly and the tray icon
    always brings it back.
 6. **Alerts** — a watch rule fires with banner, sound and colour, and the cooldown
-   behaves per matched label.
+   behaves per matched label. Then, with a **custom** .wav chosen in Options, compare
+   the volume slider at 10% and at 100%: they must differ, and renaming that .wav must
+   produce the "Alert sound file is missing" banner rather than a different noise (#153).
 7. **Mobile** — pair a device; untick a surface on the PC and it says "Not shared";
    tick an Epic row on the device and the desktop card repaints; curate a spawn point
    and the PC map drops the circle within a tick; "New code" drops paired devices.

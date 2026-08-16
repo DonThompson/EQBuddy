@@ -92,15 +92,25 @@ public static class QuestEraLadder
 public static class QuestClassFilter
 {
     /// <summary>Berserker is Legends' own addition to the classic fourteen — it was
-    /// missing from the first cut (twidget76, discussion #61).</summary>
+    /// missing from the first cut (twidget76, discussion #61). Beastlord was missing
+    /// for the same kind of reason (jlcrisp, discussion #175): the wiki's Character
+    /// Classes page says "There are sixteen total classes in EverQuest Legends" and
+    /// lists Beastlord among the hybrids, but its Class Epic Quest List has only
+    /// fifteen rows — and this list looks to have been read off the epic roster.
+    /// Beastlord has no epic in Legends, which is correct rather than a gap; it does
+    /// have five documented Plane of Sky tests, so it belongs on that tab.</summary>
     public static readonly string[] Classes =
-        ["Bard", "Berserker", "Cleric", "Druid", "Enchanter", "Magician", "Monk",
-         "Necromancer", "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman",
+        ["Bard", "Beastlord", "Berserker", "Cleric", "Druid", "Enchanter", "Magician",
+         "Monk", "Necromancer", "Paladin", "Ranger", "Rogue", "Shadow Knight", "Shaman",
          "Warrior", "Wizard"];
 
     private static readonly Dictionary<string, string[]> Abbrevs = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Bard"] = ["BRD"], ["Berserker"] = ["BER", "BZK"], ["Cleric"] = ["CLR"], ["Druid"] = ["DRU"],
+        // BST is the wiki's own code (Character Classes, hybrids row); without this entry
+        // the fallback yields "BEA" and, worse, a quest whose class text says "BST"
+        // would never match a Beastlord.
+        ["Bard"] = ["BRD"], ["Beastlord"] = ["BST"], ["Berserker"] = ["BER", "BZK"],
+        ["Cleric"] = ["CLR"], ["Druid"] = ["DRU"],
         ["Enchanter"] = ["ENC"], ["Magician"] = ["MAG"], ["Monk"] = ["MNK"],
         ["Necromancer"] = ["NEC"], ["Paladin"] = ["PAL"], ["Ranger"] = ["RNG"],
         ["Rogue"] = ["ROG"], ["Shadow Knight"] = ["SHD", "SK"], ["Shaman"] = ["SHM"],

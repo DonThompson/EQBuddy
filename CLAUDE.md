@@ -157,6 +157,17 @@ Read this list before touching the areas it names. Every entry cost a release.
    solo mode, where the page's own scrollbar is gone and only the panel body has one.
    → **When reusing a presentation class, read every rule that selects it**, and split
    it rather than adding an exception.
+10. **A fallback that skips the knobs the main path honours is a second product.** Alert
+    playback fell through to `SystemSounds.Asterisk` (WPF) / `Console.Beep` (Avalonia)
+    when a file was missing — the one route out of the method that the volume slider
+    could not reach. Because the seven built-ins ship with the OS and always exist, that
+    route was reachable *only* for custom files, so the bug read as "the slider works for
+    built-ins and does nothing for my .wav" (#153, adndmike) when the custom sound was
+    never playing at all.
+    → **Every branch must carry the same settings, or it is a different feature.** The
+    decision now lives in `UI.Shared/AlertSoundPlan.cs` and is unit-tested with no audio
+    device: a missing file substitutes a built-in *at the chosen volume* and names the
+    file so the UI can say so.
 
 ## Tooling notes that cost time when ignored
 

@@ -324,7 +324,11 @@ offers `Off` (silent), `Default` (follow the shared choice), any built-in, or `C
 for that rule's own `.wav`/`.mp3` — the point being that you learn what happened from the
 audio without looking at the widget. `TrackedRule.AlertSoundName` holds it; empty means
 inherit, so rules saved before this feature keep the shared sound. Resolution lives in
-`AlertSoundCatalog.Resolve` and is covered by tests. The banner is a
+`AlertSoundCatalog.Resolve` and is covered by tests. **What actually gets played, and at
+what volume**, is then decided by `AlertSoundPlanner.Plan` — one answer for both UIs. A
+custom file that has gone missing is not swapped in silence: Ding stands in *at the
+Options volume* and the alert tile names the file that vanished (#153). Nothing EQBuddy
+plays bypasses the volume slider. The banner is a
 **floating tile**, independent of the widget: always on top, permanently
 click-through, never takes focus, auto-dismisses ~6 s. Position it by opening
 Options — the tile appears in placement mode ("drag me") and saves its spot on

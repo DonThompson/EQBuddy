@@ -146,7 +146,14 @@ internal static class SkyQuestDefaults
         SkyLine("sky-127|Paladin|Dason Goldblade|Aldryn, Blade of the Ocean|Wind Rune Ozah|Trash mobs"),
         SkyLine("sky-134|Paladin|Dason Goldblade|Girdle of Faith|Ivory Sky Diamond|Isle 5: The Spiroc Lord"),
         SkyLine("sky-135|Paladin|Dason Goldblade|Girdle of Faith|Wind Rune Lena|Trash mobs"),
-        SkyLine("sky-128|Paladin|Dason Goldblade|Thelvorn, Blade of Light|Golden Hilt|Isle two - Protector of Sky"),
+        // Isle 7, not Isle 2 (Fennec-Halas, discussion #176; corrected 2026-08-16).
+        // Verified four ways on the wiki: "Paladin Plane of Sky Tests" lists the Golden
+        // Hilt as "Island 7", the greater sphinx and heartsbane drake pages both say
+        // "Location: Island 7", the undine spirit is "hidden in the attic of the tower
+        // on the seventh isle", and Isle 2's Protector of Sky drop list does not
+        // contain a Golden Hilt at all. The quest NAME stays as it is: "Thelvorn, Blade
+        // of Light" is the reward of the quest the wiki calls Paladin Test of Love.
+        SkyLine("sky-128|Paladin|Dason Goldblade|Thelvorn, Blade of Light|Golden Hilt|Isle 7: sphinxes, drakes and undine spirits"),
         SkyLine("sky-129|Paladin|Dason Goldblade|Thelvorn, Blade of Light|Sphinx Claw|Isle 7: Sister of the Spire"),
         SkyLine("sky-130|Paladin|Dason Goldblade|Thelvorn, Blade of Light|Wind Rune Geza|Trash mobs"),
         SkyLine("sky-131|Paladin|Dason Goldblade|Truvinan|Efreeti Zweihander|Isle eight: the Hand of Veeshan; Isle four: Overseer of Air; Isle 1.5: Noble Dojorn"),

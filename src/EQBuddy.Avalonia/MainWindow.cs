@@ -4498,27 +4498,47 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         if (coalesce && !_soundGate.TryClaim(DateTime.Now)) return;
         try
         {
-            // Legacy SystemSounds values map through the shared catalog — one
-            // normalization for both UIs and every picker.
-            var choice = EQBuddy.UI.Shared.AlertSoundCatalog.Normalize(choiceOrPath);
-            var named = Array.Find(AlertSounds, x => x.Name == choice);
-            var file = named.File is { } systemFile
-                ? FindBuiltInSound(choice, systemFile)
-                : choice;
-            // Sound themes are not required to carry every freedesktop event. A named
-            // built-in should still make noise when its preferred clip is absent.
-            if (file.Length == 0 && named.File is not null)
-                file = FindBuiltInSound("Ding", "bell.oga");
-            if (file.Length > 0 && File.Exists(file))
+            // Which file, at what volume, and what to do when the player's own .wav has
+            // gone missing: all of it lives in UI.Shared so both UIs answer identically
+            // and it is unit tested without an audio device (#153). Sound themes are not
+            // required to carry every freedesktop event, and the planner's stand-in
+            // covers that case too.
+            var plan = EQBuddy.UI.Shared.AlertSoundPlanner.Plan(
+                choiceOrPath, _settings.AlertVolume, BuiltInSoundPath, File.Exists);
+            if (plan.ShouldReportMissingFile) ReportMissingAlertSound(plan.MissingFile);
+            if (plan.FilePath.Length == 0)
             {
-                var volume = Math.Clamp(_settings.AlertVolume, 0.0, 1.0);
-                _ = Task.Run(() => PlaySoundFile(file, volume));
+                if (plan.Source != EQBuddy.UI.Shared.AlertSoundSource.Silent)
+                    App.LogError($"No alert sound could be played for: {choiceOrPath}");
                 return;
             }
-            App.LogError($"Alert sound file was not found: {choiceOrPath}");
-            Console.Beep();
+            var file = plan.FilePath;
+            var volume = plan.Volume;
+            _ = Task.Run(() => PlaySoundFile(file, volume));
         }
         catch (Exception ex) { App.LogError(ex); }
+    }
+
+    /// <summary>Where a built-in alert sound lives on this platform, or "" when the
+    /// desktop's sound theme has no clip for it. Anything not in the palette has no
+    /// built-in file, which is how a custom path is told apart from a name.</summary>
+    private static string BuiltInSoundPath(string name)
+    {
+        var named = Array.Find(AlertSounds, x => x.Name == name);
+        return named.File is { } file ? FindBuiltInSound(name, file) : "";
+    }
+
+    /// <summary>A picked alert sound has gone missing. Say so once per file rather than
+    /// on every alert — but say it: substituting in silence is the no-op that made the
+    /// volume slider look broken (#153, adndmike).</summary>
+    private readonly HashSet<string> _reportedMissingSounds = new(StringComparer.OrdinalIgnoreCase);
+
+    private void ReportMissingAlertSound(string missingFile)
+    {
+        var message = EQBuddy.UI.Shared.AlertSoundPlanner.MissingFileMessage(missingFile);
+        App.LogError(message);
+        if (!_reportedMissingSounds.Add(missingFile)) return;
+        Dispatcher.UIThread.Post(() => AlertTile.ShowAlert(message));
     }
 
     /// <summary>macOS ships no freedesktop sound theme, so every built-in resolved to

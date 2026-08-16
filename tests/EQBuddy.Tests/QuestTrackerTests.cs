@@ -397,4 +397,30 @@ public class QuestTrackerTests : IDisposable
         store.SetTracked("dranak_legends", "Belt Collector", true);
         Assert.Empty(store.HiddenFor("dranak_legends"));
     }
+
+    /// <summary>The class list is read by SIX surfaces — the buff-set picker in Options,
+    /// the buff breakout, both quest windows, the mobile catalog index, and the tick that
+    /// applies a device's class pick — so a class missing here is missing everywhere.
+    /// That is how Beastlord went unnoticed until jlcrisp reported it against the BUFFS
+    /// picker (#175), and Berserker before it (#61).
+    ///
+    /// Sixteen is the wiki's own count: "There are sixteen total classes in EverQuest
+    /// Legends" (Character Classes, verified 2026-08-16). Beastlord has no Epic in
+    /// Legends — the wiki's Class Epic Quest List has fifteen rows and that is correct,
+    /// not a gap — which is the likely reason this list was fifteen long.</summary>
+    [Fact]
+    public void EveryPlayableClassIsOfferedOnEverySurface()
+    {
+        Assert.Equal(16, QuestClassFilter.Classes.Length);
+        Assert.Contains("Beastlord", QuestClassFilter.Classes);
+        Assert.Contains("Berserker", QuestClassFilter.Classes);
+        Assert.Equal("BST", QuestClassFilter.Abbrev("Beastlord"));
+        // Sorted, because every picker renders it in this order.
+        Assert.Equal(
+            QuestClassFilter.Classes.OrderBy(c => c, StringComparer.Ordinal),
+            QuestClassFilter.Classes);
+        // Abbreviations have to stay unique or a chip row says the same thing twice.
+        var abbrevs = QuestClassFilter.Classes.Select(QuestClassFilter.Abbrev).ToList();
+        Assert.Equal(abbrevs.Count, abbrevs.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
 }

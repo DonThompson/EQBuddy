@@ -3397,26 +3397,71 @@ public partial class MainWindow : Window
         if (coalesce && !_soundGate.TryClaim(DateTime.Now)) return;
         try
         {
-            // Legacy SystemSounds names from earlier settings map onto the palette.
-            var choice = EQBuddy.UI.Shared.AlertSoundCatalog.Normalize(choiceOrPath);
-            var named = Array.Find(AlertSounds, x => x.Name == choice);
-            var file = named.File is { } f
-                ? System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", f)
-                : choice;
-            if (System.IO.File.Exists(file))
+            // Every decision — legacy name mapping, where a built-in lives, what happens
+            // when the player's own file is gone — belongs to UI.Shared, where it is unit
+            // tested without an audio device (#153). This method only obeys the plan.
+            var plan = EQBuddy.UI.Shared.AlertSoundPlanner.Plan(
+                choiceOrPath, _settings.AlertVolume, BuiltInSoundPath, System.IO.File.Exists);
+            if (plan.ShouldReportMissingFile) ReportMissingAlertSound(plan.MissingFile);
+            if (plan.FilePath.Length == 0)
             {
-                _alertPlayer ??= new System.Windows.Media.MediaPlayer();
-                // MediaPlayer defaults to HALF volume; this line was the whole
-                // "alerts are very quiet" report.
-                _alertPlayer.Volume = Math.Clamp(_settings.AlertVolume, 0.0, 1.0);
-                _alertPlayer.Open(new Uri(file));
-                _alertPlayer.Play();
+                if (plan.Source != EQBuddy.UI.Shared.AlertSoundSource.Silent)
+                    App.LogError($"No alert sound could be played for: {choiceOrPath}");
                 return;
             }
-            System.Media.SystemSounds.Asterisk.Play();
+
+            _alertPlayer ??= NewAlertPlayer();
+            // MediaPlayer defaults to HALF volume; this line was the whole "alerts are
+            // very quiet" report. Assigned before Open AND re-asserted from MediaOpened:
+            // the documented-safe order is the handler, and doing only the handler would
+            // leave the very first frames of a clip at the old level.
+            var level = plan.Volume;
+            _alertPlayer.Volume = level;
+            _alertPlayerVolume = level;
+            _alertPlayer.Open(new Uri(plan.FilePath));
+            _alertPlayer.Play();
         }
         catch (Exception ex) { App.LogError(ex); }
+    }
+
+    /// <summary>Volume the pending Open() is meant to play at, re-asserted once the media
+    /// is actually open (see PlayAlertSound).</summary>
+    private double _alertPlayerVolume = 1.0;
+
+    private System.Windows.Media.MediaPlayer NewAlertPlayer()
+    {
+        var player = new System.Windows.Media.MediaPlayer();
+        player.MediaOpened += (_, _) => player.Volume = _alertPlayerVolume;
+        // A clip the player picked that MediaFoundation cannot decode is a real answer
+        // too — and an unhandled MediaFailed on a MediaPlayer surfaces on the dispatcher.
+        player.MediaFailed += (_, e) =>
+            App.LogError($"Alert sound could not be played: {e.ErrorException?.Message}");
+        return player;
+    }
+
+    /// <summary>Where a built-in alert sound lives on Windows: the shared Media folder.
+    /// Anything not in the palette has no built-in file, which is how a custom path is
+    /// told apart from a name.</summary>
+    private static string BuiltInSoundPath(string name)
+    {
+        var named = Array.Find(AlertSounds, x => x.Name == name);
+        return named.File is { } f
+            ? System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", f)
+            : "";
+    }
+
+    /// <summary>A picked alert sound has gone missing. Say so once per file rather than
+    /// on every alert — but say it: substituting in silence is the no-op that made the
+    /// volume slider look broken (#153, adndmike).</summary>
+    private readonly HashSet<string> _reportedMissingSounds = new(StringComparer.OrdinalIgnoreCase);
+
+    private void ReportMissingAlertSound(string missingFile)
+    {
+        var message = EQBuddy.UI.Shared.AlertSoundPlanner.MissingFileMessage(missingFile);
+        App.LogError(message);
+        if (!_reportedMissingSounds.Add(missingFile)) return;
+        AlertTile.ShowAlert(message);
     }
 
     private void OnTutorial(object sender, RoutedEventArgs e) => new TutorialWindow(this).Show();
