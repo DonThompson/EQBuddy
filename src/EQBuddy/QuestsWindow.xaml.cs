@@ -86,6 +86,69 @@ public partial class QuestsWindow : Window
         Refresh(force: true);
     }
 
+    // ---- top-level tabs: General · Epic 1.0 · Plane of Sky ----
+
+    private QuestTab _tab = QuestTab.General;
+    private readonly List<(TextBlock Label, QuestTab Tab)> _tabLabels = [];
+
+    /// <summary>Build the strip from Core's <see cref="QuestSurface"/> so the desktop and
+    /// EQBuddy Mobile cannot disagree about which tabs exist, their order or their
+    /// names — the whole reason that lives in Core.</summary>
+    private void BuildTabs()
+    {
+        TabStrip.Children.Clear();
+        _tabLabels.Clear();
+        foreach (var header in QuestSurface.Tabs(EpicCounts(), SkyCounts()))
+        {
+            var label = new TextBlock
+            {
+                Text = header.Badge is { } b ? $"{header.Label}  {b}" : header.Label,
+                FontSize = 12.5, Padding = new Thickness(10, 3, 10, 3), Cursor = Cursors.Hand,
+                Tag = header.Tab,
+            };
+            label.MouseLeftButtonDown += OnTabClick;
+            TabStrip.Children.Add(label);
+            _tabLabels.Add((label, header.Tab));
+        }
+        ApplyTabVisual();
+    }
+
+    private (int Done, int Total)? EpicCounts()
+    {
+        var items = _settings.EpicQuestChecklist;
+        return items.Count == 0 ? null : (items.Count(i => i.Acquired), items.Count);
+    }
+
+    private (int Done, int Total)? SkyCounts()
+    {
+        var items = _settings.SkyQuestChecklist;
+        return items.Count == 0 ? null : (items.Count(i => i.Acquired), items.Count);
+    }
+
+    private void OnTabClick(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+        if (((FrameworkElement)sender).Tag is not QuestTab tab) return;
+        _tab = tab;
+        ApplyTabVisual();
+        Refresh(force: true);
+    }
+
+    private void ApplyTabVisual()
+    {
+        foreach (var (label, tab) in _tabLabels)
+        {
+            label.SetResourceReference(TextBlock.ForegroundProperty,
+                tab == _tab ? "AccentBrush" : "DimBrush");
+            label.FontWeight = tab == _tab ? FontWeights.SemiBold : FontWeights.Normal;
+            if (tab == _tab) label.SetResourceReference(TextBlock.BackgroundProperty, "ToggleHighlightBrush");
+            else label.Background = Brushes.Transparent;
+        }
+        // The era/class/mode row belongs to the catalog only; the checklists are a fixed
+        // set of rows, so those controls would be dead furniture on their tabs.
+        FilterRow.Visibility = _tab == QuestTab.General ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void OnModeClick(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
@@ -235,6 +298,12 @@ public partial class QuestsWindow : Window
         QuestsPanel.Children.Clear();
         _rendered = 0;
         _suppressed = 0;
+        BuildTabs();
+        if (_tab != QuestTab.General)
+        {
+            RenderChecklist(_tab, filter);
+            return;
+        }
         if (inferred.Length > 0)
         {
             var note = new TextBlock
@@ -524,6 +593,78 @@ public partial class QuestsWindow : Window
             };
             more.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
             QuestsPanel.Children.Add(more);
+        }
+    }
+
+    /// <summary>The Epic and Sky tabs. Rows come straight from the same settings lists
+    /// the main widget's sections read, so ticking in either place is the same tick —
+    /// this is a second VIEW, never a second copy of the data. The search box keeps
+    /// working here: on a 100-row class list, "Wakizashi" beating your eyes down the
+    /// page is the same value it has on the catalog tab.</summary>
+    private void RenderChecklist(QuestTab tab, string filter)
+    {
+        var rows = tab == QuestTab.Epic
+            ? _settings.EpicQuestChecklist.Select(i =>
+                (i.ClassName, Group: i.Section.Length > 0 ? i.Section : "Checklist",
+                 Title: i.QuestName.Length > 0 ? i.QuestName : i.Reward,
+                 Detail: i.QuestItem, i.Acquired))
+            : _settings.SkyQuestChecklist.Select(i =>
+                (i.ClassName, Group: i.Npc.Length > 0 ? i.Npc : "Sky",
+                 Title: i.Reward, Detail: i.QuestItem, i.Acquired));
+
+        var matching = rows
+            .Where(r => filter.Length == 0
+                || r.Title.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.Detail.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.ClassName.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.Group.Contains(filter, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matching.Count == 0)
+        {
+            var empty = new TextBlock
+            {
+                Text = filter.Length > 0
+                    ? "Nothing on this checklist matches that search."
+                    : "This checklist is empty — it fills in from the wiki catalog and "
+                      + "your own progress. ⧉ scan bags or import achievements to catch it up.",
+                FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(6, 8, 0, 8),
+            };
+            empty.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            QuestsPanel.Children.Add(empty);
+            return;
+        }
+
+        foreach (var group in matching
+                     .GroupBy(r => (r.ClassName, r.Group))
+                     .OrderBy(g => g.Key.ClassName, StringComparer.OrdinalIgnoreCase)
+                     .ThenBy(g => g.Key.Group, StringComparer.OrdinalIgnoreCase))
+        {
+            var done = group.Count(r => r.Acquired);
+            var heading = new TextBlock
+            {
+                Text = $"{group.Key.ClassName} · {group.Key.Group}   {done}/{group.Count()}",
+                FontSize = 11.5, FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(2, 8, 0, 3),
+            };
+            heading.SetResourceReference(TextBlock.ForegroundProperty, "AccentBrush");
+            QuestsPanel.Children.Add(heading);
+
+            foreach (var row in group.OrderBy(r => r.Title, StringComparer.OrdinalIgnoreCase))
+            {
+                var text = new TextBlock
+                {
+                    FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(10, 1, 0, 1),
+                    Text = row.Detail.Length > 0
+                        ? $"{(row.Acquired ? "✓" : "○")}  {row.Title}  —  {row.Detail}"
+                        : $"{(row.Acquired ? "✓" : "○")}  {row.Title}",
+                };
+                text.SetResourceReference(TextBlock.ForegroundProperty,
+                    row.Acquired ? "DimBrush" : "TextBrush");
+                QuestsPanel.Children.Add(text);
+            }
         }
     }
 
@@ -937,7 +1078,7 @@ public partial class QuestsWindow : Window
     /// mean nine full catalog rebuilds — the window appeared to hang (David, 2026-08-15).
     /// A quarter-second is below the threshold where a search feels laggy and above the
     /// gap between keystrokes for any normal typing speed.</summary>
-    private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(120);
     private DispatcherTimer? _searchDebounce;
 
     private void OnFilterChanged(object sender, TextChangedEventArgs e)

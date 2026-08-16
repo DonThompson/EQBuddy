@@ -56,7 +56,7 @@ public sealed class QuestsWindow : Window
     private const int RenderCap = 60;
     private int _rendered;
     private int _suppressed;
-    private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(120);
     private DispatcherTimer? _searchDebounce;
 
     private readonly TextBlock _titleText = new()
