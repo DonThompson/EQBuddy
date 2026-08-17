@@ -44,6 +44,9 @@ public partial class QuestsWindow : Window
         _settings = main.Settings;
         // Base width so Ctrl+wheel shrinks the WINDOW, not just its text (#186).
         WindowZoom.Attach(this, "quests", _settings, baseWidth: Width);
+        _tabs = new EqSegmentedStrip(TabStrip);
+        _classes = new EqSegmentedStrip(ClassStrip);
+        _modes = new EqSegmentedStrip(ModeStrip);
         BuildStaticChrome();
         EpicClassicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
         BuildClassChecks();
@@ -167,77 +170,36 @@ public partial class QuestsWindow : Window
         Refresh(force: true);
     }
 
-    // ---- chips: the one primitive behind the tabs, the class lens and the mode strip ----
-
-    /// <summary>A selectable pill. Tabs, the class lens and the mode strip were three
-    /// hand-built shapes doing one job — a tile with its own radius and padding, a chip
-    /// with another, and five bare TextBlocks with a background. One primitive means
-    /// picking a tab and picking a mode LOOK like the same kind of act, because they
-    /// are.</summary>
-    private sealed class Chip : Border
-    {
-        private readonly TextBlock _label;
-        private readonly TextBlock? _badge;
-
-        public Chip(string text, string? badge, object tag, string? tip, MouseButtonEventHandler onClick)
-        {
-            var content = new StackPanel { Orientation = Orientation.Horizontal };
-            _label = DesignSystem.Text(Role.Caption, text);
-            content.Children.Add(_label);
-            if (badge is { Length: > 0 })
-            {
-                _badge = DesignSystem.Text(Role.Metadata, badge);
-                _badge.Margin = new Thickness(DesignTokens.SpaceS, 1, 0, 0);
-                content.Children.Add(_badge);
-            }
-            Child = content;
-            CornerRadius = new CornerRadius(DesignTokens.RadiusPill);
-            Padding = new Thickness(DesignTokens.SpaceL, DesignTokens.SpaceXxs,
-                DesignTokens.SpaceL, DesignTokens.SpaceXxs);
-            Margin = new Thickness(0, 0, DesignTokens.SpaceXs, DesignTokens.SpaceXs);
-            BorderThickness = new Thickness(1);
-            Cursor = Cursors.Hand;
-            Tag = tag;
-            if (tip is not null) ToolTip = tip;
-            MouseLeftButtonDown += onClick;
-        }
-
-        /// <summary>Selected is the ONE thing on a strip allowed to carry the accent
-        /// (§2.1): the accent fills the pill and the text inverts onto it. Everything
-        /// else steps down — a strip where three things are gold selects nothing.</summary>
-        public void SetSelected(bool on)
-        {
-            this.SetResourceReference(BackgroundProperty, on ? "AccentBrush" : "RaisedBrush");
-            this.SetResourceReference(BorderBrushProperty, on ? "AccentBrush" : "HairlineBrush");
-            _label.Ink(on ? "BgBrush" : "TextBrush");
-            _badge?.Ink(on ? "BgBrush" : "DimBrush");
-            if (_badge is not null) _badge.Opacity = on ? 0.85 : 1;
-        }
-    }
-
     // ---- top-level tabs: General · Epic 1.0 · Plane of Sky ----
+    //
+    // The tabs, the class lens and the mode strip are three features and ONE shape, so
+    // they are three instances of one primitive (EqChip / EqSegmentedStrip, gate 2b).
+    // Picking a tab and picking a mode look like the same kind of act because they are.
 
     private QuestTab _tab = QuestTab.General;
-    private readonly List<Chip> _tabChips = [];
     /// <summary>Which single class the view is narrowed to, or null for all of yours.
     /// Session-scoped like the search box: a sticky lens reads as a broken tracker
     /// tomorrow when you have swapped classes.</summary>
     private string? _classLens;
-    private readonly List<Chip> _classChips = [];
-    private readonly List<Chip> _modeChips = [];
+    private EqSegmentedStrip _tabs = null!;
+    private EqSegmentedStrip _classes = null!;
+    private EqSegmentedStrip _modes = null!;
 
     /// <summary>Build the strip from Core's <see cref="QuestSurface"/> so the desktop and
     /// EQBuddy Mobile cannot disagree about which tabs exist, their order or their
     /// names — the whole reason that lives in Core.</summary>
     private void BuildTabs()
     {
-        TabStrip.Children.Clear();
-        _tabChips.Clear();
+        _tabs.Clear();
         foreach (var header in QuestSurface.Tabs(EpicCounts(), SkyCounts()))
         {
-            var chip = new Chip(header.Label, header.Badge, header.Tab, null, OnTabClick);
-            TabStrip.Children.Add(chip);
-            _tabChips.Add(chip);
+            var tab = header.Tab;
+            _tabs.Add(header.Label, tab, header.Badge, onClick: () =>
+            {
+                _tab = tab;
+                ApplyTabVisual();
+                Refresh(force: true);
+            });
         }
         // Chips first, THEN the paint: ApplyTabVisual colours the chip list, so colouring
         // before rebuilding it left every freshly-built chip unstyled until the next
@@ -260,9 +222,13 @@ public partial class QuestsWindow : Window
             ("all", "The whole quest catalog"),
         })
         {
-            var chip = new Chip(key, null, key, tip, OnModeClick);
-            ModeStrip.Children.Add(chip);
-            _modeChips.Add(chip);
+            var mode = key;
+            _modes.Add(key, key, tip: tip, onClick: () =>
+            {
+                _mode = mode;
+                ApplyModeVisual();
+                Refresh(force: true);
+            });
         }
         ApplyModeVisual();
     }
@@ -272,8 +238,7 @@ public partial class QuestsWindow : Window
     /// different question and wanted far more often.</summary>
     private void BuildClassStrip()
     {
-        ClassStrip.Children.Clear();
-        _classChips.Clear();
+        _classes.Clear();
         var key = _main.QuestCharacterKey;
         var mine = _main.QuestLedger?.ClassesFor(key) ?? [];
         if (mine.Count == 0
@@ -286,21 +251,12 @@ public partial class QuestsWindow : Window
         Add(null, "Any");
         foreach (var cls in mine) Add(cls, QuestClassFilter.Abbrev(cls));
 
-        void Add(string? cls, string text)
-        {
-            var chip = new Chip(text, null, cls ?? "",
-                cls is null ? "Every class you play"
+        void Add(string? cls, string text) =>
+            _classes.Add(text, cls ?? "",
+                tip: cls is null
+                    ? "Every class you play"
                     : $"Show only {cls} — quests, Epic and Plane of Sky alike",
-                (s, e) =>
-                {
-                    e.Handled = true;
-                    _classLens = ((string)((FrameworkElement)s).Tag) is { Length: > 0 } picked
-                        ? picked : null;
-                    Refresh(force: true);
-                });
-            ClassStrip.Children.Add(chip);
-            _classChips.Add(chip);
-        }
+                onClick: () => { _classLens = cls; Refresh(force: true); });
     }
 
     private (int Done, int Total)? EpicCounts()
@@ -315,20 +271,12 @@ public partial class QuestsWindow : Window
         return items.Count == 0 ? null : (items.Count(i => i.Acquired), items.Count);
     }
 
-    private void OnTabClick(object sender, MouseButtonEventArgs e)
-    {
-        e.Handled = true;
-        if (((FrameworkElement)sender).Tag is not QuestTab tab) return;
-        _tab = tab;
-        ApplyTabVisual();
-        Refresh(force: true);
-    }
-
     private void ApplyTabVisual()
     {
-        foreach (var chip in _tabChips) chip.SetSelected((QuestTab)chip.Tag == _tab);
-        foreach (var chip in _classChips)
-            chip.SetSelected(((string)chip.Tag is { Length: > 0 } c ? c : null) == _classLens);
+        _tabs.Select(_tab);
+        // The class strip keys on "" for Any, because a null key would make "nothing
+        // selected" and "Any selected" the same answer.
+        _classes.Select(_classLens ?? "");
         // Era, state and the mode strip are catalog concepts — meaningless against a
         // fixed checklist. The CLASS picker is not: David, 2026-08-15, "we may be
         // helping a friend", so every tab must be able to reach a class you don't play.
@@ -349,18 +297,7 @@ public partial class QuestsWindow : Window
         MasterColumn.Width = catalog ? new GridLength(400) : new GridLength(1, GridUnitType.Star);
     }
 
-    private void OnModeClick(object sender, MouseButtonEventArgs e)
-    {
-        e.Handled = true;
-        _mode = (string)((FrameworkElement)sender).Tag;
-        ApplyModeVisual();
-        Refresh(force: true);
-    }
-
-    private void ApplyModeVisual()
-    {
-        foreach (var chip in _modeChips) chip.SetSelected((string)chip.Tag == _mode);
-    }
+    private void ApplyModeVisual() => _modes.Select(_mode);
 
     // ---- multiclass filter (Legends: up to three active classes; David 2026-08-07) ----
 
@@ -809,8 +746,8 @@ public partial class QuestsWindow : Window
         $"questsDetailBlocks={DetailPane.Children.Count} " +
         $"questsDetailShown={(DetailCard.Visibility == Visibility.Visible ? 1 : 0)} " +
         $"questsReadySummary={(SummaryRow.Visibility == Visibility.Visible ? 1 : 0)} " +
-        $"questsTabs={_tabChips.Count} " +
-        $"questsModes={_modeChips.Count}";
+        $"questsTabs={_tabs.Count} " +
+        $"questsModes={_modes.Count}";
 
     // ---- the list ----
 

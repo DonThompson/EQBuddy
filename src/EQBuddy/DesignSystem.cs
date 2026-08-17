@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using EQBuddy.UI.Shared;
@@ -123,9 +124,9 @@ internal static class DesignSystem
         return icon;
     }
 
-    /// <summary>An icon that behaves like a button but reads like a glyph — the ✕ / 📌 /
-    /// ⚑ family. A real <see cref="Button"/>, so it is keyboard-reachable and has a hit
-    /// area, rather than the click-handled TextBlocks these used to be.</summary>
+    /// <summary>An icon that behaves like a button but reads like a glyph — the close /
+    /// pin / report family. A real <see cref="Button"/>, so it is keyboard-reachable and
+    /// has a hit area, rather than the click-handled TextBlocks these used to be.</summary>
     public static Button IconButton(string name, string tip, RoutedEventHandler onClick,
         string colorKey = "DimBrush", double opacity = 1.0)
     {
@@ -138,5 +139,95 @@ internal static class DesignSystem
         button.Click += onClick;
         return button;
     }
+}
 
+/// <summary>
+/// THE selectable pill (gate 2b, docs/DesignSystem.md §11.2). Tabs, the class lens, the
+/// quest mode strip, the loot view filter and the loot sort toggle are one shape doing one
+/// job, and every one of them was hand-built — 16 across MainWindow.xaml and
+/// BreakoutWindow.xaml, the most recent pair arriving in #198 six hours after Gate 2
+/// deleted the pattern from the Quest Tracker.
+///
+/// Geometry and the selected-state vocabulary come from <see cref="ChipStyle"/>, so the
+/// Avalonia chip is the same chip rather than a copy that drifts.
+/// </summary>
+internal sealed class EqChip : Border
+{
+    private readonly TextBlock _label;
+    private readonly TextBlock? _badge;
+
+    /// <summary>What this chip selects — a mode string, a QuestTab, a class name.
+    /// Compared by the strip, never interpreted here.</summary>
+    public object Key { get; }
+
+    public EqChip(string text, object key, string? badge = null, string? tip = null,
+        Action? onClick = null)
+    {
+        Key = key;
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        _label = DesignSystem.Text(ChipStyle.LabelRole, text);
+        content.Children.Add(_label);
+        if (badge is { Length: > 0 })
+        {
+            _badge = DesignSystem.Text(ChipStyle.BadgeRole, badge);
+            _badge.Margin = new Thickness(DesignTokens.SpaceS, 1, 0, 0);
+            content.Children.Add(_badge);
+        }
+        Child = content;
+        CornerRadius = new CornerRadius(ChipStyle.Radius);
+        Padding = new Thickness(ChipStyle.Padding.Left, ChipStyle.Padding.Top,
+            ChipStyle.Padding.Right, ChipStyle.Padding.Bottom);
+        Margin = new Thickness(0, 0, ChipStyle.Gap.Right, ChipStyle.Gap.Bottom);
+        BorderThickness = new Thickness(ChipStyle.BorderThickness);
+        Cursor = Cursors.Hand;
+        if (tip is not null) ToolTip = tip;
+        // Handled, or the window's own drag-to-move swallows the click.
+        if (onClick is not null)
+            MouseLeftButtonDown += (_, e) => { e.Handled = true; onClick(); };
+        SetSelected(false);
+    }
+
+    public void SetSelected(bool on)
+    {
+        var ink = ChipStyle.For(on);
+        SetResourceReference(BackgroundProperty, ink.Background);
+        SetResourceReference(BorderBrushProperty, ink.Border);
+        _label.Ink(ink.Label);
+        if (_badge is null) return;
+        _badge.Ink(ink.Badge);
+        _badge.Opacity = ink.BadgeOpacity;
+    }
+}
+
+/// <summary>A row of <see cref="EqChip"/> where exactly one is selected — the segmented
+/// control. Owns the "which one is on" bookkeeping every hand-built strip wrote its own
+/// copy of, usually as a foreach over a list of tuples.</summary>
+internal sealed class EqSegmentedStrip(Panel host)
+{
+    private readonly List<EqChip> _chips = [];
+
+    public int Count => _chips.Count;
+
+    public void Clear()
+    {
+        host.Children.Clear();
+        _chips.Clear();
+    }
+
+    public EqChip Add(string text, object key, string? badge = null, string? tip = null,
+        Action? onClick = null)
+    {
+        var chip = new EqChip(text, key, badge, tip, onClick);
+        host.Children.Add(chip);
+        _chips.Add(chip);
+        return chip;
+    }
+
+    /// <summary>Paints the selection. Compared with <see cref="object.Equals(object?,
+    /// object?)"/> so strips keyed on strings, enums or null all work without the caller
+    /// casting.</summary>
+    public void Select(object? key)
+    {
+        foreach (var chip in _chips) chip.SetSelected(Equals(chip.Key, key));
+    }
 }

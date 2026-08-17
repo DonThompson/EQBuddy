@@ -201,6 +201,68 @@ public class DesignSystemTests
         }
     }
 
+    // ---- the chip (gate 2b) ----
+
+    /// <summary>Both UIs paint a chip by looking these names up. A key no theme defines
+    /// paints an invisible pill in all eight at once — and the chip is the app's most
+    /// rebuilt shape, so it would be invisible in a lot of places.</summary>
+    [Fact]
+    public void EveryChipInkIsAPaletteKey()
+    {
+        foreach (var selected in new[] { true, false })
+        {
+            var ink = ChipStyle.For(selected);
+            foreach (var key in new[] { ink.Background, ink.Border, ink.Label, ink.Badge })
+                Assert.True(ThemePalettes.Keys.Contains(key) || ThemeTones.Keys.Contains(key),
+                    $"selected={selected}: '{key}' is neither a palette key nor a derived tone.");
+        }
+    }
+
+    /// <summary>Selected has to be legible AS selected. If the fill and the ink both
+    /// matched the unselected state the strip would still work and still look broken —
+    /// which is the complaint that started this ("I couldn't tell they were tabs at first
+    /// glance", David, 2026-08-15).</summary>
+    [Fact]
+    public void SelectedAndUnselectedChipsDifferInFillAndInk()
+    {
+        var on = ChipStyle.For(true);
+        var off = ChipStyle.For(false);
+        Assert.NotEqual(on.Background, off.Background);
+        Assert.NotEqual(on.Label, off.Label);
+    }
+
+    /// <summary>Only the SELECTED chip may carry the accent — §2.1's discipline is the
+    /// one rule of the whole colour system, and a strip is where it is easiest to break.</summary>
+    [Fact]
+    public void OnlyTheSelectedChipWearsTheAccent()
+    {
+        Assert.Equal("AccentBrush", ChipStyle.For(true).Background);
+        var off = ChipStyle.For(false);
+        Assert.DoesNotContain("Accent", off.Background, StringComparison.Ordinal);
+        Assert.DoesNotContain("Accent", off.Label, StringComparison.Ordinal);
+    }
+
+    /// <summary>Unselected is not "nothing": it keeps a fill and an edge, so the row reads
+    /// as a set of controls rather than a line of prose.</summary>
+    [Fact]
+    public void UnselectedChipsStillLookLikeControls()
+    {
+        var off = ChipStyle.For(false);
+        Assert.Equal("RaisedBrush", off.Background);
+        Assert.Equal("HairlineBrush", off.Border);
+        Assert.True(ChipStyle.BorderThickness > 0);
+    }
+
+    [Fact]
+    public void ChipGeometryComesFromTheTokenScale()
+    {
+        Assert.Equal(DesignTokens.RadiusPill, ChipStyle.Radius);
+        foreach (var v in new[] { ChipStyle.Padding.Left, ChipStyle.Padding.Top,
+                     ChipStyle.Padding.Right, ChipStyle.Padding.Bottom,
+                     ChipStyle.Gap.Right, ChipStyle.Gap.Bottom })
+            Assert.Contains(v, DesignTokens.Numbers.Values);
+    }
+
     // ---- the capture path ----
 
     /// <summary>Only the window GROUND goes opaque. Flattening a tint would repaint the

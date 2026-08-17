@@ -124,6 +124,7 @@ busier.
 | The mobile page | `Companion/Web/index.html` (one self-contained file) |
 | Type roles, spacing, radii, control sizes | `UI.Shared/DesignTokens.cs` — data, like `ThemePalettes`; each UI composes it |
 | Icon geometry (and reward slot silhouettes) | `UI.Shared/IconPaths.cs` — vectors, never glyphs (#148, #166) |
+| The selectable pill (tabs, lenses, filter and sort strips) | `UI.Shared/ChipStyle.cs` + `EqChip`/`EqSegmentedStrip` in each UI's `DesignSystem.cs`. **Never hand-build another one** — there are already 16 in `MainWindow.xaml`/`BreakoutWindow.xaml` waiting to be converted |
 | What a quest row's badge and state rule say | `UI.Shared/QuestPresentation.cs` |
 | Anything shared by both UIs | `UI.Shared/` — must stay framework-free (a test enforces it) |
 

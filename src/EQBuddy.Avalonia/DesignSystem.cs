@@ -90,3 +90,84 @@ internal static class DesignSystem
         return panel;
     }
 }
+
+/// <summary>
+/// THE selectable pill (gate 2b, docs/DesignSystem.md §11.2) — the Avalonia half of the
+/// WPF <c>EqChip</c>, built from the same <see cref="ChipStyle"/> so the two cannot drift.
+/// A WPF Border and an Avalonia Border are not the same object, which is exactly why the
+/// SPEC is shared and the control is not (§5: do not build shared XAML).
+/// </summary>
+internal sealed class EqChip : Border
+{
+    private readonly TextBlock _label;
+    private readonly TextBlock? _badge;
+
+    /// <summary>What this chip selects — a mode string, a QuestTab, a class name.</summary>
+    public object Key { get; }
+
+    public EqChip(string text, object key, string? badge = null, string? tip = null,
+        Action? onClick = null)
+    {
+        Key = key;
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        _label = DesignSystem.Text(ChipStyle.LabelRole, text);
+        content.Children.Add(_label);
+        if (badge is { Length: > 0 })
+        {
+            _badge = DesignSystem.Text(ChipStyle.BadgeRole, badge);
+            _badge.Margin = new Thickness(DesignTokens.SpaceS, 1, 0, 0);
+            content.Children.Add(_badge);
+        }
+        Child = content;
+        CornerRadius = new CornerRadius(ChipStyle.Radius);
+        Padding = new Thickness(ChipStyle.Padding.Left, ChipStyle.Padding.Top,
+            ChipStyle.Padding.Right, ChipStyle.Padding.Bottom);
+        Margin = new Thickness(0, 0, ChipStyle.Gap.Right, ChipStyle.Gap.Bottom);
+        BorderThickness = new Thickness(ChipStyle.BorderThickness);
+        Cursor = new Cursor(StandardCursorType.Hand);
+        if (tip is not null) ToolTip.SetTip(this, tip);
+        // Handled, or the window's own drag-to-move swallows the click.
+        if (onClick is not null)
+            PointerPressed += (_, e) => { e.Handled = true; onClick(); };
+        SetSelected(false);
+    }
+
+    public void SetSelected(bool on)
+    {
+        var ink = ChipStyle.For(on);
+        Background = AppTheme.BrushFor(ink.Background);
+        BorderBrush = AppTheme.BrushFor(ink.Border);
+        _label.Foreground = AppTheme.BrushFor(ink.Label);
+        if (_badge is null) return;
+        _badge.Foreground = AppTheme.BrushFor(ink.Badge);
+        _badge.Opacity = ink.BadgeOpacity;
+    }
+}
+
+/// <summary>A row of <see cref="EqChip"/> where exactly one is selected.</summary>
+internal sealed class EqSegmentedStrip(Panel host)
+{
+    private readonly List<EqChip> _chips = [];
+
+    public int Count => _chips.Count;
+
+    public void Clear()
+    {
+        host.Children.Clear();
+        _chips.Clear();
+    }
+
+    public EqChip Add(string text, object key, string? badge = null, string? tip = null,
+        Action? onClick = null)
+    {
+        var chip = new EqChip(text, key, badge, tip, onClick);
+        host.Children.Add(chip);
+        _chips.Add(chip);
+        return chip;
+    }
+
+    public void Select(object? key)
+    {
+        foreach (var chip in _chips) chip.SetSelected(Equals(chip.Key, key));
+    }
+}

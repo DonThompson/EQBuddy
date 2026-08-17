@@ -529,7 +529,7 @@ a rework that absorbs every open bug stops being a rework.
 | Gate | Surface | Change from §6 |
 |---|---|---|
 | 2 | Quests | done |
-| **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **new** — small, and it unblocks 3, 4 and 5 |
+| **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **done** — `UI.Shared/ChipStyle.cs` + one control per UI; the Quests window now spends it. Render verified byte-for-byte unchanged |
 | 3 | Spawns + timers | unchanged; `EqTimer` + `EqProgress` |
 | **4** | **Loot card + Loot breakout** | **moved up** — #198 concentrated the debt here |
 | 5 | Main widget | was 4 |
