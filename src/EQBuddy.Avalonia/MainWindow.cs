@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using Avalonia;
 using Avalonia.Controls;
@@ -800,6 +800,14 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         title.Children.Add(new TextBlock { Text = "EQBuddy", FontWeight = FontWeight.Bold, FontSize = 14, Foreground = AppTheme.AccentBrush });
         grid.Children.Add(title);
         _charLabel.Margin = new Thickness(10, 0, 6, 0);
+        // NoWrap is load-bearing, not tidiness. This sits in the STAR column, and
+        // AppTheme.DimText wraps by default — a wrapping TextBlock in a star column has
+        // no natural minimum width, so under SizeToContent it will happily collapse to
+        // one character per line and stand the name up vertically. Reserving width for
+        // the perf readout is what finally starved it enough to do that (KoboldCoterie's
+        // screenshot on #173, 2026-08-16: a 152px-tall title bar spelling K-o-b-o-l-d
+        // downwards). The trimming below cannot save it — wrap wins over trim.
+        _charLabel.TextWrapping = TextWrapping.NoWrap;
         _charLabel.TextTrimming = TextTrimming.CharacterEllipsis;
         ToolTip.SetTip(_charLabel, "Follows whoever is actively playing (log file growth)");
         _charLabel.PointerPressed += OnCharLabelClick;

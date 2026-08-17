@@ -749,6 +749,41 @@ public class WidgetRenderTests : IDisposable
         main.Close();
     }
 
+    /// <summary>
+    /// The title bar stays ONE LINE, whatever the character is called and whether or not
+    /// the perf readout is reserving width beside it.
+    ///
+    /// KoboldCoterie's screenshot on #173 (2026-08-16): reserving width for the readout
+    /// starved the character label's star column, and because AppTheme.DimText wraps by
+    /// default — and a wrapping TextBlock in a star column has no natural minimum width
+    /// under SizeToContent — the name stood up vertically, one letter per line, in a
+    /// 152px-tall title bar. The ellipsis already on that label could not prevent it:
+    /// wrapping wins over trimming.
+    /// </summary>
+    [AvaloniaFact]
+    public void TheTitleBarStaysOneLineWhateverTheCharacterIsCalled()
+    {
+        var main = new MainWindow();
+        main.Show();
+        PerfLabel(main).IsVisible = true;
+        // By its tooltip, like PerfLabel above — the text is whatever character the
+        // profile last followed, so matching on the placeholder is not reliable.
+        var name = main.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => ToolTip.GetTip(t) is string tip && tip.Contains("Follows whoever"));
+
+        // A name long enough that a wrapping label would fold it — his was "Kobold (neriak)".
+        name.Text = "Kobold (neriak)";
+        main.UpdateLayout();
+        var oneLine = name.DesiredSize.Height;
+
+        name.Text = "Kobold (neriak) the Extraordinarily Long Nameplate of Wrapping";
+        main.UpdateLayout();
+
+        Assert.Equal(oneLine, name.DesiredSize.Height);
+        Assert.Equal(TextWrapping.NoWrap, name.TextWrapping);
+        main.Close();
+    }
+
     /// <summary>Off by default and collapsed without leaving a gap (#112) — the reserved
     /// width must not become a permanent hole in the title bar.</summary>
     [AvaloniaFact]
