@@ -57,6 +57,9 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | **A contribution pack names the zone the creature died in, everywhere in the entry** | **Auto** — `WikiContributionTests` (#65) |
 | Rarity labels only appear from 10+ kills | **Auto** — `WikiContributionTests` |
 | Zone-knowledge share strings round-trip; imports preview every change; wild timers arrive flagged | **Auto** — `SpawnPointLedgerTests` |
+| Fuzzy kill matching never bridges name-family siblings: a shared prefix with a different last word is another mob unless one truncates the other | **Auto** — `SpawnTimerTests` (Sol A CWG models, 2026-08-16) |
+| Spawn timers only learn from the named's own kills and sightings — a placeholder death restarts the clock but a gap or elapsed measured from it teaches nothing | **Auto** — `SpawnTimerTests` (the 93-second EXG, 2026-08-16) |
+| A manual ▶ start always replaces a running timer, even backdated | **Auto** — `SpawnTimerTests` |
 | Curated catalogs are never written by automation | **Process** — the weekly refresh PR only flags them |
 
 ## 4. EQBuddy Mobile

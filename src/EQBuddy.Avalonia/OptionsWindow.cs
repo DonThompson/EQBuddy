@@ -1749,6 +1749,17 @@ public sealed class OptionsWindow : Window
             "The overlay exists only while you play: quit the game and everything disappears, launch it and everything returns (within a few seconds). Need it back without the game — say, to browse session history? Launch EQBuddy again: the running copy surfaces, and stays visible while any of its windows has focus.",
             new Thickness(20, 2, 0, 0)));
 
+        // Both boxes above need a foreground-window probe, and X11/Wayland has none, so
+        // on Linux they save and do nothing (David's call on #169, 2026-08-16: say so
+        // for now rather than leave it looking broken). The wording comes from
+        // UI.Shared so this can never disagree with the code that makes the decision.
+        if (FocusHide.UnavailableNote is { Length: > 0 } note)
+        {
+            var warn = AppTheme.DimText(note, new Thickness(20, 6, 0, 0));
+            warn.Foreground = AppTheme.WarnBrush;
+            panel.Children.Add(warn);
+        }
+
         _keepAboveCheck = Check("Keep EQBuddy above fullscreen overlays (Lossless Scaling and kin)",
             _vm.KeepAboveOverlays, on => _vm.KeepAboveOverlays = on);
         panel.Children.Add(_keepAboveCheck);

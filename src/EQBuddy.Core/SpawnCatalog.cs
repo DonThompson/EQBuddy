@@ -244,6 +244,22 @@ public sealed class SpawnCatalog
         // "Leljemor"). Length-changing edits — dropped letters, truncated log
         // captures — stay forgiven anywhere.
         if (a.Length == b.Length && (a[^1] != b[^1] || a[^2] != b[^2])) return false;
+        // Names sharing every word but the LAST are siblings from a family, even when
+        // the last words change length: Sol A's trash clockworks CWG Model XA/XB/XC
+        // all sat within two edits of the named CWG Model EXG, so ordinary kills ran
+        // (and re-ran) his clock (2026-08-16). The shared prefix eats most of the
+        // name, leaving the whole distinguishing part inside the edit budget — so a
+        // differing last word only stays forgiven when one is a truncation of the
+        // other ("Gynok Molto" for Gynok Moltor); anything else is a different mob.
+        var aCut = a.LastIndexOf(' ');
+        var bCut = b.LastIndexOf(' ');
+        if (aCut >= 0 && bCut >= 0 && a[..aCut].Equals(b[..bCut], StringComparison.Ordinal))
+        {
+            var aLast = a[(aCut + 1)..];
+            var bLast = b[(bCut + 1)..];
+            if (!aLast.StartsWith(bLast, StringComparison.Ordinal)
+                && !bLast.StartsWith(aLast, StringComparison.Ordinal)) return false;
+        }
         var budget = Math.Max(a.Length, b.Length) >= 12 ? 2 : 1;
         return WithinEditDistance(a, b, budget);
     }
