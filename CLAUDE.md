@@ -122,6 +122,9 @@ busier.
 | Desktop zone map | `EQBuddy/MapWindow.cs` |
 | Mobile server + projection | `Companion/CompanionHost.cs`, `CompanionProjection*.cs` |
 | The mobile page | `Companion/Web/index.html` (one self-contained file) |
+| Type roles, spacing, radii, control sizes | `UI.Shared/DesignTokens.cs` — data, like `ThemePalettes`; each UI composes it |
+| Icon geometry (and reward slot silhouettes) | `UI.Shared/IconPaths.cs` — vectors, never glyphs (#148, #166) |
+| What a quest row's badge and state rule say | `UI.Shared/QuestPresentation.cs` |
 | Anything shared by both UIs | `UI.Shared/` — must stay framework-free (a test enforces it) |
 
 ## Traps that have already caused real bugs
@@ -204,6 +207,14 @@ Read this list before touching the areas it names. Every entry cost a release.
     → **Now guarded:** `UI.Shared/SingleInstance.cs` (one copy per profile everywhere, and
     a stale lock can never stop a launch), and `AppSettings.Save` logs once when it is
     about to overwrite a file that changed underneath it.
+14. **`TextWrapping` does nothing inside a horizontal `StackPanel`.** A stack measures its
+    children with *infinite* width in the stacking direction, so the text never reaches a
+    boundary to wrap at — it is CLIPPED at the panel's edge instead, silently, with no
+    ellipsis to say so. The Gate 2 Quests window shipped an icon-plus-note row that read
+    "pick classes ab" in both UIs, and no unit test could see it; the first real screenshot
+    could, which is the argument for screenshot review being an acceptance criterion.
+    → **Use a two-column `Grid` (`Auto,*`)** whenever an icon sits beside wrapping text.
+    `QuestsWindow.IconLine` is the worked example, in both UIs.
 
 ## Tooling notes that cost time when ignored
 
@@ -220,6 +231,17 @@ Read this list before touching the areas it names. Every entry cost a release.
   output for every command, mid-session. Run scripts as `pwsh -NoProfile -File …` through
   Bash instead, and never read a silent failure as "nothing happened" — check the side
   effects first.
+
+## Screenshots of the desktop UI
+
+**`pwsh -NoProfile -File scripts/shoot.ps1 -Shot quest-tracker`** captures a real window
+against a throwaway profile, and it is the acceptance criterion for every UI/UX gate — the
+Gate 2 wrapping bug (trap 14) was found by looking at one and by nothing else. It seeds the
+profile with the time-shifted fixture so cards show real numbers instead of `0 dps / 0
+kills`, sets `EQBUDDY_OPAQUE=1` so the translucent window ground stops photographing the
+desktop, and puts a plain backdrop behind everything. `-List` names the shots; `-Theme`
+takes any palette (shoot `Solarized` at least once — it is the only light one, so it is
+where a hardcoded dark colour shows up).
 
 ## Working on EQBuddy Mobile
 

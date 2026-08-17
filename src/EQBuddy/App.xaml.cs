@@ -99,6 +99,13 @@ public partial class App : Application
         // it could still land even after the ClaimSingleInstance() bailout above, crashing
         // on a theme that was never applied. Building it explicitly here, only on the
         // success path, closes that race.
+        // The design tokens (type roles, spacing, radii, control sizes) composed from
+        // EQBuddy.UI.Shared.DesignTokens. Static — a theme switch repaints, it does not
+        // re-scale — so this is merged once here rather than swapped like the palette,
+        // and it must land before any window is built: Theme.xaml's Eq* components
+        // resolve their sizes out of it.
+        try { Resources.MergedDictionaries.Add(DesignSystem.Tokens()); }
+        catch (Exception ex) { LogError(ex); }
         try { ThemeManager.Apply(settings); }
         catch (Exception ex) { LogError(ex); }
         DispatcherUnhandledException += (_, args) =>

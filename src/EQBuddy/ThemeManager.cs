@@ -38,7 +38,11 @@ public static class ThemeManager
     {
         // The derived tones (hairline, track, raised, accent-deep) come from
         // UI.Shared so the Avalonia lane and the phone compose the same ones.
-        var rows = palette.ToList();
+        // CaptureTheme is a no-op unless EQBUDDY_OPAQUE=1 (scripts/shoot.ps1): it makes
+        // the window ground opaque so a screenshot photographs the UI and not whatever
+        // was behind it. It runs BEFORE Derive, so the derived tones are derived from
+        // the palette actually being painted.
+        var rows = CaptureTheme.IfEnabled(palette).ToList();
         var full = rows.Concat(ThemeTones.Derive(rows)).ToList();
 
         var dictionary = new ResourceDictionary();

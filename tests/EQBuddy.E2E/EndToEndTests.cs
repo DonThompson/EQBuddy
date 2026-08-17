@@ -214,6 +214,56 @@ public sealed class EndToEndTests
     }
 
     /// <summary>
+    /// The Quest Tracker WINDOW, rebuilt for Gate 2 of the UI/UX rework
+    /// (docs/DesignSystem.md): a column of self-contained cards became a LIST plus a
+    /// DETAIL PANE.
+    ///
+    /// The WPF layer has no unit test project (docs/TestPlan.md §5), so a launched app
+    /// reporting its own structure is the only cover this rebuild can have — and the
+    /// rebuild's whole claim is structural. Its Avalonia twin is covered headlessly by
+    /// QuestsRenderTests; this is the Windows half, and the thing that would otherwise
+    /// regress silently is exactly the join between them: rows built, one of them
+    /// selected, and a pane that actually filled with that selection's content.
+    ///
+    /// "all" rather than "mine", so the assertion does not depend on the fixture
+    /// character happening to own a catalogued turn-in — the whole catalog is always
+    /// there, and the render cap is what the row count is really pinning.
+    /// </summary>
+    [Fact]
+    public void TheQuestTrackerBuildsAListWithASelectionAndAFilledDetailPane()
+    {
+        using var app = new AppHarness(
+            environment: new Dictionary<string, string> { ["EQBUDDY_QUESTS"] = "all" });
+        app.Launch();
+
+        // The window opens at ApplicationIdle after the replay, so the dump carries its
+        // facts only once it exists.
+        Wait.Until(() => app.DumpValue("questsRows") > 0, TimeSpan.FromSeconds(45),
+            "the Quest Tracker to open and build rows", app.Artifacts);
+
+        // The render cap, honoured: "all" offers the whole 1,172-quest catalog and the
+        // window builds the first 60. A row count equal to the catalog would mean the cap
+        // stopped working, which is the change that once froze the window per keystroke.
+        Assert.Equal(60, app.DumpValue("questsRows"));
+        // Never a silent cap (CLAUDE.md): what was withheld is counted and said.
+        Assert.True(app.DumpValue("questsSuppressed") > 0,
+            "the withheld remainder should be counted; dump was: " + app.Artifacts());
+
+        // The pane is the other half of the surface. A selection with an empty pane, or a
+        // pane with no selection, is the rebuild half-working — and both render as a
+        // plausible-looking window.
+        Assert.Equal(1, app.DumpValue("questsSelected"));
+        Assert.Equal(1, app.DumpValue("questsDetailShown"));
+        Assert.True(app.DumpValue("questsDetailBlocks") >= 3,
+            "the detail pane should carry at least title, status and details; dump was: "
+            + app.Artifacts());
+
+        // Core's QuestSurface owns the tab list, and the mode strip is the five views.
+        Assert.Equal(3, app.DumpValue("questsTabs"));
+        Assert.Equal(5, app.DumpValue("questsModes"));
+    }
+
+    /// <summary>
     /// EQBuddy Mobile's 20 Hz pump costs nothing when nobody is paired.
     ///
     /// `CompanionPumpGateTests` proves the gate returns false; it cannot prove the real
