@@ -4,7 +4,12 @@ public enum DamageKind { Melee, Spell }
 
 public abstract record GameEvent(DateTime Time);
 
-public record KillEvent(DateTime Time, string Target, string Killer) : GameEvent(Time);
+/// <summary><paramref name="ProperName"/> is decided HERE, at parse time, because
+/// <see cref="LogParser.Normalize"/> strips the leading article that decides it — a
+/// downstream reader holding "Skeleton" can no longer tell it was "a skeleton"
+/// (discussion #185). See <see cref="NamedMobHeuristic"/>.</summary>
+public record KillEvent(DateTime Time, string Target, string Killer, bool ProperName = false)
+    : GameEvent(Time);
 public record DeathEvent(DateTime Time, string Killer) : GameEvent(Time);
 /// <summary>IsAux marks automatic damage (damage shields) excluded from hit/accuracy counters.
 /// Note is the raw trailing annotation ("Riposte", "Double Bow Shot", …) when present.
@@ -159,6 +164,11 @@ public record PetClaimEvent(DateTime Time, string PetName, string? Leader = null
 /// ONLY when one of our casts is in flight; it never sets the provisional pet on its
 /// own.</param>
 public record PetBlinkEvent(DateTime Time, string Name, bool Weak = false) : GameEvent(Time);
+
+/// <summary>The pet's own reply to /pet hold, which names it. A HELD pet does not start
+/// attacks — so a same-named creature swinging at you while yours is held is a second
+/// creature, not your pet turning on you (#135, bjstrange's charm6.txt).</summary>
+public record PetHoldEvent(DateTime Time, string PetName, bool Holding) : GameEvent(Time);
 /// <summary>Someone other than the player landed a melee hit (may be the player's pet).
 /// Skill is the attack verb mapped to the same label the player's own hits use ("bashes" → Bash).
 /// Critical comes from the same trailing annotation your own hits carry — third-party lines
