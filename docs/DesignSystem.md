@@ -447,4 +447,95 @@ it. It is now a two-column `Grid` (`IconLine`) in both, and trap 14 in `CLAUDE.m
 
 Gate 3 is **Spawns + timers**, per §6 — and per §8c the duration field stays **free text**
 (`SpawnDurationText` parses `5m`, `90s`, `3d 12h`; a numeric spinner regresses week-long
-raid targets).
+raid targets). §11 amends what comes after it.
+
+---
+
+## 11. Folding in 1.89.0's other work (2026-08-17)
+
+Three contributions merged alongside Gate 2 — #198 loot provenance, #199 the mini-bar
+double-click, #200 a (Disabled) alert sound — and six community commitments were made in
+the same sitting. This section folds them into the plan rather than leaving them as
+parallel work, which is how a design system ends up describing a product that has moved.
+
+### 11.1 Where the numbers actually are
+
+Re-measured across `src/` today (same method for each row, so the rows compare with each
+other; the font-size figure is directly comparable to §1.2's 612):
+
+| | Gate 1 | Now | |
+|---|---|---|---|
+| `FontSize` assignments | 612 | **550** | Gate 2 removed ~60, all from one window |
+| Distinct font sizes | 13 | **13** | none retired yet — the tail lives in un-migrated surfaces |
+| Distinct literal radii | 7 | **11** | *worse*, and see below |
+| Icon glyphs | 84 / 857 | **80 / 781** | |
+
+**One gate has not dented this, and was never going to.** That is the expected shape — the
+system exists, and 1 of 7 surfaces uses it. The number worth watching is not the total but
+whether the *un-migrated* total grows, which is what §11.2 is about.
+
+### 11.2 New UI arrived off-system, the same day the system did
+
+`#198` added a view filter to the Loot card and its breakout:
+
+```xml
+<TextBlock x:Name="LootViewAll" Text="all" FontSize="10" Cursor="Hand"
+           Tag="all" MouseLeftButtonDown="OnLootView" Margin="0,0,6,0"/>
+```
+
+That is, precisely, the pattern Gate 2 deleted from the Quests window six hours earlier —
+a segmented control built from bare `TextBlock`s with a `Tag`, a click handler, a literal
+size and a literal margin, coloured by a hand-written `ApplyVisual`. **There are now 16 of
+these across `MainWindow.xaml` and `BreakoutWindow.xaml`**, plus the Avalonia sort bars,
+and Gate 2 built a seventeenth as a real primitive and then hid it inside one window.
+
+This is not a criticism of the contribution — it is the correct way to build a filter row
+*in the codebase as it was*. It is evidence for the thing the whole effort is about: **a
+component nobody can reach gets rebuilt by hand, and the ratchet only guards files already
+on the list.** Two consequences:
+
+1. **`Chip` comes out of `QuestsWindow` and becomes a shared component** (`EqChip` +
+   `EqSegmentedStrip` from §3) in both UIs, before Gate 3 needs a third copy.
+2. **A surface joins `DesignRatchetTests.Migrated` when it is migrated, not before** — but
+   the *reverse* now matters too: a PR adding a new segmented strip should be pointed at
+   the primitive in review. That is a process note, not a test.
+
+### 11.3 What the merged work changes about the gate order
+
+| Merged | Lands on | Effect on the plan |
+|---|---|---|
+| **#198** loot provenance | Loot card + Loot breakout | Adds a filter strip to two surfaces. Pulls Loot **forward** — it is now the second-biggest concentration of hand-built strips after the widget |
+| **#199** mini-bar double-click | Mini bar + Options | Establishes the chip gesture Gate 5 was going to have to invent. **Adopt it as the convention** rather than designing another |
+| **#200** (Disabled) alert sound | `OptionsViewModel` | Confirms the shared-viewmodel route for Options; Gate 7 composes rather than rewrites |
+
+### 11.4 Community commitments, placed
+
+Made publicly on 2026-08-17, so these are owed, not optional:
+
+| # | Reporter | Gate |
+|---|---|---|
+| **#190** tracked-quest chips (double-click opens, right-click dismisses) | wizen | **5** — same chip vocabulary and the #199 gesture |
+| **#191** configurable mini bar, removable metrics | TheMegaSage | **5** — with §8b's reserved widths, non-negotiable (#173) |
+| **#182** breakout resize affordance + full name on hover | Ladylag | **7**, but the `.`-name half is a **parser bug and not a gate** — fix it now |
+| **#189** Quest Tracker doesn't hide with the widget | wizen | **Not a gate** — a missing wiring, fix it now |
+| **#197** audio picker filter too narrow | wizen | **7** (Options), or sooner; it is one string |
+| **#135** Puppet Strings charms | bjstrange | **Not a gate** — charm catalog has no entry for item clickies |
+
+**Four of those are not design work at all.** Keeping them out of the gates is the point:
+a rework that absorbs every open bug stops being a rework.
+
+### 11.5 Amended order
+
+| Gate | Surface | Change from §6 |
+|---|---|---|
+| 2 | Quests | done |
+| **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **new** — small, and it unblocks 3, 4 and 5 |
+| 3 | Spawns + timers | unchanged; `EqTimer` + `EqProgress` |
+| **4** | **Loot card + Loot breakout** | **moved up** — #198 concentrated the debt here |
+| 5 | Main widget | was 4 |
+| 6 | Mini mode + chips | carries #190, #191, #199's gesture |
+| 7 | Map | unchanged |
+| 8 | Remaining windows | Gear, Drops, History, Travel, Options (+#197), breakouts (+#182) |
+
+The one structural change is **2b**: a shared chip is worth more than any single gate,
+because every gate after it spends the primitive instead of minting one.
