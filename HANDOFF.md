@@ -1,7 +1,7 @@
 # EQBuddy — handoff
 
 **Don't re-derive the codebase.** `CLAUDE.md` loads automatically and carries the commands,
-the non-negotiable rules, the where-things-live index, the trap list (13) and the
+the non-negotiable rules, the where-things-live index, the trap list (14) and the
 surface-allocation rule. `docs/Architecture.md` and `docs/TestPlan.md` sit behind it, and
 `DocumentationTests` fails the build if any go stale. Start with
 `pwsh -NoProfile -File scripts/status.ps1`.
@@ -43,7 +43,27 @@ looted rune ticked several classes' checklists), **#185** (named-mob auto-discov
 
 ---
 
-## THE NEXT TASK — UI/UX rework, Gate 2
+## Gates 1 and 2 are DONE — the next task is Gate 3 (Spawns + timers)
+
+**Gate 2 shipped to `main` as branch `gate2-quests` (2026-08-17), unreleased.** Quests
+rebuilt on the design system, both UIs in one change; `docs/DesignSystem.md` §10 is the
+as-built record. `Directory.Build.props` is bumped to **1.89.0** and `WhatsNew.json` has
+its entry, so a release is one command away **when David says go**.
+
+The prerequisite is done too: **`pwsh -NoProfile -File scripts/shoot.ps1`** seeds a session,
+renders opaque and captures over a plain backdrop. Use it — it found the Gate 2 clipping
+bug (now trap 14) that no test could. The three stale README screenshots are refreshed.
+
+**Gate 3 is Spawns + timers.** `EqTimer` and `EqProgress` are the two §3 primitives still
+unbuilt, and Spawns is where they belong. Per §8c the duration field stays **free text** —
+`SpawnDurationText` parses `5m`, `90s`, `3d 12h`, and a numeric spinner regresses week-long
+raid targets. Add `EQBuddy/SpawnsWindow.xaml{,.cs}` and `EQBuddy.Avalonia/SpawnsWindow.cs`
+to `DesignRatchetTests.Migrated` in the same PR.
+
+The section below is the Gate 2 brief as it was written. Kept because §8a/§8b/§8c still
+govern the gates after it.
+
+## The original Gate 2 brief (done)
 
 David commissioned a full UI/UX modernization ("Modern Norrath Companion" — restrained dark,
 warm gold, Steam/Discord polish, **not** faux-medieval, **not** enterprise dashboard). His full
