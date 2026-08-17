@@ -451,6 +451,98 @@
         </Setter>
     </Style>
 
+    <!-- ============================================================================
+         Eq* — the design-system components (Gate 2, docs/DesignSystem.md §3).
+
+         Every number below is a {DynamicResource} into the token dictionary that
+         DesignSystem.Tokens() composes from EQBuddy.UI.Shared.DesignTokens, so the
+         Avalonia lane styles itself from the SAME values rather than a hand-copied
+         second set. There are deliberately no literal sizes here: DesignRatchetTests
+         fails the build if one appears in a migrated surface.
+         ============================================================================ -->
+
+    <!-- Icon-only action (close, pin, flag, dismiss). A real Button, not the
+         click-handled TextBlock these used to be, so it is keyboard-reachable and has
+         a hit area you can actually hit. Its content is a vector Path from
+         DesignSystem.Icon — never a glyph; PRs #148 and #166 exist because glyphs
+         failed to render at all in Wine prefixes. -->
+    <Style x:Key="EqIconButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Width" Value="{DynamicResource IconButtonSize}"/>
+        <Setter Property="Height" Value="{DynamicResource IconButtonSize}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            CornerRadius="{DynamicResource CornerControl}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource PanelHoverBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The search box, which the Gate 1 audit found "so compressed I missed it"
+         (David, 2026-08-15). Full width, control height, and the placeholder does the
+         teaching — an empty box teaches nothing. -->
+    <Style x:Key="EqSearchBox" TargetType="TextBox" BasedOn="{StaticResource InputBox}">
+        <Setter Property="FontSize" Value="{DynamicResource FontBody}"/>
+        <Setter Property="Height" Value="{DynamicResource ControlHeight}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="{DynamicResource PadControl}"/>
+    </Style>
+
+    <!-- THE primary action on a surface — one per surface, and the only place besides
+         a selection and the single most important number that may carry weight this
+         loud (§2.1's accent discipline). GoodBrush rather than accent: on the Quests
+         detail pane the primary action is "I turned this in", which is a completion. -->
+    <Style x:Key="EqPrimaryButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontBody}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Height" Value="{DynamicResource ControlHeight}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{DynamicResource GoodWashBrush}"
+                            CornerRadius="{DynamicResource CornerControl}"
+                            BorderBrush="{DynamicResource GoodBrush}" BorderThickness="1"
+                            Padding="{DynamicResource PadControl}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.8"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A labelled metadata cell — the Details strip on the Quests detail pane. Label
+         above, value below, both quiet: this is context you consult, not content you
+         scan, and the audit's recurring defect was label and value at equal weight. -->
+    <Style x:Key="EqDetailCell" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource RaisedBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="{DynamicResource CornerCard}"/>
+        <Setter Property="Padding" Value="{DynamicResource PadRow}"/>
+        <Setter Property="Margin" Value="{DynamicResource GapXs}"/>
+    </Style>
+
     <!-- Slim scrollbar. The stock WPF one is 17px with arrow buttons and light chrome,
          which reads as a chunky grey slab against the dark panel. This is thumb-only:
          the track still pages on click, it just renders nothing. -->

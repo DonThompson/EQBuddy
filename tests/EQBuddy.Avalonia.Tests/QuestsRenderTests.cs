@@ -62,8 +62,16 @@ public sealed class QuestsRenderTests : IDisposable
         ],
     };
 
+    private static List<string> Texts(QuestsWindow window) =>
+        [.. window.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text ?? "")];
+
+    /// <summary>Gate 2 turned a column of self-contained cards into a LIST plus a DETAIL
+    /// PANE (docs/DesignSystem.md), so the assertions moved with the content: the list
+    /// carries the name, the state badge and the meta line, and the pane carries the
+    /// turn-ins, the rewards and the five controls. Which quests appear, and why, is
+    /// unchanged — that is the half this test is really guarding.</summary>
     [AvaloniaFact]
-    public void MineTabShowsOverlapCardWithProgressAndControls()
+    public void MineTabListsTheOverlapAndOpensItInTheDetailPane()
     {
         var ledger = new QuestLedgerStore(Path.Combine(_profile, "quest-ledger.json"));
         ledger.SetManual("tester_p1999", "Blue Orc Head", 1);
@@ -75,17 +83,48 @@ public sealed class QuestsRenderTests : IDisposable
         });
         window.Show();
 
-        var text = window.GetVisualDescendants().OfType<TextBlock>()
-            .Select(t => t.Text).ToList();
-        Assert.Contains("🗺 Quest Tracker — Tester", text);
+        var text = Texts(window);
+        Assert.Contains("Quest Tracker — Tester", text);
         Assert.Contains("The Falchion", text);
-        Assert.Contains("1/1", text);                               // item TYPES with any, over total types
-        Assert.Contains("• Blue Orc Head — 1/2", text);             // per-item have/need
-        Assert.Contains("📌", text);                                // track pin on every card
-        Assert.Contains("✓", text);                                 // catch-up done mark
-        Assert.Contains("⚑", text);                                 // data-wrong report flag
+        // The status badge, from UI.Shared's QuestPresentation so both desktops agree:
+        // item TYPES with any copies, over total types.
+        Assert.Contains("1/1", text);
+        // The first row is selected, so its turn-ins are in the pane: name and have/need
+        // as separate cells now, not one concatenated string.
+        Assert.Equal("The Falchion", window.SelectedQuest);
+        Assert.Contains("Blue Orc Head", text);
+        Assert.Contains("1 / 2", text);
+        Assert.Contains("TURN-INS", text);
+        Assert.Contains("REWARDS", text);
         // Crude Stein has no owned items, so "mine" must not show it.
         Assert.DoesNotContain("Crude Stein Quest", text);
+
+        window.Close();
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    /// <summary>The five per-quest controls are icon BUTTONS on the pane now, not five
+    /// click-handled TextBlocks on every card in the list — keyboard-reachable, with a hit
+    /// area, and built once instead of once per row.</summary>
+    [AvaloniaFact]
+    public void TheDetailPaneCarriesTheQuestControls()
+    {
+        var ledger = new QuestLedgerStore(Path.Combine(_profile, "quest-ledger-controls.json"));
+        ledger.SetManual("tester_p1999", "Blue Orc Head", 1);
+        var window = new QuestsWindow(new FakeHost
+        {
+            QuestCatalog = Catalog(),
+            QuestLedger = ledger,
+            QuestCharacterKey = "tester_p1999",
+        });
+        window.Show();
+
+        var tips = window.GetVisualDescendants().OfType<Button>()
+            .Select(b => ToolTip.GetTip(b) as string ?? "").ToList();
+        Assert.Contains(tips, t => t.Contains("Track this quest"));
+        Assert.Contains(tips, t => t.Contains("Did this before EQBuddy"));
+        Assert.Contains(tips, t => t.Contains("Not interested"));
+        Assert.Contains(tips, t => t.Contains("Something wrong with this quest's data"));
 
         window.Close();
         Dispatcher.UIThread.RunJobs();
@@ -102,19 +141,22 @@ public sealed class QuestsRenderTests : IDisposable
         window.Show();
         window.FilterToItem("Crude Stein");
 
-        var text = window.GetVisualDescendants().OfType<TextBlock>()
-            .Select(t => t.Text).ToList();
+        var text = Texts(window);
         Assert.Contains("Crude Stein Quest", text);
-        Assert.Contains(text, t => t?.StartsWith("🔎 1 match") == true);
-        // Zero owned pieces still renders the item row — search is for finding.
-        Assert.Contains("• Crude Stein — 0/1", text);
+        Assert.Contains(text, t => t.StartsWith("1 match in the whole catalog"));
+        // Zero owned pieces still renders the turn-in row — search is for finding.
+        Assert.Contains("Crude Stein", text);
+        Assert.Contains("0 / 1", text);
 
         window.Close();
         Dispatcher.UIThread.RunJobs();
     }
 
+    /// <summary>"Ready" is the one state worth interrupting for, so it has to be legible
+    /// twice: the badge on the row, and the primary action on the pane. The hand-in used
+    /// to BE the progress count — an affordance whose only signal was a tooltip.</summary>
     [AvaloniaFact]
-    public void ReadyQuestShowsHandInAffordance()
+    public void ReadyQuestShowsTheBadgeAndAPrimaryHandInAction()
     {
         var ledger = new QuestLedgerStore(Path.Combine(_profile, "quest-ledger-ready.json"));
         ledger.SetManual("tester_p1999", "Blue Orc Head", 2);
@@ -126,8 +168,12 @@ public sealed class QuestsRenderTests : IDisposable
         });
         window.Show();
 
-        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(),
-            t => t.Text == "✔ ready");
+        var text = Texts(window);
+        Assert.Contains("ready", text);
+        Assert.Contains("ready to turn in", text);
+        // The summary above the list answers the window's question before a row is read.
+        Assert.Contains("1 quest ready to turn in", text);
+        Assert.Contains("Mark as turned in", text);
 
         window.Close();
         Dispatcher.UIThread.RunJobs();

@@ -57,6 +57,11 @@ public sealed class ItemCatalog
 
     public int Count => _byName.Count;
 
+    /// <summary>Every record, in no particular order. Read-only, and here for the sweeps
+    /// that have to hold against the SHIPPED catalog rather than a sample — the reward
+    /// silhouette mapper (IconPaths.ForItem) is checked against all 11k.</summary>
+    public IEnumerable<Record> All => _byName.Values;
+
     public ItemCatalog(IEnumerable<Record> records)
     {
         _byName = new Dictionary<string, Record>(StringComparer.OrdinalIgnoreCase);

@@ -1,6 +1,7 @@
-# Gate 1 — UI/UX audit and design-system proposal
+# The UI/UX rework — audit, system, and gate log
 
-**Status: proposal, 2026-08-17. No UI code has been changed.**
+**Gate 1 (§1–§8): accepted 2026-08-17.**
+**Gate 2 (§10): Quests, both UIs, built 2026-08-17.**
 Deliverables per the brief: current-state audit · token proposal · component proposal ·
 icon strategy · WPF/Avalonia parity strategy · migration order · known risks.
 
@@ -377,3 +378,73 @@ Quests, rebuilt on the system above: header + tabs, prominent search, status fil
 compact list with a detail panel, `EqListRow`/`EqStatusBadge`/`EqChip`/`EqEmptyState` in
 their first real use, both UIs in one PR, existing tests green, new E2E facts pinned, and
 reviewed screenshots — with functionality unchanged from today's tracker.
+
+---
+
+## 10. Gate 2 — Quests, as built (2026-08-17)
+
+**Functionality is unchanged.** Same filters, same five modes, same three tabs, same ledger
+calls, same undo, same search debounce, same render cap, same class inference. No
+application logic was touched. What changed is the presentation, and one thing that is
+presentation but reads as behaviour: **a column of self-contained cards became a LIST plus
+a DETAIL PANE.**
+
+### 10.1 Why the shape changed, and not just the paint
+
+Every card carried its own rewards, meta line, item rows and five controls. Finding the one
+quest that is ready meant reading fifty paragraphs — and on the "all" view the window built
+sixty of those, each wiring its own wiki tooltips. The list answers *which quest* and the
+pane answers *what about it*, which is the order the question actually gets asked in. It is
+also what made room for the two things the surface never had: a status badge and a
+state-coloured leading rule, both carrying readiness at a glance.
+
+### 10.2 What landed
+
+| Layer | File | Notes |
+|---|---|---|
+| Tokens | `UI.Shared/DesignTokens.cs` | 7 type roles, a 6-step spacing scale, 4 radii, 3 control sizes — framework-free data, exactly as `ThemePalettes` already was for colour |
+| Icons | `UI.Shared/IconPaths.cs` | 42 paths on a 24×24 grid: the interaction vocabulary, plus 14 reward silhouettes and the item→silhouette mapper |
+| State vocabulary | `UI.Shared/QuestPresentation.cs` | Badge, rule colour, ready summary, meta line, distance wording — decided once for both desktops |
+| Capture | `UI.Shared/CaptureTheme.cs` | `EQBUDDY_OPAQUE=1` makes the window ground opaque, and nothing else |
+| WPF composition | `EQBuddy/DesignSystem.cs`, `EQBuddy/Theme.xaml` | Token ResourceDictionary + the `Eq*` component styles |
+| Avalonia composition | `EQBuddy.Avalonia/DesignSystem.cs`, `AppTheme.BrushFor` | Same numbers, native controls |
+| The surface | `EQBuddy/QuestsWindow.xaml{,.cs}`, `EQBuddy.Avalonia/QuestsWindow.cs` | Both in the same change, never "a release behind" |
+| Fixture | `scripts/shoot.ps1` | Seeded session + opaque render + plain backdrop |
+
+Nine of the twelve §3 primitives got their first real use: card, section header, list row,
+chip, status badge, icon button, search box, empty state, detail panel. `EqTimer`,
+`EqProgress` and `EqMetric` did not — they belong to Gate 3 (Spawns) and Gate 4 (the
+widget), which is the order §6 argues for.
+
+### 10.3 The amendments, honoured
+
+- **§8a — no sourceable reward or quest-type icons.** Reward tiles carry **slot
+  silhouettes** driven by the item's own `Slots`/`Skill`, with the weapon skill outranking
+  the slot so a 2H Blunt is never drawn as a sword, and a neutral crate for anything the
+  catalog does not place. Quest rows carry a **state-coloured left rule** instead of a type
+  icon. Both are checked against all ~11k shipped items.
+- **§8d — measured against the CURRENT tracker**, not the mockup's stale BEFORE panel. The
+  `Show Hidden` / `Show Completed` row it shows has not existed since 2026-08-16, and the
+  "+ I have this" quantity row the mockup's AFTER keeps was deliberately removed on
+  2026-08-15; neither came back.
+
+### 10.4 How this is kept from drifting
+
+`DesignRatchetTests` names each migrated surface and fails the build if it grows a literal
+font size, radius or spacing value, or draws with a glyph instead of a vector. **The list
+only ever grows — add a surface in the same PR that migrates it.** That mechanism, not
+good intentions, is what makes §2's "7 roles replacing 13 sizes" survive Gate 3.
+
+### 10.5 What the screenshot review caught
+
+Worth recording, because it is the argument for the review criterion itself. The first real
+capture showed the class-inference note reading *"pick classes ab"* — clipped, not wrapped.
+A `TextBlock` with `TextWrapping="Wrap"` inside a horizontal `StackPanel` never wraps: a
+stack measures its children with infinite width. No unit test could see it and both UIs had
+it. It is now a two-column `Grid` (`IconLine`) in both, and trap 14 in `CLAUDE.md`.
+
+### 10.6 Next
+
+Gate 3 is **Spawns + timers**, per §6 — and per §8c the duration field stays **free text**
+(`SpawnDurationText` parses `5m`, `90s`, `3d 12h`; a numeric spinner regresses week-long
+raid targets).

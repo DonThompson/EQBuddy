@@ -2636,6 +2636,12 @@ public partial class MainWindow : Window
                     $"questsEpicTotal={_settings.EpicQuestChecklist.Count} " +
                     $"questsSkyTotal={_settings.SkyQuestChecklist.Count} " +
                     $"questsSummaryLen={QuestsHeader.Text.Length} " +
+                    // The Quest Tracker WINDOW, when EQBUDDY_QUESTS opened one. The WPF
+                    // layer has no unit tests (docs/TestPlan.md §5), so the Gate 2
+                    // rebuild's structure — list rows, a selection, a populated detail
+                    // pane — is only assertable from a launched app. The window formats
+                    // its own facts; this just carries them.
+                    (_questsWindow is { IsLoaded: true } qwin ? qwin.DebugFacts() + " " : "") +
                     // EQBuddy Mobile's pump: it should be running, and it should be
                     // doing nothing, because this profile has no paired device.
                     $"companionPumpTicks={_companionPumpTicks} " +

@@ -1,5 +1,19 @@
 [
  {
+  "version": "1.89.0",
+  "date": "2026-08-17",
+  "highlights": [
+   "THE QUEST TRACKER HAS BEEN REBUILT AROUND A LIST AND A DETAIL PANE. Every quest used to be its own card carrying its rewards, its zone and giver, its item rows and five little controls - so finding the one quest that's ready meant reading fifty paragraphs, and browsing \"all\" built sixty of them. The left column is now one compact row per quest: its name, a state badge (ready / a progress count / open / done), and one line of zone, giver, level and how many zones away it is. Pick one and the right-hand pane shows everything that used to be crammed into the card - the rewards, the turn-ins with their counts, and a labelled Zone / Giver / Level / Distance / Class strip that no longer quietly loses the class off the end of a line.",
+   "READY QUESTS ARE VISIBLE WITHOUT READING ANYTHING. A green rule runs down the edge of a row whose turn-ins are all in hand, an amber one down a row you've started, and a line above the list says \"8 quests ready to turn in\" before you've looked at a single row. If nothing is ready it says nothing at all rather than \"0 quests ready\", which read as a broken tracker.",
+   "AND HANDING A QUEST IN IS A BUTTON NOW. Marking a turn-in used to be a click on the progress COUNT - an affordance whose only signal was a tooltip nobody hovers. The detail pane has a proper \"Mark as turned in\" button, and track / mark-done / hide / report-bad-data are real buttons beside the quest name instead of five tiny glyphs repeated on every card.",
+   "A QUEST FINISHED BEFORE THAT YOU CAN DO AGAIN NOW READS \"READY\", NOT \"DONE\". Repeatable quests with a full set of turn-ins in your bags were being labelled by their history rather than by what you're holding.",
+   "REWARDS SHOW WHAT KIND OF THING THEY ARE. Each reward carries a small silhouette worked out from the item's own stats - a sword, a mace, a bow, a shield, a helm, a ring, a cloak, a crate for everything else - so a list of eight rewards can be skimmed. Weapons follow their SKILL rather than their slot, so a two-handed blunt is drawn as a mace and not a sword. Hovering still pulls the item's live wiki stats, and clicking still opens its page.",
+   "EVERY ICON IN THE TRACKER IS NOW DRAWN RATHER THAN TYPED. The window used emoji and dingbats for search, pin, done, report, undo and the rest; those render at whatever size and weight the system feels like, and under Wine on Linux and macOS some of them didn't render at all. They're vectors now, in the colour of whichever theme you've picked.",
+   "NOTHING ABOUT WHAT THE TRACKER DOES HAS CHANGED - same tabs, same five views, same filters, same search, same undo, same counts, same ledger. Windows, Linux and macOS all got this in the same update rather than one waiting on the other.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.88.4",
   "date": "2026-08-17",
   "highlights": [

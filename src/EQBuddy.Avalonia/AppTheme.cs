@@ -77,6 +77,29 @@ internal static class AppTheme
         ["ChartCritBrush"] = ChartCritBrush,
     };
 
+    /// <summary>Palette key → the live brush, by NAME. The design-system layer names its
+    /// inks the way UI.Shared does (a type role carries a "DimBrush", a quest badge a
+    /// "GoodBrush"), and this is what turns one of those names into the brush this UI
+    /// actually mutates on a theme switch — the counterpart of WPF's
+    /// SetResourceReference. A key this UI doesn't style falls back to the body ink
+    /// rather than painting nothing: an invisible control is the one failure mode the
+    /// whole palette table exists to prevent.</summary>
+    public static IBrush BrushFor(string key) =>
+        ByKey.TryGetValue(key, out var brush) ? brush
+        : Derived.TryGetValue(key, out var tone) ? tone
+        : TextBrush;
+
+    /// <summary>The ThemeTones derivations, addressable by the same key the WPF resource
+    /// dictionary uses. They are not in <see cref="ByKey"/> because no palette ROW
+    /// carries them — <see cref="ApplyPalette"/> computes them.</summary>
+    private static readonly Dictionary<string, SolidColorBrush> Derived = new(StringComparer.Ordinal)
+    {
+        ["HairlineBrush"] = HairlineBrush,
+        ["TrackBrush"] = TrackBrush,
+        ["RaisedBrush"] = RaisedBrush,
+        ["AccentDeepBrush"] = AccentDeepBrush,
+    };
+
     static AppTheme() => Apply("ParchmentBrass");
 
     /// <summary>Repaints every control holding one of the brushes above. An unrecognized
@@ -91,7 +114,11 @@ internal static class AppTheme
 
     private static void ApplyPalette(IEnumerable<(string Key, string Hex)> palette)
     {
-        foreach (var (key, hex) in palette)
+        // No-op unless EQBUDDY_OPAQUE=1 (scripts/shoot.ps1): makes the window ground
+        // opaque so a capture photographs the UI, not the desktop behind it. Same call,
+        // same place, as the WPF ThemeManager — the fix has to reach both UIs or it is
+        // a second product (CLAUDE.md).
+        foreach (var (key, hex) in CaptureTheme.IfEnabled(palette))
             if (ByKey.TryGetValue(key, out var brush)) brush.Color = Color.Parse(hex);
 
         var accent = AccentBrush.Color;

@@ -43,8 +43,17 @@ internal sealed class AppHarness : IDisposable
     public static string ExePath { get; } = Path.Combine(RepoRoot,
         "src", "EQBuddy", "bin", "Release", "net10.0-windows", "EQBuddy.exe");
 
-    public AppHarness(Action<AppSettings>? configureSettings = null)
+    /// <summary>Extra EQBUDDY_* hooks for this launch — the screenshot/debug family
+    /// MainWindow already reads (EQBUDDY_QUESTS, EQBUDDY_MAP, …). A scenario that needs a
+    /// satellite window open sets one here rather than driving the UI: the suite asserts
+    /// on the state dump, and there is nothing to click in it.</summary>
+    private readonly Dictionary<string, string> _environment = [];
+
+    public AppHarness(Action<AppSettings>? configureSettings = null,
+        IReadOnlyDictionary<string, string>? environment = null)
     {
+        if (environment is not null)
+            foreach (var (name, value) in environment) _environment[name] = value;
         if (!File.Exists(ExePath))
             throw new FileNotFoundException(
                 "EQBuddy.exe not built. Run `dotnet build EQBuddy.slnx -c Release` first " +
@@ -106,6 +115,7 @@ internal sealed class AppHarness : IDisposable
         var psi = new ProcessStartInfo(ExePath) { UseShellExecute = false };
         psi.Environment["EQBUDDY_APPDATA"] = ProfileDir;
         psi.Environment["EQBUDDY_EXPAND"] = "1";
+        foreach (var (name, value) in _environment) psi.Environment[name] = value;
         _process = Process.Start(psi)
             ?? throw new InvalidOperationException($"Process.Start returned null for {ExePath}");
 

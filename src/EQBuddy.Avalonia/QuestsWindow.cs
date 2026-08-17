@@ -4,13 +4,13 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
-using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
+using Role = EQBuddy.UI.Shared.DesignTokens.TypeRole;
 
 namespace EQBuddy.Avalonia;
 
@@ -34,10 +34,17 @@ public interface IQuestsHost
 /// <summary>
 /// The standalone Quest Tracker (QUEST-*, David's spec 2026-08-07): every wiki quest
 /// whose turn-in items overlap what this character owns — looted since the ledger began,
-/// or read from the game's own /outputfile inventory dump (bags and bank). One per quest,
-/// most-complete first; expanding a card lists each item as have/need; the quest name
-/// opens the eqlwiki walkthrough. "all quests" flips from the overlap view to the whole
-/// catalog for browsing ahead.
+/// or read from the game's own /outputfile inventory dump (bags and bank). The quest name
+/// opens the eqlwiki walkthrough; "all" flips from the overlap view to the whole catalog.
+///
+/// GATE 2 of the UI/UX rework (docs/DesignSystem.md) rebuilt the presentation and NOTHING
+/// else, in the same change as its WPF twin — never "a release behind", which is the
+/// discipline that stops this build re-shipping a bug Windows already fixed. A column of
+/// self-contained cards became a LIST plus a DETAIL PANE: the list answers "which quest",
+/// the pane answers "what about it".
+///
+/// Every size, radius and spacing value comes from EQBuddy.UI.Shared.DesignTokens and
+/// every icon from IconPaths, which is what the WPF window composes too.
 /// </summary>
 public sealed class QuestsWindow : Window
 {
@@ -51,87 +58,115 @@ public sealed class QuestsWindow : Window
     /// <summary>The last on-screen position, so Closed never persists a torn-down
     /// window's 0,0 (#169).</summary>
     private LastVisiblePosition _seen;
-    /// <summary>Cards built per view, and how many were withheld — the whole catalog is
-    /// 1,172 quests and each card is real layout work.</summary>
+    /// <summary>Rows built per view, and how many were withheld — the whole catalog is
+    /// 1,172 quests. Rows are far cheaper than the cards they replace (no rewards, no
+    /// item rows, no wiki tooltips until a row is SELECTED), but "all" still offers all
+    /// of them, and doing that per keystroke is what hung the window.</summary>
     private const int RenderCap = 60;
-    private int _rendered;
+    private int _renderedCount;
     private int _suppressed;
     private static readonly TimeSpan SearchSettle = TimeSpan.FromMilliseconds(120);
     private DispatcherTimer? _searchDebounce;
 
-    private readonly TextBlock _titleText = new()
-    {
-        Text = "🗺 Quest Tracker", FontWeight = FontWeight.Bold, FontSize = 14,
-    };
+    private readonly TextBlock _titleText = DesignSystem.Text(Role.TitleWindow, "Quest Tracker");
     private readonly TextBox _filterBox = InputBox(
-        "Search the whole catalog — quest names, turn-in items, rewards, quest givers, " +
-        "zones. Search ignores the class/era/state filters. Pin 📌 a result to track it.");
-    private readonly ComboBox _eraCombo = new() { Width = 104, FontSize = 11 };
-    private readonly ComboBox _stateCombo = new() { Width = 86, FontSize = 11 };
+        "Search the whole catalog by anything you know — the reward you want "
+        + "(\"Wakizashi of the Frozen Skies\"), a turn-in item, the quest name, the "
+        + "quest giver, a zone. Search ignores the class/era/state filters. "
+        + "Pin a result to track it.");
+    private readonly ComboBox _eraCombo = new()
+    {
+        Width = 104,
+        FontSize = DesignTokens.Spec(Role.Caption).Size,
+        Height = DesignTokens.ControlHeight,
+    };
+    private readonly ComboBox _stateCombo = new()
+    {
+        Width = 86,
+        FontSize = DesignTokens.Spec(Role.Caption).Size,
+        Height = DesignTokens.ControlHeight,
+    };
     private readonly Button _classBtn;
     private readonly StackPanel _classCheckPanel = new();
-    private readonly StackPanel _questsPanel = new() { Margin = new Thickness(0, 0, 6, 0) };
+    private readonly StackPanel _questsPanel = new();
     private readonly ScrollViewer _bodyScroll = new()
     {
         VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
         HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-        Padding = new Thickness(6, 0),
     };
-    private readonly List<(TextBlock Tab, string Key)> _modeTabs = [];
+    private readonly StackPanel _detailPane = new();
+    private readonly ScrollViewer _detailScroll = new()
+    {
+        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+        Padding = new Thickness(DesignTokens.SpaceL, DesignTokens.SpaceM),
+    };
+    private Border _detailCard = null!;
+    private Grid _bodyGrid = null!;
+    /// <summary>The one-line answer above the list: how many of what is showing can be
+    /// turned in right now. Hidden entirely when nothing is — "0 quests ready" reads as
+    /// a fault in the tracker rather than an ordinary afternoon.</summary>
+    private readonly StackPanel _summaryRow = new()
+    {
+        Orientation = Orientation.Horizontal, IsVisible = false,
+        Margin = new Thickness(0, 0, 0, DesignTokens.SpaceS),
+    };
 
     // ---- top-level tabs: General · Epic 1.0 · Plane of Sky ----
     //
     // Built from Core's QuestSurface, exactly as the WPF window builds them, so the two
     // desktops and EQBuddy Mobile cannot disagree about which tabs exist, their order or
     // their names — the reason that type lives in Core at all.
-    //
-    // These arrived on Avalonia a day after WPF (2026-08-16): consolidating the widget's
-    // Epic and Sky cards into one launcher left this build with nowhere to view or tick
-    // those checklists, which is a regression rather than the usual Avalonia lag.
     private QuestTab _tab = QuestTab.General;
     private readonly StackPanel _tabStrip = new()
     {
-        Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6),
+        Orientation = Orientation.Horizontal,
+        Margin = new Thickness(0, 0, 0, DesignTokens.SpaceS),
     };
-    private readonly List<(Border Tile, TextBlock Label, TextBlock Badge, QuestTab Tab)> _tabTiles = [];
+    private readonly List<Chip> _tabChips = [];
     /// <summary>Which single class the view is narrowed to, or null for all of yours.
     /// Session-scoped like the search box: a sticky lens reads as a broken tracker
     /// tomorrow when you have swapped classes.</summary>
     private string? _classLens;
     // Wraps, because the strip lists whatever the picker holds and that can be all
     // sixteen: a fixed-width window clipped it (#184).
-    private readonly WrapPanel _classStrip = new() { Margin = new Thickness(0, 0, 0, 4) };
-    private readonly List<(Border Chip, TextBlock Label, string? Class)> _classChips = [];
+    private readonly WrapPanel _classStrip = new();
+    private readonly List<Chip> _classChips = [];
+    private readonly List<Chip> _modeChips = [];
+    private readonly StackPanel _modeStrip = new()
+    {
+        Orientation = Orientation.Horizontal,
+        HorizontalAlignment = HorizontalAlignment.Right,
+        VerticalAlignment = VerticalAlignment.Center,
+    };
 
     // ---- undo (#184) ----
     // A tick is one click and saves at once, so without this a mis-click is unrecoverable
     // except from memory — bjstrange lost three and had to work out what had been checked.
     private readonly Stack<(string Label, bool Was, Action<bool> Set)> _undo = new();
-    private readonly TextBlock _undoText = new()
-    {
-        FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis,
-        VerticalAlignment = VerticalAlignment.Center,
-    };
+    private readonly TextBlock _undoText = DesignSystem.Text(Role.BodySecondary);
     private readonly Border _undoBar = new()
     {
-        IsVisible = false, Margin = new Thickness(16, 4, 16, 0),
-        CornerRadius = new CornerRadius(6), BorderThickness = new Thickness(1),
-        Padding = new Thickness(10, 5),
+        IsVisible = false,
+        Margin = new Thickness(DesignTokens.SpaceL, DesignTokens.SpaceXs, DesignTokens.SpaceL, 0),
+        CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+        BorderThickness = new Thickness(1),
+        Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceS),
     };
     /// <summary>The Epic tab's classic-era lens, which followed the widget's Epic card
     /// here. Persisted, because EQBuddy Mobile's Epic tab honors the same setting.</summary>
     private readonly CheckBox _classicOnlyCheck = new()
     {
-        Content = "Classic-doable only", FontSize = 11, VerticalAlignment = VerticalAlignment.Center,
+        Content = "Classic-doable only",
+        FontSize = DesignTokens.Spec(Role.Caption).Size,
+        VerticalAlignment = VerticalAlignment.Center,
     };
-    private Control? _modeStripControl;
 
     public QuestsWindow(IQuestsHost main)
     {
         _main = main;
         _settings = main.Settings;
         Title = "EQBuddy Quest Tracker";
-        Width = 530;
+        Width = 880;
         SizeToContent = SizeToContent.Height;
         WindowDecorations = global::Avalonia.Controls.WindowDecorations.None;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
@@ -141,13 +176,12 @@ public sealed class QuestsWindow : Window
         CanResize = false;
 
         _classBtn = ActionButton("Any class");
-        _classBtn.FontSize = 11;
-        _classBtn.Padding = new Thickness(8, 2);
         ToolTip.SetTip(_classBtn, "Pick your class(es) — quests any of them can do stay visible");
         Content = BuildContent();
         // Base width so Ctrl+wheel shrinks the WINDOW, not just its text (#186).
         WindowZoom.Attach(this, "quests", _settings, baseWidth: Width);
         BuildClassChecks();
+        BuildModeStrip();
         _eraCombo.Items.Add("Any era");
         foreach (var era in QuestEraLadder.Eras) _eraCombo.Items.Add($"≤ {era}");
         var savedEra = Array.IndexOf(QuestEraLadder.Eras, _settings.QuestEraFilter);
@@ -156,7 +190,6 @@ public sealed class QuestsWindow : Window
         _stateCombo.SelectedIndex = 0;
         _eraCombo.SelectionChanged += (_, _) => OnEraChanged();
         _stateCombo.SelectionChanged += (_, _) => OnStateChanged();
-        ApplyModeVisual();
 
         PointerPressed += OnDrag;
         Opened += (_, _) =>
@@ -194,28 +227,31 @@ public sealed class QuestsWindow : Window
     private Control BuildContent()
     {
         _titleText.Foreground = AppTheme.AccentBrush;
-        var close = AppTheme.IconButton("✕", "Close");
+        _titleText.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
+        var titleRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center,
+        };
+        titleRow.Children.Add(DesignSystem.Icon("Quest", "AccentBrush", size: 15));
+        titleRow.Children.Add(_titleText);
+        var close = DesignSystem.IconButton("Close", "Close", Close);
         close.HorizontalAlignment = HorizontalAlignment.Right;
-        close.Click += (_, _) => Close();
-        var header = new Grid { Margin = new Thickness(16, 16, 16, 6) };
-        header.Children.Add(_titleText);
+        var header = new Grid { Margin = CardPad };
+        header.Children.Add(titleRow);
         header.Children.Add(close);
 
-        // One search box is the way in (David, 2026-08-15). The "+ I have this"
-        // item/quantity/button row that used to sit here won the eye and hid the search
-        // completely — "it exists but is so compressed I missed it". Declaring owned
-        // items by hand is also the worse half of that trade: /outputfile inventory reads
-        // bags AND bank exactly, and the ⧉ beside the box hands over the command.
-        var searchRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        _filterBox.FontSize = 13;
-        _filterBox.Padding = new Thickness(6, 4);
+        // One search box is the way in (David, 2026-08-15), and it now spans the header,
+        // which is the whole point: it was "so compressed I missed it" sharing a row with
+        // a button. Declaring owned items by hand is the worse half of that trade —
+        // /outputfile inventory reads bags AND bank exactly, and the button beside the box
+        // hands over the command.
+        var searchRow = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceS),
+        };
         // Avalonia has a real watermark, so no overlay is needed (WPF's needs one).
-        _filterBox.Watermark = "🔍  Search a reward, item, quest, or NPC…";
-        ToolTip.SetTip(_filterBox,
-            "Search the whole catalog by anything you know — the reward you want "
-            + "(\"Wakizashi of the Frozen Skies\"), a turn-in item, the quest name, the "
-            + "quest giver, a zone. Search ignores the class/era/state filters. "
-            + "Pin 📌 a result to track it.");
+        _filterBox.Watermark = "Search a reward, item, quest, or NPC…";
         // Rebuild after typing STOPS, not per keystroke — the rebuild is synchronous and
         // "all" hands it the whole catalog, so nine characters meant nine full rebuilds
         // and an apparently hung window (David, 2026-08-15). Mirrors WPF's debounce.
@@ -233,8 +269,9 @@ public sealed class QuestsWindow : Window
             return t;
         }
         searchRow.Children.Add(_filterBox);
-        var scanBtn = ActionButton("⧉ scan bags");
-        scanBtn.Margin = new Thickness(6, 0, 0, 0);
+        var scanBtn = ActionButton("");
+        scanBtn.Content = DesignSystem.IconLabel("Copy", "scan bags");
+        scanBtn.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
         ToolTip.SetTip(scanBtn,
             "Copy /outputfile inventory — paste it in the game's chat, and EQBuddy reads "
             + "what your bags and bank already hold. The held tab then shows every quest "
@@ -245,8 +282,7 @@ public sealed class QuestsWindow : Window
 
         var filterRow = new Grid
         {
-            Margin = new Thickness(0, 6, 0, 0),
-            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,Auto,*"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,Auto,Auto,Auto,*"),
         };
         ToolTip.SetTip(_eraCombo,
             "Hide quests from later eras than the world has (unmarked quests always show)");
@@ -255,37 +291,32 @@ public sealed class QuestsWindow : Window
         // open / ready / completed.
         ToolTip.SetTip(_stateCombo,
             "Any state · open (not yet completed) · ready (turn-ins in hand) · done (marked completed)");
-        _stateCombo.Margin = new Thickness(6, 0, 0, 0);
+        _stateCombo.Margin = Gap;
         Grid.SetColumn(_stateCombo, 1);
         filterRow.Children.Add(_stateCombo);
         // Multiclass filter (Legends: up to 3 active classes): a checkbox flyout
         // (WPF's Popup, StaysOpen=false → light dismiss), selection remembered
         // per character.
-        _classBtn.Margin = new Thickness(6, 0, 0, 0);
+        _classBtn.Margin = Gap;
         _classBtn.Flyout = new Flyout
         {
             Placement = PlacementMode.Bottom,
             Content = new Border
             {
                 Background = AppTheme.PopupBrush,
-                CornerRadius = new CornerRadius(6),
+                CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
                 BorderBrush = AppTheme.BorderBrush,
                 BorderThickness = new Thickness(1),
-                Padding = new Thickness(10, 8),
+                Padding = CardPad,
                 Child = _classCheckPanel,
             },
         };
         Grid.SetColumn(_classBtn, 2);
         filterRow.Children.Add(_classBtn);
-        var modeStrip = ModeStrip();
-        modeStrip.HorizontalAlignment = HorizontalAlignment.Right;
-        Grid.SetColumn(modeStrip, 3);
-        filterRow.Children.Add(modeStrip);
-        _modeStripControl = modeStrip;
-        // Shares the last column with the mode strip: the two are never visible at once,
-        // because one is a catalog control and the other is the Epic tab's own lens.
+        // Shares a row with the mode strip: the two are never visible at once, because
+        // one is a catalog control and the other is the Epic tab's own lens.
         _classicOnlyCheck.Foreground = AppTheme.DimBrush;
-        _classicOnlyCheck.Margin = new Thickness(8, 0, 0, 0);
+        _classicOnlyCheck.Margin = Gap;
         _classicOnlyCheck.IsVisible = false;
         _classicOnlyCheck.IsChecked = _settings.EpicQuestClassicOnly;
         ToolTip.SetTip(_classicOnlyCheck,
@@ -300,32 +331,58 @@ public sealed class QuestsWindow : Window
         };
         Grid.SetColumn(_classicOnlyCheck, 3);
         filterRow.Children.Add(_classicOnlyCheck);
+        Grid.SetColumn(_modeStrip, 4);
+        filterRow.Children.Add(_modeStrip);
 
-        var entry = new StackPanel { Margin = new Thickness(16, 0, 16, 4) };
+        var entry = new StackPanel { Margin = CardPad };
         entry.Children.Add(_tabStrip);
         entry.Children.Add(searchRow);
-        entry.Children.Add(_classStrip);
         entry.Children.Add(filterRow);
+        entry.Children.Add(_classStrip);
 
-        _bodyScroll.Margin = new Thickness(10, 2, 4, 0);
+        // LIST + DETAIL. On the Epic and Sky tabs there is nothing to select — those are
+        // fixed checklists, not a catalog — so the detail column collapses and the list
+        // takes the whole width.
         _bodyScroll.Content = _questsPanel;
+        var master = new DockPanel();
+        DockPanel.SetDock(_summaryRow, Dock.Top);
+        master.Children.Add(_summaryRow);
+        master.Children.Add(_bodyScroll);
 
-        var footer = new StackPanel { Margin = new Thickness(16, 8, 16, 14) };
-        footer.Children.Add(AppTheme.DimText(
-            "Counts what you loot, minus what the log sees leave (sales, merges, destroys), " +
-            "plus whatever ⧉ scan bags reads from your bags and bank. Hand-ins aren't in the " +
-            "log — click ✔ ready when you " +
-            "turn in, or right-click an item row to clear it. Click a quest name for the " +
-            "full wiki walkthrough."));
+        _detailScroll.Content = _detailPane;
+        _detailCard = new Border
+        {
+            Background = AppTheme.PanelBrush,
+            BorderBrush = AppTheme.HairlineBrush,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+            Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0),
+            Child = _detailScroll,
+        };
+        _bodyGrid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("400,*"),
+            Margin = CardPad,
+        };
+        _bodyGrid.Children.Add(master);
+        Grid.SetColumn(_detailCard, 1);
+        _bodyGrid.Children.Add(_detailCard);
+
         // The accuracy contract, said plainly (David, 2026-08-11): we mirror the wiki,
         // we're exactly as right as it is, and the door to fixing BOTH swings from here.
-        footer.Children.Add(AppTheme.DimText(
+        var footer = new StackPanel { Margin = CardPad };
+        footer.Children.Add(Footnote(
+            "Counts what you loot, minus what the log sees leave (sales, merges, destroys), " +
+            "plus whatever scan bags reads from your bags and bank. Hand-ins aren't in the " +
+            "log — use the detail pane's turn-in button, or right-click an item row to clear it."));
+        var wiki = Footnote(
             "Every quest here mirrors eqlwiki.com — verified item-for-item against it, so " +
-            "EQBuddy is exactly as accurate as the wiki is today. Spot something wrong? ⚑ " +
-            "on the card tells us; fixing the wiki page itself fixes it for everyone (the " +
-            "catalog re-harvests weekly). Your own discoveries flow back too: Drops by " +
-            "Creature marks wiki-unknown drops in red with a paste-ready page edit.",
-            new Thickness(0, 6, 0, 0)));
+            "EQBuddy is exactly as accurate as the wiki is today. Spot something wrong? The " +
+            "report control on the detail pane tells us; fixing the wiki page itself fixes it " +
+            "for everyone (the catalog re-harvests weekly). Your own discoveries flow back " +
+            "too: Drops by Creature marks wiki-unknown drops in red with a paste-ready page edit.");
+        wiki.Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0);
+        footer.Children.Add(wiki);
 
         BuildUndoBar();
 
@@ -338,21 +395,83 @@ public sealed class QuestsWindow : Window
         layout.Children.Add(header);
         Grid.SetRow(entry, 1);
         layout.Children.Add(entry);
-        Grid.SetRow(_bodyScroll, 2);
-        layout.Children.Add(_bodyScroll);
+        Grid.SetRow(_bodyGrid, 2);
+        layout.Children.Add(_bodyGrid);
         Grid.SetRow(_undoBar, 3);
         layout.Children.Add(_undoBar);
         Grid.SetRow(footer, 4);
         layout.Children.Add(footer);
-        // Same chrome family as Spawns: the body scrolls, the title row stays reachable.
         return new Border
         {
             Background = AppTheme.BgBrush,
-            BorderBrush = AppTheme.BorderBrush,
+            BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
+            CornerRadius = new CornerRadius(DesignTokens.RadiusPanel),
             Child = layout,
         };
+    }
+
+    private static Thickness CardPad => new(
+        DesignTokens.SpaceL, DesignTokens.SpaceM, DesignTokens.SpaceL, DesignTokens.SpaceM);
+
+    private static Thickness Gap => new(DesignTokens.SpaceS, 0, 0, 0);
+
+    private static TextBlock Footnote(string text)
+    {
+        var block = DesignSystem.Text(Role.Metadata, text);
+        block.TextWrapping = TextWrapping.Wrap;
+        return block;
+    }
+
+    // ---- chips: the one primitive behind the tabs, the class lens and the mode strip ----
+
+    /// <summary>A selectable pill. Tabs, the class lens and the mode strip were three
+    /// hand-built shapes doing one job — a tile with its own radius and padding, a chip
+    /// with another, and five bare TextBlocks with a background. One primitive means
+    /// picking a tab and picking a mode LOOK like the same kind of act, because they
+    /// are.</summary>
+    private sealed class Chip : Border
+    {
+        private readonly TextBlock _label;
+        private readonly TextBlock? _badge;
+        public object Key { get; }
+
+        public Chip(string text, string? badge, object key, string? tip, Action onClick)
+        {
+            Key = key;
+            var content = new StackPanel { Orientation = Orientation.Horizontal };
+            _label = DesignSystem.Text(Role.Caption, text);
+            content.Children.Add(_label);
+            if (badge is { Length: > 0 })
+            {
+                _badge = DesignSystem.Text(Role.Metadata, badge);
+                _badge.Margin = new Thickness(DesignTokens.SpaceS, 1, 0, 0);
+                content.Children.Add(_badge);
+            }
+            Child = content;
+            CornerRadius = new CornerRadius(DesignTokens.RadiusPill);
+            Padding = new Thickness(DesignTokens.SpaceL, DesignTokens.SpaceXxs);
+            Margin = new Thickness(0, 0, DesignTokens.SpaceXs, DesignTokens.SpaceXs);
+            BorderThickness = new Thickness(1);
+            Cursor = new Cursor(StandardCursorType.Hand);
+            if (tip is not null) ToolTip.SetTip(this, tip);
+            PointerPressed += (_, e) => { e.Handled = true; onClick(); };
+        }
+
+        /// <summary>Selected is the ONE thing on a strip allowed to carry the accent
+        /// (docs/DesignSystem.md §2.1): the accent fills the pill and the text inverts
+        /// onto it. A strip where three things are gold selects nothing.</summary>
+        public void SetSelected(bool on)
+        {
+            Background = on ? AppTheme.AccentBrush : AppTheme.RaisedBrush;
+            BorderBrush = on ? AppTheme.AccentBrush : AppTheme.HairlineBrush;
+            _label.Foreground = on ? AppTheme.BgBrush : AppTheme.TextBrush;
+            if (_badge is not null)
+            {
+                _badge.Foreground = on ? AppTheme.BgBrush : AppTheme.DimBrush;
+                _badge.Opacity = on ? 0.85 : 1;
+            }
+        }
     }
 
     /// <summary>Build the strip from Core's <see cref="QuestSurface"/> so this window,
@@ -361,49 +480,51 @@ public sealed class QuestsWindow : Window
     private void BuildTabs()
     {
         _tabStrip.Children.Clear();
-        _tabTiles.Clear();
+        _tabChips.Clear();
         foreach (var header in QuestSurface.Tabs(EpicCounts(), SkyCounts()))
         {
-            // Tiles, not text (David, 2026-08-15: "I couldn't tell they were tabs at
-            // first glance"). Colour comes from the live theme brushes, which are
-            // mutated in place on a swap, so a tile follows the player's palette.
-            var label = new TextBlock
-            {
-                Text = header.Label, FontSize = 12.5, FontWeight = FontWeight.SemiBold,
-            };
-            var badge = new TextBlock
-            {
-                Text = header.Badge ?? "", FontSize = 10.5, Margin = new Thickness(7, 1, 0, 0),
-                IsVisible = header.Badge is not null,
-            };
-            var content = new StackPanel { Orientation = Orientation.Horizontal };
-            content.Children.Add(label);
-            content.Children.Add(badge);
-            var tile = new Border
-            {
-                Child = content,
-                CornerRadius = new CornerRadius(7),
-                Padding = new Thickness(12, 5),
-                Margin = new Thickness(0, 0, 6, 0),
-                BorderThickness = new Thickness(1),
-                Cursor = new Cursor(StandardCursorType.Hand),
-            };
             var tab = header.Tab;
-            tile.PointerPressed += (_, e) =>
+            var chip = new Chip(header.Label, header.Badge, tab, null, () =>
             {
-                e.Handled = true;
                 _tab = tab;
                 ApplyTabVisual();
                 Refresh(force: true);
-            };
-            _tabStrip.Children.Add(tile);
-            _tabTiles.Add((tile, label, badge, tab));
+            });
+            _tabStrip.Children.Add(chip);
+            _tabChips.Add(chip);
         }
         // Chips first, THEN the paint: ApplyTabVisual colours the chip list, so colouring
         // before rebuilding it would leave every fresh chip unstyled — including the
         // selected one, which is the whole signal.
         BuildClassStrip();
         ApplyTabVisual();
+    }
+
+    private void BuildModeStrip()
+    {
+        foreach (var (key, tip) in new[]
+        {
+            ("mine", "Quests matching your items and pins"),
+            ("zone", "Everything you can work on in the zone you're in"),
+            ("held", "Quests you could turn in with what your bags already hold — " +
+                $"from the game's {GameCommands.OutputfileInventory} dump. In game, type " +
+                $"{GameCommands.OutputfileInventory}, and this tab reads the file the game writes."),
+            ("done", "Quests you've marked completed — every quest can be marked done, so " +
+                "returning players can check off history"),
+            ("all", "The whole quest catalog"),
+        })
+        {
+            var mode = key;
+            var chip = new Chip(key, null, key, tip, () =>
+            {
+                _mode = mode;
+                ApplyModeVisual();
+                Refresh(force: true);
+            });
+            _modeStrip.Children.Add(chip);
+            _modeChips.Add(chip);
+        }
+        ApplyModeVisual();
     }
 
     /// <summary>Any · one of your classes. The class picker still decides WHICH classes
@@ -426,27 +547,13 @@ public sealed class QuestsWindow : Window
 
         void Add(string? cls, string text)
         {
-            var label = new TextBlock { Text = text, FontSize = 11 };
-            var chip = new Border
-            {
-                Child = label,
-                CornerRadius = new CornerRadius(11),
-                Padding = new Thickness(11, 3),
-                Margin = new Thickness(0, 0, 5, 0),
-                BorderThickness = new Thickness(1),
-                Cursor = new Cursor(StandardCursorType.Hand),
-            };
-            ToolTip.SetTip(chip, cls is null
-                ? "Every class you play"
-                : $"Show only {cls} — quests, Epic and Plane of Sky alike");
-            chip.PointerPressed += (_, e) =>
-            {
-                e.Handled = true;
-                _classLens = cls;
-                Refresh(force: true);
-            };
+            var chip = new Chip(text, null, cls ?? "",
+                cls is null
+                    ? "Every class you play"
+                    : $"Show only {cls} — quests, Epic and Plane of Sky alike",
+                () => { _classLens = cls; Refresh(force: true); });
             _classStrip.Children.Add(chip);
-            _classChips.Add((chip, label, cls));
+            _classChips.Add(chip);
         }
     }
 
@@ -464,35 +571,27 @@ public sealed class QuestsWindow : Window
 
     private void ApplyTabVisual()
     {
-        foreach (var (tile, label, badge, tab) in _tabTiles)
-        {
-            var on = tab == _tab;
-            // Selected: the accent fills the tile and the text inverts onto it, which is
-            // what makes a tab read as a tab at a glance. Unselected still gets a filled
-            // panel and a border, so the row looks like a set of controls rather than a
-            // line of prose.
-            tile.Background = on ? AppTheme.AccentBrush : AppTheme.PanelHoverBrush;
-            tile.BorderBrush = on ? AppTheme.AccentBrush : AppTheme.BorderBrush;
-            label.Foreground = on ? AppTheme.BgBrush : AppTheme.TextBrush;
-            badge.Foreground = on ? AppTheme.BgBrush : AppTheme.DimBrush;
-            badge.Opacity = on ? 0.85 : 1;
-        }
-        foreach (var (chip, label, cls) in _classChips)
-        {
-            var on = cls == _classLens;
-            chip.Background = on ? AppTheme.AccentBrush : AppTheme.PanelHoverBrush;
-            chip.BorderBrush = on ? AppTheme.AccentBrush : AppTheme.BorderBrush;
-            label.Foreground = on ? AppTheme.BgBrush : AppTheme.DimBrush;
-        }
+        foreach (var chip in _tabChips) chip.SetSelected((QuestTab)chip.Key == _tab);
+        foreach (var chip in _classChips)
+            chip.SetSelected(((string)chip.Key is { Length: > 0 } c ? c : null) == _classLens);
         // Era, state and the mode strip are catalog concepts — meaningless against a
         // fixed checklist. The CLASS picker is not: David, 2026-08-15, "we may be
         // helping a friend", so every tab must be able to reach a class you don't play.
         var catalogOnly = _tab == QuestTab.General;
         _eraCombo.IsVisible = catalogOnly;
         _stateCombo.IsVisible = catalogOnly;
-        if (_modeStripControl is { } strip) strip.IsVisible = catalogOnly;
+        _modeStrip.IsVisible = catalogOnly;
         _classicOnlyCheck.IsVisible = _tab == QuestTab.Epic;
         _classBtn.IsVisible = true;
+        // A checklist has nothing to select, so the pane would only ever be empty. Give
+        // its width back to the rows instead.
+        _detailCard.IsVisible = catalogOnly;
+        _bodyGrid.ColumnDefinitions = new ColumnDefinitions(catalogOnly ? "400,*" : "*,0");
+    }
+
+    private void ApplyModeVisual()
+    {
+        foreach (var chip in _modeChips) chip.SetSelected((string)chip.Key == _mode);
     }
 
     /// <summary>The Epic and Sky tabs. Rows come straight from the same settings lists
@@ -544,15 +643,10 @@ public sealed class QuestsWindow : Window
 
         if (matching.Count == 0)
         {
-            _questsPanel.Children.Add(new TextBlock
-            {
-                Text = filter.Length > 0
-                    ? "Nothing on this checklist matches that search."
-                    : "This checklist is empty — it fills in from the wiki catalog and "
-                      + "your own progress. ⧉ scan bags or import achievements to catch it up.",
-                FontSize = 12, TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(6, 8, 0, 8), Foreground = AppTheme.DimBrush,
-            });
+            _questsPanel.Children.Add(EmptyState(filter.Length > 0
+                ? "Nothing on this checklist matches that search."
+                : "This checklist is empty — it fills in from the wiki catalog and your own "
+                  + "progress. Scan bags or import achievements to catch it up."));
             return;
         }
 
@@ -561,36 +655,32 @@ public sealed class QuestsWindow : Window
             // The heading opens the wiki page for the reward it names — the "way to view
             // details of sky quests" #184 asked back for.
             var rewardName = group.Heading.Split('·').Last().Trim();
-            var headingText = new TextBlock
-            {
-                Text = $"{group.Heading}   {group.Done}/{group.Total}"
-                       + (group.Note is { } n ? $"  · {n}" : ""),
-                FontSize = 11.5, FontWeight = FontWeight.SemiBold,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(2, 8, 0, 3), Foreground = AppTheme.AccentBrush,
-                Cursor = new Cursor(StandardCursorType.Hand),
-            };
+            var headingText = DesignSystem.Text(Role.TitleSection,
+                $"{group.Heading}   {group.Done}/{group.Total}"
+                + (group.Note is { } n ? $"  · {n}" : ""));
+            headingText.TextWrapping = TextWrapping.Wrap;
+            headingText.Margin = new Thickness(
+                DesignTokens.SpaceXxs, DesignTokens.SpaceL, 0, DesignTokens.SpaceXs);
+            headingText.Foreground = AppTheme.AccentBrush;
             ToolTip.SetTip(headingText, "Open the wiki page for this quest");
-            headingText.PointerReleased += (_, _) => OpenUrl(EqlWiki.PageUrl(rewardName));
+            OnClick(headingText, () => OpenUrl(EqlWiki.PageUrl(rewardName)));
             _questsPanel.Children.Add(headingText);
 
             foreach (var row in group.Rows)
             {
                 if (!setters.TryGetValue(row.Id, out var set)) continue;
-                var text = new TextBlock
-                {
-                    FontSize = 12, TextWrapping = TextWrapping.Wrap,
+                var text = DesignSystem.Text(Role.Body,
                     // The drop location on every row, and the * on a tick EQBuddy placed
                     // itself — both were in the model and neither was drawn.
-                    Text = (row.Detail.Length > 0 ? $"{row.Title}   {row.Detail}" : row.Title)
-                           + (row.Unassigned ? QuestChecklistLayout.UnassignedMark : ""),
-                    Foreground = row.Acquired ? AppTheme.DimBrush : AppTheme.TextBrush,
-                };
+                    (row.Detail.Length > 0 ? $"{row.Title}   {row.Detail}" : row.Title)
+                    + (row.Unassigned ? QuestChecklistLayout.UnassignedMark : ""));
+                text.TextWrapping = TextWrapping.Wrap;
+                text.Foreground = row.Acquired ? AppTheme.DimBrush : AppTheme.TextBrush;
                 var check = new CheckBox
                 {
                     Content = text,
                     IsChecked = row.Acquired,
-                    Margin = new Thickness(10, 1, 0, 1),
+                    Margin = new Thickness(DesignTokens.SpaceM, 1, 0, 1),
                 };
                 if (row.Unassigned)
                     ToolTip.SetTip(check,
@@ -612,55 +702,9 @@ public sealed class QuestsWindow : Window
         }
     }
 
-    // mine = your items + 📌 pins · zone = doable where you're standing ·
-    // all = the whole catalog
-    private Border ModeStrip()
-    {
-        var strip = new StackPanel { Orientation = Orientation.Horizontal };
-        foreach (var (key, text, tip) in new[]
-        {
-            ("mine", "mine", "Quests matching your items and pins"),
-            ("zone", "zone", "Everything you can work on in the zone you're in"),
-            ("held", "held", "Quests you could turn in with what your bags already hold — " +
-                $"from the game's {GameCommands.OutputfileInventory} dump. In game, type " +
-                $"{GameCommands.OutputfileInventory}, and this tab reads the file the game writes."),
-            ("done", "done", "Quests you've marked completed — every card has a ✓ done " +
-                "control, so returning players can check off history"),
-            ("all", "all", "The whole quest catalog"),
-        })
-        {
-            var tab = new TextBlock
-            {
-                Text = text, FontSize = 10.5, Padding = new Thickness(7, 1),
-                Cursor = new Cursor(StandardCursorType.Hand),
-            };
-            ToolTip.SetTip(tab, tip);
-            var mode = key;
-            tab.PointerPressed += (_, e) =>
-            {
-                e.Handled = true;
-                _mode = mode;
-                ApplyModeVisual();
-                Refresh(force: true);
-            };
-            _modeTabs.Add((tab, key));
-            strip.Children.Add(tab);
-        }
-        return new Border
-        {
-            BorderBrush = AppTheme.BorderBrush,
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(6),
-            Margin = new Thickness(6, 0, 0, 0),
-            VerticalAlignment = VerticalAlignment.Center,
-            Padding = new Thickness(1),
-            Child = strip,
-        };
-    }
-
-    /// <summary>Jump the window to one item's quests (the 🗺 badge in the Loot views):
+    /// <summary>Jump the window to one item's quests (the map badge in the Loot views):
     /// browse mode + the item as filter, so the quests appear even before any overlap
-    /// and each carries its 📌 as the invitation to track.</summary>
+    /// and each carries its pin as the invitation to track.</summary>
     public void FilterToItem(string item)
     {
         _mode = "all";
@@ -680,7 +724,7 @@ public sealed class QuestsWindow : Window
         Refresh(force: true);
     }
 
-    /// <summary>Programmatic mode switch (screenshot hook + the 🗺 badge path).</summary>
+    /// <summary>Programmatic mode switch (screenshot hook + the map badge path).</summary>
     internal void SetMode(string mode)
     {
         _mode = mode is "zone" or "all" or "held" or "done" ? mode : "mine";
@@ -688,16 +732,9 @@ public sealed class QuestsWindow : Window
         Refresh(force: true);
     }
 
-    private void ApplyModeVisual()
-    {
-        foreach (var (tab, key) in _modeTabs)
-        {
-            tab.Foreground = key == _mode ? AppTheme.AccentBrush : AppTheme.DimBrush;
-            // WPF uses ToggleHighlightBrush; this side's AppTheme doesn't carry that
-            // key, and PanelHoverBrush is the same "quiet emphasis" tint.
-            tab.Background = key == _mode ? AppTheme.PanelHoverBrush : Brushes.Transparent;
-        }
-    }
+    /// <summary>The row the detail pane is showing, by quest name — so a refresh that
+    /// rebuilds every row keeps the reader where they were.</summary>
+    internal string SelectedQuest => _selected;
 
     // ---- multiclass filter (Legends: up to three active classes; David 2026-08-07) ----
 
@@ -709,10 +746,7 @@ public sealed class QuestsWindow : Window
         foreach (var cls in QuestClassFilter.Classes)
         {
             var check = new CheckBox { Margin = new Thickness(0, 1, 0, 1) };
-            check.Content = new TextBlock
-            {
-                Text = cls, FontSize = 12, Foreground = AppTheme.TextBrush,
-            };
+            check.Content = DesignSystem.Text(Role.Body, cls);
             check.IsCheckedChanged += (_, _) => OnClassCheckChanged();
             _classChecks.Add(check);
             _classCheckPanel.Children.Add(check);
@@ -739,7 +773,11 @@ public sealed class QuestsWindow : Window
         _undoBar.Background = AppTheme.PopupBrush;
         _undoBar.BorderBrush = AppTheme.BorderBrush;
         _undoText.Foreground = AppTheme.TextBrush;
-        var btn = new Button { Content = "↶ undo", FontSize = 11, Padding = new Thickness(8, 2), Margin = new Thickness(8, 0, 0, 0) };
+        _undoText.TextTrimming = TextTrimming.CharacterEllipsis;
+        _undoText.VerticalAlignment = VerticalAlignment.Center;
+        var btn = ActionButton("");
+        btn.Content = DesignSystem.IconLabel("Undo", "undo");
+        btn.Margin = new Thickness(DesignTokens.SpaceM, 0, 0, 0);
         ToolTip.SetTip(btn, "Put the last tick back the way it was (Ctrl+Z)");
         btn.Click += (_, _) => Undo();
         var grid = new Grid();
@@ -835,8 +873,8 @@ public sealed class QuestsWindow : Window
         var key = _main.QuestCharacterKey;
         var character = key.Length > 0 ? key.Split('_')[0] : "";
         _titleText.Text = character.Length > 0
-            ? $"🗺 Quest Tracker — {char.ToUpper(character[0])}{character[1..]}"
-            : "🗺 Quest Tracker";
+            ? $"Quest Tracker — {char.ToUpper(character[0])}{character[1..]}"
+            : "Quest Tracker";
 
         var owned = _main.QuestLedger?.For(key)
             ?? new Dictionary<string, QuestLedgerStore.Entry>(StringComparer.OrdinalIgnoreCase);
@@ -869,6 +907,7 @@ public sealed class QuestsWindow : Window
             _classLens = null;
 
         var sig = $"{key}|{filter}|{_tab}|{_mode}|st:{_state}|{string.Join("+", classes)}|inf:{inferred}|{_settings.QuestEraFilter}|{_main.CurrentZoneName}" +
+            $"|sel:{_selected}" +
             $"|{string.Join(";", tracked.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", hidden.Order(StringComparer.OrdinalIgnoreCase))}" +
             $"|{string.Join(";", completed.Select(kv => $"{kv.Key}:{kv.Value}"))}" +
@@ -877,25 +916,21 @@ public sealed class QuestsWindow : Window
         _signature = sig;
 
         _questsPanel.Children.Clear();
-        _rendered = 0;
+        _rows.Clear();
+        _renderedCount = 0;
         _suppressed = 0;
+        _summaryRow.IsVisible = false;
         BuildTabs();
         if (_tab != QuestTab.General)
         {
+            _detailPane.Children.Clear();
             RenderChecklist(_tab, filter, classes);
             return;
         }
         if (inferred.Length > 0)
-        {
-            var note = new TextBlock
-            {
-                Text = $"🎭 Filtering for {inferred} (inferred from your most-used skills — " +
-                    "pick classes above to override; inference follows you if you swap)",
-                FontSize = 10.5, Margin = new Thickness(2, 0, 0, 4),
-                TextWrapping = TextWrapping.Wrap, Foreground = AppTheme.DimBrush,
-            };
-            _questsPanel.Children.Add(note);
-        }
+            _questsPanel.Children.Add(Note(
+                $"Filtering for {inferred} (inferred from your most-used skills — " +
+                "pick classes above to override; inference follows you if you swap)", "Info"));
 
         var era = _settings.QuestEraFilter;
         // Era and class gate separately since 2026-08-11 (David's Crushbone session):
@@ -920,25 +955,17 @@ public sealed class QuestsWindow : Window
             return new QuestMatch(quest, progress.Count(p => p.Have > 0), progress.Count,
                 progress, tracked.Contains(quest.Name));
         }
-        // Render cap and its "+N more" note mirror WPF exactly (#quest-search perf,
-        // David 2026-08-15): "all" offers the whole 1,172-quest catalog, and building
-        // that many cards per keystroke hangs the window.
-        void AddCard(QuestMatch m)
+        void AddRow(QuestMatch m)
         {
-            if (_rendered >= RenderCap) { _suppressed++; return; }
-            _rendered++;
-            _questsPanel.Children.Add(
-                Card(m, hidden.Contains(m.Quest.Name), completed.GetValueOrDefault(m.Quest.Name)));
+            if (_renderedCount >= RenderCap) { _suppressed++; return; }
+            _renderedCount++;
+            var entry = new RowEntry(m, hidden.Contains(m.Quest.Name),
+                completed.GetValueOrDefault(m.Quest.Name));
+            entry.Element = Row(entry);
+            _rows.Add(entry);
+            _questsPanel.Children.Add(entry.Element);
         }
-        void EmptyNote(string text)
-        {
-            var note = new TextBlock
-            {
-                Text = text, FontSize = 12, TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(6, 8, 0, 8), Foreground = AppTheme.DimBrush,
-            };
-            _questsPanel.Children.Add(note);
-        }
+        void EmptyNote(string text) => _questsPanel.Children.Add(EmptyState(text));
 
         // A typed search reads the WHOLE catalog, whatever tab is active (David,
         // 2026-08-10: "type an item name and see quests using that; type a quest
@@ -950,25 +977,22 @@ public sealed class QuestsWindow : Window
             // A search answers with the WHOLE catalog — no class/era/state gating
             // (David's live catch, 2026-08-11: the Blue Orc Head badge found
             // "nothing" because The Falchion is Paladin and his class filter
-            // wasn't). Each card states its own class and era; the reader decides.
+            // wasn't). Each row states its own class and era; the reader decides.
             var found = QuestSearch.Find(_main.QuestCatalog, filter)
                 .Select(Progressed)
                 .OrderByDescending(m => m.Tracked)
                 .ThenByDescending(m => m.Fraction)
                 .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            var scope = new TextBlock
-            {
-                Text = $"🔎 {found.Count} match{(found.Count == 1 ? "" : "es")} in the whole catalog — names, turn-in items, rewards, NPCs, zones. " +
-                    "Search ignores your class/era/state filters; each card says whose it is.",
-                FontSize = 11, Margin = new Thickness(2, 0, 0, 5),
-                TextWrapping = TextWrapping.Wrap, Foreground = AppTheme.DimBrush,
-            };
-            _questsPanel.Children.Add(scope);
-            foreach (var m in found) AddCard(m);
+            _questsPanel.Children.Add(Note(
+                $"{found.Count} match{(found.Count == 1 ? "" : "es")} in the whole catalog — names, " +
+                "turn-in items, rewards, NPCs, zones. Search ignores your class/era/state filters.",
+                "Search"));
+            foreach (var m in found) AddRow(m);
             if (found.Count == 0)
                 EmptyNote("Nothing matches. Searches cover quest names, turn-in items, " +
                           "rewards, quest givers, and zones — try fewer words.");
+            FinishRender();
             return;
         }
 
@@ -980,7 +1004,7 @@ public sealed class QuestsWindow : Window
                              .OrderBy(q => q.Name, StringComparer.OrdinalIgnoreCase)
                              .Select(Progressed)
                              .Where(StateOk))
-                    AddCard(m);
+                    AddRow(m);
                 break;
 
             case "zone" when _main.CurrentZoneName.Length == 0:
@@ -992,13 +1016,7 @@ public sealed class QuestsWindow : Window
             {
                 // Everything workable where you stand — including dialogue chains the
                 // item parser found nothing for (David: "not everything is item driven").
-                var zoneLabel = new TextBlock
-                {
-                    Text = $"📍 {_main.CurrentZoneName}", FontSize = 11,
-                    FontWeight = FontWeight.SemiBold, Margin = new Thickness(2, 0, 0, 5),
-                    Foreground = AppTheme.WarnBrush,
-                };
-                _questsPanel.Children.Add(zoneLabel);
+                _questsPanel.Children.Add(Note(_main.CurrentZoneName, "Location", "WarnBrush"));
                 var zoneQuests = _main.QuestCatalog.Quests
                     .Where(q => q.TouchesZone(_main.CurrentZoneName)
                                 && MatchesFilter(q, filter) && ClassOk(q))
@@ -1008,7 +1026,7 @@ public sealed class QuestsWindow : Window
                     .ThenByDescending(m => m.Fraction)
                     .ThenBy(m => m.Quest.Name, StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                foreach (var m in zoneQuests) AddCard(m);
+                foreach (var m in zoneQuests) AddRow(m);
                 if (zoneQuests.Count == 0)
                     EmptyNote($"No catalogued quests touch {_main.CurrentZoneName}.");
                 break;
@@ -1024,10 +1042,10 @@ public sealed class QuestsWindow : Window
                 var snap = _main.LatestInventory(refresh: force);
                 Button CopyCmd()
                 {
-                    var b = ActionButton($"⧉ copy  {GameCommands.OutputfileInventory}");
-                    b.FontSize = 11;
+                    var b = ActionButton("");
+                    b.Content = DesignSystem.IconLabel("Copy", GameCommands.OutputfileInventory);
                     b.HorizontalAlignment = HorizontalAlignment.Left;
-                    b.Margin = new Thickness(0, 4, 0, 6);
+                    b.Margin = new Thickness(0, DesignTokens.SpaceXs, 0, DesignTokens.SpaceS);
                     ToolTip.SetTip(b,
                         "Copies the command — paste it into the game's chat and the game " +
                         "writes your inventory file; this tab reads it. Re-run any time " +
@@ -1039,10 +1057,11 @@ public sealed class QuestsWindow : Window
                             if (Clipboard is { } cb)
                             {
                                 await cb.SetTextAsync(GameCommands.OutputfileInventory);
-                                b.Content = "✓ copied — paste in game chat";
+                                b.Content = DesignSystem.IconLabel(
+                                    "Check", "copied — paste in game chat", "GoodBrush");
                             }
                         }
-                        catch (Exception ex) { App.LogError(ex); }   // clipboard momentarily held by another app
+                        catch (Exception ex) { App.LogError(ex); }   // clipboard held elsewhere
                     };
                     return b;
                 }
@@ -1055,16 +1074,11 @@ public sealed class QuestsWindow : Window
                     break;
                 }
                 var invAge = DateTime.Now - snap.WrittenAt;
-                var invLabel = new TextBlock
-                {
-                    Text = $"📦 {Path.GetFileName(snap.Path)} — written " +
-                        (invAge.TotalMinutes < 1 ? "just now" : invAge.TotalHours < 1
-                            ? $"{(int)invAge.TotalMinutes}m ago" : $"{(int)invAge.TotalHours}h ago") +
-                        " (plus everything looted since)",
-                    FontSize = 11, Margin = new Thickness(2, 0, 0, 2),
-                    TextWrapping = TextWrapping.Wrap, Foreground = AppTheme.WarnBrush,
-                };
-                _questsPanel.Children.Add(invLabel);
+                _questsPanel.Children.Add(Note(
+                    $"{Path.GetFileName(snap.Path)} — written " +
+                    (invAge.TotalMinutes < 1 ? "just now" : invAge.TotalHours < 1
+                        ? $"{(int)invAge.TotalMinutes}m ago" : $"{(int)invAge.TotalHours}h ago") +
+                    " (plus everything looted since)", "Bag", "WarnBrush"));
                 _questsPanel.Children.Add(CopyCmd());
 
                 // NO class gate on the pool: your bags don't care what class a quest
@@ -1091,17 +1105,17 @@ public sealed class QuestsWindow : Window
                 if (ready.Count > 0)
                 {
                     Section($"Ready from your bags ({ready.Count})");
-                    foreach (var m in ready) AddCard(m);
+                    foreach (var m in ready) AddRow(m);
                 }
                 if (partial.Count > 0)
                 {
                     Section($"Your bags contribute ({partial.Count})");
-                    foreach (var m in partial) AddCard(m);
+                    foreach (var m in partial) AddRow(m);
                 }
                 if (others.Count > 0)
                 {
                     Section($"For other classes — you hold pieces anyway ({others.Count})");
-                    foreach (var m in others) AddCard(m);
+                    foreach (var m in others) AddRow(m);
                 }
                 if (overlapping.Count == 0)
                     EmptyNote("Nothing in your bags matches a catalogued quest's turn-ins yet.");
@@ -1110,26 +1124,26 @@ public sealed class QuestsWindow : Window
 
             case "done":
             {
-                // The trophy shelf — and the catch-up surface: every card carries a ✓,
-                // so returning players can mark history without touching items.
+                // The trophy shelf — and the catch-up surface: every quest can be marked
+                // done, so returning players can mark history without touching items.
                 var done = completed.Where(kv => kv.Value > 0)
                     .Select(kv => (_main.QuestCatalog.Quests.FirstOrDefault(q =>
                         q.Name.Equals(kv.Key, StringComparison.OrdinalIgnoreCase)), kv.Value))
                     .Where(x => x.Item1 is not null && ClassOk(x.Item1!))
                     .OrderBy(x => x.Item1!.Name, StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                foreach (var (q, _) in done) AddCard(Progressed(q!));
+                foreach (var (q, _) in done) AddRow(Progressed(q!));
                 if (done.Count == 0)
-                    EmptyNote("Nothing marked completed yet. Every quest card has a ✓ — click it " +
-                              "on quests you finished before EQBuddy and the tracker catches up " +
-                              "(ready quests count themselves when you click their hand-in).");
+                    EmptyNote("Nothing marked completed yet. Select a quest and use \"mark as " +
+                              "done\" on quests you finished before EQBuddy, and the tracker " +
+                              "catches up (ready quests count themselves when you hand them in).");
                 break;
             }
 
             default:
             {
                 // "mine": item overlap + pins, minus dismissed and finished-for-good
-                // (completed non-repeatables stay visible in zone/all with their ✓).
+                // (completed non-repeatables stay visible in zone/all with their mark).
                 var doneForGood = new HashSet<string>(
                     completed.Where(kv => kv.Value > 0).Select(kv => kv.Key)
                         .Where(name => _main.QuestCatalog.Quests.FirstOrDefault(q =>
@@ -1145,309 +1159,392 @@ public sealed class QuestsWindow : Window
                     .ToList();
                 var shown = eligible.Where(m => ClassOnlyOk(m.Quest)).ToList();
                 var othersMine = eligible.Where(m => !ClassOnlyOk(m.Quest)).ToList();
-                foreach (var m in shown) AddCard(m);
+                foreach (var m in shown) AddRow(m);
                 if (othersMine.Count > 0)
                 {
                     _questsPanel.Children.Add(SectionLabel(
                         $"For other classes — from your items ({othersMine.Count})"));
-                    foreach (var m in othersMine) AddCard(m);
+                    foreach (var m in othersMine) AddRow(m);
                 }
                 if (shown.Count == 0 && othersMine.Count == 0)
                     EmptyNote(matches.Count == 0
-                        ? "Nothing yet — loot a quest item (they show green in the Loot list),\n" +
-                          "or ⧉ scan bags to read what you already carry.\n" +
-                          "Search a reward you want by name, or try \"zone\" and \"all\" to browse."
+                        ? "Nothing yet — loot a quest item (they show green in the Loot list), " +
+                          "or scan bags to read what you already carry. Search a reward you want " +
+                          "by name, or try \"zone\" and \"all\" to browse."
                         : "No quest matches that search — try a reward name, an item, or an NPC.");
                 break;
             }
         }
+
+        FinishRender();
     }
 
-    // One search predicate, shared with the tests that guard it (QuestSearch in Core).
-    private static bool MatchesFilter(QuestEntry q, string filter) => QuestSearch.Matches(q, filter);
-
-    // ---- card building ----
-
-    private Border Card(QuestMatch m, bool isHidden = false, int completedCount = 0)
+    /// <summary>The two things that can only be said once every row is in: how many of
+    /// them are ready, and how many were capped away. Never a silent cap (CLAUDE.md).</summary>
+    private void FinishRender()
     {
-        var body = new StackPanel();
+        if (_suppressed > 0)
+            _questsPanel.Children.Add(EmptyState(
+                $"+{_suppressed} more — showing the first {RenderCap}. Keep typing to narrow it down."));
 
-        var header = new Grid
+        var ready = _rows.Count(r => Badge(r).State == QuestPresentation.State.Ready);
+        if (QuestPresentation.ReadySummary(ready) is { } summary)
         {
-            ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto"),
-        };
-        var name = new TextBlock
-        {
-            Text = m.Quest.Name, FontSize = 12.5, FontWeight = FontWeight.SemiBold,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = AppTheme.AccentBrush,
-        };
-        ToolTip.SetTip(name, "Open the wiki walkthrough");
-        OnClick(name, () => OpenUrl(m.Quest.Url));
-        header.Children.Add(name);
+            _summaryRow.Children.Clear();
+            _summaryRow.Children.Add(DesignSystem.Icon("Check", "GoodBrush", size: 13));
+            var text = DesignSystem.Text(Role.BodySecondary, summary);
+            text.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
+            text.Foreground = AppTheme.GoodBrush;
+            _summaryRow.Children.Add(text);
+            _summaryRow.IsVisible = true;
+        }
 
-        var count = new TextBlock
+        // Keep the selection if it survived the rebuild; otherwise fall to the first row,
+        // so the pane is never blank beside a full list.
+        Select(_rows.FirstOrDefault(r =>
+                   r.Match.Quest.Name.Equals(_selected, StringComparison.OrdinalIgnoreCase))
+               ?? _rows.FirstOrDefault());
+    }
+
+    // ---- the list ----
+
+    /// <summary>One rendered row and everything the detail pane needs to redraw it
+    /// without going back to the ledger.</summary>
+    private sealed class RowEntry(QuestMatch match, bool hidden, int completedCount)
+    {
+        public QuestMatch Match { get; } = match;
+        public bool Hidden { get; } = hidden;
+        public int CompletedCount { get; } = completedCount;
+        public Border Element { get; set; } = null!;
+    }
+
+    private readonly List<RowEntry> _rows = [];
+    private string _selected = "";
+
+    private static QuestPresentation.Badge Badge(RowEntry entry) =>
+        QuestPresentation.BadgeFor(entry.Match, entry.CompletedCount);
+
+    /// <summary>A compact list row: state rule · name · badge · one meta line. That is
+    /// all — the rewards, the turn-in items and the five controls moved to the pane.
+    /// Fifty of these can be scanned; fifty of the cards they replace could only be
+    /// read.</summary>
+    private Border Row(RowEntry entry)
+    {
+        var m = entry.Match;
+        var badge = Badge(entry);
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+
+        // The state rule. One fact, two encodings — the rule makes the list scannable
+        // without reading, the badge makes it unambiguous when read. "Open" gets no rule
+        // at all: a list where every row is highlighted highlights nothing.
+        var rule = new Border
         {
-            // Collection pages (CatalogHygiene): several quests share the page, so a
-            // fraction over the union would lie — the label says what it is instead.
-            Text = m.Quest.Collection ? "📚 set of quests"
-                : m.ItemsTotal == 0 ? "steps"
-                : m.Complete
-                    ? m.Quest.Repeatable && m.ReadyCount > 1 ? $"✔ ready ×{m.ReadyCount}" : "✔ ready"
-                    : $"{m.ItemsHave}/{m.ItemsTotal}",
-            FontSize = 12, FontWeight = FontWeight.Bold, Margin = new Thickness(8, 0, 0, 0),
-            Foreground = m.Quest.Collection ? AppTheme.DimBrush
-                : m.Complete ? AppTheme.GoodBrush
-                : m.ItemsHave > 0 ? AppTheme.AccentBrush : AppTheme.DimBrush,
+            Width = DesignTokens.StateRuleWidth,
+            CornerRadius = new CornerRadius(DesignTokens.StateRuleWidth / 2),
+            Margin = new Thickness(0, 0, DesignTokens.SpaceM, 0),
         };
-        if (m.Quest.Collection)
-            ToolTip.SetTip(count,
-                "This wiki page documents several quests at once, so per-page progress would " +
-                "mislead — open the page for the individual quests. Your items still show below.");
-        // A ready card's count doubles as the "I handed it in" button: consumes one set
-        // of turn-ins and bumps the done counter. Dialogue quests mark done for free.
+        if (QuestPresentation.RuleColorKey(badge.State) is { } ruleKey)
+        {
+            rule.Background = AppTheme.BrushFor(ruleKey);
+            rule.Opacity = QuestPresentation.RuleOpacity(badge.State);
+        }
+        grid.Children.Add(rule);
+
+        var stack = new StackPanel();
+        var name = DesignSystem.Text(Role.TitleSection, m.Quest.Name);
+        name.TextTrimming = TextTrimming.CharacterEllipsis;
+        if (m.Tracked) name.Foreground = AppTheme.AccentBrush;
+        stack.Children.Add(name);
+
+        var metaLine = QuestPresentation.MetaLine(
+            m.Quest, entry.CompletedCount, Distance(m.Quest).Text);
+        if (metaLine.Length > 0)
+        {
+            var meta = DesignSystem.Text(Role.Caption, metaLine);
+            meta.TextTrimming = TextTrimming.CharacterEllipsis;
+            stack.Children.Add(meta);
+        }
+        Grid.SetColumn(stack, 1);
+        grid.Children.Add(stack);
+
+        var right = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0),
+        };
+        if (m.Tracked) right.Children.Add(DesignSystem.Icon("PinFilled", "AccentBrush", size: 11));
+        var badgeText = DesignSystem.Text(Role.Caption, badge.Label);
+        badgeText.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
+        badgeText.FontWeight = FontWeight.SemiBold;
+        badgeText.Foreground = AppTheme.BrushFor(badge.ColorKey);
+        right.Children.Add(badgeText);
+        Grid.SetColumn(right, 2);
+        grid.Children.Add(right);
+
+        var row = new Border
+        {
+            Child = grid,
+            CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+            Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceS),
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXxs),
+            BorderThickness = new Thickness(1),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            Opacity = entry.Hidden ? 0.55 : 1.0,
+        };
+        if (entry.Hidden)
+            ToolTip.SetTip(row, "Hidden — select it and use \"show again\" to bring it back");
+        row.PointerPressed += (_, e) => { e.Handled = true; Select(entry); };
+        // Double-click still opens the wiki walkthrough, which is what clicking the name
+        // used to do. Kept because it is muscle memory and costs nothing.
+        row.DoubleTapped += (_, e) => { e.Handled = true; OpenUrl(m.Quest.Url); };
+        return row;
+    }
+
+    /// <summary>Selected is a SURFACE change (raised, hairline turns accent), never a
+    /// re-render: the pane is what changes, and repainting fifty rows to move a
+    /// highlight is how a list starts to feel slow.</summary>
+    private void Select(RowEntry? entry)
+    {
+        _selected = entry?.Match.Quest.Name ?? "";
+        foreach (var row in _rows)
+        {
+            var on = ReferenceEquals(row, entry);
+            row.Element.Background = on ? AppTheme.RaisedBrush : AppTheme.PanelBrush;
+            row.Element.BorderBrush = on ? AppTheme.AccentBrush : AppTheme.HairlineBrush;
+        }
+        BuildDetail(entry);
+    }
+
+    // ---- the detail pane ----
+
+    private void BuildDetail(RowEntry? entry)
+    {
+        _detailPane.Children.Clear();
+        if (entry is null)
+        {
+            _detailPane.Children.Add(
+                EmptyState("Select a quest to see its rewards, turn-ins and where to go."));
+            return;
+        }
+
+        var m = entry.Match;
+        var badge = Badge(entry);
+
+        // Title + the controls that act on this quest. They used to be five click-handled
+        // TextBlocks on every card in the list — 300 of them on a full catalog view, none
+        // of them keyboard-reachable, and all of them competing with the data.
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var title = DesignSystem.Text(Role.TitleWindow, m.Quest.Name);
+        title.TextWrapping = TextWrapping.Wrap;
+        title.Foreground = AppTheme.AccentBrush;
+        ToolTip.SetTip(title, "Open the wiki walkthrough");
+        OnClick(title, () => OpenUrl(m.Quest.Url));
+        head.Children.Add(title);
+
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Top,
+        };
+        // Pin = "keep this quest in front of me": tracked quests sort first and stay
+        // visible even with zero items (David, 2026-08-07: "players can choose to track
+        // quests or not, easily").
+        actions.Children.Add(DesignSystem.IconButton(
+            m.Tracked ? "PinFilled" : "Pin",
+            m.Tracked ? "Stop tracking this quest" : "Track this quest",
+            () => WithLedger(l => l.SetTracked(_main.QuestCharacterKey, m.Quest.Name, !m.Tracked)),
+            m.Tracked ? "AccentBrush" : "DimBrush", m.Tracked ? 1.0 : 0.55));
+        // Check = "I did this before EQBuddy" (David, 2026-08-11): catch-up marking,
+        // consuming nothing — the turn-in button below is for hand-ins happening now.
+        actions.Children.Add(DesignSystem.IconButton("Check",
+            entry.CompletedCount > 0
+                ? $"Completed ×{entry.CompletedCount} — click to unmark"
+                : "Did this before EQBuddy? Mark it completed (consumes nothing; click again to undo)",
+            () => WithLedger(l => l.SetCompleted(_main.QuestCharacterKey, m.Quest.Name,
+                entry.CompletedCount == 0)),
+            entry.CompletedCount > 0 ? "GoodBrush" : "DimBrush",
+            entry.CompletedCount > 0 ? 1.0 : 0.55));
+        // Close = "not interested": drops the quest from the overlap view AND un-greens
+        // loot only it wants (David, 2026-08-07: "there are definitely some I don't want
+        // to track"). Hidden quests reappear dimmed under "all", where this is the way back.
+        actions.Children.Add(DesignSystem.IconButton("Close",
+            entry.Hidden
+                ? "Show this quest again"
+                : "Not interested — hide this quest (its items stop showing green unless another quest wants them)",
+            () => WithLedger(l => l.SetHidden(_main.QuestCharacterKey, m.Quest.Name, !entry.Hidden)),
+            "DimBrush", entry.Hidden ? 1.0 : 0.55));
+        // Flag = "this data is wrong" (David, 2026-08-11: one wrong quest drops faith in
+        // everything). One click opens a prefilled report — the catalog's accuracy loop
+        // runs on these, same as every parser fix ran on pasted log lines.
+        actions.Children.Add(DesignSystem.IconButton("Flag",
+            "Something wrong with this quest's data (items, giver, zone)? " +
+            "Open a prefilled report — fixes usually ship the same day.",
+            () => OpenUrl(ReportUrl(m)), "DimBrush", 0.55));
+        Grid.SetColumn(actions, 1);
+        head.Children.Add(actions);
+        _detailPane.Children.Add(head);
+
+        // The status line, said in words directly under the title — the badge in the list
+        // is a glance, this is the answer.
+        var status = IconLine(badge.State switch
+        {
+            QuestPresentation.State.Ready => "ready to turn in",
+            QuestPresentation.State.Done => $"completed ×{entry.CompletedCount}",
+            QuestPresentation.State.InProgress => $"{m.ItemsHave} of {m.ItemsTotal} turn-ins started",
+            QuestPresentation.State.Steps => "dialogue or task chain — steps on the wiki page",
+            QuestPresentation.State.Collection =>
+                "this wiki page documents several quests at once, so per-page progress would mislead",
+            _ => "nothing held yet",
+        }, badge.State switch
+        {
+            QuestPresentation.State.Ready => "Check",
+            QuestPresentation.State.Done => "Check",
+            QuestPresentation.State.Collection => "Book",
+            QuestPresentation.State.Steps => "Info",
+            _ => "Quest",
+        }, badge.ColorKey, Role.Body);
+        status.Margin = new Thickness(0, DesignTokens.SpaceXs, 0, DesignTokens.SpaceM);
+        _detailPane.Children.Add(status);
+
+        if (m.Quest.Rewards.Count > 0) _detailPane.Children.Add(Rewards(m));
+        if (m.Items.Count > 0) _detailPane.Children.Add(Objectives(m));
+        _detailPane.Children.Add(Details(m, entry.CompletedCount));
+
+        // THE primary action, and the only one on the surface: "I handed it in". It was
+        // previously the progress COUNT doubling as a button, which is not an affordance
+        // anyone finds — the tooltip was the only thing that said so.
         if (m.Complete || m.ItemsTotal == 0)
         {
-            ToolTip.SetTip(count, m.ItemsTotal == 0
+            var handIn = new Button
+            {
+                Content = DesignSystem.IconLabel("Check",
+                    m.ItemsTotal == 0 ? "Mark as done" : "Mark as turned in", "GoodBrush"),
+                Background = AppTheme.GoodWashBrush,
+                BorderBrush = AppTheme.GoodBrush,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(DesignTokens.RadiusControl),
+                Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs),
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, DesignTokens.SpaceL, 0, 0),
+                Cursor = new Cursor(StandardCursorType.Hand),
+            };
+            ToolTip.SetTip(handIn, m.ItemsTotal == 0
                 ? "Click when you finish this quest to mark it done"
                 : "Click when you hand it in — consumes one set of turn-in items and counts a completion");
-            OnClick(count, () =>
-            {
-                var key = _main.QuestCharacterKey;
-                if (_main.QuestLedger is { } ledger && key.Length > 0)
-                {
-                    ledger.RecordCompletion(key, m.Quest.Name, m.Quest.Items);
-                    Refresh(force: true);
-                }
-            });
+            handIn.Click += (_, _) => WithLedger(l =>
+                l.RecordCompletion(_main.QuestCharacterKey, m.Quest.Name, m.Quest.Items));
+            _detailPane.Children.Add(handIn);
         }
-        Grid.SetColumn(count, 1);
-        header.Children.Add(count);
-
-        // 📌 = "keep this quest in front of me": tracked quests sort first and stay
-        // visible even with zero items — the choose-to-track affordance (David,
-        // 2026-08-07: "players can choose to track quests or not, easily").
-        var pin = new TextBlock
-        {
-            Text = "📌", FontSize = 12, Margin = new Thickness(8, 0, 0, 0),
-            Opacity = m.Tracked ? 1.0 : 0.35,
-            Foreground = m.Tracked ? AppTheme.AccentBrush : AppTheme.DimBrush,
-        };
-        ToolTip.SetTip(pin, m.Tracked ? "Stop tracking this quest" : "Track this quest");
-        OnClick(pin, () =>
-        {
-            var key = _main.QuestCharacterKey;
-            if (_main.QuestLedger is { } ledger && key.Length > 0)
-            {
-                ledger.SetTracked(key, m.Quest.Name, !m.Tracked);
-                Refresh(force: true);
-            }
-        });
-        Grid.SetColumn(pin, 2);
-        header.Children.Add(pin);
-
-        // ✓ = "I did this before EQBuddy" (David, 2026-08-11): catch-up marking on
-        // EVERY card, consuming nothing — RecordCompletion's consume path is for
-        // hand-ins happening now. Clicking again unmarks a misclick. Completed
-        // non-repeatables leave "mine" and gather under the done tab.
-        var doneMark = new TextBlock
-        {
-            Text = "✓", FontSize = 12, Margin = new Thickness(8, 0, 0, 0),
-            Opacity = completedCount > 0 ? 1.0 : 0.35,
-            Foreground = completedCount > 0 ? AppTheme.GoodBrush : AppTheme.DimBrush,
-        };
-        ToolTip.SetTip(doneMark, completedCount > 0
-            ? $"Completed ×{completedCount} — click to unmark"
-            : "Did this before EQBuddy? Mark it completed (consumes nothing; click again to undo)");
-        OnClick(doneMark, () =>
-        {
-            var key = _main.QuestCharacterKey;
-            if (_main.QuestLedger is { } ledger && key.Length > 0)
-            {
-                ledger.SetCompleted(key, m.Quest.Name, completedCount == 0);
-                Refresh(force: true);
-            }
-        });
-        Grid.SetColumn(doneMark, 3);
-        header.Children.Add(doneMark);
-
-        // ✕ = "not interested": drops the quest from the overlap view AND un-greens
-        // loot only it wants (David, 2026-08-07: "there are definitely some I don't
-        // want to track"). Hidden quests reappear dimmed under "all quests", where ✕
-        // becomes the way back.
-        var dismiss = new TextBlock
-        {
-            Text = "✕", FontSize = 11, Margin = new Thickness(8, 0, 0, 0),
-            Opacity = isHidden ? 1.0 : 0.35, Foreground = AppTheme.DimBrush,
-        };
-        ToolTip.SetTip(dismiss, isHidden
-            ? "Show this quest again"
-            : "Not interested — hide this quest (its items stop showing green unless another quest wants them)");
-        OnClick(dismiss, () =>
-        {
-            var key = _main.QuestCharacterKey;
-            if (_main.QuestLedger is { } ledger && key.Length > 0)
-            {
-                ledger.SetHidden(key, m.Quest.Name, !isHidden);
-                Refresh(force: true);
-            }
-        });
-        Grid.SetColumn(dismiss, 4);
-        header.Children.Add(dismiss);
-
-        // ⚑ = "this data is wrong" (David, 2026-08-11: one wrong quest drops faith in
-        // everything). One click opens a prefilled report — the catalog's accuracy
-        // loop runs on these, same as every parser fix ran on pasted log lines.
-        var flag = new TextBlock
-        {
-            Text = "⚑", FontSize = 11, Margin = new Thickness(8, 0, 0, 0),
-            Opacity = 0.35, Foreground = AppTheme.DimBrush,
-        };
-        ToolTip.SetTip(flag,
-            "Something wrong with this quest's data (items, giver, zone)? " +
-            "Open a prefilled report — fixes usually ship the same day.");
-        OnClick(flag, () =>
-        {
-            var report =
-                $"Quest: {m.Quest.Name}\nWiki page: {m.Quest.Url}\n" +
-                $"EQBuddy shows: {m.ItemsTotal} turn-in item(s) — {string.Join(", ", m.Quest.Items.Select(i => i.Qty > 1 ? $"{i.Name} x{i.Qty}" : i.Name))}\n" +
-                $"Giver: {m.Quest.QuestGiver} · Zone: {m.Quest.StartZone}\n\nWhat's wrong:\n\n\n" +
-                "---\nNote: EQBuddy mirrors eqlwiki.com, so if the wiki page itself is wrong, " +
-                "editing the page is the strongest fix — the catalog re-harvests it weekly. " +
-                "If the page is right and EQBuddy read it wrong, this report is exactly the right place.\n";
-            OpenUrl("https://github.com/DranakCorps-bot/EQBuddy/discussions/new?category=q-a" +
-                "&title=" + Uri.EscapeDataString($"Quest data: {m.Quest.Name}") +
-                "&body=" + Uri.EscapeDataString(report));
-        });
-        Grid.SetColumn(flag, 5);
-        header.Children.Add(flag);
-        body.Children.Add(header);
-
-        if (m.Quest.Rewards.Count > 0)
-        {
-            // The payoff sits right under the title (David, 2026-08-07: "Crude Stein
-            // Quest should show the Crude Stein item"), with the same hover/click as
-            // loot: hover pulls the item's wiki stats live, click opens its page.
-            var wrap = new WrapPanel { Margin = new Thickness(0, 1, 0, 1) };
-            wrap.Children.Add(new TextBlock
-            {
-                Text = "Rewards:", FontSize = 10.5, Margin = new Thickness(0, 0, 6, 0),
-                Foreground = AppTheme.DimBrush,
-            });
-            const int shown = 6;
-            foreach (var reward in m.Quest.Rewards.Take(shown))
-                wrap.Children.Add(RewardLink(reward));
-            if (m.Quest.Rewards.Count > shown)
-            {
-                var more = new TextBlock
-                {
-                    Text = $"+{m.Quest.Rewards.Count - shown} more", FontSize = 10.5,
-                    Foreground = AppTheme.DimBrush,
-                };
-                ToolTip.SetTip(more, string.Join("\n", m.Quest.Rewards.Skip(shown)));
-                wrap.Children.Add(more);
-            }
-            body.Children.Add(wrap);
-        }
-
-        // "How far is the turn-in from here" — BFS hops over the harvested zone graph,
-        // path in the tooltip (David, 2026-08-07: "3 zones away, zone 1 → zone 2 →
-        // zone 3"). Multi-zone quests measure to the nearest listed start zone.
-        var distance = "";
-        string? route = null;
-        if (_main.CurrentZoneName.Length > 0 && m.Quest.StartZone.Length > 0)
-        {
-            var best = m.Quest.StartZone.Split(',')
-                .Select(z => _main.ZoneGraph.Distance(_main.CurrentZoneName, z.Trim()))
-                .Where(d => d is not null)
-                .OrderBy(d => d!.Value.Hops)
-                .FirstOrDefault();
-            if (best is { } b)
-            {
-                distance = b.Hops == 0 ? " · you're here" : $" · {b.Hops} zone{(b.Hops == 1 ? "" : "s")} away";
-                route = b.Hops == 0 ? null : string.Join(" → ", b.Path);
-            }
-        }
-
-        // Classes go LAST: they're the longest fragment and the only one that can
-        // afford to vanish into the ellipsis — "done ×2" never should.
-        var meta = string.Join(" · ", new[]
-        {
-            m.Quest.StartZone,
-            m.Quest.QuestGiver.Length > 0 ? $"from {m.Quest.QuestGiver}" : "",
-            m.Quest.MinLevel > 0 ? $"lvl {m.Quest.MinLevel}+" : "",
-            m.Quest.Repeatable ? "repeatable" : "",
-            completedCount > 0
-                ? m.Quest.Repeatable ? $"done ×{completedCount}" : "✓ done"
-                : "",
-        }.Where(s => s.Length > 0));
-        if (meta.Length > 0 || distance.Length > 0)
-        {
-            var full = meta + distance
-                + (m.Quest.Classes.Length > 0 ? $" · {m.Quest.Classes}" : "");
-            var metaText = new TextBlock
-            {
-                Text = full, FontSize = 10.5, TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(0, 1, 0, 2), Foreground = AppTheme.DimBrush,
-            };
-            ToolTip.SetTip(metaText, route is { Length: > 0 } ? $"{route}\n{full}" : full);
-            body.Children.Add(metaText);
-        }
-
-        foreach (var item in m.Items)
-            body.Children.Add(ItemRow(item));
-        if (m.ItemsTotal == 0)
-        {
-            // The item parser found no turn-ins: a dialogue/kill/exploration chain.
-            body.Children.Add(new TextBlock
-            {
-                Text = "Dialogue or task chain — steps on the wiki page.",
-                FontSize = 11, FontStyle = FontStyle.Italic,
-                Margin = new Thickness(8, 0.5, 0, 0.5), Foreground = AppTheme.DimBrush,
-            });
-        }
-
-        // Hairline chrome; a READY card keeps the louder green edge — state has a shape.
-        return new Border
-        {
-            Child = body, CornerRadius = new CornerRadius(9),
-            Padding = new Thickness(10, 7, 10, 8), Margin = new Thickness(0, 0, 0, 6),
-            BorderThickness = new Thickness(1),
-            Opacity = isHidden ? 0.55 : 1.0,
-            Background = AppTheme.PanelBrush,
-            BorderBrush = m.Complete ? AppTheme.GoodBrush : AppTheme.BorderBrush,
-        };
     }
 
-    /// <summary>One reward item: hover fetches its eqlwiki stats on the spot (the
-    /// tooltip live-updates from "Looking up…", same as the Loot breakout rows), click
-    /// opens the wiki page.</summary>
-    private TextBlock RewardLink(string name)
+    /// <summary>The payoff, right under the status (David, 2026-08-07: "Crude Stein Quest
+    /// should show the Crude Stein item"), with the same hover/click as loot.
+    ///
+    /// The silhouette beside each name comes from the item's OWN catalog record (slots and
+    /// weapon skill). The mockup drew a bespoke icon per item; nothing in EQBuddy can map
+    /// an item to one — the 2026-08-15 spike established that the game ships the icon
+    /// sheets and nothing indexes them — so this draws what the data supports and nothing
+    /// more (docs/DesignSystem.md §8a).</summary>
+    private Control Rewards(QuestMatch m)
     {
-        var link = new TextBlock
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, DesignTokens.SpaceM) };
+        panel.Children.Add(SectionLabel("Rewards"));
+        var wrap = new WrapPanel();
+        const int shown = 8;
+        foreach (var reward in m.Quest.Rewards.Take(shown)) wrap.Children.Add(RewardTile(reward));
+        if (m.Quest.Rewards.Count > shown)
         {
-            Text = name, FontSize = 10.5, Margin = new Thickness(0, 0, 10, 1),
-            Foreground = AppTheme.AccentBrush,
+            var more = DesignSystem.Text(Role.Caption, $"+{m.Quest.Rewards.Count - shown} more");
+            more.Margin = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceXs, 0, 0);
+            ToolTip.SetTip(more, string.Join("\n", m.Quest.Rewards.Skip(shown)));
+            wrap.Children.Add(more);
+        }
+        panel.Children.Add(wrap);
+        return panel;
+    }
+
+    private Border RewardTile(string name)
+    {
+        var record = ItemCatalog.Default.Find(name);
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(DesignSystem.Icon(
+            IconPaths.ForItem(record?.Slots, record?.Skill), "DimBrush", size: 14));
+        var label = DesignSystem.Text(Role.BodySecondary, name);
+        label.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
+        label.TextTrimming = TextTrimming.CharacterEllipsis;
+        label.Foreground = AppTheme.AccentBrush;
+        content.Children.Add(label);
+
+        var tile = new Border
+        {
+            Child = content,
+            Background = AppTheme.RaisedBrush,
+            CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+            Padding = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceXxs),
+            Margin = new Thickness(0, 0, DesignTokens.SpaceXs, DesignTokens.SpaceXs),
+            Cursor = new Cursor(StandardCursorType.Hand),
+            MaxWidth = 220,
         };
-        AttachWikiTip(link, name);
-        OnClick(link, () => MainWindow.OpenWikiPage(name));
-        return link;
+        AttachWikiTip(tile, name);
+        tile.PointerPressed += (_, e) => e.Handled = true;
+        tile.PointerReleased += (_, e) =>
+        {
+            if (e.InitialPressMouseButton != MouseButton.Left) return;
+            e.Handled = true;
+            MainWindow.OpenWikiPage(name);
+        };
+        return tile;
     }
 
     private const string ItemRowHint =
         "Left-click: +1 (you have one more) · Right-click: clear your count (after a hand-in)";
 
-    private TextBlock ItemRow(QuestItemProgress item)
+    private Control Objectives(QuestMatch m)
+    {
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, DesignTokens.SpaceM) };
+        panel.Children.Add(SectionLabel("Turn-ins"));
+        foreach (var item in m.Items) panel.Children.Add(ItemRow(item));
+        return panel;
+    }
+
+    private Border ItemRow(QuestItemProgress item)
     {
         var met = item.Have >= item.Need;
-        var row = new TextBlock
+        var record = ItemCatalog.Default.Find(item.Name);
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
+        var icon = DesignSystem.Icon(IconPaths.ForItem(record?.Slots, record?.Skill),
+            met ? "GoodBrush" : "DimBrush", size: 14);
+        icon.Margin = new Thickness(0, 0, DesignTokens.SpaceM, 0);
+        grid.Children.Add(icon);
+
+        var name = DesignSystem.Text(Role.Body, item.Name);
+        name.TextTrimming = TextTrimming.CharacterEllipsis;
+        name.VerticalAlignment = VerticalAlignment.Center;
+        name.Foreground = met ? AppTheme.GoodBrush
+            : item.Have > 0 ? AppTheme.TextBrush : AppTheme.DimBrush;
+        Grid.SetColumn(name, 1);
+        grid.Children.Add(name);
+
+        var count = DesignSystem.Text(Role.Body, $"{item.Have} / {item.Need}");
+        count.FontWeight = FontWeight.SemiBold;
+        count.VerticalAlignment = VerticalAlignment.Center;
+        count.Margin = new Thickness(DesignTokens.SpaceM, 0, 0, 0);
+        count.Foreground = met ? AppTheme.GoodBrush
+            : item.Have > 0 ? AppTheme.AccentBrush : AppTheme.DimBrush;
+        Grid.SetColumn(count, 2);
+        grid.Children.Add(count);
+
+        var row = new Border
         {
-            Text = $"{(met ? "✔" : "•")} {item.Name} — {item.Have}/{item.Need}",
-            FontSize = 11.5, Margin = new Thickness(8, 0.5, 0, 0.5),
-            TextTrimming = TextTrimming.CharacterEllipsis,
+            Child = grid,
+            Background = AppTheme.RaisedBrush,
+            CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+            Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs),
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXxs),
             Cursor = new Cursor(StandardCursorType.Hand),
-            Foreground = met ? AppTheme.GoodBrush
-                : item.Have > 0 ? AppTheme.TextBrush : AppTheme.DimBrush,
         };
         // Same live wiki-stats hover the Loot window has (David, 2026-08-07), with the
         // count-adjust hint riding underneath.
@@ -1461,6 +1558,92 @@ public sealed class QuestsWindow : Window
         };
         return row;
     }
+
+    /// <summary>Zone · giver · level · distance · class as labelled CELLS. On the card
+    /// this replaces they were one ellipsized run of "·"-joined fragments, so on a narrow
+    /// window the class quietly vanished and nothing said it had.</summary>
+    private Control Details(QuestMatch m, int completedCount)
+    {
+        var panel = new StackPanel();
+        panel.Children.Add(SectionLabel("Details"));
+        var wrap = new WrapPanel();
+        var (distance, route) = Distance(m.Quest);
+        foreach (var (label, value, tip) in new[]
+        {
+            ("Zone", m.Quest.StartZone, (string?)null),
+            ("Giver", m.Quest.QuestGiver, null),
+            ("Level", m.Quest.MinLevel > 0 ? $"{m.Quest.MinLevel}+" : "", null),
+            ("Distance", distance, route),
+            ("Class", m.Quest.Classes, null),
+            ("Completed", completedCount > 0 ? $"×{completedCount}" : "", null),
+            ("Repeatable", m.Quest.Repeatable ? "yes" : "", null),
+        })
+        {
+            if (value.Length == 0) continue;
+            var cell = new StackPanel();
+            cell.Children.Add(DesignSystem.Text(Role.Metadata, label));
+            var body = DesignSystem.Text(Role.BodySecondary, value);
+            body.Foreground = AppTheme.TextBrush;
+            body.TextWrapping = TextWrapping.Wrap;
+            body.MaxWidth = 150;
+            cell.Children.Add(body);
+            var border = new Border
+            {
+                Child = cell,
+                Background = AppTheme.RaisedBrush,
+                BorderBrush = AppTheme.HairlineBrush,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+                Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceS),
+                Margin = new Thickness(0, 0, DesignTokens.SpaceXs, DesignTokens.SpaceXs),
+            };
+            if (tip is { Length: > 0 }) ToolTip.SetTip(border, tip);
+            wrap.Children.Add(border);
+        }
+        panel.Children.Add(wrap);
+        return panel;
+    }
+
+    /// <summary>"How far is the turn-in from here" — BFS hops over the harvested zone
+    /// graph, path in the tooltip (David, 2026-08-07: "3 zones away, zone 1 → zone 2 →
+    /// zone 3"). Multi-zone quests measure to the nearest listed start zone.</summary>
+    private (string Text, string? Route) Distance(QuestEntry quest)
+    {
+        if (_main.CurrentZoneName.Length == 0 || quest.StartZone.Length == 0) return ("", null);
+        var best = quest.StartZone.Split(',')
+            .Select(z => _main.ZoneGraph.Distance(_main.CurrentZoneName, z.Trim()))
+            .Where(d => d is not null)
+            .OrderBy(d => d!.Value.Hops)
+            .FirstOrDefault();
+        return best is { } b
+            ? (QuestPresentation.DistanceText(b.Hops), b.Hops == 0 ? null : string.Join(" → ", b.Path))
+            : ("", null);
+    }
+
+    private static string ReportUrl(QuestMatch m)
+    {
+        var report =
+            $"Quest: {m.Quest.Name}\nWiki page: {m.Quest.Url}\n" +
+            $"EQBuddy shows: {m.ItemsTotal} turn-in item(s) — {string.Join(", ", m.Quest.Items.Select(i => i.Qty > 1 ? $"{i.Name} x{i.Qty}" : i.Name))}\n" +
+            $"Giver: {m.Quest.QuestGiver} · Zone: {m.Quest.StartZone}\n\nWhat's wrong:\n\n\n" +
+            "---\nNote: EQBuddy mirrors eqlwiki.com, so if the wiki page itself is wrong, " +
+            "editing the page is the strongest fix — the catalog re-harvests it weekly. " +
+            "If the page is right and EQBuddy read it wrong, this report is exactly the right place.\n";
+        return "https://github.com/DranakCorps-bot/EQBuddy/discussions/new?category=q-a" +
+            "&title=" + Uri.EscapeDataString($"Quest data: {m.Quest.Name}") +
+            "&body=" + Uri.EscapeDataString(report);
+    }
+
+    private void WithLedger(Action<QuestLedgerStore> act)
+    {
+        var key = _main.QuestCharacterKey;
+        if (_main.QuestLedger is not { } ledger || key.Length == 0) return;
+        act(ledger);
+        Refresh(force: true);
+    }
+
+    // One search predicate, shared with the tests that guard it (QuestSearch in Core).
+    private static bool MatchesFilter(QuestEntry q, string filter) => QuestSearch.Matches(q, filter);
 
     private void AdjustManual(string item, int delta)
     {
@@ -1486,11 +1669,11 @@ public sealed class QuestsWindow : Window
 
     // ---- inventory scan ----
 
-    /// <summary>Same ⧉ contract as every other place EQBuddy reads a game command's
-    /// output: we never type in your client, so the most we can do is put the exact
-    /// command on your clipboard. Flashes ✓ so a silent clipboard write isn't a silent
-    /// no-op — and a clipboard can genuinely be unavailable here (a headless or
-    /// clipboard-less X session), which is worth not crashing over.</summary>
+    /// <summary>Same command-copy contract as every other place EQBuddy reads a game
+    /// command's output: we never type in your client, so the most we can do is put the
+    /// exact command on your clipboard. Flashes a confirmation so a silent clipboard write
+    /// isn't a silent no-op — and a clipboard can genuinely be unavailable here (a
+    /// headless or clipboard-less X session), which is worth not crashing over.</summary>
     private async Task CopyInventoryCmdAsync(Button button)
     {
         try
@@ -1499,13 +1682,58 @@ public sealed class QuestsWindow : Window
             await clip.SetTextAsync(GameCommands.OutputfileInventory);
         }
         catch (Exception ex) { CoreLog.Error(ex); return; }
-        button.Content = "✓ copied";
+        button.Content = DesignSystem.IconLabel("Check", "copied", "GoodBrush");
         var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.6) };
-        t.Tick += (_, _) => { button.Content = "⧉ scan bags"; t.Stop(); };
+        t.Tick += (_, _) =>
+        {
+            button.Content = DesignSystem.IconLabel("Copy", "scan bags");
+            t.Stop();
+        };
         t.Start();
     }
 
     // ---- shared bits ----
+
+    /// <summary>A leading note above the list — the search scope, the current zone, the
+    /// inventory file's age. Icon plus one caption; they used to be four differently
+    /// sized TextBlocks each carrying its own emoji.</summary>
+    /// <summary>A GRID, not a horizontal StackPanel: a stack hands its children infinite
+    /// width, so TextWrapping never fires and a long note is silently CLIPPED instead of
+    /// wrapping. Caught in the first Gate 2 capture — "pick classes ab" — which is
+    /// exactly what the screenshot-review criterion is for.</summary>
+    private static Grid IconLine(string text, string icon, string colorKey, Role role)
+    {
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("Auto,*"),
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceS),
+        };
+        var glyph = DesignSystem.Icon(icon, colorKey, size: 12);
+        glyph.VerticalAlignment = VerticalAlignment.Top;
+        glyph.Margin = new Thickness(0, 1, 0, 0);
+        grid.Children.Add(glyph);
+        var block = DesignSystem.Text(role, text);
+        block.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
+        block.TextWrapping = TextWrapping.Wrap;
+        block.Foreground = AppTheme.BrushFor(colorKey);
+        Grid.SetColumn(block, 1);
+        grid.Children.Add(block);
+        return grid;
+    }
+
+    private static Grid Note(string text, string icon, string colorKey = "DimBrush") =>
+        IconLine(text, icon, colorKey, Role.Caption);
+
+    /// <summary>An empty state: never a blank panel. Silent no-ops are broken (CLAUDE.md),
+    /// and "nothing here" without "and here is how to change that" is the same defect.</summary>
+    private static TextBlock EmptyState(string text)
+    {
+        var block = DesignSystem.Text(Role.Body, text);
+        block.TextWrapping = TextWrapping.Wrap;
+        block.Margin = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceM,
+            DesignTokens.SpaceS, DesignTokens.SpaceM);
+        return block;
+    }
 
     /// <summary>WPF's ToolTip.Opened lazy fetch: the tip shows the cached stat block (or
     /// "Looking up…") instantly, and the first actual hover fetches once and rewrites the
@@ -1561,13 +1789,15 @@ public sealed class QuestsWindow : Window
     {
         var box = new TextBox
         {
-            FontSize = 12,
-            Padding = new Thickness(5, 3),
+            FontSize = DesignTokens.Spec(Role.Body).Size,
+            Height = DesignTokens.ControlHeight,
+            Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs),
             Background = AppTheme.ComboBoxBrush,
             Foreground = AppTheme.TextBrush,
             CaretBrush = AppTheme.TextBrush,
             BorderBrush = AppTheme.BorderBrush,
             BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(DesignTokens.RadiusControl),
             VerticalContentAlignment = VerticalAlignment.Center,
         };
         ToolTip.SetTip(box, tip);
@@ -1577,28 +1807,36 @@ public sealed class QuestsWindow : Window
     private static Button ActionButton(string text) => new()
     {
         Content = text,
-        FontSize = 12,
-        Padding = new Thickness(10, 3),
+        FontSize = DesignTokens.Spec(Role.Caption).Size,
+        Height = DesignTokens.ControlHeight,
+        Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs),
         Background = AppTheme.PanelBrush,
         Foreground = AppTheme.TextBrush,
         BorderThickness = new Thickness(0),
+        CornerRadius = new CornerRadius(DesignTokens.RadiusControl),
+        VerticalContentAlignment = VerticalAlignment.Center,
         Cursor = new Cursor(StandardCursorType.Hand),
     };
 
-    private static TextBlock SectionLabel(string text) => new()
+    /// <summary>The small-caps section eyebrow that organises dense data without spending
+    /// a heading's height — "REWARDS", "TURN-INS", "DETAILS".</summary>
+    private static TextBlock SectionLabel(string text)
     {
-        Text = text, FontSize = 10.5, FontWeight = FontWeight.SemiBold,
-        Margin = new Thickness(0, 6, 0, 2), Foreground = AppTheme.DimBrush,
-    };
+        var block = DesignSystem.Text(Role.Caption, text.ToUpperInvariant());
+        block.FontWeight = FontWeight.SemiBold;
+        block.Margin = new Thickness(0, DesignTokens.SpaceS, 0, DesignTokens.SpaceXxs);
+        return block;
+    }
 
     private void UpdateHeightLimit()
     {
         var screen = Screens.ScreenFromWindow(this);
         if (screen is null) return;
-        // WPF caps at 85% of the work area; the body scroll absorbs the rest.
+        // WPF caps at 85% of the work area; the two scrollers absorb the rest.
         var available = Math.Max(260, screen.WorkingArea.Height / screen.Scaling * 0.85);
         MaxHeight = available;
-        _bodyScroll.MaxHeight = Math.Max(120, available - 250);
+        _bodyScroll.MaxHeight = Math.Max(120, available - 280);
+        _detailScroll.MaxHeight = _bodyScroll.MaxHeight;
     }
 
     private void OnDrag(object? sender, PointerPressedEventArgs e)

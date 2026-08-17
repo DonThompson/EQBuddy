@@ -104,7 +104,13 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | Every checklist row names the turn-in NPC and the drop location; Epic prefers its source | **Auto** — `QuestChecklistLayoutTests` |
 | A tick the loot auto-checker placed itself wears `*` on **all three** surfaces, not just mobile | **Auto** — `QuestChecklistLayoutTests`, `CompanionProjectionTests` |
 | The class-filter button face never grows with the selection, so the mode strip stays on screen | **Auto** — `ClassFilterLabelTests` |
-| A mis-clicked checklist tick can be taken back (↶ undo / Ctrl+Z), repeatedly | **Manual** — open Quests → Plane of Sky, tick a row, undo |
+| A quest's status badge and its state rule say the SAME thing, in every theme's palette | **Auto** — `QuestPresentationTests` |
+| A finished REPEATABLE whose turn-ins are in hand reads "ready", never "done" | **Auto** — `QuestPresentationTests` |
+| Nothing ready says nothing at all — never "0 quests ready to turn in" | **Auto** — `QuestPresentationTests` |
+| The Quest Tracker builds a LIST, selects a row, and fills the detail pane beside it | **Auto** — `EndToEndTests` (EQBUDDY_QUESTS), `QuestsRenderTests` |
+| The render cap holds at 60 rows and the withheld remainder is counted, never silently dropped | **Auto** — `EndToEndTests` |
+| The five per-quest controls (track, done, hide, report) are reachable on the detail pane | **Auto** — `QuestsRenderTests` |
+| A mis-clicked checklist tick can be taken back (undo / Ctrl+Z), repeatedly | **Manual** — open Quests → Plane of Sky, tick a row, undo |
 | The Quest Tracker's height cap follows the monitor it is on, re-applied as it is dragged | **Manual** — drag it to a shorter second screen; it must not overflow |
 | Ctrl+wheel resizes the Quest Tracker WINDOW, and a saved zoom survives reopening it | **Manual** — zoom out, close, reopen; layout must be identical, only smaller |
 | Layout: solo panel fills the viewport; chrome shrinks in fullscreen; nothing scrolls sideways | **Manual** — §6, or the harness |
@@ -124,6 +130,27 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | **Nothing on a timer may change the widget's measured size.** The title-bar CPU/memory readout formats to a fixed shape and its label reserves a fixed width, so a new sample repaints and never asks the windowing system to resize | **Auto** — `PerfReadoutTests`, `WidgetRenderTests` (#173) |
 | The readout stays off by default and costs no title-bar width until it is turned on | **Auto** — `WidgetRenderTests` (#112) |
 | That an always-on-top widget resizing does not disturb a fullscreen game underneath | **Manual** — §6 item 10; no headless test can see it |
+
+## 4e. The design system
+
+Typography, spacing, shape, control size and icon geometry live in `UI.Shared` as data
+(`UI.Shared/DesignTokens.cs`, `UI.Shared/IconPaths.cs`) exactly as colour already did, and
+each UI composes them into its own resources. The audit that started this
+([docs/DesignSystem.md](DesignSystem.md)) counted 13 font sizes over 612 assignments, 174
+Thickness tuples and 84 icon glyphs — none of which anything could detect, which is why the
+guards below are the deliverable and not a nicety.
+
+| Expectation | Held by |
+|---|---|
+| Seven type roles, none below the 10pt readable floor, each inking with a real palette key | **Auto** — `DesignSystemTests` |
+| A migrated surface carries no literal font size, radius or spacing — 0 and 1 excepted | **Auto** — `DesignRatchetTests` |
+| A migrated surface draws icons as vectors, never glyphs (#148, #166 were Wine glyph failures) | **Auto** — `DesignRatchetTests` |
+| Every icon parses with a real geometry parser and fills the 24×24 grid without overflowing it | **Auto** — `IconGeometryTests` (Avalonia headless) |
+| No two icon names share geometry — the audit's "✓ ×62 and ✔ ×15" defect cannot recur | **Auto** — `DesignSystemTests` |
+| Every one of the ~11k shipped items resolves to a real reward silhouette, dirty catalog slots included | **Auto** — `DesignSystemTests` |
+| A weapon's SKILL outranks its slot, so a 2H Blunt is never drawn as a sword | **Auto** — `DesignSystemTests` |
+| Screenshot capture makes only the window GROUND opaque, never a tint, and is off unless asked | **Auto** — `DesignSystemTests` (`EQBUDDY_OPAQUE`) |
+| A captured surface is reviewed as a real render, on a seeded session, over a plain backdrop | **Manual** — `pwsh scripts/shoot.ps1` |
 
 ## 4d. Settings, and who is allowed to write them
 

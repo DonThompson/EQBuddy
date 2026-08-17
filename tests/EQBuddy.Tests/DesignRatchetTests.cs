@@ -1,0 +1,126 @@
+using System.Text.RegularExpressions;
+
+namespace EQBuddy.Tests;
+
+/// <summary>
+/// THE MIGRATION RATCHET (docs/DesignSystem.md §5).
+///
+/// The Gate 1 audit counted 13 font sizes over 612 assignments, 174 distinct Thickness
+/// tuples and 7 corner radii — and the reason that happened is not carelessness, it is
+/// that nothing could DETECT it. A size nudged to make one row fit looks identical in a
+/// diff to a size chosen from a scale.
+///
+/// So each migrated surface is added to <see cref="Migrated"/>, and from then on it may
+/// not carry a literal font size, radius or spacing value: those come from
+/// EQBuddy.UI.Shared.DesignTokens, which is the one place both UIs read them.
+///
+/// 0 and 1 stay legal. "No space" is not a spacing decision, and a 1px hairline or a
+/// one-unit optical nudge is a rendering fact rather than a rhythm — putting those in
+/// the scale would make the scale a lie.
+///
+/// **Add a surface to this list in the same PR that migrates it.** The list only ever
+/// grows; that is what makes it a ratchet.
+/// </summary>
+public class DesignRatchetTests
+{
+    /// <summary>Surfaces rebuilt on the design system, and therefore held to it.
+    /// Gate 2: Quests, both UIs. Gate 3 adds Spawns, and so on down §6.</summary>
+    private static readonly string[] Migrated =
+    [
+        "EQBuddy/QuestsWindow.xaml",
+        "EQBuddy/QuestsWindow.xaml.cs",
+        "EQBuddy.Avalonia/QuestsWindow.cs",
+    ];
+
+    public static TheoryData<string> MigratedFiles()
+    {
+        var data = new TheoryData<string>();
+        foreach (var file in Migrated) data.Add(file);
+        return data;
+    }
+
+    private static string SrcRoot => Path.GetFullPath(Path.Combine(
+        AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src"));
+
+    /// <summary>Anything that is a bare number and at least 2 — the values that encode a
+    /// design decision rather than a rendering fact.</summary>
+    private static bool IsMagic(string token) =>
+        double.TryParse(token.Trim().TrimEnd('d', 'f', 'D', 'F'),
+            System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var value) && value >= 2;
+
+    [Theory]
+    [MemberData(nameof(MigratedFiles))]
+    public void MigratedSurfacesCarryNoLiteralSizes(string relativePath)
+    {
+        var full = Path.Combine(SrcRoot, relativePath);
+        Assert.True(File.Exists(full), $"Migrated surface moved or vanished: {full} — " +
+            "update the path (or drop the entry) in DesignRatchetTests.Migrated.");
+
+        var offences = new List<string>();
+        var lines = File.ReadAllLines(full);
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i];
+
+            // C#: FontSize = 12.5
+            foreach (Match m in Regex.Matches(line, @"\bFontSize\s*=\s*([^,;)\r\n]+)"))
+                if (IsMagic(m.Groups[1].Value)) offences.Add($"{i + 1}: {line.Trim()}");
+
+            // XAML: FontSize="12.5" / CornerRadius="10" / Margin="16,0,16,4" / Padding="6,4"
+            foreach (Match m in Regex.Matches(line,
+                         @"\b(FontSize|CornerRadius|Margin|Padding)=""([^""]*)"""))
+                if (m.Groups[2].Value.Split(',').Any(IsMagic))
+                    offences.Add($"{i + 1}: {line.Trim()}");
+
+            // C#: new Thickness(...) / new CornerRadius(...) — each ARGUMENT must be a
+            // token expression, not a bare number. "DesignTokens.StateRuleWidth / 2" is
+            // an expression and passes; "8" does not.
+            foreach (Match m in Regex.Matches(line, @"new (?:Thickness|CornerRadius)\(([^()]*)\)"))
+                if (m.Groups[1].Value.Split(',').Any(IsMagic))
+                    offences.Add($"{i + 1}: {line.Trim()}");
+        }
+
+        Assert.True(offences.Count == 0,
+            $"{relativePath} carries literal sizes. Use a token from " +
+            "EQBuddy.UI.Shared.DesignTokens (C#) or a {DynamicResource} into the token " +
+            "dictionary (XAML) — see docs/DesignSystem.md §2. If the value genuinely is " +
+            "not a design decision, it belongs in DesignTokens as a named one." +
+            Environment.NewLine + string.Join(Environment.NewLine, offences));
+    }
+
+    /// <summary>Emoji and dingbats are out of the migrated CONTROLS (docs/DesignSystem.md
+    /// §4): they render at a size and weight the app does not control, and PRs #148 and
+    /// #166 exist because they failed to render at all in Wine prefixes — on the
+    /// Linux/macOS builds that are EQBuddy's only uncontested ground.
+    ///
+    /// This scans for the families the audit counted. It deliberately allows the
+    /// typographic marks that are TEXT rather than icons: "·" separates meta fragments,
+    /// "×" multiplies a completion count, "→" joins a route, "≤" prefixes an era, "…"
+    /// ends a placeholder. Those are words, not controls.</summary>
+    [Theory]
+    [MemberData(nameof(MigratedFiles))]
+    public void MigratedSurfacesDrawIconsAsVectorsNotGlyphs(string relativePath)
+    {
+        const string allowed = "·×→←≤≥…‑–—’‘“”";
+        var offences = new List<string>();
+        var lines = File.ReadAllLines(Path.Combine(SrcRoot, relativePath));
+        for (var i = 0; i < lines.Length; i++)
+            foreach (var rune in lines[i].EnumerateRunes())
+            {
+                var value = rune.Value;
+                var isIconish =
+                    value is >= 0x2190 and <= 0x2BFF     // arrows, shapes, dingbats, symbols
+                        or >= 0x1F300 and <= 0x1FAFF     // emoji
+                        or 0x2122 or 0x00A9 or 0x00AE;
+                if (isIconish && !allowed.Contains((char)Math.Min(value, 0xFFFF)))
+                    offences.Add($"{i + 1}: U+{value:X4} {rune} — {lines[i].Trim()}");
+            }
+
+        Assert.True(offences.Count == 0,
+            $"{relativePath} draws with glyphs. Use DesignSystem.Icon / AppTheme.Icon with " +
+            "a name from EQBuddy.UI.Shared.IconPaths instead — a glyph is a Wine bug " +
+            "waiting to happen (#148, #166)." +
+            Environment.NewLine + string.Join(Environment.NewLine, offences));
+    }
+}
