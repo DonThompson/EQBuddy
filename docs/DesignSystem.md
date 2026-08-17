@@ -307,7 +307,71 @@ not change what it computes.
 
 ---
 
-## 8. What Gate 2 would deliver
+## 8. Directional mockups — accepted, with three amendments
+
+David supplied three ChatGPT mockups (Quests, mini mode, Spawns) on 2026-08-17 as
+*directional* input. The direction is accepted and it agrees with §2–§3 closely enough to
+treat as validation: named type roles, a real spacing rhythm, grouped actions, semantic
+state badges, progress bars on timers, and one consistent icon family.
+
+Three things in them cannot be built as drawn. Recording them here so nobody spends a gate
+discovering it.
+
+### 8a. Reward and quest ICONS are not sourceable — substitute slot silhouettes
+
+The Quests mockup's centrepiece is a grid of per-item reward icons plus a per-quest type
+icon (scroll, mushroom, castle, potion, egg). **EQBuddy cannot produce either.** The
+shipped `ItemCatalog` carries `Name`, `StatsText`, `Slots`, `Skill`, `QuestFlagged` and
+nothing else; there is no icon id anywhere in the codebase, and the 2026-08-15 spike
+established that although the game ships the icon sheets, nothing maps an item to one (the
+wiki's `lucy_img_ID` was disproved). Quests have no type taxonomy either.
+
+Drawing them anyway would mean inventing an icon per item — confidently wrong art on a
+surface whose entire value is being trustworthy.
+
+**Substitute, using data we do have:** reward tiles become **slot silhouettes** from our own
+vector set, driven by `Slots`/`Skill` (Primary, Secondary, Head, Chest, Ring, …). Same
+visual rhythm and the same "+4" overflow, honest inputs, ~20 glyphs we already need for the
+Gear surface. Quest rows take a **state-coloured left rule** instead of a type icon —
+carrying `ready` / `in progress` / `done`, which is real and semantic, rather than a
+decorative category the data does not have.
+
+### 8b. Mini mode: adopt the hierarchy, not the footprint
+
+The mini-mode AFTER stacks a caption under every value (`58` / `Kills`). The hierarchy is
+right and should be adopted. The footprint is not: it makes the pill both wider and taller,
+and mini mode's stated purpose is maximum information per pixel.
+
+More seriously, **the widget is `SizeToContent`, so pill width is window geometry**. A
+metric whose label or value changes width makes a transparent always-on-top window ask the
+windowing system to resize — trap 12, and the direct cause of #173.
+
+**Resolution:** take the value-dominant/label-subordinate treatment, but give every metric
+cell a **reserved width and a fixed text shape**, exactly as `UI.Shared/PerfReadout.cs`
+already does for the CPU/RAM readout. The pill then repaints without ever re-measuring.
+Where a label costs a line it earns, prefer an icon plus tooltip over a second text row.
+
+### 8c. Spawns: keep the free-text duration, drop the numeric spinners
+
+The Spawns AFTER is otherwise the strongest of the three and matches the Gate 3 plan almost
+exactly — progress toward respawn, a percentage, `—` for unknown with an empty track,
+grouped actions, column headers, the help text as an info callout, labelled add-row fields.
+All adopted.
+
+But the duration field is drawn as a **numeric spinner**, and today it is free text parsed
+by `SpawnDurationText`, which accepts `5m`, `90s`, `22m`, `3d 12h`. A spinner regresses a
+capability players use for week-long raid targets. **Keep the text field** (add stepper
+affordances that adjust the parsed value if we want the up/down target), and keep the
+placeholder guidance the mockup adds, which is a genuine improvement.
+
+### 8d. One note on the mockups' "BEFORE" panels
+
+The Quests BEFORE shows a window with `Show Hidden` / `Show Completed` checkboxes and a
+`Filters:` row. That surface no longer exists — it predates the 2026-08-16 consolidation.
+The comparison overstates the delta slightly; it does not change the direction, but Gate 2
+must be measured against the **current** tracker, per the brief's own warning.
+
+## 9. What Gate 2 would deliver
 
 Quests, rebuilt on the system above: header + tabs, prominent search, status filters, a
 compact list with a detail panel, `EqListRow`/`EqStatusBadge`/`EqChip`/`EqEmptyState` in
