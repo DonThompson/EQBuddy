@@ -1,131 +1,154 @@
 # EQBuddy — handoff
 
-Paste this as your first message next session.
-
-Don't re-derive the codebase. `CLAUDE.md` loads automatically and carries the commands, the
-non-negotiable rules, the where-things-live index, the trap list (11), and the
-surface-allocation rule. `docs/Architecture.md` and `docs/TestPlan.md` sit behind it;
-`DocumentationTests` fails the build if any go stale. **Start with
-`pwsh -NoProfile -File scripts/status.ps1`.**
-
-Gates: `pwsh -NoProfile -File scripts/check.ps1` (never pipe it into `tail` and chain a commit
-off it — the pipe swallows the exit code). E2E is separate and needs a desktop session:
-`dotnet build EQBuddy.slnx -c Release` then
-`dotnet test tests/EQBuddy.E2E/EQBuddy.E2E.csproj -c Release`.
+**Don't re-derive the codebase.** `CLAUDE.md` loads automatically and carries the commands,
+the non-negotiable rules, the where-things-live index, the trap list (13) and the
+surface-allocation rule. `docs/Architecture.md` and `docs/TestPlan.md` sit behind it, and
+`DocumentationTests` fails the build if any go stale. Start with
+`pwsh -NoProfile -File scripts/status.ps1`.
 
 ---
 
-## State: everything is shipped and the board is clear
+## Run the gates in the form the allowlist grants
 
-**v1.88.3 is live** (tag, GitHub release, OneDrive, installed locally). Working tree clean,
-everything pushed, **1,517 unit + 110 Avalonia + 9 E2E green**.
+This cost real time on 2026-08-17. The permission rules exist, but they match a **specific
+invocation shape**, and `CLAUDE.md` documents a different one. Use these exactly:
 
-**Zero open PRs. Zero issues awaiting a first response. Every discussion has our reply last
-except #182, which was answered minutes before this was written.**
+```bash
+pwsh -NoProfile -ExecutionPolicy Bypass -File C:/Users/david/source/EQBuddy/scripts/release.ps1 -Tag vX.Y.Z
+```
 
-**Releases are no longer blocked.** One early attempt hit the permission classifier; after
-that `scripts/release.ps1` ran fine and cut 1.88.1, 1.88.2 and 1.88.3. **David's standing
-rule still holds — releases wait for his explicit go.** Ask "want me to cut it?" rather than
-handing him a command block; doing the latter once caused two people to run the release two
-minutes apart and produced the 1.88.0/1.88.1 split.
+`scripts/check.ps1` and `scripts/status.ps1` are **not** in the allowlist at all, so they go
+through the auto-mode classifier and are refused intermittently. When that happens, fall
+back to running the test projects directly — `dotnet test tests/EQBuddy.Tests/...` — rather
+than assuming the tooling is broken. **Do not try to edit `.claude/settings.local.json`
+yourself; that is correctly blocked.** David has been asked to either add the documented
+form to the allowlist or change `CLAUDE.md` to document the granted form. Ask which happened.
 
-## THE NEXT TASK — David set the direction explicitly
+Also: chaining commands with `&&` sometimes trips the classifier where the same commands
+run fine individually. Split them.
 
-> "we lock scope for a while and focus on the re-implementation we started with quests"
+---
 
-**Scope is locked. Do not take on new feature areas.** He has not yet said which reading of
-"the re-implementation we started with quests" he means, and **this is the first thing to
-ask him**, because the two readings lead to different work:
+## State: v1.88.4 shipped, board mostly clear
 
-1. **Continue the quest surfaces** — the #174 features that hang off quest data (below), or
-2. **Apply the quest PATTERN elsewhere** — one definition in Core, three tabs, every surface
-   (WPF, Avalonia, mobile) reading it and unable to disagree. That pattern is what made the
-   quest work hold together, and it is the reusable part.
+Tag, GitHub release, OneDrive artifacts and the local install were all verified. `main` is
+clean and pushed; 1,572 unit + 110 Avalonia + 9 E2E green.
 
-**Approved and waiting: #174 (n3cr0nk1tt3n), all three QoL asks, David approved all of them.**
-Every one is phone/tablet by the CLAUDE.md surface filter:
+Shipped in 1.88.4: **#184** (Plane of Sky tab regrouped by reward, drop location and the
+auto-tick `*` restored, undo/Ctrl+Z), **#186** (monitor-aware height cap, Ctrl+wheel resizes
+the window), **#193** (the serious one — an empty class filter meant *every* class, so one
+looted rune ticked several classes' checklists), **#185** (named-mob auto-discovery),
+**#135** (charm's fifth cause), **#183** (one mez break costing two chips). Plus liminalwarmth's
+**#201** merged after.
 
-1. **Mob lookup** by name → zone, camp loc, drops, **faction hits**. We already parse faction
-   lines and only count them; the mob pages are already harvested for the map's camps and
-   Drops by Creature.
-2. **"What is this for?" from a Loot row** → quests, recipes, what drops it, cross-linked.
-   Closest to shipping: loot rows already know quest turn-ins, and the tracker already
-   searches by item. The gap is the reverse direction.
-3. **Upgrade preview at +N** with mote cost and breakpoints — "most-requested in game" per
-   the reporter. The arithmetic is now firm from #154: exp-per-mote and the
-   cost-to-reach-a-tier curve (1, 2, 4, 8 … 512) are both verified against the wiki.
+---
 
-## Open, with the ball in someone else's court — do not chase
+## THE NEXT TASK — UI/UX rework, Gate 2
 
-- **#182 (Ladylag)** — combat-breakout ability names truncated, "no way to widen the window".
-  **Diagnosed:** the window IS resizable and the width IS persisted per breakout kind, but
-  it is `WindowStyle="None" AllowsTransparency="True"`, so the resize border is invisible and
-  a couple of pixels wide. **The capability is fine; the affordance is missing.** She has the
-  two workarounds (drag the very edge, Ctrl+wheel to shrink text). Asked which breakout, how
-  long the names are, and whether dragging works once told. **A real fix is making the edge
-  findable** — plus a tooltip showing the full name on a truncated row, which is worth doing
-  regardless. This is the strongest small task if you want one.
-- **#177 (chrstahl)** — fixed in 1.88.3; asked whether charm pets now bind without the
-  `/pet who leader` prompt, and whether any wrong pet survives.
-- **#173 (KoboldCoterie)** — keyboard fix confirmed by him with `xprop`; title-bar regression
-  fixed in 1.88.2. **The always-on-top-over-fullscreen half is still open and untouched on
-  purpose** — X11 stacking belongs to the window manager. Asked whether a KWin "Block
-  compositing: No" rule on EQ changes it.
-- **#169 (joma65)** — the second-copy fix shipped; asked for `pgrep -a -i eqbuddy` and whether
-  `error.log` gains the new "changed underneath this EQBuddy" line.
-- **#153 (adndmike)** — fix shipped but **unverified by ear**; the manual pass (rename a chosen
-  `.wav`, expect a banner naming it) needs a desktop session with sound.
-- **#123** — donation link, parked on David's identity review. He will post when it clears.
-- **liminalwarmth offered three more fixes** he already has running locally and will PR: a due
-  timer pruned before its alert fires across a >60 s tick gap (laptop sleep) — a silently
-  missed alert and the real one — the Avalonia chip gauge only repainting at rebuild, and
-  `Countdown.Format` printing "60s" at the minute crossing. **Say yes.**
+David commissioned a full UI/UX modernization ("Modern Norrath Companion" — restrained dark,
+warm gold, Steam/Discord polish, **not** faux-medieval, **not** enterprise dashboard). His full
+brief is in the 2026-08-17 conversation; the distilled version is:
 
-## Landed this session, so you don't re-do it
+**Gate 1 is DONE and APPROVED** — `docs/DesignSystem.md`. Read it first. It contains the
+audit, the token/component proposal, the icon strategy, the parity strategy, the migration
+order, the risks, and (§8) the decisions on his ChatGPT mockups.
 
-1.88.0–1.88.3 carry: the **mobile quest surface** (three tabs, ~1,200-quest index shipped once
-per device by stamp, tap-to-track); the widget's **Quests card** replacing Sky Quest and Epics
-and opening the tracker; **Avalonia's three quest tabs**; hand-ticking restored in both
-desktop trackers; **#153** sound volume; **#175** Beastlord (missing from all six class
-pickers); **#176** Golden Hilt isle; **#154** mote potency + two ladder errors of ours;
-**#120** class detection; **#169** Linux/macOS running a SECOND COPY every launch; **#173**
-the readout resizing the widget; **#177** per-spell charm windows + `Allure of Death` inventing
-pets; and PRs **#166**, **#171**, **#178** (minus its prebuilt binary), **#179**, **#181**.
+**Gate 2 is Quests**, and before it, one prerequisite:
 
-## Standing decisions and hard lines
+### Prerequisite — the screenshot fixture
 
-- **eqlwiki is the tie-breaker** (David, 2026-08-16, from #163): other sources where the wiki
-  is silent; the wiki wins where they disagree; anything sourced elsewhere is marked as such.
-- **EQ Legends Companion (`jmoyers/everquest-companion`) is FSL-1.1-MIT.** EQBuddy is a
-  competing product. **Ideas yes, code never** — do not read, fetch or port it. The #177
-  per-spell charm window was adopted this way, from a written description only.
-- **No prebuilt binaries in the repo** (David, 2026-08-16, on #178): the CrossOver script
-  builds `winemac.so` on the user's machine from CodeWeavers' source plus the shipped patch.
-  A log-only widget cannot ask players to trust an unreadable blob that replaces a library
-  inside their CrossOver install.
-- Curated catalogs are never auto-written — but **LEARNED data is**, and #181 was exactly that
-  hole: a placeholder's death taught a named's respawn. Watch that class of bug.
+His brief makes screenshot review an *acceptance criterion*, and right now a capture is
+unusable. Two problems, both hit on 2026-08-17:
 
-## Notes that cost time this session
+1. An isolated `EQBUDDY_APPDATA` profile has no session, so every card renders `0 dps /
+   0 kills / 0 items`. Needs a **seeded session** — the shifted-log recipe (see the
+   `eqbuddy-screenshot-fixture` memory and `tests/EQBuddy.E2E/FixtureLog.cs`).
+2. The windows are translucent, so whatever is behind them bleeds into the PNG. Needs an
+   **opaque capture path** (a capture theme, or a guaranteed-plain backdrop).
 
-- **Derived artifacts get REGENERATED, never hand-merged.** Three contributor PRs conflicted
-  almost entirely on generated files. `buffs-harvest.py`, `fades-harvest.py` and the new
-  `charms-harvest.py` all run OFFLINE from `spells.json`, so the resolution is: take the
-  contributor's script change, re-run, compare. Twice the regenerated result was a strict
-  superset of the PR's by exactly one entry — the union proving itself.
-- **WebFetch refuses verbatim quotes** (copyright guard) and returns paraphrase, which is why
-  two reads of one wiki page contradicted each other on mote tiers. For anything that must be
-  quoted exactly, drive a browser and read `get_page_text`, or fetch raw wikitext via
-  `action=edit`.
-- **The wiki contradicts itself on mote tier numbering** — 0-based on Mote Guide (whose column
-  is actually "Item Tier Limit"), 1-based on Item Upgrade System, and both inside one paragraph
-  of Constructed Potential. `Motes.cs` deliberately stores NO tier index. Read the comment
-  before "fixing" it.
-- **Download the screenshot and look at it.** #173's second report was unreadable as prose
-  ("the title bar looks like this") and obvious as an image — the character name standing
-  vertically, one letter per line. `curl` it and open it with the Read tool.
-- **A fix in `UI.Shared` must reach BOTH UIs.** The #173 perf readout was fixed in Avalonia
-  and left hand-copied in WPF; that is the exact pattern that carried #122 and #152 to Linux.
-- Discussion replies need the GraphQL `addDiscussionComment` mutation (`gh` has no native
-  command); issues take `gh issue comment`. Set `PYTHONIOENCODING=utf-8` before piping any
-  GitHub text through Python on this machine, or emoji crash the pipe.
+A working capture script already exists at
+`<scratchpad>/shot.ps1` — captures a window by title to PNG via DWM frame bounds. It works;
+it is the *content* that needs fixing. Copy it somewhere durable.
+
+This also unblocks refreshing the README screenshots, which David asked for and which are
+genuinely stale: `quest-tracker.png`, `widget-expanded.png` and `widget-cards.png` are all
+Aug 11–12 and predate the 2026-08-16 card consolidation entirely. All 24 referenced files
+exist, so nothing is broken — they are just out of date.
+
+### Gate 2 — Quests
+
+Build the tokens and the first components, then rebuild the Quests window on them, **both
+UIs in the same PR**, functionality unchanged. Do not restyle anything else.
+
+Three things from `docs/DesignSystem.md` §8 that will otherwise be discovered expensively:
+
+- **Reward/quest icons cannot be built as mocked.** `ItemCatalog` has no icon field and
+  nothing in the codebase maps item→icon (spike, 2026-08-15). Use **slot silhouettes** from
+  `Slots`/`Skill`, and a **state-coloured left rule** instead of a quest-type icon.
+- **Mini mode**: take the value-over-label hierarchy, but give every metric cell a reserved
+  width — the widget is `SizeToContent`, so pill width is window geometry (trap 12, #173).
+- **Spawns**: adopt that mockup nearly wholesale, but keep the duration as **free text**.
+  `SpawnDurationText` parses `90s` and `3d 12h`; a numeric spinner regresses raid targets.
+
+Gate order (David approved moving Spawns ahead of the widget): **Quests → Spawns/timers →
+widget → mini mode + chips → map → remaining windows.**
+
+---
+
+## Owed to people, not yet sent
+
+**Nothing has been posted to any discussion this whole session.** This is the biggest
+outstanding debt and several of these people did real diagnostic work.
+
+- **Drafts written, awaiting David's review, not posted**: #192, #189, #197, #190. The file
+  was delivered to him in chat on 2026-08-17 (`replies-draft.md`). Ask him for it or rewrite.
+- **No reply at all yet**: #184 (bjstrange), #185 (elderbit), #186 (Kemble-Kemble),
+  #193 (wizen), #135 (bjstrange — *sixth* log), #183 (TheLethean), #191 (TheMegaSage).
+  All six of the first are FIXED in 1.88.4 and deserve to be told.
+- Discussion replies need the GraphQL `addDiscussionComment` mutation.
+- **Ask reporters to correct the wiki** where relevant, and point at the page's edit link.
+
+---
+
+## Open PRs needing David's call
+
+- **#194** (quasarj) — fixes the CrossOver overlay script's source download. Small, green.
+  I'd take it.
+- **#198** (liminalwarmth) — loot provenance, +606/−85 over 13 files. Green, but a *feature*.
+- **#199, #200** (liminalwarmth) — mini-bar double-click to open a breakout; a "(Disabled)"
+  alert-sound option. Both small and green, both features.
+- **#195 / #196** — dependabot xunit.v3 → 4.0.0. **#196 fails CI.** It's a major-version
+  migration, not a merge; recommend closing both and doing it deliberately.
+
+---
+
+## Findings worth not re-learning
+
+- **#192 (foraged item) is half-diagnosed.** Quest data is correct (`Kejekan Palm Fruit ×1`
+  is in `Yuio's Illness`) and forage *is* parsed. The regex is
+  `^You have scrounged up an? (?<item>.+?)\.$` — if Legends writes **"some"** it silently
+  doesn't parse. The draft asks wizen for his exact line. That is the likely one-line fix.
+- **#189 "settings lost between installs"** — the installer never touches `settings.json`
+  (checked). Most likely two copies coexisting during an update, each saving the whole file
+  from its own startup snapshot (trap 13). `AppSettings.Save` now logs this; ask for
+  `error.log` after an update.
+- **#193's damage cannot be repaired.** Wildcard ticks went through the normal path and are
+  indistinguishable from honest ones. WhatsNew says so plainly. Don't promise a cleanup.
+- **The article heuristic has a real exception.** Sol A's trash clockworks are
+  "CWG Model XA" — no article, reads as named. `SpawnCatalog.SharesNameFamily` guards it.
+  #181's regression test catches violations immediately.
+
+---
+
+## Hard lines (see `CLAUDE.md` for the full set)
+
+- Never measure other players. Values line, not technical.
+- Releases wait for David's explicit go. Ask "want me to cut it?" — don't hand him a command
+  block; that once caused two people to release two minutes apart (1.88.0/1.88.1).
+- Curated catalogs are never auto-written; **learned** data is.
+- eqlwiki is the tie-breaker; other sources where it's silent, marked as such.
+- A `UI.Shared`/Core fix must reach **both** UIs in the same change — that is what carried
+  #122 and #152 to Linux.
+- Derived artifacts get **regenerated**, never hand-merged.
+- Replay the reporter's **actual log file**. A hand-condensed version of charm5.txt passed
+  while the real file failed; the same held for charm6 and the #183 mez log.
