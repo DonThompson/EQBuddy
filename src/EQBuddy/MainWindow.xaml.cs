@@ -24,6 +24,16 @@ public partial class MainWindow : Window
     private DateTime _lastCheckpoint = DateTime.MinValue;
     private readonly DispatcherTimer _uiTimer;
     private readonly DispatcherTimer _companionPump;
+    // Window-level double-click state for the mini-bar breakout chips (see MiniChip): the
+    // chips are rebuilt every tick, so per-element ClickCount can't be trusted. Threshold
+    // reads the user's own Windows double-click speed; add a floor for a stray zero.
+    private BreakoutKind? _lastChipClickKind;
+    private DateTime _lastChipClickAt = DateTime.MinValue;
+    private static readonly TimeSpan DoubleClickWindow =
+        TimeSpan.FromMilliseconds(Math.Max(200, GetDoubleClickTime()));
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDoubleClickTime();
     private DateTime _lastCharScan = DateTime.MinValue;
     private DateTime _lastJanitorRun = DateTime.MinValue;
     private DateTime _lastUpdateCheck = DateTime.MinValue;
@@ -3678,11 +3688,14 @@ public partial class MainWindow : Window
                         if (!_settings.DisabledBreakouts.Contains(k.ToString()))
                             _settings.DisabledBreakouts.Add(k.ToString());
                         _settings.Save();
-                        // The ✕ is a small target floating over a game screen, and until
-                        // now the only trace of hitting it was a window that quietly never
-                        // came back — David lost his DPS breakout to exactly that
-                        // (2026-08-08) with no way to reconstruct when or how. A permanent
-                        // state change must announce itself, and leave a timestamp behind.
+                        // With double-click-toggle on, the ✕ is no longer a one-way trap —
+                        // a double-click on the chip brings the window straight back — so the
+                        // nag and its log entry would just be noise. Off, they stay: the ✕ is
+                        // a small target over a game screen, and until the alert existed the
+                        // only trace of hitting it was a window that quietly never came back
+                        // (David lost his DPS breakout to exactly that, 2026-08-08). A
+                        // permanent, hard-to-reverse state change must announce itself.
+                        if (_settings.DoubleClickChipsToggleBreakouts) return;
                         AlertTile.ShowAlert($"{k} breakout hidden — re-enable in ⚙ Options → Breakout windows");
                         CoreLog.Error($"{k} breakout hidden via its ✕ (re-enable: Options → Breakout windows)");
                     };
@@ -3698,13 +3711,63 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>Toggle a stat's breakout window from its mini chip: show it if hidden,
+    /// hide it if showing. Rides the same persistent DisabledBreakouts flag the ✕ uses,
+    /// so the choice sticks and UpdateBreakouts applies it on the spot — a
+    /// double-click is just a friendlier reach for it than the ✕ or Options
+    /// (asked for: "let me pop the DPS or Loot window up only when I want it").</summary>
+    private void ToggleBreakout(BreakoutKind kind)
+    {
+        var name = kind.ToString();
+        if (!_settings.DisabledBreakouts.Remove(name))
+            _settings.DisabledBreakouts.Add(name);
+        _settings.Save();
+        if (_latestSnapshot is { } snap) UpdateBreakouts(snap);
+    }
+
     /// <summary>One mini-dashboard stat (2026-08-11, take two — David: no ovals):
     /// glyph + semibold tabular value as clean text, separated from its neighbor by
     /// a thin hairline divider rather than any chip chrome. A counting-down watch
-    /// rule still announces itself by color alone.</summary>
-    private StackPanel MiniChip(string glyph, string value, string valueBrush, string? edgeBrush = null)
+    /// rule still announces itself by color alone. A chip whose stat has a breakout
+    /// window takes a double-click to toggle it.</summary>
+    private StackPanel MiniChip(string glyph, string value, string valueBrush, string? edgeBrush = null,
+        BreakoutKind? breakout = null)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 0) };
+        if (breakout is { } kind && _settings.DoubleClickChipsToggleBreakouts)
+        {
+            // Transparent (not null) so the gaps between glyph and value are hit-testable
+            // too. Two things conspired against WPF's own double-click here, so we detect it
+            // ourselves at the window level:
+            //   1. The bar's OnDrag starts a modal window DragMove on the FIRST left-click
+            //      anywhere on the bar; that capture disrupted the click sequence and the
+            //      cursor flickered into drag mode (the tell). Eating the click stops it.
+            //   2. UpdateMiniChips rebuilds these panels every 1s tick, so a rebuild landing
+            //      between the two clicks left the second click on a brand-new element and
+            //      reset ClickCount to 1 — an intermittent miss.
+            // Keying the double-click on (kind, time) on the window survives both: the panel
+            // can be replaced mid-gesture and the second click still lands. The widget is
+            // still dragged from any non-chip part of the bar; when the opt-in is off the
+            // chip stays inert and a double-click expands the widget as before.
+            panel.Background = System.Windows.Media.Brushes.Transparent;
+            panel.Cursor = System.Windows.Input.Cursors.Hand;
+            panel.ToolTip = $"Double-click to show or hide the {kind} breakout";
+            panel.MouseLeftButtonDown += (_, e) =>
+            {
+                e.Handled = true;
+                var now = DateTime.Now;
+                if (_lastChipClickKind == kind && now - _lastChipClickAt <= DoubleClickWindow)
+                {
+                    _lastChipClickKind = null;   // consume, so a third click starts fresh
+                    ToggleBreakout(kind);
+                }
+                else
+                {
+                    _lastChipClickKind = kind;
+                    _lastChipClickAt = now;
+                }
+            };
+        }
         panel.Children.Add(new TextBlock
         {
             Text = glyph, FontSize = 11.5, Opacity = 0.9,
@@ -3757,7 +3820,15 @@ public partial class MainWindow : Window
                 "deaths" => ("☠", $"{s.Deaths.Count}"),
                 _ => ("", ""),
             };
-            MiniChips.Children.Add(MiniChip(glyph, text, "AccentBrush"));
+            BreakoutKind? breakout = key switch
+            {
+                "dps" => BreakoutKind.Damage,
+                "hps" => BreakoutKind.Healing,
+                "pet" => BreakoutKind.Pet,
+                "loot" => BreakoutKind.Loot,
+                _ => null,   // kills/procs/motes/money/xp/deaths have no breakout
+            };
+            MiniChips.Children.Add(MiniChip(glyph, text, "AccentBrush", breakout: breakout));
         }
 
         // Per-rule pins: only the rules you picked (📌 in Options), not every enabled one.
@@ -3775,8 +3846,9 @@ public partial class MainWindow : Window
             // A counting-down chip wears the warn edge too — state has a shape.
             MiniChips.Children.Add(counting
                 ? MiniChip("⏳", $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}",
-                    "WarnBrush", edgeBrush: "WarnBrush")
-                : MiniChip("🎯", $"{name} {result?.TotalQuantity ?? 0}", "AccentBrush"));
+                    "WarnBrush", edgeBrush: "WarnBrush", breakout: BreakoutKind.Watch)
+                : MiniChip("🎯", $"{name} {result?.TotalQuantity ?? 0}", "AccentBrush",
+                    breakout: BreakoutKind.Watch));
         }
 
         TrimLastMiniDivider(MiniChips);
