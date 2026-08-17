@@ -38,6 +38,7 @@ public partial class BreakoutWindow : Window
 
     private bool _fightScope;
     private string _signature = "";
+    private StatsSnapshot? _lastSnapshot;
 
     public BreakoutWindow(AppSettings settings, BreakoutKind kind)
     {
@@ -108,6 +109,8 @@ public partial class BreakoutWindow : Window
             // SESSION has yielded (David, 2026-08-06).
             ScopeFight.Text = "Target";
             ScopeSession.Text = "Session";
+            ApplyLootSortVisual();   // the bars themselves are shown by UpdateLoot
+            ApplyLootViewVisual();
         }
         ApplyScopeVisual();
     }
@@ -346,6 +349,7 @@ public partial class BreakoutWindow : Window
 
     public void Update(StatsSnapshot s)
     {
+        _lastSnapshot = s;   // kept so a sort click can repaint now, not on the next tick
         ApplyBackgroundOpacity();
         if (_kind == BreakoutKind.Watch) { UpdateWatch(s); return; }
         if (_kind == BreakoutKind.Loot) { UpdateLoot(s); return; }
@@ -498,38 +502,61 @@ public partial class BreakoutWindow : Window
     private void UpdateLoot(StatsSnapshot s)
     {
         TitleText.Text = "🎒 Loot";
-        List<(string Name, string Value)> rows;
-        List<(string Name, string Value)> crafted = [];
+        List<EQBuddy.UI.Shared.LootRow> rows;
         string emptyText;
         if (_fightScope)   // = Target scope for this kind
         {
+            // The show/sort bars belong to the Session view; Target is a different axis.
+            LootViewBar.Visibility = Visibility.Collapsed;
+            LootSortBar.Visibility = Visibility.Collapsed;
             var (header, targetRows) = Main?.TargetDropsContent(s) ?? ("", []);
             var hasTarget = header.Length > 0;
             SubText.Text = hasTarget ? header.Replace("🎯 Fighting: ", "🎯 ") : "No target";
-            rows = targetRows;
+            rows = targetRows.Select(t => new EQBuddy.UI.Shared.LootRow(t.Name, t.Value, null)).ToList();
             emptyText = hasTarget
                 ? Main?.TargetEmptyNote(s) ?? "Nothing known for this creature yet."
                 : "Swing at something — or /consider it — and its\npossible drops appear here.";
         }
         else
         {
-            // "+N made" echoes the card header, so the two views agree at a glance (#131).
+            // "+N made" echoes the card header (merges + crafts), so the two agree (#131).
+            var madeTotal = s.CraftedTotal + s.FashionedTotal;
             SubText.Text = $"Session · {s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")} looted"
-                + (s.CraftedTotal > 0 ? $" · +{s.CraftedTotal} made" : "");
-            var loot = _settings.LootSort == "name"
-                ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
-                : s.Loot;
-            rows = loot.Take(12).Select(l => (l.Item, $"×{l.Count}")).ToList();
-            // Made items ride the Session scope only: crafts are session-cumulative, and
-            // Target scope is a different axis entirely — what a creature can drop —
-            // where an item nobody drops would misstate the view (#131, TropicMike).
-            crafted = s.Crafted.Take(12).Select(c => (c.Name, $"×{c.Count}")).ToList();
-            emptyText = "No loot seen yet.";
+                + (madeTotal > 0 ? $" · +{madeTotal} made" : "");
+
+            // Same show filter and row order as the Loot card, via the shared builder:
+            // all / looted (corpse) / other (foraged, crafted, merged, parcel). Uncapped.
+            // Auto-sells never reach the snapshot's loot at all (LW, 2026-08-17).
+            var mode = _settings.LootSort;
+            var view = _settings.LootView == "made" ? "other" : _settings.LootView;
+            static bool IsOther(string src) =>
+                src is EQBuddy.UI.Shared.LootRows.ForageSource or EQBuddy.UI.Shared.LootRows.ParcelSource;
+            var hasLooted = s.Loot.Any(l => !IsOther(l.LastSource));
+            var hasOther = s.Loot.Any(l => IsOther(l.LastSource))
+                           || s.Crafted.Count > 0 || s.Fashioned.Count > 0;
+
+            // The show toggle stays up whenever there's ANY loot, so the filter is
+            // discoverable even with only one kind of item (LW, 2026-08-17).
+            LootViewBar.Visibility = hasLooted || hasOther ? Visibility.Visible : Visibility.Collapsed;
+            rows = EQBuddy.UI.Shared.LootRows.Build(s.Loot, s.Crafted, s.Fashioned, s.RecentLoot, view, mode);
+            // Crafts/merges now carry timestamps too, so recent works for any non-empty view.
+            var hasTimeline = view switch
+            {
+                "looted" => hasLooted,
+                "other" => hasOther,
+                _ => hasLooted || hasOther,
+            };
+            LootSortBar.Visibility = rows.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            // Recent means nothing without timestamped items (crafted/merged carry none).
+            LootSortRecent.Visibility = hasTimeline ? Visibility.Visible : Visibility.Collapsed;
+
+            emptyText = (hasLooted || hasOther)
+                ? (view == "looted" ? "No looted items yet." : "Nothing else yet.")
+                : "No loot seen yet.";
         }
 
-        var empty = rows.Count == 0 && crafted.Count == 0;
-        EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
-        if (empty)
+        EmptyText.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (rows.Count == 0)
         {
             EmptyText.Text = emptyText;
             Rows.Items.Clear();
@@ -537,32 +564,21 @@ public partial class BreakoutWindow : Window
             return;
         }
 
-        var sig = $"loot|{_fightScope}|{SubText.Text}|{string.Join(",", rows.Select(r => r.Name + r.Value))}"
-            + $"|made:{string.Join(",", crafted.Select(c => c.Name + c.Value))}";
+        var sig = $"loot|{_fightScope}|{_settings.LootView}|{_settings.LootSort}|{SubText.Text}|"
+            + string.Join(",", rows.Select(r => r.Item + r.Value + r.Tag));
         if (sig == _signature) return;
         _signature = sig;
 
         Rows.Items.Clear();
         var barBrush = BreakdownRows.BarBrush(this);
-        foreach (var (name, value) in rows)
-            Rows.Items.Add(BuildItemRow(name, value, barBrush));
-        if (crafted.Count > 0)
-        {
-            // Same label text as the Loot card — one vocabulary for merges everywhere.
-            var label = new TextBlock { Text = "Created by merging" };
-            label.Style = (Style)FindResource("SectionLabel");
-            Rows.Items.Add(label);
-            // Crafted items are real items with wiki pages, so they get the same
-            // hover/click affordances as loot rows.
-            foreach (var (name, value) in crafted)
-                Rows.Items.Add(BuildItemRow(name, value, barBrush));
-        }
+        foreach (var r in rows)
+            Rows.Items.Add(BuildItemRow(r.Item, r.Value, barBrush, r.Tag));
     }
 
     /// <summary>An item row wired the way David specced the breakout: hover = the eqlwiki
     /// item info, fetched on the spot if the cache is empty (the tooltip live-updates
     /// from "Looking up…"); click = the eqlwiki page in the browser.</summary>
-    private Grid BuildItemRow(string name, string value, Brush barBrush)
+    private Grid BuildItemRow(string name, string value, Brush barBrush, string? tag = null)
     {
         var cachedTip = Main?.CachedItemStats(name);
 
@@ -590,7 +606,8 @@ public partial class BreakoutWindow : Window
             };
         }
 
-        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null, nameBadge: badge);
+        var row = BreakdownRows.Row(this, name, value, 0, barBrush, null, nameBadge: badge,
+            nameNote: tag is { Length: > 0 } ? $"({tag})" : null);
         var tipText = new TextBlock
         {
             Text = cachedTip ?? "Looking up on eqlwiki…",
@@ -989,6 +1006,56 @@ public partial class BreakoutWindow : Window
     private void OnScopeSession(object sender, MouseButtonEventArgs e)
     {
         _fightScope = false; SetScopeSetting("session"); ApplyScopeVisual(); e.Handled = true;
+    }
+
+    /// <summary>Count / Name / Recent for the Loot Session view — writes the same
+    /// _settings.LootSort the main Loot card reads, so the two windows stay in lockstep.</summary>
+    private void OnLootSortClick(object sender, MouseButtonEventArgs e)
+    {
+        _settings.LootSort = (string)((FrameworkElement)sender).Tag;
+        _settings.Save();
+        ApplyLootSortVisual();
+        _signature = "";
+        // Repaint now from the last snapshot rather than waiting up to a second for the
+        // next tick — the reorder should feel instant.
+        if (_lastSnapshot is { } s) UpdateLoot(s);
+        e.Handled = true;
+    }
+
+    private void ApplyLootSortVisual()
+    {
+        // "count" is the default: anything that isn't name/recent lights it, matching the
+        // Loot card's own read of the shared setting.
+        var mode = _settings.LootSort;
+        LootSortCount.SetResourceReference(TextBlock.ForegroundProperty,
+            mode is "name" or "recent" ? "DimBrush" : "AccentBrush");
+        LootSortName.SetResourceReference(TextBlock.ForegroundProperty,
+            mode == "name" ? "AccentBrush" : "DimBrush");
+        LootSortRecent.SetResourceReference(TextBlock.ForegroundProperty,
+            mode == "recent" ? "AccentBrush" : "DimBrush");
+    }
+
+    /// <summary>all / looted / made for the Loot Session view — writes the same
+    /// _settings.LootView the main Loot card reads, so the two windows stay in step.</summary>
+    private void OnLootViewClick(object sender, MouseButtonEventArgs e)
+    {
+        _settings.LootView = (string)((FrameworkElement)sender).Tag;
+        _settings.Save();
+        ApplyLootViewVisual();
+        _signature = "";
+        if (_lastSnapshot is { } s) UpdateLoot(s);   // repaint now, not next tick
+        e.Handled = true;
+    }
+
+    private void ApplyLootViewVisual()
+    {
+        var view = _settings.LootView == "made" ? "other" : _settings.LootView;
+        LootViewAll.SetResourceReference(TextBlock.ForegroundProperty,
+            view is "looted" or "other" ? "DimBrush" : "AccentBrush");
+        LootViewLooted.SetResourceReference(TextBlock.ForegroundProperty,
+            view == "looted" ? "AccentBrush" : "DimBrush");
+        LootViewOther.SetResourceReference(TextBlock.ForegroundProperty,
+            view == "other" ? "AccentBrush" : "DimBrush");
     }
 
     private void OnDismiss(object sender, MouseButtonEventArgs e)

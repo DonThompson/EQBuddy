@@ -149,6 +149,52 @@ public class RawLootViewTests
         Assert.Equal("Apple", evt.Item);
     }
 
+    // The real game rarely uses an article — most foraged items are mass nouns or plurals
+    // ("Vegetables", "Berries", "Pod of Water", "Roots"). Requiring "a"/"an" dropped every
+    // one of them; these are lifted verbatim from LW's log (130 forages, all missed).
+    [Theory]
+    [InlineData("You have scrounged up Vegetables.", "Vegetables")]
+    [InlineData("You have scrounged up Berries.", "Berries")]
+    [InlineData("You have scrounged up Pod of Water.", "Pod of Water")]
+    [InlineData("You have scrounged up Rabbit Meat.", "Rabbit Meat")]
+    [InlineData("You have scrounged up Roots.", "Roots")]
+    [InlineData("You have scrounged up Fishing Grubs.", "Fishing Grubs")]
+    public void AForagedItemWithNoArticleParses(string line, string item)
+    {
+        var evt = Assert.IsType<LootEvent>(LogParser.Parse($"[Sun Aug 16 16:45:20 2026] {line}"));
+
+        Assert.Equal(item, evt.Item);
+        Assert.Equal("Forage", evt.Source);
+        Assert.Equal(1, evt.Count);
+    }
+
+    [Fact]
+    public void AFashionedItemIsAFashionEvent()
+    {
+        var evt = Assert.IsType<FashionEvent>(LogParser.Parse(
+            "[Sat Aug 15 17:17:46 2026] You have fashioned the items together to create something new: Elixir of Greater Concentration."));
+        Assert.Equal("Elixir of Greater Concentration", evt.Item);
+    }
+
+    [Fact]
+    public void APickedUpParcelIsLootedWithParcelSource()
+    {
+        var evt = Assert.IsType<LootEvent>(LogParser.Parse(
+            "[Sun Aug 16 14:47:14 2026] Laitia hands you the Short Sword of the Ykesha that was sent from Rodrigo."));
+        Assert.Equal("Short Sword of the Ykesha", evt.Item);
+        Assert.Equal("Parcel", evt.Source);
+        Assert.Equal(1, evt.Count);
+    }
+
+    [Fact]
+    public void AWaitingParcelNotificationDoesNotCount()
+    {
+        // Announces a parcel is waiting at the merchant — the item isn't in your bags yet,
+        // so it must not reach the loot list until the pickup line above.
+        Assert.Null(LogParser.Parse(
+            "[Sun Aug 16 14:47:14 2026] You have received a new parcel delivery containing 1 Efreeti War Spear from Ivan!"));
+    }
+
     [Fact]
     public void AFailedForageIsNotAnEvent()
     {

@@ -129,7 +129,10 @@ public static partial class LogParser
     // which is the whole reason to route it here rather than invent a second path.
     // The failure line ("You fail to locate any food nearby.") is deliberately ignored
     // — a miss is not an event anyone wants counted.
-    [GeneratedRegex(@"^You have scrounged up an? (?<item>.+?)\.$")]
+    // The article is OPTIONAL: most foraged items are mass nouns or plurals with none —
+    // "You have scrounged up Vegetables." / "Berries." / "Pod of Water." / "Roots." —
+    // and requiring "a"/"an" dropped every one of them (LW, 130 forages, all missed).
+    [GeneratedRegex(@"^You have scrounged up (?:an? )?(?<item>.+?)\.$")]
     private static partial Regex ForageRx();
 
     // You looted a Crushbone Belt +2 from orc centurion's corpse to create a Crushbone Belt +5
@@ -268,6 +271,21 @@ public static partial class LogParser
     // You have successfully merged two items together to create a new item: Crushbone Belt +5
     [GeneratedRegex(@"^You have successfully merged two items together to create a new item: (?<item>.+?)\.?$")]
     private static partial Regex MergeRx();
+
+    // You have fashioned the items together to create something new: Elixir of Concentration.
+    // Tradeskill combine (potions/elixirs) — the "(Crafted)" provenance, distinct from a merge.
+    [GeneratedRegex(@"^You have fashioned the items together to create something new: (?<item>.+?)\.?$")]
+    private static partial Regex FashionRx();
+
+    // Laitia hands you the Short Sword of the Ykesha that was sent from Rodrigo.
+    // The parcel PICKUP — the item actually enters your bags here. NOT the earlier
+    // "You have received a new parcel delivery containing …" line, which only announces a
+    // parcel is WAITING at the merchant (unretrieved, so it must not count). Routed like
+    // forage: a LootEvent with "Parcel" as its source, so it counts and can tick a quest.
+    // The NPC name is a plain name (letters/space/apostrophe) so a chat line quoting the
+    // phrase — which carries "tells", digits and commas — can't be mistaken for a pickup.
+    [GeneratedRegex(@"^(?<npc>[A-Za-z' ]+?) hands you the (?<item>.+?) that was sent from .+?\.$")]
+    private static partial Regex ParcelRx();
 
     [GeneratedRegex(@"^Your (?<spell>.+?) spell fizzles!$")]
     private static partial Regex FizzleRx();
@@ -609,6 +627,13 @@ public static partial class LogParser
 
         if ((r = ForageRx().Match(msg)).Success)
             return new LootEvent(ts, r.Groups["item"].Value, "Forage", null);
+
+        if ((r = ParcelRx().Match(msg)).Success)
+            return new LootEvent(ts, r.Groups["item"].Value, "Parcel", null);   // one pickup = one item
+
+        // Fashioned combines sit with the other acquisitions (loot/forage/parcel).
+        if ((r = FashionRx().Match(msg)).Success)
+            return new FashionEvent(ts, r.Groups["item"].Value);
 
         if ((r = MoneyRx().Match(msg)).Success)
         {

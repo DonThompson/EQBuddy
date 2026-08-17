@@ -1764,7 +1764,90 @@ public partial class MainWindow : Window
     {
         _settings.LootSort = (string)((FrameworkElement)sender).Tag;
         _settings.Save();
-        RefreshUi();
+        // Reorder just the loot list from the snapshot we already have — a full RefreshUi
+        // here recomputed nothing new (the memo would hand back the same snapshot) yet
+        // repainted every card, both breakouts and the whole mobile projection. The sort
+        // is microseconds; the repaint was the cost.
+        if (_latestSnapshot is { } s) RenderLoot(s);
+        e.Handled = true;
+    }
+
+    /// <summary>Paints the Loot card from a snapshot: the show/sort visuals, one row list
+    /// (looted and made mixed under "all", or either alone), and the target-drops panel.
+    /// Split out of RefreshUi so a sort or view click repaints this card, not the whole
+    /// widget. Row order lives in <see cref="EQBuddy.UI.Shared.LootRows"/> — shared with
+    /// the breakout so the two can't drift.</summary>
+    private void RenderLoot(StatsSnapshot s)
+    {
+        var mode = _settings.LootSort;
+        var view = _settings.LootView == "made" ? "other" : _settings.LootView;   // all | looted | other
+
+        // Provenance split: corpse drops are "looted"; forage/parcel (in s.Loot) plus merges
+        // (s.Crafted) and crafts (s.Fashioned) are "other". Auto-sells never reach s.Loot
+        // or s.RecentLoot at all — dismissed at the corpse is not loot (LW, 2026-08-17).
+        static bool IsOther(string src) =>
+            src is EQBuddy.UI.Shared.LootRows.ForageSource or EQBuddy.UI.Shared.LootRows.ParcelSource;
+        var hasLooted = s.Loot.Any(l => !IsOther(l.LastSource));
+        var hasOther = s.Loot.Any(l => IsOther(l.LastSource))
+                       || s.Crafted.Count > 0 || s.Fashioned.Count > 0;
+
+        // The show toggle stays up whenever the card holds ANY loot, even when one slice is
+        // empty — otherwise a player can't tell the filter is there (LW, 2026-08-17).
+        LootViewBar.Visibility = hasLooted || hasOther ? Visibility.Visible : Visibility.Collapsed;
+        LootViewAll.Foreground = (Brush)FindResource(view is "looted" or "other" ? "DimBrush" : "AccentBrush");
+        LootViewLooted.Foreground = (Brush)FindResource(view == "looted" ? "AccentBrush" : "DimBrush");
+        LootViewOther.Foreground = (Brush)FindResource(view == "other" ? "AccentBrush" : "DimBrush");
+
+        var rows = EQBuddy.UI.Shared.LootRows.Build(s.Loot, s.Crafted, s.Fashioned, s.RecentLoot, view, mode);
+
+        // Every acquisition now carries a timestamp (crafts/merges included, via RecentLoot),
+        // so "recent" is meaningful for any non-empty view.
+        var hasTimeline = view switch
+        {
+            "looted" => hasLooted,
+            "other" => hasOther,
+            _ => hasLooted || hasOther,
+        };
+        LootSortBar.Visibility = rows.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        LootSortRecent.Visibility = hasTimeline ? Visibility.Visible : Visibility.Collapsed;
+        LootSortCount.Foreground = (Brush)FindResource(mode == "name" || mode == "recent" ? "DimBrush" : "AccentBrush");
+        LootSortName.Foreground = (Brush)FindResource(mode == "name" ? "AccentBrush" : "DimBrush");
+        LootSortRecent.Foreground = (Brush)FindResource(mode == "recent" ? "AccentBrush" : "DimBrush");
+
+        if (rows.Count == 0 && (hasLooted || hasOther))
+        {
+            // The chosen slice is empty but the card isn't — name the empty slice rather
+            // than blanking (or silently showing a different one).
+            LootList.Items.Clear();
+            var note = new TextBlock
+            {
+                Text = view == "looted" ? "No looted items yet." : "Nothing else yet.",
+                FontSize = 12, Margin = new Thickness(0, 1, 0, 1),
+            };
+            note.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
+            LootList.Items.Add(note);
+        }
+        else
+        {
+            // Provenance rides inline as a muted "(Foraged)"/"(Crafted)"/"(Merged)"/"(Parcel)"
+            // so it's clear without becoming part of the name (LW, 2026-08-17).
+            var tagByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var r in rows) if (r.Tag is { } t) tagByName[r.Item] = $"({t})";
+            FillList(LootList, rows.Select(r => (r.Item, r.Value)), onNameClick: ShowItemInfo,
+                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true,
+                noteFor: tagByName.Count > 0 ? n => tagByName.GetValueOrDefault(n) : null);
+        }
+        CraftedLabel.Visibility = Visibility.Collapsed;
+        CraftedList.Items.Clear();
+
+        RenderTargetDrops(s);
+    }
+
+    private void OnLootView(object sender, MouseButtonEventArgs e)
+    {
+        _settings.LootView = (string)((FrameworkElement)sender).Tag;
+        _settings.Save();
+        if (_latestSnapshot is { } s) RenderLoot(s);
         e.Handled = true;
     }
 
@@ -2254,8 +2337,9 @@ public partial class MainWindow : Window
         KpiLoot.Text = $"{s.LootTotal}";
         KpiXp.Text = $"{s.XpPerHour:0.#}%";
         KillsHeader.Text = s.PartyKillCount > 0 ? $"{s.YourKillCount} (+{s.PartyKillCount})" : $"{s.YourKillCount}";
-        LootHeader.Text = s.CraftedTotal > 0
-            ? $"{s.LootTotal} items (+{s.CraftedTotal} made)"
+        var madeTotal = s.CraftedTotal + s.FashionedTotal;   // merges + crafts
+        LootHeader.Text = madeTotal > 0
+            ? $"{s.LootTotal} items (+{madeTotal} made)"
             : $"{s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")}";
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
@@ -2455,27 +2539,7 @@ public partial class MainWindow : Window
         }
 
         if (LootSection.IsExpanded)
-        {
-            var mode = _settings.LootSort;
-            LootSortBar.Visibility = s.Loot.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-            LootSortCount.Foreground = (Brush)FindResource(mode == "name" || mode == "recent" ? "DimBrush" : "AccentBrush");
-            LootSortName.Foreground = (Brush)FindResource(mode == "name" ? "AccentBrush" : "DimBrush");
-            LootSortRecent.Foreground = (Brush)FindResource(mode == "recent" ? "AccentBrush" : "DimBrush");
-            // "recent" is the raw arrival order, not a re-sort of the totals — the whole
-            // point is that 200 Lion Skins stay 200 rows' worth of history rather than
-            // one row that hides the pelt (#160). Runs collapse; different items don't.
-            var rows = mode == "recent"
-                ? EQBuddy.UI.Shared.RawLootView.Rows(s.RecentLoot)
-                : (mode == "name"
-                        ? s.Loot.OrderBy(l => l.Item, StringComparer.OrdinalIgnoreCase).AsEnumerable()
-                        : s.Loot)
-                    .Select(l => (l.Item, $"×{l.Count}")).ToList();
-            FillList(LootList, rows, onNameClick: ShowItemInfo,
-                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
-            CraftedLabel.Visibility = s.Crafted.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillList(CraftedList, s.Crafted.Select(c => (c.Name, $"×{c.Count}")));
-            RenderTargetDrops(s);
-        }
+            RenderLoot(s);
 
         if (MotesSection.IsExpanded)
         {
@@ -3940,7 +4004,7 @@ public partial class MainWindow : Window
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
         Func<string, Brush>? valueBrush = null, Action<string>? onNameClick = null,
         Func<string, string?>? tooltip = null, Func<string, Brush?>? nameBrush = null,
-        bool questBadges = false)
+        bool questBadges = false, Func<string, string?>? noteFor = null)
     {
         var items = rows.ToList();
         list.Items.Clear();
@@ -3952,10 +4016,21 @@ public partial class MainWindow : Window
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var left = new TextBlock
             {
-                Text = name, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+                FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
                 Foreground = nameBrush?.Invoke(name) ?? (Brush)FindResource("TextBrush"),
                 Margin = new Thickness(0, 1, 8, 1),
             };
+            // Provenance rides inline as a muted "(Foraged)"/"(Crafted)"/… after the name —
+            // a separate run, not part of the name, so the click still looks up the base item.
+            if (noteFor?.Invoke(name) is { Length: > 0 } note)
+            {
+                left.Inlines.Add(new System.Windows.Documents.Run(name));
+                left.Inlines.Add(new System.Windows.Documents.Run($" {note}")
+                {
+                    FontSize = 11, Foreground = (Brush)FindResource("DimBrush"),
+                });
+            }
+            else left.Text = name;
             if (tooltip?.Invoke(name) is { Length: > 0 } tip)
             {
                 var tipText = new TextBlock { Text = tip, TextWrapping = TextWrapping.Wrap, MaxWidth = 340 };

@@ -157,6 +157,9 @@ public sealed partial class SessionStats
     private readonly Dictionary<string, (int Count, string LastSource)> _loot = new(StringComparer.OrdinalIgnoreCase);
     private int _lootCount;
     private readonly Dictionary<string, int> _crafted = new(StringComparer.OrdinalIgnoreCase);
+    // Tradeskill "fashioned" combines (potions, elixirs) — the "(Crafted)" provenance, kept
+    // apart from _crafted (which is item-MERGES, the "(Merged)" provenance).
+    private readonly Dictionary<string, int> _fashioned = new(StringComparer.OrdinalIgnoreCase);
     // Loot-merge RESULTS ("looted a Belt +2 ... to create a Belt +5"): the consumed
     // item lands in _loot, but the created "+5" appeared nowhere in the snapshot —
     // and reaching a wished tier via loot-merge is the Gear card's main auto-done
@@ -1152,6 +1155,11 @@ public sealed partial class SessionStats
                     if (!StoresSuppressed)
                         QuestStore?.RecordConsumed(AaCharacterKey, c.Item, 1, c.Time);
                     break;
+                case FashionEvent f:
+                    Bump(_fashioned, f.Item);   // a tradeskill combine (potions, elixirs)
+                    if (!StoresSuppressed)
+                        QuestStore?.RecordConsumed(AaCharacterKey, f.Item, 1, f.Time);
+                    break;
                 case ItemDestroyedEvent d:
                     _lastDestroyed = (d.Item, d.Count, d.Time);
                     if (!StoresSuppressed)
@@ -1220,9 +1228,12 @@ public sealed partial class SessionStats
                     if (!_invocationAgg.ContainsKey(inv.Invocation)) _invocationAgg[inv.Invocation] = (0, 0);
                     break;
                 case AutoSellEvent asell:
-                    var lcur = _loot.TryGetValue(asell.Item, out var lval) ? lval : (0, asell.Source);
-                    _loot[asell.Item] = (lcur.Item1 + asell.Count, asell.Source);
-                    _lootCount += asell.Count;
+                    // Vendor income + the creature's drop ledger, NOT session loot: an
+                    // auto-sold pickup was dismissed at the corpse and never reached your
+                    // bags, so it has no business on the Loot card (LW, 2026-08-17 — after
+                    // trying a (Sold) tag and finding the views "way too crowded"). The
+                    // wiki/target-drops ledger below still records that the mob drops it,
+                    // and the coin lands with the other vendor sales.
                     var mobLoot = Mob(asell.Source).Loot;
                     mobLoot[asell.Item] = mobLoot.TryGetValue(asell.Item, out var mlc) ? mlc + asell.Count : asell.Count;
                     Mob(asell.Source).LootLast[asell.Item] = asell.Time;
@@ -1881,7 +1892,7 @@ public sealed partial class SessionStats
         _trackedAccs = null; _trackedAccFingerprint = null; _trackedScanIndex = 0;
         _runeGainCount = 0; _runeGainPoints = 0;
         _runeBlockStreak = 0; _runeBlockStreakMax = 0; _runeBlockCount = 0;
-        _loot.Clear(); _lootCount = 0; _crafted.Clear(); _upgraded.Clear();
+        _loot.Clear(); _lootCount = 0; _crafted.Clear(); _fashioned.Clear(); _upgraded.Clear();
         _copper = 0; _coinDrops = 0; _biggestDrop = 0;
         _vendorCopper = 0; _salesCount = 0; _soldItems.Clear();
         _xpPercent = 0; _xpTicks = 0; _xpSinceLevel = 0; _levels.Clear();
@@ -1911,8 +1922,9 @@ public sealed partial class SessionStats
     private static void Bump(Dictionary<string, int> d, string key) =>
         d[key] = d.TryGetValue(key, out var v) ? v + 1 : 1;
 
-    /// <summary>Net items gained since <paramref name="since"/> — loot in, auto-sells /
-    /// destroys / vendor sales out — the live overlay the inventory views lay over a
+    /// <summary>Net items gained since <paramref name="since"/> — loot in, destroys /
+    /// vendor sales out (auto-sells are net zero: never in the bags at all) — the live
+    /// overlay the inventory views lay over a
     /// /outputfile dump (David, 2026-08-11: the dump is a baseline, the log keeps it
     /// current). Keys are base item names. Loot events are journal-retained whole
     /// session, so a dump older than the session is adjusted by everything the
@@ -1932,7 +1944,9 @@ public sealed partial class SessionStats
                 switch (e)
                 {
                     case LootEvent l: Add(l.Item, Math.Max(1, l.Count)); break;
-                    case AutoSellEvent a: Add(a.Item, -Math.Max(1, a.Count)); break;
+                    // No AutoSellEvent case: an auto-sold pickup never entered the bags,
+                    // so its net inventory effect is zero — subtracting it here told the
+                    // inventory overlay an item LEFT that was never counted in.
                     case ItemDestroyedEvent x: Add(x.Item, -Math.Max(1, x.Count)); break;
                     // Vendor sales name one item per line; counts aren't logged, so
                     // one per line is the honest floor.
@@ -2152,15 +2166,34 @@ public sealed partial class SessionStats
                 // question — "did anything unusual land while I was grinding the same
                 // thing 200 times" — and a count that ticked from 41 to 42 cannot show
                 // that (#160, wizen). Capped because it feeds a scrolling card, not a log.
-                RecentLoot = _journal.OfType<LootEvent>()
+                // Recent = every ACQUISITION in arrival order, not just corpse/forage/parcel
+                // loot: fashioned crafts and item-merges are acquisitions too and belong on
+                // the timeline (they carry "Fashion"/"Merge" as their source, which the row
+                // builder maps to the (Crafted)/(Merged) tags). Without this they showed in
+                // the count view but never in "recent" (LW, 2026-08-17).
+                // Auto-sells (AutoSellEvent) are deliberately absent: dismissed at the
+                // corpse, they are vendor income and a mob-ledger drop, never session
+                // loot — the aggregate above skips them for the same reason, so the
+                // views stay in agreement (LW, 2026-08-17).
+                RecentLoot = _journal
+                    .Where(e => e is LootEvent or FashionEvent or CraftEvent)
                     .Reverse().Take(MaxRecentLoot)
-                    .Select(l => new LootPickup(l.Time, l.Item, Math.Max(1, l.Count), l.Source))
+                    .Select(e => e switch
+                    {
+                        LootEvent l => new LootPickup(l.Time, l.Item, Math.Max(1, l.Count), l.Source),
+                        FashionEvent f => new LootPickup(f.Time, f.Item, 1, "Fashion"),
+                        CraftEvent c => new LootPickup(c.Time, c.Item, 1, "Merge"),
+                        _ => throw new InvalidOperationException(),
+                    })
                     .ToList(),
                 Loot = _loot.OrderByDescending(kv => kv.Value.Count)
                     .Select(kv => new LootDetail(kv.Key, kv.Value.Count, kv.Value.LastSource)).ToList(),
                 Crafted = _crafted.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 CraftedTotal = _crafted.Values.Sum(),
+                Fashioned = _fashioned.OrderByDescending(kv => kv.Value)
+                    .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
+                FashionedTotal = _fashioned.Values.Sum(),
                 Upgraded = _upgraded.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 Copper = _copper + _vendorCopper,
@@ -2384,8 +2417,14 @@ public sealed class StatsSnapshot
     public List<LootDetail> Loot { get; init; } = [];
     /// <summary>Every drop, newest first, capped — see SessionStats.MaxRecentLoot.</summary>
     public List<LootPickup> RecentLoot { get; init; } = [];
+    /// <summary>Item-MERGE results ("successfully merged two items … : Belt +5") — the
+    /// "(Merged)" provenance. Named Crafted for history.</summary>
     public List<NameCount> Crafted { get; init; } = [];
     public int CraftedTotal { get; init; }
+    /// <summary>Tradeskill "fashioned" combines (potions, elixirs) — the "(Crafted)"
+    /// provenance. Separate from <see cref="Crafted"/> (which is merges).</summary>
+    public List<NameCount> Fashioned { get; init; } = [];
+    public int FashionedTotal { get; init; }
     /// <summary>Loot-merge results by created name ("... to create a Belt +5" → Belt +5).
     /// Not part of CraftedTotal — the merge consumed a held item, nothing new was "made";
     /// the Gear card's auto-done is the consumer (reaching a wished "+N" tier).</summary>
