@@ -20,6 +20,7 @@ What one run does:
        spells.json  -> SlowSpells.json     (slows-harvest.py)
        spells.json  -> BuffDurations.json  (buffs-harvest.py)
        spells.json  -> DebuffLandings.json (debuffs-harvest.py)
+       spells.json  -> CharmSpells.json    (charms-harvest.py)
        spells.json  -> SpellLevels.json    (spell-levels-promote.py)
        quests.json  -> QuestCatalog.json   (quests-promote.py)
        zones.json   -> ZoneGraph.json      (../eqltools/zones-merge.py; the
@@ -79,6 +80,7 @@ HARVESTERS = ["spells-harvest.py", "quests-harvest.py", "zones-harvest.py", "aas
 # the ones before it claimed (see module docstring; issue #167).
 PROMOTIONS = [WIKI / "fades-harvest.py", WIKI / "slows-harvest.py",
               WIKI / "buffs-harvest.py", WIKI / "debuffs-harvest.py",
+              WIKI / "charms-harvest.py",
               WIKI / "quests-promote.py",
               HERE / "eqltools" / "zones-merge.py",
               WIKI / "items-promote.py",
@@ -86,7 +88,7 @@ PROMOTIONS = [WIKI / "fades-harvest.py", WIKI / "slows-harvest.py",
 
 # Written by promotions above; diffed for the report.
 PROMOTED = ["FadeMessages.json", "SlowSpells.json", "BuffDurations.json", "DebuffLandings.json",
-            "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz",
+            "CharmSpells.json", "QuestCatalog.json", "ZoneGraph.json", "ItemCatalog.json.gz",
             "SpellLevels.json"]
 # Human-curated; never auto-written, only flagged when their sources move.
 CURATED = ["SpawnCatalog.json", "AaCatalog.json", "MezSpells.json",

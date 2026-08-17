@@ -195,7 +195,8 @@ public sealed partial class SpellCatalog
     /// stuns like Color Flux never fired "all CC" alerts: the stun family alone has 87
     /// entries, far past anything a hand list would catch). The curated seed above still
     /// wins on conflicts — it carries log-verified decisions like the bard mez/charm song
-    /// split — the harvest fills everything else.
+    /// split — the harvest fills everything else. Its Charm category is name-derived and
+    /// therefore fallible; <see cref="NotCharms"/> corrects it from the wiki's effects.
     /// </summary>
     private static readonly Lazy<Dictionary<string, SpellCategory>> WikiCc = new(() =>
     {
@@ -215,31 +216,62 @@ public sealed partial class SpellCatalog
         return map;
     });
 
-    /// <summary>Wiki cast times for the CC catalog (joined into CcSpells.json by
-    /// ccspells-promote.py). Feeds the per-spell charm arm window — how long after
-    /// our own cast starts a landing line can still be OUR landing.</summary>
-    private static readonly Lazy<Dictionary<string, double>> CcCastTimes = new(() =>
+    /// <summary>
+    /// The generated charm catalog (Data\CharmSpells.json — charms-harvest.py, which
+    /// decides membership from the wiki's SLOT EFFECTS rather than from names). Two
+    /// facts, one file, one source: which spells are charms, and how long each takes
+    /// to cast. The cast time is what sizes the per-spell arm window — how long after
+    /// our own cast starts a landing line can still be OUR landing — and the family is
+    /// wider than the names suggest: Dictate, Thrall of Bones and Tunare`s Request are
+    /// charms, while Allure of Death (a necromancer mana regen) is not.
+    ///
+    /// A value of null means the wiki says instant, or says nothing. Both mean the same
+    /// thing here — no per-spell window, fall back to the generic one — because a 0 in
+    /// a max-gap calculation is a trap, not a tighter rule.
+    /// </summary>
+    private static readonly Lazy<Dictionary<string, double?>> CharmSpells = new(() =>
+        LoadCharms().Charms);
+
+    /// <summary>Spells the app's own name fallback would call charms and the wiki's
+    /// effects say are not — see <see cref="Families"/>, where "allure" would claim
+    /// Allure of Death. Vetoing is the only way to correct a fragment list that lives
+    /// in code, and a wrongly armed charm window is exactly how a pet that is not ours
+    /// starts collecting our damage credit (#177).</summary>
+    private static readonly Lazy<HashSet<string>> NotCharms = new(() => LoadCharms().NotCharms);
+
+    private static (Dictionary<string, double?> Charms, HashSet<string> NotCharms) LoadCharms()
     {
-        var map = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var charms = new Dictionary<string, double?>(StringComparer.OrdinalIgnoreCase);
+        var not = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         try
         {
             using var stream = System.Reflection.Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("EQBuddy.Core.Data.CcSpells.json");
-            if (stream is null) return map;
+                .GetManifestResourceStream("EQBuddy.Core.Data.CharmSpells.json");
+            if (stream is null) return (charms, not);
             using var doc = JsonDocument.Parse(stream);
-            foreach (var s in doc.RootElement.GetProperty("spells").EnumerateArray())
-                if (s.TryGetProperty("castTimeSeconds", out var ct)
-                    && s.GetProperty("name").GetString() is { Length: > 0 } name)
-                    map[name] = ct.GetDouble();
+            foreach (var s in doc.RootElement.GetProperty("charms").EnumerateArray())
+                if (s.GetProperty("name").GetString() is { Length: > 0 } name)
+                    charms[name] = s.TryGetProperty("castTimeSeconds", out var ct)
+                        && ct.GetDouble() > 0 ? ct.GetDouble() : null;
+            foreach (var s in doc.RootElement.GetProperty("notCharms").EnumerateArray())
+                if (s.GetString() is { Length: > 0 } name)
+                    not.Add(name);
         }
-        catch (Exception ex) { CoreLog.Error(ex); }
-        return map;
-    });
+        catch (Exception ex) { CoreLog.Error(ex); }   // malformed resource: seed still works
+        return (charms, not);
+    }
 
-    /// <summary>Cast time in seconds when the CC catalog knows it, else null (caller
+    /// <summary>Cast time in seconds when the charm catalog knows it, else null (caller
     /// falls back to a generic window). Rank suffixes fold like everywhere else.</summary>
     public double? CastTimeSeconds(string spell) =>
-        CcCastTimes.Value.TryGetValue(BaseName(spell), out var ct) ? ct : null;
+        CharmSpells.Value.TryGetValue(BaseName(spell), out var ct) ? ct : null;
+
+    /// <summary>Name evidence that says Charm, overruled where the wiki's effects for
+    /// that same spell say otherwise. Applied to the guessing sources only — the
+    /// curated seed and the charm catalog itself are evidence, not guesses.</summary>
+    private static SpellCategory VetoNonCharm(string name, SpellCategory guess) =>
+        guess == SpellCategory.Charm && NotCharms.Value.Contains(name)
+            ? SpellCategory.Unknown : guess;
 
     private readonly Dictionary<string, SpellCategory> _learned =
         new(StringComparer.OrdinalIgnoreCase);
@@ -337,13 +369,16 @@ public sealed partial class SpellCatalog
     {
         var name = BaseName(spell);
         if (Seed.TryGetValue(name, out var seeded)) return seeded;
-        if (WikiCc.Value.TryGetValue(name, out var wiki)) return wiki;
+        // Effect-proven charms come before the CC catalog and the name fragments: they
+        // are the only source here that read what the spell DOES.
+        if (CharmSpells.Value.ContainsKey(name)) return SpellCategory.Charm;
+        if (WikiCc.Value.TryGetValue(name, out var wiki)) return VetoNonCharm(name, wiki);
         if (_learned.TryGetValue(name, out var learned)) return learned;
         // Fall back to family matching, so an unlisted rank or a spell nobody typed into
         // the seed list still classifies.
         foreach (var (fragment, category) in Families)
             if (name.Contains(fragment, StringComparison.OrdinalIgnoreCase))
-                return category;
+                return VetoNonCharm(name, category);
         return SpellCategory.Unknown;
     }
 
@@ -356,7 +391,11 @@ public sealed partial class SpellCatalog
     {
         if (category == SpellCategory.Unknown) return false;
         var name = BaseName(spell);
-        if (name.Length == 0 || Seed.ContainsKey(name) || WikiCc.Value.ContainsKey(name)) return false;
+        // A CC entry the charm catalog has vetoed is not a classification worth
+        // protecting — observation should be free to replace it.
+        if (name.Length == 0 || Seed.ContainsKey(name) || CharmSpells.Value.ContainsKey(name)
+            || (WikiCc.Value.TryGetValue(name, out var w)
+                && VetoNonCharm(name, w) != SpellCategory.Unknown)) return false;
         if (_learned.TryGetValue(name, out var existing) && existing == category) return false;
         lock (_storeLock) _learned[name] = category;   // vs. the background serializer
         Revision++;

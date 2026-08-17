@@ -669,7 +669,45 @@ public sealed partial class SessionStats
                     // to us, which no bystander's pet ever sends.)
                     if (pc.Leader is { } leader
                         && !string.Equals(leader, _characterName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // …and when it names somebody ELSE, it is not merely unhelpful:
+                        // it is the one line in the log that DISPROVES ownership, which
+                        // is chrstahl's own suggestion in #177 and settles the cases
+                        // inference cannot. Inference has to guess from timing alone —
+                        // two charmers in one camp and a landing line that names no
+                        // caster — and a wrong guess quietly credits a stranger's pet
+                        // to us for as long as it lives. Drop the claim.
+                        //
+                        // Only against a character name we actually know: with none, the
+                        // leader may well BE us and the "disproof" would be us releasing
+                        // our own pet. And only for the creature the line names, since a
+                        // statement about a different pet says nothing about ours.
+                        var disproved = LogParser.Normalize(pc.PetName);
+                        if (_characterName is { Length: > 0 } && _petName is not null
+                            && string.Equals(_petName, disproved, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // Deliberately NOT a charm break: nothing of ours ended, so
+                            // recording a hold would print a duration for a pet we never
+                            // had. Damage already credited stays as it was booked —
+                            // rewinding aggregates would leave the session totals and
+                            // the per-source rows disagreeing, and the provisional rows
+                            // say "Pet?" precisely because they might be wrong.
+                            _petName = null;
+                            _petConfirmed = false;
+                            if (_charmHold is { } hold && string.Equals(
+                                    hold.Pet, disproved, StringComparison.OrdinalIgnoreCase))
+                                _charmHold = null;
+                            if (_charmProvisional is { } prv && string.Equals(
+                                    prv.Pet, disproved, StringComparison.OrdinalIgnoreCase))
+                                _charmProvisional = null;
+                        }
+                        // The held cast must go too, or the next landing line re-claims
+                        // the creature we were just told is not ours.
+                        if (_charmCandidate is { } foreign
+                            && string.Equals(foreign.Pet, disproved, StringComparison.OrdinalIgnoreCase))
+                            _charmCandidate = null;
                         break;
+                    }
                     // A blink/charmed line that followed an unrecognised cast, now proven
                     // ours: that cast was a charm spell, so remember it — permanently, via
                     // the attached store. The claim must name the same creature the line

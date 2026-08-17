@@ -355,12 +355,197 @@ public class SpellTrackingTests
     // cast completed can't steal the pet the way the old fixed 30s window allowed. ----
 
     [Fact]
-    public void CastTimesComeFromTheCcCatalog()
+    public void CastTimesComeFromTheGeneratedCharmCatalog()
     {
         var c = new SpellCatalog();
         Assert.Equal(3.5, c.CastTimeSeconds("Beguile"));
         Assert.Equal(3.5, c.CastTimeSeconds("Beguile III"));   // ranks fold as everywhere
         Assert.Null(c.CastTimeSeconds("Tame Spirit"));
+    }
+
+    /// <summary>The charm family is decided from the wiki's slot EFFECTS ("Charm up to
+    /// level N"), not from names — charms-harvest.py, #177. Half the family is named for
+    /// how it sounds, so a name list would have to be remembered rather than regenerated.
+    /// Cast times ride along, and they are what makes the arm window per-spell: 9s for
+    /// Cajole Undead against 2.4s for Charm is the spread a flat window cannot serve.</summary>
+    [Fact]
+    public void TheCharmFamilyIsWiderThanTheSpellsNamedCharm()
+    {
+        var c = new SpellCatalog();
+        foreach (var (spell, cast) in new[]
+        {
+            ("Dictate", 5.0), ("Thrall of Bones", 6.0), ("Call of Karana", 5.0),
+            ("Cajole Undead", 9.0), ("Enslave Death", 5.0), ("Boltran's Agacerie", 4.0),
+            ("Tunare`s Request", 8.0), ("Solon's Song of the Sirens", 3.0),
+        })
+        {
+            Assert.Equal(SpellCategory.Charm, c.Classify(spell));
+            Assert.Equal(cast, c.CastTimeSeconds(spell));
+        }
+        // The wiki files Solon's Bravura under its long name; the log can write either.
+        Assert.Equal(3.0, c.CastTimeSeconds("Solon's Bewitching Bravura"));
+        // Tunare`s Request carries the EQ backtick in game and an apostrophe on the
+        // wiki page title. Both are the same spell, and both must arm.
+        Assert.Equal(8.0, c.CastTimeSeconds("Tunare's Request"));
+    }
+
+    /// <summary>Named like a charm, proven otherwise by its own effects. Allure of Death
+    /// is a necromancer mana regen, and the "allure" name fragment used to classify it as
+    /// a charm — so every cast of it opened a 30s window in which any nearby charm landing
+    /// claimed a pet that was never ours. That is #177's "pet damage is inaccurate" seen
+    /// from the other end: not a missing pet, an invented one.</summary>
+    [Theory]
+    [InlineData("Allure of Death")]
+    [InlineData("Naki's Charm of Pernicity")]
+    [InlineData("Tavee's Charm of Diuturnity")]
+    [InlineData("Wind of Tishanian")]
+    [InlineData("Summon: Muzzle of Mardu")]
+    public void ASpellNamedLikeACharmIsNotOneWhenItsEffectsSayOtherwise(string spell)
+    {
+        Assert.NotEqual(SpellCategory.Charm, new SpellCatalog().Classify(spell));
+        Assert.Null(new SpellCatalog().CastTimeSeconds(spell));
+    }
+
+    [Fact]
+    public void AVetoedSpellCannotClaimAPetFromABystandersCharm()
+    {
+        var s = Replay(
+            At(0, 0, "You begin casting Allure of Death."),   // mana regen, not a charm
+            At(0, 3, "an orc legionnaire has been charmed."), // somebody else's charm
+            At(0, 5, "An orc legionnaire hits orc pawn for 9 points of damage.")).Snapshot();
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    /// <summary>The measured case for going per-spell: a flat two-second window misses
+    /// most real charms outright, because most charms take longer than two seconds to
+    /// cast and the landing arrives a cast time later. Charm Animals casts in 5s.</summary>
+    [Fact]
+    public void ASlowCharmClaimsAtItsOwnCastTimeWhereATwoSecondWindowWouldMiss()
+    {
+        var s = Replay(
+            At(0, 0, "You begin casting Charm Animals."),
+            At(0, 5, "a puma has been charmed."),
+            At(0, 7, "A puma hits orc pawn for 12 points of damage.")).Snapshot();
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Puma)");
+    }
+
+    /// <summary>And the other end of the same spread: Cajole Undead casts in 9s, so a
+    /// landing eight seconds out is still ours — while for Charm (2.4s) the identical
+    /// gap is somebody else's charm and gets no certain claim.</summary>
+    [Fact]
+    public void TheWindowFollowsTheSpellNotTheClock()
+    {
+        var slow = Replay(
+            At(0, 0, "You begin casting Cajole Undead."),
+            At(0, 8, "a decaying skeleton has been charmed."),
+            At(0, 10, "A decaying skeleton hits orc pawn for 6 points of damage.")).Snapshot();
+        Assert.Single(slow.DamageBySource, d => d.Name == "Pet (Decaying skeleton)");
+
+        var fast = Replay(
+            At(0, 0, "You begin casting Charm."),
+            At(0, 8, "a decaying skeleton has been charmed."),
+            At(0, 10, "A decaying skeleton hits orc pawn for 6 points of damage.")).Snapshot();
+        Assert.DoesNotContain(fast.DamageBySource, d => d.Name == "Pet (Decaying skeleton)");
+    }
+
+    /// <summary>An instant charm lands the same second it is cast. The wiki writes 0 for
+    /// instant AND leaves the field blank for unknown, so neither becomes a per-spell
+    /// window — both fall back to the generic one, which is the safe direction: never
+    /// fewer claims than before the windows existed.</summary>
+    [Fact]
+    public void AnInstantCharmClaimsImmediatelyAndKeepsTheGenericWindow()
+    {
+        Assert.Null(new SpellCatalog().CastTimeSeconds("Alluring Whispers"));
+
+        var instant = Replay(
+            At(0, 0, "You begin casting Alluring Whispers."),
+            At(0, 0, "a gnoll has been charmed."),
+            At(0, 2, "A gnoll hits orc pawn for 9 points of damage.")).Snapshot();
+        Assert.Single(instant.DamageBySource, d => d.Name == "Pet (Gnoll)");
+
+        // Same spell, a landing well past any plausible cast: still claimed, because a
+        // blank cast time must never tighten anything.
+        var late = Replay(
+            At(0, 0, "You begin casting Vampire Charm."),
+            At(0, 20, "a gnoll has been charmed."),
+            At(0, 22, "A gnoll hits orc pawn for 9 points of damage.")).Snapshot();
+        Assert.Single(late.DamageBySource, d => d.Name == "Pet (Gnoll)");
+    }
+
+    /// <summary>A charm landing with no cast of ours anywhere near it is a bystander's,
+    /// and claims nothing at all — not even the provisional state.</summary>
+    [Fact]
+    public void AForeignCharmWithNoCastOfOursIsNeverClaimed()
+    {
+        var s = Replay(
+            At(0, 0, "a thunder spirit princess has been charmed."),
+            At(0, 2, "A thunder spirit princess hits orc pawn for 30 points of damage.")).Snapshot();
+        Assert.DoesNotContain(s.DamageBySource, d => d.Name.StartsWith("Pet"));
+    }
+
+    // ---- /pet who leader (#177, chrstahl): the one line in the log that settles
+    // ownership outright, in both directions. ----
+
+    [Fact]
+    public void PetWhoLeaderNamingUsClaimsTheCreature()
+    {
+        var s = Replay(
+            At(0, 0, "A thunder spirit princess says, 'My leader is Douglas.'"),
+            At(0, 2, "A thunder spirit princess hits orc pawn for 30 points of damage.")).Snapshot();
+        Assert.Single(s.DamageBySource, d => d.Name == "Pet (Thunder spirit princess)");
+    }
+
+    /// <summary>chrstahl's suggestion, and the reason it is worth having: inference has
+    /// to guess from timing, and where two charmers share a camp it can guess wrong. The
+    /// leader line naming somebody else DISPROVES the claim, so the pet is released and
+    /// stops collecting our damage credit. Already-booked damage stays booked — rewinding
+    /// aggregates would leave the totals and the rows disagreeing.</summary>
+    [Fact]
+    public void PetWhoLeaderNamingSomeoneElseReleasesAPetWeWronglyClaimed()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Charm."),
+            At(0, 2, "a thunder spirit princess has been charmed."),   // claimed, wrongly
+            At(0, 4, "A thunder spirit princess hits orc pawn for 30 points of damage."),
+            At(0, 6, "A thunder spirit princess says, 'My leader is Ennoo.'"),
+            At(0, 8, "A thunder spirit princess hits orc pawn for 30 points of damage."));
+
+        var pet = Assert.Single(stats.Snapshot().DamageBySource,
+            d => d.Name == "Pet (Thunder spirit princess)");
+        Assert.Equal(30, pet.Total);   // only the hit before the disproof
+    }
+
+    /// <summary>The disproof is about the creature it names. Another player's pet
+    /// answering their own /pet who leader is ordinary say-channel chatter and must not
+    /// disturb our pet.</summary>
+    [Fact]
+    public void ALeaderLineAboutAnotherCreatureLeavesOurPetAlone()
+    {
+        var stats = Replay(
+            At(0, 0, "You begin casting Charm."),
+            At(0, 2, "a puma has been charmed."),
+            At(0, 4, "A dire wolf says, 'My leader is Ennoo.'"),
+            At(0, 6, "A puma hits orc pawn for 14 points of damage."));
+
+        Assert.Single(stats.Snapshot().DamageBySource, d => d.Name == "Pet (Puma)");
+    }
+
+    /// <summary>Without a character name the leader line proves nothing in EITHER
+    /// direction — the leader it names may well be us — so it must not release.</summary>
+    [Fact]
+    public void AnUnknownCharacterNameNeverReleasesOnALeaderLine()
+    {
+        var stats = new SessionStats();   // no CharacterName
+        foreach (var line in new[]
+        {
+            At(0, 0, "You begin casting Charm."),
+            At(0, 2, "a puma has been charmed."),
+            At(0, 4, "A puma says, 'My leader is Ennoo.'"),
+            At(0, 6, "A puma hits orc pawn for 14 points of damage."),
+        })
+            if (LogParser.Parse(line) is { } e) stats.Apply(e);
+
+        Assert.Single(stats.Snapshot().DamageBySource, d => d.Name == "Pet (Puma)");
     }
 
     [Fact]

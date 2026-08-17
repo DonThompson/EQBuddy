@@ -1,5 +1,5 @@
 {
- "comment": "Crowd-control spells harvested from eqlwiki Spellpage templates 2026-08-06 (Chaosrah: CC alerts missed enchanter stuns like Color Flux). Categories are curated - never regenerate them blindly. castTimeSeconds joined from the spells harvest by ccspells-promote.py; it powers the per-spell charm arm window (cast time + slack).",
+ "comment": "Crowd-control spells harvested from eqlwiki Spellpage templates 2026-08-06 (Chaosrah: CC alerts missed enchanter stuns like Color Flux). Categories are curated - never regenerate them blindly. Cast times are NOT here: the only consumer was the per-spell charm arm window, and that now reads the generated Data/CharmSpells.json (charms-harvest.py), which also decides charm membership from slot effects rather than names.",
  "spells": [
   {
    "name": "Air Elemental Attack",
@@ -7,13 +7,11 @@
   },
   {
    "name": "Allure",
-   "category": "Charm",
-   "castTimeSeconds": 6.0
+   "category": "Charm"
   },
   {
    "name": "Allure of the Wild",
-   "category": "Charm",
-   "castTimeSeconds": 9.0
+   "category": "Charm"
   },
   {
    "name": "Alluring Whispers",
@@ -21,38 +19,31 @@
   },
   {
    "name": "Anarchy",
-   "category": "Stun",
-   "castTimeSeconds": 3.5
+   "category": "Stun"
   },
   {
    "name": "Befriend Animal",
-   "category": "Charm",
-   "castTimeSeconds": 4.0
+   "category": "Charm"
   },
   {
    "name": "Beguile",
-   "category": "Charm",
-   "castTimeSeconds": 3.5
+   "category": "Charm"
   },
   {
    "name": "Beguile Animals",
-   "category": "Charm",
-   "castTimeSeconds": 6.0
+   "category": "Charm"
   },
   {
    "name": "Beguile Plants",
-   "category": "Charm",
-   "castTimeSeconds": 6.0
+   "category": "Charm"
   },
   {
    "name": "Beguile Undead",
-   "category": "Charm",
-   "castTimeSeconds": 6.0
+   "category": "Charm"
   },
   {
    "name": "Blast of Frost",
-   "category": "Stun",
-   "castTimeSeconds": 0.5
+   "category": "Stun"
   },
   {
    "name": "Blinding Fear",
@@ -60,43 +51,35 @@
   },
   {
    "name": "Boltran's Agacerie",
-   "category": "Charm",
-   "castTimeSeconds": 4.0
+   "category": "Charm"
   },
   {
    "name": "Boon of the Clear Mind",
-   "category": "Lull",
-   "castTimeSeconds": 3.5
+   "category": "Lull"
   },
   {
    "name": "Breath of Karana",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Breeze",
-   "category": "Lull",
-   "castTimeSeconds": 2.5
+   "category": "Lull"
   },
   {
    "name": "Brusco's Bombastic Bellow",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Cajole Undead",
-   "category": "Charm",
-   "castTimeSeconds": 9.0
+   "category": "Charm"
   },
   {
    "name": "Cajoling Whispers",
-   "category": "Charm",
-   "castTimeSeconds": 5.5
+   "category": "Charm"
   },
   {
    "name": "Call of Fire",
-   "category": "Stun",
-   "castTimeSeconds": 3.5
+   "category": "Stun"
   },
   {
    "name": "Call of Fire Strike",
@@ -104,8 +87,7 @@
   },
   {
    "name": "Call of Karana",
-   "category": "Charm",
-   "castTimeSeconds": 5.0
+   "category": "Charm"
   },
   {
    "name": "Call of Sky Strike",
@@ -113,23 +95,19 @@
   },
   {
    "name": "Calm",
-   "category": "Lull",
-   "castTimeSeconds": 2.5
+   "category": "Lull"
   },
   {
    "name": "Calm Animal",
-   "category": "Lull",
-   "castTimeSeconds": 2.5
+   "category": "Lull"
   },
   {
    "name": "Calming Visage",
-   "category": "Lull",
-   "castTimeSeconds": 2.0
+   "category": "Lull"
   },
   {
    "name": "Cease",
-   "category": "Stun",
-   "castTimeSeconds": 1.5
+   "category": "Stun"
   },
   {
    "name": "Ceticious Cloud",
@@ -137,108 +115,87 @@
   },
   {
    "name": "Chaos Flux",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Chaotic Feedback",
-   "category": "Stun",
-   "castTimeSeconds": 2.0
+   "category": "Stun"
   },
   {
    "name": "Charm",
-   "category": "Charm",
-   "castTimeSeconds": 2.4
+   "category": "Charm"
   },
   {
    "name": "Charm Animals",
-   "category": "Charm",
-   "castTimeSeconds": 5.0
+   "category": "Charm"
   },
   {
    "name": "Chill Bones",
-   "category": "Stun",
-   "castTimeSeconds": 6.0
+   "category": "Stun"
   },
   {
    "name": "Clarity",
-   "category": "Lull",
-   "castTimeSeconds": 3.1
+   "category": "Lull"
   },
   {
    "name": "Color Flux",
-   "category": "Stun",
-   "castTimeSeconds": 1.0
+   "category": "Stun"
   },
   {
    "name": "Color Shift",
-   "category": "Stun",
-   "castTimeSeconds": 1.5
+   "category": "Stun"
   },
   {
    "name": "Color Skew",
-   "category": "Stun",
-   "castTimeSeconds": 2.0
+   "category": "Stun"
   },
   {
    "name": "Color Slant",
-   "category": "Stun",
-   "castTimeSeconds": 1.5
+   "category": "Stun"
   },
   {
    "name": "Conglaciation of Bone",
-   "category": "Stun",
-   "castTimeSeconds": 6.0
+   "category": "Stun"
   },
   {
    "name": "Crission's Pixie Strike",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Dazzle",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Dementia",
-   "category": "Stun",
-   "castTimeSeconds": 6.0
+   "category": "Stun"
   },
   {
    "name": "Denon's Bereavement",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Desist",
-   "category": "Stun",
-   "castTimeSeconds": 1.75
+   "category": "Stun"
   },
   {
    "name": "Dictate",
-   "category": "Charm",
-   "castTimeSeconds": 5.0
+   "category": "Charm"
   },
   {
    "name": "Discordant Mind",
-   "category": "Stun",
-   "castTimeSeconds": 4.0
+   "category": "Stun"
   },
   {
    "name": "Divine Wrath",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Dizzying Wind",
-   "category": "Stun",
-   "castTimeSeconds": 2.0
+   "category": "Stun"
   },
   {
    "name": "Dominate Undead",
-   "category": "Charm",
-   "castTimeSeconds": 5.0
+   "category": "Charm"
   },
   {
    "name": "Dragon Charm",
@@ -246,8 +203,7 @@
   },
   {
    "name": "Draught of Jiva",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Earth Elemental Attack",
@@ -259,38 +215,31 @@
   },
   {
    "name": "Elnerick's Entombment of Ice",
-   "category": "Root",
-   "castTimeSeconds": 5.0
+   "category": "Root"
   },
   {
    "name": "Enforced Reverence",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Engorging Roots",
-   "category": "Root",
-   "castTimeSeconds": 1.75
+   "category": "Root"
   },
   {
    "name": "Engulfing Roots",
-   "category": "Root",
-   "castTimeSeconds": 2.5
+   "category": "Root"
   },
   {
    "name": "Enslave Death",
-   "category": "Charm",
-   "castTimeSeconds": 5.0
+   "category": "Charm"
   },
   {
    "name": "Ensnaring Roots",
-   "category": "Root",
-   "castTimeSeconds": 2.5
+   "category": "Root"
   },
   {
    "name": "Enthrall",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Entomb in Ice",
@@ -298,23 +247,19 @@
   },
   {
    "name": "Entrance",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Entrancing Lights",
-   "category": "Mesmerize",
-   "castTimeSeconds": 1.5
+   "category": "Mesmerize"
   },
   {
    "name": "Entrapping Roots",
-   "category": "Root",
-   "castTimeSeconds": 2.5
+   "category": "Root"
   },
   {
    "name": "Enveloping Roots",
-   "category": "Root",
-   "castTimeSeconds": 1.75
+   "category": "Root"
   },
   {
    "name": "Envenomed Heal",
@@ -322,13 +267,11 @@
   },
   {
    "name": "Fascination",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Fetter",
-   "category": "Root",
-   "castTimeSeconds": 1.75
+   "category": "Root"
   },
   {
    "name": "Fist of Air",
@@ -344,43 +287,35 @@
   },
   {
    "name": "Force",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Force Shock",
-   "category": "Stun",
-   "castTimeSeconds": 2.8
+   "category": "Stun"
   },
   {
    "name": "Force Snap",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Force Spiral of Al'Kabor",
-   "category": "Stun",
-   "castTimeSeconds": 5.0
+   "category": "Stun"
   },
   {
    "name": "Force Strike",
-   "category": "Stun",
-   "castTimeSeconds": 4.0
+   "category": "Stun"
   },
   {
    "name": "Frost Dagger",
-   "category": "Stun",
-   "castTimeSeconds": 0.5
+   "category": "Stun"
   },
   {
    "name": "Frost Shard",
-   "category": "Stun",
-   "castTimeSeconds": 0.5
+   "category": "Stun"
   },
   {
    "name": "Fury of Air",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "GelatRot",
@@ -392,18 +327,15 @@
   },
   {
    "name": "Gift of Pure Thought",
-   "category": "Lull",
-   "castTimeSeconds": 4.0
+   "category": "Lull"
   },
   {
    "name": "Glamour of Kintaz",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Grasping Roots",
-   "category": "Root",
-   "castTimeSeconds": 2.0
+   "category": "Root"
   },
   {
    "name": "Grounding Strike",
@@ -411,13 +343,11 @@
   },
   {
    "name": "Harmony",
-   "category": "Lull",
-   "castTimeSeconds": 3.0
+   "category": "Lull"
   },
   {
    "name": "Harmony of Nature",
-   "category": "Lull",
-   "castTimeSeconds": 2.5
+   "category": "Lull"
   },
   {
    "name": "Harpy Voice",
@@ -425,13 +355,11 @@
   },
   {
    "name": "Harvest",
-   "category": "Stun",
-   "castTimeSeconds": 10.0
+   "category": "Stun"
   },
   {
    "name": "Holy Might",
-   "category": "Stun",
-   "castTimeSeconds": 2.0
+   "category": "Stun"
   },
   {
    "name": "Holy Shock",
@@ -439,38 +367,31 @@
   },
   {
    "name": "Hungry Earth",
-   "category": "Root",
-   "castTimeSeconds": 2.0
+   "category": "Root"
   },
   {
    "name": "Ice Spear",
-   "category": "Stun",
-   "castTimeSeconds": 0.5
+   "category": "Stun"
   },
   {
    "name": "Ignite Bones",
-   "category": "Stun",
-   "castTimeSeconds": 6.1
+   "category": "Stun"
   },
   {
    "name": "Illusion: Tree",
-   "category": "Root",
-   "castTimeSeconds": 3.0
+   "category": "Root"
   },
   {
    "name": "Immobilize",
-   "category": "Root",
-   "castTimeSeconds": 1.75
+   "category": "Root"
   },
   {
    "name": "Incinerate Bones",
-   "category": "Stun",
-   "castTimeSeconds": 6.1
+   "category": "Stun"
   },
   {
    "name": "Instill",
-   "category": "Root",
-   "castTimeSeconds": 2.5
+   "category": "Root"
   },
   {
    "name": "Judgment of Ice",
@@ -478,28 +399,23 @@
   },
   {
    "name": "Jyll`s Static Pulse",
-   "category": "Stun",
-   "castTimeSeconds": 2.0
+   "category": "Stun"
   },
   {
    "name": "Kelin's Lucid Lullaby",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Kelin's Lugubrious Lament",
-   "category": "Lull",
-   "castTimeSeconds": 3.0
+   "category": "Lull"
   },
   {
    "name": "Largarn`s Lamentation",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Lightning Bolt",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Lightning Call",
@@ -507,38 +423,31 @@
   },
   {
    "name": "Lull",
-   "category": "Lull",
-   "castTimeSeconds": 1.5
+   "category": "Lull"
   },
   {
    "name": "Lull Animal",
-   "category": "Lull",
-   "castTimeSeconds": 1.5
+   "category": "Lull"
   },
   {
    "name": "Markar`s Clash",
-   "category": "Stun",
-   "castTimeSeconds": 3.3
+   "category": "Stun"
   },
   {
    "name": "Markar`s Discord",
-   "category": "Stun",
-   "castTimeSeconds": 3.3
+   "category": "Stun"
   },
   {
    "name": "Melodious Befuddlement",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Mesmerization",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Mesmerize",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Mesmerizing Breath",
@@ -558,88 +467,71 @@
   },
   {
    "name": "Numb the Dead",
-   "category": "Lull",
-   "castTimeSeconds": 2.0
+   "category": "Lull"
   },
   {
    "name": "One Hundred Blows",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Pacify",
-   "category": "Lull",
-   "castTimeSeconds": 3.0
+   "category": "Lull"
   },
   {
    "name": "Paralyzing Earth",
-   "category": "Root",
-   "castTimeSeconds": 2.5
+   "category": "Root"
   },
   {
    "name": "Rapture",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.5
+   "category": "Mesmerize"
   },
   {
    "name": "Rest the Dead",
-   "category": "Lull",
-   "castTimeSeconds": 3.0
+   "category": "Lull"
   },
   {
    "name": "Root",
-   "category": "Root",
-   "castTimeSeconds": 2.0
+   "category": "Root"
   },
   {
    "name": "Sacred Word",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Sanity Warp",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Sathir's Mesmerization",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Screaming Terror",
-   "category": "Mesmerize",
-   "castTimeSeconds": 2.6
+   "category": "Mesmerize"
   },
   {
    "name": "Shrieking Howl",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Sionachie's Dreams",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Solon's Bravura",
-   "category": "Charm",
-   "castTimeSeconds": 3.0
+   "category": "Charm"
   },
   {
    "name": "Solon's Song of the Sirens",
-   "category": "Charm",
-   "castTimeSeconds": 3.0
+   "category": "Charm"
   },
   {
    "name": "Song of Highsun",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Song of Twilight",
-   "category": "Mesmerize",
-   "castTimeSeconds": 3.0
+   "category": "Mesmerize"
   },
   {
    "name": "Sonic Scream",
@@ -647,18 +539,15 @@
   },
   {
    "name": "Soothe",
-   "category": "Lull",
-   "castTimeSeconds": 2.0
+   "category": "Lull"
   },
   {
    "name": "Sound of Force",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Spirit of Oak",
-   "category": "Root",
-   "castTimeSeconds": 4.0
+   "category": "Root"
   },
   {
    "name": "Stalwart Regeneration",
@@ -686,8 +575,7 @@
   },
   {
    "name": "Stun",
-   "category": "Stun",
-   "castTimeSeconds": 1.5
+   "category": "Stun"
   },
   {
    "name": "Stun Breath",
@@ -695,13 +583,11 @@
   },
   {
    "name": "Stun Command",
-   "category": "Stun",
-   "castTimeSeconds": 1.0
+   "category": "Stun"
   },
   {
    "name": "Stunning Blow",
-   "category": "Stun",
-   "castTimeSeconds": 2.0
+   "category": "Stun"
   },
   {
    "name": "Stunning Strike",
@@ -709,18 +595,15 @@
   },
   {
    "name": "Stunning Venom",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Summon: Muzzle of Mardu",
-   "category": "Charm",
-   "castTimeSeconds": 4.0
+   "category": "Charm"
   },
   {
    "name": "Symphonic Harmony",
-   "category": "Lull",
-   "castTimeSeconds": 3.0
+   "category": "Lull"
   },
   {
    "name": "System Shock",
@@ -732,43 +615,35 @@
   },
   {
    "name": "The Unspoken Word",
-   "category": "Stun",
-   "castTimeSeconds": 1.0
+   "category": "Stun"
   },
   {
    "name": "Thrall of Bones",
-   "category": "Charm",
-   "castTimeSeconds": 6.0
+   "category": "Charm"
   },
   {
    "name": "Thunder Strike",
-   "category": "Stun",
-   "castTimeSeconds": 3.5
+   "category": "Stun"
   },
   {
    "name": "Thunderbold",
-   "category": "Stun",
-   "castTimeSeconds": 3.0
+   "category": "Stun"
   },
   {
    "name": "Thunderclap",
-   "category": "Stun",
-   "castTimeSeconds": 3.15
+   "category": "Stun"
   },
   {
    "name": "Tishan's Clash",
-   "category": "Stun",
-   "castTimeSeconds": 2.5
+   "category": "Stun"
   },
   {
    "name": "Tishan`s Discord",
-   "category": "Stun",
-   "castTimeSeconds": 2.25
+   "category": "Stun"
   },
   {
    "name": "Treeform",
-   "category": "Root",
-   "castTimeSeconds": 4.0
+   "category": "Root"
   },
   {
    "name": "Tsunami",
@@ -776,8 +651,7 @@
   },
   {
    "name": "Tunare`s Request",
-   "category": "Charm",
-   "castTimeSeconds": 8.0
+   "category": "Charm"
   },
   {
    "name": "Vampire Charm",
@@ -785,8 +659,7 @@
   },
   {
    "name": "Vengeance of Al`Kabor",
-   "category": "Stun",
-   "castTimeSeconds": 5.0
+   "category": "Stun"
   },
   {
    "name": "Vengeance of the Glades",
@@ -794,13 +667,11 @@
   },
   {
    "name": "Verlekarnorm's Disaster",
-   "category": "Stun",
-   "castTimeSeconds": 15.0
+   "category": "Stun"
   },
   {
    "name": "Wake of Tranquility",
-   "category": "Lull",
-   "castTimeSeconds": 4.5
+   "category": "Lull"
   },
   {
    "name": "Wave of Flame",
@@ -808,23 +679,19 @@
   },
   {
    "name": "WhirlBolt",
-   "category": "Root",
-   "castTimeSeconds": 0.5
+   "category": "Root"
   },
   {
    "name": "Whirling Wind",
-   "category": "Stun",
-   "castTimeSeconds": 1.5
+   "category": "Stun"
   },
   {
    "name": "Wind of Tishanian",
-   "category": "Charm",
-   "castTimeSeconds": 1.0
+   "category": "Charm"
   },
   {
    "name": "Wrath of Ap'Sagor",
-   "category": "Stun",
-   "castTimeSeconds": 6.3
+   "category": "Stun"
   },
   {
    "name": "Ykesha",
