@@ -4147,6 +4147,8 @@ public partial class MainWindow : Window
         _hwndSource = (System.Windows.Interop.HwndSource)PresentationSource.FromVisual(this)!;
         _hwndSource.AddHook(_hotkeys.Hook);
         ApplyHotkeys();
+        // Under Wine + opt-in only: don't steal focus from a fullscreen game when clicked.
+        WineOverlay.MakeNonActivating(this);
     }
 
     // ---- global hotkeys, opt-in only (#100 — see HotkeyManager) ----

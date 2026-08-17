@@ -32,6 +32,22 @@ public sealed class AppSettings
     /// seconds (#91: Lossless Scaling's upscale surface buried the widget). Off = the old
     /// behavior, for screen-capture setups where the re-lift makes a visible double.</summary>
     public bool KeepAboveOverlays { get; set; } = true;
+
+    /// <summary>macOS/Wine only (CrossOver &amp; friends): float the widget over the game
+    /// even when it runs fullscreen, and stop a click on a widget from pulling the game
+    /// out of the foreground (no Mac menu bar flash, widget stays on top). Needs the
+    /// patched winemac.drv described in docs/CrossOver-macOS-overlay.md; on Windows —
+    /// or on Wine without that patch — it does nothing. Off by default: opt-in for the
+    /// Wine-on-Mac overlay setup, discoverable from the guide.</summary>
+    public bool WineFloatOverFullscreen { get; set; }
+
+    /// <summary>macOS/Wine only, immersive-only: keep the game visually fullscreen (Mac
+    /// menu bar hidden) even when it loses focus. Off by default and usually best left
+    /// off — the menu bar sits above normal windows, so keeping the game above it also
+    /// keeps it above every other window: with this on you can't pull another app onto
+    /// the game's monitor or alt-tab a window over it. Companion to WineFloatOverFullscreen;
+    /// both need the patched winemac.drv. See docs/CrossOver-macOS-overlay.md.</summary>
+    public bool WineKeepGameFullscreen { get; set; }
     /// <summary>Global hotkeys, opt-in only (#100): action key → gesture text
     /// ("Ctrl+Alt+M"). EMPTY BY DEFAULT and stays that way unless the player binds
     /// keys in Options — the 1.12–1.34 era's default binds ate other apps' shortcuts
