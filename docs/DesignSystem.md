@@ -532,7 +532,7 @@ a rework that absorbs every open bug stops being a rework.
 | **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **done** — `UI.Shared/ChipStyle.cs` + one control per UI; the Quests window now spends it. Render verified byte-for-byte unchanged |
 | 3 | Spawns + timers | **built** — `UI.Shared/TimerView.cs` is `EqTimer` + `EqProgress`; both windows rebuilt on it. reviewed; see §11.6 |
 | **4** | **Loot card + Loot breakout** | **built** — see §11.7; moved up because #198 concentrated the debt here |
-| 5 | Main widget | was 4 |
+| **5** | **Main widget** | was 4 — **5a built**, see §11.8; it needs staging |
 | 6 | Mini mode + chips | carries #190, #191, #199's gesture |
 | 7 | Map | unchanged |
 | 8 | Remaining windows | Gear, Drops, History, Travel, Options (+#197), breakouts (+#182) |
@@ -656,3 +656,72 @@ hides itself has two switches for one state, and only one of them is ever wired.
 about that is visible in a diff, in a unit test, or in a build — the same category as the
 Gate 2 clipping and the Gate 3 header offset, and the third gate running to find its own
 bug this way.
+
+---
+
+## 11.8 Gate 5a, as built — the widget's shared vocabulary (2026-08-18)
+
+**Gate 5 does not fit in one change, and pretending otherwise would be the wrong call.**
+Measured at the start: **473 ratchet violations** across `MainWindow.xaml` (732 lines),
+`MainWindow.xaml.cs` (4,552) and the Avalonia `MainWindow.cs` (5,165) — 127 literal font
+sizes, 174 spacing tuples, 167 glyphs. Gate 2 restructured one window; this is fourteen
+cards, the chrome, the mini bar and two UIs, on the surface a player looks at all session.
+The ratchet is per-FILE and all-or-nothing, so a partial migration earns no entry — which
+means the gate has to be staged by *vocabulary*, finishing each shared thing everywhere it
+appears rather than finishing one card at a time.
+
+**5a is the two pieces that are shared by every card**, and it took the count to **427**.
+
+### The card headings
+
+Fourteen headings, each a single TextBlock whose text began with an emoji:
+`Text="&#x1F480; Kills" FontSize="13"`. Two design decisions typed fourteen times, on the
+one surface that is always on screen — and emoji are exactly what failed to render under
+Wine in #148 and #166, on the Linux and macOS builds that are EQBuddy's only uncontested
+ground. A card header rendering as a hollow box is the first thing a player sees.
+
+- `OverlaySections.Icon(key)` maps card → icon for **both** UIs, beside the catalog that
+  already mapped card → title. Names are SHAPES ("Skull"), not cards ("Kills"), so a card
+  can be renamed without stranding an icon.
+- Seven new paths in `IconPaths`: Swords, Heal, Skull, Sparkle, Group, Coin, Scales.
+- WPF gets `EqCardTitle`, a control rather than a Style — a heading has two variables and a
+  Style cannot take arguments. XAML now says `<local:EqCardTitle Icon="Skull" Text="Kills"/>`.
+- Avalonia's headings already funnelled through one `Header(...)`, so it was one change.
+- `DesignSystemTests` now fails if a card names an icon that doesn't exist.
+
+### The sort strips
+
+"sort: total dps hits avg" — bare TextBlocks with a `Tag`, a shared `ParseSort` and a
+hand-written `SetSortVisual`, three times in the WPF XAML and once in Avalonia's
+`SortHeader`. They are `EqSegmentedStrip` now, and **what** they offer comes from
+`UI.Shared/SortStrip.cs`, which also fixes something that was quietly wrong: healing counts
+CASTS and rates in HPS, and both UIs derived that from a substring test on the heading text
+("does the title contain 'Heal'?") in two separate places.
+
+Damage-taken deliberately has no rate column: incoming damage per second of *your* combat
+time is a number with no meaning, and offering it invites reading it as somebody's DPS
+on you.
+
+### What the screenshot review caught — twice in one gate
+
+1. **The strips overlapped their own headings.** Each sat in a ONE-CELL Grid with the
+   section label, both aligned to opposite edges — fine for four small words, and a
+   collision once they became pills. Two-column Grid, `*` and `Auto`, exactly as trap 14's
+   worked example does for icons beside text.
+2. **Then the heading was trimmed to "Damage b…"** — because four chips plus a "sort:"
+   caption do not fit beside a sixteen-character heading in a 342px window. The caption
+   went: a strip that sits beside a heading naming its own list does not need to announce
+   that it is a sort. **A caption earns its place when two strips share a row** (the Loot
+   card's show/sort), and `SortStrip.Caption` says so where both UIs read it.
+
+### What is left, and the order it should go in
+
+427 violations. `MainWindow.xaml.cs` cannot join `DesignRatchetTests.Migrated` until every
+one of them is gone, so the remaining stages are:
+
+- **5b — the card bodies.** The biggest block, and the one that wants surfaces LIFTED into
+  their own files the way `LootCardView` was, since that is what also buys hotspot headroom.
+- **5c — the chrome**: title bar, KPI strip, mini bar. Carries #191 (TheMegaSage, approved)
+  and must respect §8b's reserved widths (#173).
+- **5d — `Theme.xaml`'s templates**: the ⭐ star toggle and the ▸ expander chevron are
+  glyphs inside shared ControlTemplates, so they belong to no single card.

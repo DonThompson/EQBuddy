@@ -78,6 +78,20 @@ public static class IconPaths
         // which was baked into the HEADER STRING itself, so the breakout had to
         // string-replace it back out to render a shorter version of the same line. The
         // glyph is a control, so it is a vector; the sentence is text, so it is text.
+        // Gate 5 (the widget). The card headers were the app's last big block of emoji —
+        // fourteen of them, on the ONE surface that is always on screen, and therefore the
+        // highest-value glyphs left to remove: #148 and #166 were emoji that did not
+        // render at all under Wine, on the Linux and macOS builds that are EQBuddy's only
+        // uncontested ground. Names describe the SHAPE, not the card, so a card can change
+        // what it shows without stranding an icon called "Kills".
+        ["Swords"] = "M6.5 2 2 6.5l5.9 5.9 2.3-2.3L6.5 2Zm11 0-2.3 2.3 2.3 2.3L22 2.1 17.5 2ZM2 17.5 6.5 22l7.4-7.4-2.3-2.3L2 17.5Zm12.4-4.6 7.6 7.6L20.2 22l-7.6-7.6 1.8-1.5Z",
+        ["Heal"] = "M20 9h-5V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5H4a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h5v5a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-5h5a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1Z",
+        ["Skull"] = "M12 2C7.58 2 4 5.58 4 10c0 2.38 1.04 4.51 2.7 5.98V19a1 1 0 0 0 1 1h1.55v-2h1.5v2h2.5v-2h1.5v2H17.3a1 1 0 0 0 1-1v-3.02A7.98 7.98 0 0 0 20 10c0-4.42-3.58-8-8-8ZM9 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Zm6 0a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z",
+        ["Sparkle"] = "M12 2l2.45 6.75L21 11.2l-6.55 2.45L12 20.4l-2.45-6.75L3 11.2l6.55-2.45L12 2Z",
+        ["Group"] = "M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5Zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5Z",
+        ["Coin"] = "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm0-13.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z",
+        ["Scales"] = "M13 4.82A2 2 0 0 0 14 3a2 2 0 1 0-4 0 2 2 0 0 0 1 1.82V6H4v2h1.62L2.5 15.5c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5L6.38 8H11v11H7v2h10v-2h-4V8h4.62L14.5 15.5c0 1.93 1.57 3.5 3.5 3.5s3.5-1.57 3.5-3.5L18.38 8H20V6h-7V4.82ZM6 16.5 4.35 12.6h3.3L6 16.5Zm12 0-1.65-3.9h3.3L18 16.5Z",
+
         ["Target"] = "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06ZM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7Z",
     };
 

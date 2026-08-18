@@ -263,6 +263,26 @@ public class DesignSystemTests
             Assert.Contains(v, DesignTokens.Numbers.Values);
     }
 
+    /// <summary>Every card on the widget has an icon, and every icon it names is real.
+    /// The fourteen emoji these replace were the last big block of glyphs in the app and
+    /// sat on the surface that is always on screen (Gate 5).</summary>
+    [Fact]
+    public void EveryWidgetCardHasARealIcon()
+    {
+        foreach (var (key, title) in OverlaySections.Catalog)
+        {
+            var icon = OverlaySections.Icon(key);
+            Assert.True(IconPaths.Names.Contains(icon),
+                $"card '{key}' ({title}) names icon '{icon}', which IconPaths does not have.");
+        }
+    }
+
+    /// <summary>An unmapped card falls back rather than throwing: a new card should look
+    /// plain, not take the widget down.</summary>
+    [Fact]
+    public void AnUnknownCardFallsBackToARealIcon() =>
+        Assert.True(IconPaths.Names.Contains(OverlaySections.Icon("nosuchcard")));
+
     // ---- the capture path ----
 
     /// <summary>Only the window GROUND goes opaque. Flattening a tint would repaint the

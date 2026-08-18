@@ -89,6 +89,7 @@ public partial class MainWindow : Window
         _quests = new QuestChecklistView(this, _settings, () => _raidLedger);
         _loot = new LootCardView(this, _settings);
         LootBody.Content = _loot.Body;
+        BuildSortStrips();
         GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
@@ -3971,43 +3972,59 @@ public partial class MainWindow : Window
             (d.Name, $"{d.Total:N0} · {d.Hits} {unit}{(d.Hits == 1 ? "" : "s")} · avg {(double)d.Total / d.Hits:0.#}")));
     }
 
-    private static StatSort ParseSort(object sender) => (string)((FrameworkElement)sender).Tag switch
+    // The three sort strips, on the chip primitive (Gate 5). They were bare TextBlocks
+    // with a Tag, a click handler and a hand-written ApplyVisual — the exact pattern the
+    // whole rework exists to remove, and the one #198 rebuilt by hand because the
+    // primitive was private to one window. WHAT each strip offers, and what healing calls
+    // its columns, comes from UI.Shared.EQBuddy.UI.Shared.SortStrip.
+    private EqSegmentedStrip _dmgOutStrip = null!, _dmgInStrip = null!, _healStrip = null!;
+
+    private void BuildSortStrips()
     {
-        "hits" => StatSort.Hits,
-        "avg" => StatSort.Avg,
-        "rate" => StatSort.Rate,
+        _dmgOutStrip = SortStripInto(DmgOutSortBar, EQBuddy.UI.Shared.SortStrip.ForDamage,
+            m => { _dmgOutSort = Sort(m); _dmgOutStrip.Select(m); RefreshUi(); });
+        _dmgInStrip = SortStripInto(DmgInSortBar, EQBuddy.UI.Shared.SortStrip.ForDamageTaken,
+            m => { _dmgInSort = Sort(m); _dmgInStrip.Select(m); RefreshUi(); });
+        _healStrip = SortStripInto(HealSortBar, EQBuddy.UI.Shared.SortStrip.ForHealing,
+            m => { _healSort = Sort(m); _healStrip.Select(m); RefreshUi(); });
+        _dmgOutStrip.Select(Metric(_dmgOutSort));
+        _dmgInStrip.Select(Metric(_dmgInSort));
+        _healStrip.Select(Metric(_healSort));
+    }
+
+    // Mapped by NAME, never by cast: StatSort is {Total,Hits,Avg,Rate} and the shared
+    // Metric is {Total,Rate,Hits,Avg}, so the ordinals disagree and a cast would silently
+    // sort by the wrong column.
+    private static StatSort Sort(EQBuddy.UI.Shared.SortStrip.Metric m) => m switch
+    {
+        EQBuddy.UI.Shared.SortStrip.Metric.Hits => StatSort.Hits,
+        EQBuddy.UI.Shared.SortStrip.Metric.Avg => StatSort.Avg,
+        EQBuddy.UI.Shared.SortStrip.Metric.Rate => StatSort.Rate,
         _ => StatSort.Total,
     };
 
-    private void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg,
-        TextBlock? rate = null)
+    private static EQBuddy.UI.Shared.SortStrip.Metric Metric(StatSort s) => s switch
     {
-        total.Foreground = (Brush)FindResource(mode == StatSort.Total ? "AccentBrush" : "DimBrush");
-        hits.Foreground = (Brush)FindResource(mode == StatSort.Hits ? "AccentBrush" : "DimBrush");
-        avg.Foreground = (Brush)FindResource(mode == StatSort.Avg ? "AccentBrush" : "DimBrush");
-        if (rate is not null)
-            rate.Foreground = (Brush)FindResource(mode == StatSort.Rate ? "AccentBrush" : "DimBrush");
-    }
+        StatSort.Hits => EQBuddy.UI.Shared.SortStrip.Metric.Hits,
+        StatSort.Avg => EQBuddy.UI.Shared.SortStrip.Metric.Avg,
+        StatSort.Rate => EQBuddy.UI.Shared.SortStrip.Metric.Rate,
+        _ => EQBuddy.UI.Shared.SortStrip.Metric.Total,
+    };
 
-    private void OnSortDmgOut(object sender, MouseButtonEventArgs e)
+    /// <summary>One labelled sort strip built into an empty host from the XAML.</summary>
+    private static EqSegmentedStrip SortStripInto(Panel host,
+        IReadOnlyList<EQBuddy.UI.Shared.SortStrip.Option> options, Action<EQBuddy.UI.Shared.SortStrip.Metric> onPick)
     {
-        _dmgOutSort = ParseSort(sender);
-        SetSortVisual(_dmgOutSort, DmgOutSortTotal, DmgOutSortHits, DmgOutSortAvg, DmgOutSortDps);
-        RefreshUi();
-    }
-
-    private void OnSortDmgIn(object sender, MouseButtonEventArgs e)
-    {
-        _dmgInSort = ParseSort(sender);
-        SetSortVisual(_dmgInSort, DmgInSortTotal, DmgInSortHits, DmgInSortAvg);
-        RefreshUi();
-    }
-
-    private void OnSortHeal(object sender, MouseButtonEventArgs e)
-    {
-        _healSort = ParseSort(sender);
-        SetSortVisual(_healSort, HealSortTotal, HealSortHits, HealSortAvg, HealSortHps);
-        RefreshUi();
+        // No "sort:" caption: this strip sits on the same row as the heading that names
+        // the list, and the caption cost that heading its last words in a 342px window.
+        // See SortStrip.Caption for when one is worth its width.
+        var strip = new EqSegmentedStrip(host);
+        foreach (var option in options)
+        {
+            var metric = option.Metric;
+            strip.Add(option.Label, metric, tip: option.Tip, onClick: () => onPick(metric));
+        }
+        return strip;
     }
 
     private void OnLootQuestMap(object sender, MouseButtonEventArgs e)

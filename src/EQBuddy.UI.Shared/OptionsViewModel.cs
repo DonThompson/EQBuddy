@@ -125,6 +125,38 @@ public static class OverlaySections
         ("tracked", "Watch"), ("buffs", "Buffs"), ("raids", "Raids"), ("money", "Money"), ("progress", "Progress"),
         ("faction", "Faction"), ("misc", "Travels & Deaths"),
     ];
+
+    /// <summary>The card's icon, by section key — one table both widgets read (Gate 5).
+    ///
+    /// These were fourteen emoji typed into fourteen places, on the ONE surface that is
+    /// always on screen. That made them the highest-value glyphs left in the app: #148 and
+    /// #166 exist because emoji failed to render at all under Wine, on the Linux and macOS
+    /// builds that are EQBuddy's only uncontested ground, and a card header that renders as
+    /// a hollow box is the first thing a player sees.
+    ///
+    /// Names are <see cref="IconPaths"/> SHAPES rather than card names, so a card can be
+    /// renamed or repurposed without stranding an icon called "Kills". Anything unmapped
+    /// falls back to a neutral marker rather than throwing — a new card should look plain,
+    /// not crash the widget.</summary>
+    private static readonly Dictionary<string, string> Icons = new(StringComparer.Ordinal)
+    {
+        ["combat"] = "Swords",
+        ["healing"] = "Heal",
+        ["kills"] = "Skull",
+        ["loot"] = "Bag",
+        ["motes"] = "Sparkle",
+        ["quests"] = "Map",
+        ["gear"] = "Gear",
+        ["tracked"] = "Target",
+        ["buffs"] = "Timer",
+        ["raids"] = "Group",
+        ["money"] = "Coin",
+        ["progress"] = "Chart",
+        ["faction"] = "Scales",
+        ["misc"] = "Location",
+    };
+
+    public static string Icon(string key) => Icons.GetValueOrDefault(key, "Info");
 }
 
 public sealed record OptionsCardRow(string Key, string Title, bool Hidden);

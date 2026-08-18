@@ -111,7 +111,29 @@ seen to pass for the wrong reason, and deleted.
 
 ---
 
-## THE NEXT TASK — Gate 5 of the UI/UX rework: the main widget
+## Gate 5a is built; 5b–5d are the rest. Full write-up in `docs/DesignSystem.md` §11.8
+
+**Gate 5 does not fit in one change.** Measured before starting: **473 ratchet violations**
+across the two widget files and their Avalonia twin — 127 literal font sizes, 174 spacing
+tuples, 167 glyphs, over 10,400 lines. The ratchet is per-file and all-or-nothing, so the
+gate has to be staged by VOCABULARY (finish one shared thing everywhere it appears) rather
+than card by card. 5a did the two things every card has: **the fourteen headings** and
+**the sort strips**. 427 left.
+
+Both landed in both UIs, and the screenshot review earned itself twice inside one gate —
+the strips first OVERLAPPED their headings (one-cell Grid, fine as four small words, a
+collision as pills), then TRIMMED them ("Damage b…") until the redundant "sort:" caption
+went. Neither is visible in a diff or a test.
+
+**Next: 5b — the card bodies.** Lift surfaces into their own files the way `LootCardView`
+was; that is the only thing that buys hotspot headroom as well as ratchet coverage. Then
+**5c** the chrome (carries #191, and §8b's reserved widths are non-negotiable — #173), then
+**5d** `Theme.xaml`'s templates, where the ⭐ and ▸ glyphs live inside shared
+ControlTemplates and so belong to no single card.
+
+---
+
+## THE OLD NEXT TASK — Gate 5 of the UI/UX rework: the main widget
 
 `docs/DesignSystem.md` §11.5 is the amended order; §10, §11.6 and §11.7 are the three
 worked examples. Gate 5 is the widget itself — the card chrome, the thirteen card headers,

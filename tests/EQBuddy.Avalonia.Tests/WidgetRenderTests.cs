@@ -99,7 +99,12 @@ public class WidgetRenderTests : IDisposable
 
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("🗺 Quests", text);
+        // The heading is a vector icon plus a word now (Gate 5): the emoji it replaces is
+        // exactly the kind that failed to render at all under Wine (#148, #166) — on this
+        // build.
+        Assert.Contains("Quests", text);
+        Assert.Contains(window.GetVisualDescendants().OfType<global::Avalonia.Controls.PathIcon>(),
+            i => i.Data is not null);
         Assert.Contains("↗", text);   // this card leaves rather than unfolds
 
         // Both checklists are seeded from the embedded catalogs, so the glance the two
@@ -646,9 +651,9 @@ public class WidgetRenderTests : IDisposable
 
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("⏳ Buffs", text);
+        Assert.Contains("Buffs", text);   // vector icon + word since Gate 5
         Assert.Contains(text, t => t.StartsWith("Nothing running"));
-        Assert.Contains("🐉 Raids", text);
+        Assert.Contains("Raids", text);   // vector icon + word since Gate 5
         Assert.Contains(text, t => t.StartsWith("Nothing defeated yet"));
         window.Close();
     }

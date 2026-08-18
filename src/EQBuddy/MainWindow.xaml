@@ -1,6 +1,7 @@
 ﻿<Window x:Class="EQBuddy.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:EQBuddy"
         Title="EQBuddy" SizeToContent="WidthAndHeight"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="True" ResizeMode="NoResize">
@@ -228,7 +229,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x2694;&#xFE0F; Combat" FontSize="13"/>
+                        <local:EqCardTitle Icon="Swords" Text="Combat"/>
                         <TextBlock x:Name="CombatHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 dps"/>
                         <ToggleButton x:Name="StarDps" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="dps" Click="OnStarChanged" ToolTip="Show DPS in mini dashboard"/>
@@ -310,19 +311,14 @@
                     <StackPanel x:Name="CombatSessionBody">
                     <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
-                        <TextBlock Text="Damage by attack" Style="{StaticResource SectionLabel}"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <TextBlock Text="sort:" FontSize="10" Foreground="{DynamicResource DimBrush}" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="DmgOutSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
-                                       Foreground="{DynamicResource AccentBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
-                            <TextBlock x:Name="DmgOutSortDps" Text="dps" FontSize="10" Cursor="Hand" Tag="rate" Margin="6,0,0,0"
-                                       ToolTip="Per-ability DPS: that ability's damage ÷ total time in combat"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
-                            <TextBlock x:Name="DmgOutSortHits" Text="hits" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
-                            <TextBlock x:Name="DmgOutSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortDmgOut"/>
-                        </StackPanel>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Damage by attack" Style="{StaticResource SectionLabel}"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                   ToolTip="Damage by attack"/>
+                        <StackPanel Grid.Column="1" x:Name="DmgOutSortBar" Orientation="Horizontal"/>
                     </Grid>
                     <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="PetAbilityLabel" Text="▸ Pet abilities" Style="{StaticResource SectionLabel}" Visibility="Collapsed"
@@ -330,16 +326,14 @@
                                ToolTip="What your pet is using, split out of its Pet row above — click to expand"/>
                     <ItemsControl x:Name="PetAbilityList" Margin="0,2,0,4" Visibility="Collapsed"/>
                     <Grid>
-                        <TextBlock Text="Damage taken from" Style="{StaticResource SectionLabel}"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <TextBlock Text="sort:" FontSize="10" Foreground="{DynamicResource DimBrush}" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="DmgInSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
-                                       Foreground="{DynamicResource AccentBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
-                            <TextBlock x:Name="DmgInSortHits" Text="hits" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
-                            <TextBlock x:Name="DmgInSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortDmgIn"/>
-                        </StackPanel>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Damage taken from" Style="{StaticResource SectionLabel}"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                   ToolTip="Damage taken from"/>
+                        <StackPanel Grid.Column="1" x:Name="DmgInSortBar" Orientation="Horizontal"/>
                     </Grid>
                     <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="RecentFightsLabel" Text="Recent fights" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
@@ -365,7 +359,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x2695;&#xFE0F; Healing" FontSize="13"/>
+                        <local:EqCardTitle Icon="Heal" Text="Healing"/>
                         <TextBlock x:Name="HealingHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 hps"/>
                         <ToggleButton x:Name="StarHps" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="hps" Click="OnStarChanged" ToolTip="Show HPS in mini dashboard"/>
@@ -386,20 +380,14 @@
                     <StackPanel x:Name="HealSessionBody">
                     <TextBlock x:Name="HealingSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <TextBlock x:Name="HealSpellsLabel" Text="Heals cast" FontSize="11" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                                    Foreground="{DynamicResource GoodBrush}" Visibility="Collapsed"/>
-                        <StackPanel x:Name="HealSortBar" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
-                            <TextBlock Text="sort:" FontSize="10" Foreground="{DynamicResource DimBrush}" Margin="0,0,4,0"/>
-                            <TextBlock x:Name="HealSortTotal" Text="total" FontSize="10" Cursor="Hand" Tag="total"
-                                       Foreground="{DynamicResource AccentBrush}" MouseLeftButtonDown="OnSortHeal"/>
-                            <TextBlock x:Name="HealSortHps" Text="hps" FontSize="10" Cursor="Hand" Tag="rate" Margin="6,0,0,0"
-                                       ToolTip="Per-spell HPS: that spell's healing ÷ total time in combat"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
-                            <TextBlock x:Name="HealSortHits" Text="casts" FontSize="10" Cursor="Hand" Tag="hits" Margin="6,0,0,0"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
-                            <TextBlock x:Name="HealSortAvg" Text="avg" FontSize="10" Cursor="Hand" Tag="avg" Margin="6,0,0,0"
-                                       Foreground="{DynamicResource DimBrush}" MouseLeftButtonDown="OnSortHeal"/>
-                        </StackPanel>
+                        <StackPanel Grid.Column="1" x:Name="HealSortBar" Orientation="Horizontal" Visibility="Collapsed"/>
                     </Grid>
                     <ItemsControl x:Name="HealSpellList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="HealersLabel" Text="Healed by" FontSize="11" FontWeight="SemiBold"
@@ -417,7 +405,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F480; Kills" FontSize="13"/>
+                        <local:EqCardTitle Icon="Skull" Text="Kills"/>
                         <TextBlock x:Name="KillsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
                         <ToggleButton x:Name="StarKills" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="kills" Click="OnStarChanged" ToolTip="Show kills in mini dashboard"/>
@@ -442,7 +430,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F392; Loot" FontSize="13"/>
+                        <local:EqCardTitle Icon="Bag" Text="Loot"/>
                         <TextBlock x:Name="LootHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 items"/>
                         <TextBlock Grid.Column="2" Text="&#x1F5FA;" FontSize="12" Cursor="Hand"
                                    Margin="8,0,0,0" VerticalAlignment="Center"
@@ -472,7 +460,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F52E; Motes" FontSize="13"/>
+                        <local:EqCardTitle Icon="Sparkle" Text="Motes"/>
                         <TextBlock x:Name="MotesHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
                         <ToggleButton x:Name="StarMotes" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="motes" Click="OnStarChanged" ToolTip="Show motes in mini dashboard"/>
@@ -498,7 +486,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="&#x1F5FA; Quests" FontSize="13"/>
+                    <local:EqCardTitle Icon="Map" Text="Quests"/>
                     <TextBlock x:Name="QuestsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text=""/>
                 </Grid>
             </Button>
@@ -510,7 +498,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F6E1; Gear" FontSize="13"/>
+                        <local:EqCardTitle Icon="Gear" Text="Gear"/>
                         <TextBlock x:Name="GearHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0/0"/>
                     </Grid>
                 </Expander.Header>
@@ -541,7 +529,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F3AF; Watch" FontSize="13"/>
+                        <local:EqCardTitle Icon="Target" Text="Watch"/>
                         <TextBlock x:Name="TrackedHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
                     </Grid>
                 </Expander.Header>
@@ -555,7 +543,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F409; Raids" FontSize="13"/>
+                        <local:EqCardTitle Icon="Group" Text="Raids"/>
                         <TextBlock x:Name="RaidsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
                     </Grid>
                 </Expander.Header>
@@ -570,7 +558,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x23F3; Buffs" FontSize="13"/>
+                        <local:EqCardTitle Icon="Timer" Text="Buffs"/>
                         <TextBlock x:Name="BuffsHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0"/>
                         <!-- No mini chip behind this star — it opens the Buff Set breakout
                              while minimized (#120 stage 2, Frankthetankk). -->
@@ -590,7 +578,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F4B0; Money" FontSize="13"/>
+                        <local:EqCardTitle Icon="Coin" Text="Money"/>
                         <TextBlock x:Name="MoneyHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0c"/>
                         <ToggleButton x:Name="StarMoney" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="money" Click="OnStarChanged" ToolTip="Show money in mini dashboard"/>
@@ -611,7 +599,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F4C8; Progress" FontSize="13"/>
+                        <local:EqCardTitle Icon="Chart" Text="Progress"/>
                         <TextBlock x:Name="ProgressHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0% xp"/>
                         <ToggleButton x:Name="StarXp" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="xp" Click="OnStarChanged" ToolTip="Show XP in mini dashboard"/>
@@ -654,7 +642,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x2696;&#xFE0F; Faction" FontSize="13"/>
+                        <local:EqCardTitle Icon="Scales" Text="Faction"/>
                         <TextBlock x:Name="FactionHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="—"/>
                     </Grid>
                 </Expander.Header>
@@ -669,7 +657,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="&#x1F5FA;&#xFE0F; Travels &amp; Deaths" FontSize="13"/>
+                        <local:EqCardTitle Icon="Location" Text="Travels &amp; Deaths"/>
                         <TextBlock x:Name="MiscHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 deaths"/>
                         <ToggleButton x:Name="StarDeaths" Grid.Column="2" Style="{StaticResource StarToggle}"
                                       Tag="deaths" Click="OnStarChanged" ToolTip="Show deaths in mini dashboard"/>

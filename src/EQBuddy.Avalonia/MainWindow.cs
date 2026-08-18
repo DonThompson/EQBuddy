@@ -220,6 +220,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private readonly ItemsControl _zoneList = new();
     private readonly TextBlock _healSpellsLabel = AppTheme.Heading("Heals cast", AppTheme.GoodBrush);
     private readonly StackPanel _healSortBar = new() { Orientation = Orientation.Horizontal };
+    // The three sort strips, on the chip primitive (Gate 5) — they were nine TextBlocks
+    // with Tags, a shared ParseSort and a hand-written SetSortVisual.
+    private EqSegmentedStrip _dmgOutStrip = null!, _dmgInStrip = null!, _healStrip = null!;
     private readonly TextBlock _healersLabel = AppTheme.Heading("Healed by", AppTheme.GoodBrush);
     private readonly TextBlock _partyKillsLabel = AppTheme.Heading("Group kills");
     private readonly TextBlock _soldLabel = AppTheme.Heading("Sold to merchants");
@@ -239,17 +242,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private readonly Dictionary<string, Button> _stars = new();
     private readonly Dictionary<string, SectionCard> _sections = new(StringComparer.OrdinalIgnoreCase);
     private readonly StackPanel _sectionsPanel = new();
-    private TextBlock _dmgOutSortTotal = null!;
     private TextBlock? _dmgOutSortDps;
-    private TextBlock _dmgOutSortHits = null!;
-    private TextBlock _dmgOutSortAvg = null!;
-    private TextBlock _dmgInSortTotal = null!;
-    private TextBlock _dmgInSortHits = null!;
-    private TextBlock _dmgInSortAvg = null!;
-    private TextBlock _healSortTotal = null!;
     private TextBlock? _healSortHps;
-    private TextBlock _healSortHits = null!;
-    private TextBlock _healSortAvg = null!;
     private DateTime _lastCharScan = DateTime.MinValue;
     private DateTime _lastJanitorRun = DateTime.MinValue;
     private DateTime _lastUpdateCheck = DateTime.MinValue;
@@ -875,13 +869,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         // Tracker window owns that job, and this card is the way in, which is also why
         // the ⚙ menu no longer carries a Quest tracker line. The header still reports
         // both checklists, so the glance survives.
-        _sections["quests"] = AppTheme.SectionLink(Header("🗺 Quests", _questsHeader),
+        _sections["quests"] = AppTheme.SectionLink(Header("quests", "Quests", _questsHeader),
             () => ShowQuestsWindow());
         ToolTip.SetTip(_sections["quests"],
             "Open the Quest Tracker — search every quest by reward, item, quest giver or "
             + "zone, and work your Epic 1.0 and Plane of Sky checklists");
-        _sections["gear"] = AppTheme.Section(Header("🛡 Gear", _gearHeader), BuildGearSection());
-        _sections["tracked"] = AppTheme.Section(Header("Watch", _trackedHeader), _trackedPanel);
+        _sections["gear"] = AppTheme.Section(Header("gear", "Gear", _gearHeader), BuildGearSection());
+        _sections["tracked"] = AppTheme.Section(Header("tracked", "Watch", _trackedHeader), _trackedPanel);
         // The ⭐ opens the Buff set breakout while minimized (#120 stage 2). Unlike the
         // other stars this one gates a window only — "buffs" is not a mini-chip stat.
         var buffsStar = AppTheme.StarButton("buffs",
@@ -889,11 +883,11 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             + "and what you lost this session");
         buffsStar.Click += OnStarChanged;
         _stars["buffs"] = buffsStar;
-        _sections["buffs"] = AppTheme.Section(Header("⏳ Buffs", _buffsHeader, buffsStar), _buffsPanel);
-        _sections["raids"] = AppTheme.Section(Header("🐉 Raids", _raidsHeader), _raidsPanel);
+        _sections["buffs"] = AppTheme.Section(Header("buffs", "Buffs", _buffsHeader, buffsStar), _buffsPanel);
+        _sections["raids"] = AppTheme.Section(Header("raids", "Raids", _raidsHeader), _raidsPanel);
         AddSection("money", "money", "Money", _moneyHeader, BuildMoneySection(), "Show money in mini dashboard");
         AddSection("progress", "xp", "Progress", _progressHeader, BuildProgressSection(), "Show XP in mini dashboard");
-        _sections["faction"] = AppTheme.Section(Header("Faction", _factionHeader), _factionList);
+        _sections["faction"] = AppTheme.Section(Header("faction", "Faction", _factionHeader), _factionList);
         AddSection("misc", "deaths", "Travels & Deaths", _miscHeader, BuildMiscSection(), "Show deaths in mini dashboard");
         return _sectionsPanel;
     }
@@ -940,16 +934,31 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         var star = AppTheme.StarButton(starKey, tip);
         star.Click += OnStarChanged;
         _stars[starKey] = star;
-        _sections[sectionKey] = AppTheme.Section(Header(title, value, star), content);
+        _sections[sectionKey] = AppTheme.Section(Header(sectionKey, title, value, star), content);
     }
 
-    private static Grid Header(string title, TextBlock value, Button? star = null)
+    /// <summary>A card's heading: its icon and its name, on one baseline (Gate 5). The
+    /// icon comes from <see cref="OverlaySections.Icon"/> — the same table the WPF widget
+    /// reads — and it is a vector, because the emoji it replaces are what failed to render
+    /// under Wine in #148 and #166, on this very build.</summary>
+    private static Grid Header(string sectionKey, string title, TextBlock value, Button? star = null)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         if (star is not null) grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
-        grid.Children.Add(new TextBlock { Text = title, FontSize = 13, Foreground = AppTheme.TextBrush });
+
+        // A card's name is one or two words that never wrap, so a horizontal StackPanel is
+        // safe here; put WRAPPING text beside an icon and it must be a two-column Grid
+        // instead (trap 14).
+        var heading = new StackPanel { Orientation = Orientation.Horizontal };
+        var icon = DesignSystem.Icon(OverlaySections.Icon(sectionKey), "TextBrush",
+            size: DesignTokens.IconInline);
+        icon.Margin = new Thickness(0, 0, DesignTokens.SpaceS, 0);
+        heading.Children.Add(icon);
+        heading.Children.Add(DesignSystem.Text(DesignTokens.TypeRole.TitleSection, title));
+        grid.Children.Add(heading);
+
         Grid.SetColumn(value, 1);
         grid.Children.Add(value);
         if (star is not null)
@@ -1002,8 +1011,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         var body = _combatSessionBody;
         _combatSummary.Margin = new Thickness(0, 2, 0, 4);
         body.Children.Add(_combatSummary);
-        body.Children.Add(SortHeader("Damage by attack", out _dmgOutSortTotal, out _dmgOutSortHits,
-            out _dmgOutSortAvg, out _dmgOutSortDps, OnSortDmgOut, rateText: "dps"));
+        body.Children.Add(SortHeader("Damage by attack", SortStrip.ForDamage,
+            m => { _dmgOutSort = Sort(m); _dmgOutStrip.Select(m); RefreshUi(); }, out _dmgOutStrip));
         body.Children.Add(_damageSourceList);
         var petHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         _petAbilityLabel.Cursor = new Cursor(StandardCursorType.Hand);
@@ -1018,8 +1027,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         petHeader.Children.Add(petStar);
         body.Children.Add(petHeader);
         body.Children.Add(_petAbilityList);
-        body.Children.Add(SortHeader("Damage taken from", out _dmgInSortTotal, out _dmgInSortHits,
-            out _dmgInSortAvg, out _, OnSortDmgIn));
+        body.Children.Add(SortHeader("Damage taken from", SortStrip.ForDamageTaken,
+            m => { _dmgInSort = Sort(m); _dmgInStrip.Select(m); RefreshUi(); }, out _dmgInStrip));
         body.Children.Add(_damageTakenList);
         _recentFightsLabel.Margin = new Thickness(0, 6, 0, 0);
         body.Children.Add(_recentFightsLabel);
@@ -1097,8 +1106,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         var body = _healSessionBody;
         _healingSummary.Margin = new Thickness(0, 2, 0, 4);
         body.Children.Add(_healingSummary);
-        var sort = SortHeader("Heals cast", out _healSortTotal, out _healSortHits, out _healSortAvg,
-            out _healSortHps, OnSortHeal, _healSpellsLabel, _healSortBar, "hps");
+        var sort = SortHeader("Heals cast", SortStrip.ForHealing,
+            m => { _healSort = Sort(m); _healStrip.Select(m); RefreshUi(); }, out _healStrip,
+            _healSpellsLabel, _healSortBar);
         body.Children.Add(sort);
         body.Children.Add(_healSpellList);
         body.Children.Add(_healersLabel);
@@ -1208,47 +1218,34 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         return panel;
     }
 
-    private static Control SortHeader(string title, out TextBlock total, out TextBlock hits, out TextBlock avg,
-        out TextBlock? rate, EventHandler<PointerPressedEventArgs> handler, TextBlock? titleBlock = null,
-        StackPanel? sortBar = null, string? rateText = null)
+    /// <summary>A labelled sort strip over a breakdown list (Gate 5). WHAT it offers, and
+    /// what healing calls its columns, comes from <see cref="SortStrip"/> — both UIs read
+    /// that one table, because the casts-not-hits rule used to be a substring test on the
+    /// heading text in two places.</summary>
+    private static Control SortHeader(string title, IReadOnlyList<SortStrip.Option> options,
+        Action<SortStrip.Metric> onPick, out EqSegmentedStrip strip,
+        TextBlock? titleBlock = null, StackPanel? sortBar = null)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         grid.Children.Add(titleBlock ?? AppTheme.Heading(title));
+
         sortBar ??= new StackPanel { Orientation = Orientation.Horizontal };
         sortBar.HorizontalAlignment = HorizontalAlignment.Right;
-        sortBar.Children.Add(AppTheme.DimText("sort:", new Thickness(0, 0, 4, 0)));
-        total = SortLink("total", "total", handler, selected: true);
-        var rateSubject = title.Contains("Heal", StringComparison.OrdinalIgnoreCase) ? "spell" : "ability";
-        rate = rateText is null ? null : SortLink(rateText, "rate", handler,
-            tip: $"Per-{rateSubject} {rateText}: that {rateSubject}'s total divided by total time in combat");
-        hits = SortLink(title.Contains("Heal", StringComparison.OrdinalIgnoreCase) ? "casts" : "hits", "hits", handler);
-        avg = SortLink("avg", "avg", handler);
-        sortBar.Children.Add(total);
-        if (rate is not null) sortBar.Children.Add(rate);
-        sortBar.Children.Add(hits);
-        sortBar.Children.Add(avg);
+        // No "sort:" caption — the heading beside it already names the list, and the
+        // caption cost that heading its last words on a narrow widget (SortStrip.Caption).
+        strip = new EqSegmentedStrip(sortBar);
+        foreach (var option in options)
+        {
+            var metric = option.Metric;
+            strip.Add(option.Label, metric, tip: option.Tip, onClick: () => onPick(metric));
+        }
+        strip.Select(SortStrip.Metric.Total);
+
         Grid.SetColumn(sortBar, 1);
         grid.Children.Add(sortBar);
         return grid;
-    }
-
-    private static TextBlock SortLink(string text, string tag, EventHandler<PointerPressedEventArgs> handler,
-        bool selected = false, string? tip = null)
-    {
-        var link = new TextBlock
-        {
-            Text = text,
-            Tag = tag,
-            FontSize = 10,
-            Foreground = selected ? AppTheme.AccentBrush : AppTheme.DimBrush,
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Margin = new Thickness(text == "total" ? 0 : 6, 0, 0, 0),
-        };
-        if (tip is not null) ToolTip.SetTip(link, tip);
-        link.PointerPressed += handler;
-        return link;
     }
 
     /// <summary>Reorganized 1.67.1 (David: the flat twenty-item list needed shelves like
@@ -4883,36 +4880,16 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         _ => StatSort.Total,
     };
 
-    private static void SetSortVisual(StatSort mode, TextBlock total, TextBlock hits, TextBlock avg,
-        TextBlock? rate = null)
+    // Mapped by NAME, never by cast: StatSort is {Total,Hits,Avg,Rate} and the shared
+    // Metric is {Total,Rate,Hits,Avg}, so the ordinals disagree and a cast would silently
+    // sort by the wrong column.
+    private static StatSort Sort(SortStrip.Metric m) => m switch
     {
-        total.Foreground = mode == StatSort.Total ? AppTheme.AccentBrush : AppTheme.DimBrush;
-        hits.Foreground = mode == StatSort.Hits ? AppTheme.AccentBrush : AppTheme.DimBrush;
-        avg.Foreground = mode == StatSort.Avg ? AppTheme.AccentBrush : AppTheme.DimBrush;
-        if (rate is not null)
-            rate.Foreground = mode == StatSort.Rate ? AppTheme.AccentBrush : AppTheme.DimBrush;
-    }
-
-    private void OnSortDmgOut(object? sender, PointerPressedEventArgs e)
-    {
-        _dmgOutSort = ParseSort(sender!);
-        SetSortVisual(_dmgOutSort, _dmgOutSortTotal, _dmgOutSortHits, _dmgOutSortAvg, _dmgOutSortDps);
-        RefreshUi();
-    }
-
-    private void OnSortDmgIn(object? sender, PointerPressedEventArgs e)
-    {
-        _dmgInSort = ParseSort(sender!);
-        SetSortVisual(_dmgInSort, _dmgInSortTotal, _dmgInSortHits, _dmgInSortAvg);
-        RefreshUi();
-    }
-
-    private void OnSortHeal(object? sender, PointerPressedEventArgs e)
-    {
-        _healSort = ParseSort(sender!);
-        SetSortVisual(_healSort, _healSortTotal, _healSortHits, _healSortAvg, _healSortHps);
-        RefreshUi();
-    }
+        SortStrip.Metric.Hits => StatSort.Hits,
+        SortStrip.Metric.Avg => StatSort.Avg,
+        SortStrip.Metric.Rate => StatSort.Rate,
+        _ => StatSort.Total,
+    };
 
     // Internal: the lifted Loot card formats the same stat-block tooltips.
     internal static readonly FontFamily MonoFamily = new("monospace");
