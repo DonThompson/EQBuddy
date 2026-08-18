@@ -1,5 +1,17 @@
 [
  {
+  "version": "1.92.0",
+  "date": "2026-08-18",
+  "highlights": [
+   "RESTORED - YOU CAN TELL EQBUDDY YOU TURNED A PLANE OF SKY REWARD IN AGAIN. This one is an apology as much as a fix. The old Sky card on the widget let you tick off a whole reward once you'd handed it over; when that card became a launcher and the tracker was rebuilt, the per-ITEM ticks came across and the per-REWARD one quietly did not. EQBuddy still READ that setting everywhere - the tracker, the phone, both builds - but after that change the only thing that could still SET it was the achievements import. So if you turned in a Sky quest and had no achievement export handy, there was no way to say so: every piece ticked, the reward stuck on \"ready\" forever, and the Sky counter unable to move past it. Each reward now has a \"Mark turned in\" button on its heading, and a \"Reopen\" to take it back.",
+   "TURNING ONE IN DOES THE OBVIOUS THING, and so does taking it back. Marking a reward turned in ticks its items for you - you had them, and then you didn't - and settles any tick EQBuddy had placed itself while it was unsure which class earned it. Reopening a reward you mis-clicked leaves your item ticks exactly where they were: you know what you're still carrying, and undoing one click shouldn't cost you six.",
+   "THE WIDGET'S CARD HEADINGS ARE DRAWN NOW, NOT TYPED. All fourteen - Combat, Healing, Kills, Loot, Motes, Quests, Gear, Watch, Buffs, Raids, Money, Progress, Faction, Travels & Deaths - used an emoji, and emoji are exactly what failed to render at all under Wine on Linux and macOS in earlier releases. They're vectors in your theme's colour now, on the one surface that's on screen the whole time you play. The little copy, timeline, pet and proc marks in the Combat card went the same way.",
+   "THE SORT LINKS ARE PROPER CONTROLS. \"sort: total dps hits avg\" on the damage, damage-taken and healing lists were four words where the lit one was a slightly different colour; they're the same pills the Quest Tracker and Spawns window already use. Healing correctly counts CASTS and rates in HPS - both builds worked that out from the heading text before, in two separate places, which is the sort of thing that stays right until it doesn't.",
+   "AND THE FARMING LIST LINES UP. Drops under each creature in the Kills card were indented with plain spaces, which drift out of alignment at any zoom other than 100%. They hang properly now.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.91.0",
   "date": "2026-08-17",
   "highlights": [
