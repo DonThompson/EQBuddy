@@ -201,6 +201,33 @@ baseline (limit 4,701). Gate 4 took 86 lines out of it and did not go under the 
 so the baseline is unchanged — but a gate that lifts several more surfaces will, and the
 rule is to lower it in the same commit.
 
+## Capability restored: turning a Plane of Sky reward in (2026-08-18)
+
+**A reorganisation cost a feature, and nothing caught it.** The widget's Sky card carried a
+per-REWARD turn-in check. When that card became a launcher (2026-08-16) and the tracker was
+rebuilt around a list and a detail pane, the per-ITEM ticks came across and the per-reward
+one did not. `AppSettings.SkyQuestCompleted` kept being READ — by `QuestChecklistLayout`,
+by both desktops and by EQBuddy Mobile — while the only thing left that could WRITE it was
+the achievements import. A player who turned a reward in and had no achievements export to
+paste could not say so: every piece ticked, the reward permanently "ready", the Sky counter
+unable to move past it.
+
+`UI.Shared/SkyCompleteToggle.cs` restores it, beside `EpicCompleteToggle` — the ASYMMETRY
+between those two is what let it go missing. The old card's rules are kept verbatim because
+they were right: turning in acquires every item in the reward and resolves any parked
+auto-tick, and reopening leaves the item boxes alone (a mis-click costs one click to undo,
+not six). `QuestChecklistGroup` now carries `CompletionKey` and `Completed`, so a view asks
+the layout rather than parsing the note string, and Epic groups carry no key — its
+completion is per class, and a turn-in button must not appear there by accident.
+
+Surfaced as **"Mark turned in" / "Reopen"** on the reward heading in both Quest Trackers,
+matching the General tab's own turn-in button from Gate 2 rather than inventing a control.
+
+**Worth generalising:** this went missing because the DATA survived the move and only the
+WRITE path did not, which no test and no ratchet can see. When folding a surface, check
+what still writes each setting it owned — a setting that only readers touch is the
+signature.
+
 ## Debts and open threads
 
 **Owed publicly, from replies posted 2026-08-17.** These are commitments, not ideas:

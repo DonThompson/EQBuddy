@@ -608,7 +608,38 @@ public sealed class QuestsWindow : Window
             headingText.Foreground = AppTheme.AccentBrush;
             ToolTip.SetTip(headingText, "Open the wiki page for this quest");
             OnClick(headingText, () => OpenUrl(EqlWiki.PageUrl(rewardName)));
-            _questsPanel.Children.Add(headingText);
+            // "I turned this in." Restored 2026-08-18 — the widget's Sky card had this per
+            // reward, and when that card became a launcher only the per-ITEM ticks came
+            // across. SkyQuestCompleted kept being READ here, on Windows and on the phone,
+            // while nothing but the achievements import could WRITE it.
+            if (group.CompletionKey is { } rewardKey && (group.Completed || group.ReadyToTurnIn))
+            {
+                var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+                row.Children.Add(headingText);
+
+                var completed = group.Completed;
+                var turnIn = new Button
+                {
+                    Content = SkyCompleteToggle.ButtonLabel(completed),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceL, 0, 0),
+                };
+                ToolTip.SetTip(turnIn, completed
+                    ? "Reopen this reward. Your item ticks stay as they are — you know what you still hold."
+                    : "You handed these in: marks the reward done and ticks its items.");
+                turnIn.Click += (_, _) =>
+                {
+                    if (completed) SkyCompleteToggle.Reopen(_settings, rewardKey);
+                    else SkyCompleteToggle.MarkTurnedIn(_settings, rewardKey,
+                        SkyCompleteToggle.ItemsFor(_settings.SkyQuestChecklist, rewardKey));
+                    _settings.Save();
+                    Refresh(force: true);
+                };
+                Grid.SetColumn(turnIn, 1);
+                row.Children.Add(turnIn);
+                _questsPanel.Children.Add(row);
+            }
+            else _questsPanel.Children.Add(headingText);
 
             foreach (var row in group.Rows)
             {

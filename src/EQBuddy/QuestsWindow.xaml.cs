@@ -1325,7 +1325,42 @@ public partial class QuestsWindow : Window
                 e.Handled = true;
                 OpenUrl(EqlWiki.PageUrl(rewardName));
             };
-            QuestsPanel.Children.Add(headingText);
+            // "I turned this in." Restored 2026-08-18 — the widget's Sky card had this per
+            // reward, and when that card became a launcher only the per-ITEM ticks came
+            // across: SkyQuestCompleted kept being READ by both desktops and the phone
+            // while nothing but the achievements import could WRITE it. Holding the pieces
+            // and having handed them over are different states.
+            if (group.CompletionKey is { } rewardKey && (group.Completed || group.ReadyToTurnIn))
+            {
+                var row = new Grid();
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                row.Children.Add(headingText);
+
+                var turnIn = new Button
+                {
+                    Style = (Style)FindResource("EqPrimaryButton"),
+                    Content = SkyCompleteToggle.ButtonLabel(group.Completed),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceL, 0, 0),
+                    ToolTip = group.Completed
+                        ? "Reopen this reward. Your item ticks stay as they are — you know what you still hold."
+                        : "You handed these in: marks the reward done and ticks its items.",
+                };
+                var completed = group.Completed;
+                turnIn.Click += (_, _) =>
+                {
+                    if (completed) SkyCompleteToggle.Reopen(_settings, rewardKey);
+                    else SkyCompleteToggle.MarkTurnedIn(_settings, rewardKey,
+                        SkyCompleteToggle.ItemsFor(_settings.SkyQuestChecklist, rewardKey));
+                    _settings.Save();
+                    Refresh(force: true);
+                };
+                Grid.SetColumn(turnIn, 1);
+                row.Children.Add(turnIn);
+                QuestsPanel.Children.Add(row);
+            }
+            else QuestsPanel.Children.Add(headingText);
 
             foreach (var row in group.Rows)
             {

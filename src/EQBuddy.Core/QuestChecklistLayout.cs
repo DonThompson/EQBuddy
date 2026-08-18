@@ -12,12 +12,25 @@ public sealed record QuestChecklistRow(
     bool Unassigned);
 
 /// <summary>A group of rows under one heading, with the state of the reward as a whole.</summary>
+/// <param name="CompletionKey">For Sky, the key that says "this reward is turned in"
+/// (<see cref="QuestChecklistLayout.RewardKey"/>). Null for Epic, whose completion is
+/// per CLASS rather than per group. A view needs this to offer the turn-in control at
+/// all — without it the only way to close a reward out was the achievements import.</param>
+/// <param name="Completed">Turned in. Distinct from every item being acquired: holding
+/// the pieces and having handed them over are different states, and the whole point of
+/// the reward group is to tell them apart.</param>
 public sealed record QuestChecklistGroup(
     string ClassName,
     string Heading,
     string? Note,
-    IReadOnlyList<QuestChecklistRow> Rows)
+    IReadOnlyList<QuestChecklistRow> Rows,
+    string? CompletionKey = null,
+    bool Completed = false)
 {
+    /// <summary>Every item in hand, and not yet turned in — the moment the turn-in
+    /// control is worth offering.</summary>
+    public bool ReadyToTurnIn => !Completed && Rows.Count > 0 && Rows.All(r => r.Acquired);
+
     public int Done => Rows.Count(r => r.Acquired);
     public int Total => Rows.Count;
 }
@@ -75,7 +88,9 @@ public static class QuestChecklistLayout
                                 Detail(i.Npc, i.Source),
                                 i.Acquired,
                                 i.AcquiredUnassigned)),
-                    ])),
+                    ],
+                    RewardKey(g.Key.ClassName, g.Key.Reward),
+                    completed.Contains(RewardKey(g.Key.ClassName, g.Key.Reward)))),
         ];
     }
 
