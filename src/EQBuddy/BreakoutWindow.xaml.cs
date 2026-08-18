@@ -622,8 +622,8 @@ public partial class BreakoutWindow : Window
                 // freshly swapped-in class gets, right where adding happens.
                 var none = new TextBlock
                 {
-                    Text = "nothing picked for this class yet", FontSize = 11,
-                    FontStyle = FontStyles.Italic, Margin = new Thickness(4, 0, 0, 2),
+                    Text = "nothing picked for this class yet", FontSize = DesignTokens.Spec(DesignTokens.TypeRole.Caption).Size,
+                    FontStyle = FontStyles.Italic, Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, DesignTokens.SpaceXxs),
                 };
                 none.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
                 Rows.Items.Add(none);
@@ -639,14 +639,14 @@ public partial class BreakoutWindow : Window
     /// gaining class's bucket / ✕ dismiss for good — never auto-added.</summary>
     private Grid BuffSuggestionRow(MainWindow main, BuffSuggestion sug)
     {
-        var row = new Grid { Margin = new Thickness(4, 3, 0, 1) };
+        var row = new Grid { Margin = new Thickness(DesignTokens.SpaceXs, DesignTokens.StateRuleWidth, 0, 1) };
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var text = new TextBlock
         {
             Text = $"new at your level — add {sug.Spell} to {sug.Class}?",
-            FontSize = 11, FontStyle = FontStyles.Italic,
+            FontSize = DesignTokens.Spec(DesignTokens.TypeRole.Caption).Size, FontStyle = FontStyles.Italic,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
             ToolTip = "Your level-up made this buff available. The tick adds it to that "
@@ -659,7 +659,7 @@ public partial class BreakoutWindow : Window
         {
             Style = (Style)FindResource("IconButton"),
             Content = DesignSystem.Icon("Check", "GoodBrush", size: DesignTokens.IconInline),
-            Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Add {sug.Spell} to your {sug.Class} set",
+            Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0), ToolTip = $"Add {sug.Spell} to your {sug.Class} set",
         };
         add.Click += (_, _) => main.AcceptBuffSuggestion(sug);
         Grid.SetColumn(add, 1);
@@ -668,7 +668,7 @@ public partial class BreakoutWindow : Window
         {
             Style = (Style)FindResource("IconButton"),
             Content = DesignSystem.Icon("Close", size: DesignTokens.IconInline),
-            Margin = new Thickness(4, 0, 0, 0),
+            Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0),
             ToolTip = "Dismiss — never suggest this buff for this character again",
         };
         dismiss.Click += (_, _) => main.DismissBuffSuggestion(sug);
@@ -687,7 +687,7 @@ public partial class BreakoutWindow : Window
     private void AddBuffLossFold(MainWindow main, List<BuffLossEntry> losses)
     {
         if (losses.Count == 0) return;
-        var head = new Grid { Margin = new Thickness(0, 5, 0, 0) };
+        var head = new Grid { Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0) };
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -706,7 +706,7 @@ public partial class BreakoutWindow : Window
         var label = new TextBlock
         {
             Text = $"lost this session ({losses.Count})",
-            FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
+            FontSize = DesignTokens.Spec(DesignTokens.TypeRole.Caption).Size, Cursor = System.Windows.Input.Cursors.Hand,
             ToolTip = "Every set buff that went missing this session, newest first, with "
                 + "the best cause the log names: expired (the countdown ran out; est = "
                 + "the duration was still the wiki-base estimate), faded (the wear-off "
@@ -758,7 +758,7 @@ public partial class BreakoutWindow : Window
             var row = new TextBlock
             {
                 Text = $"{loss.Time:h:mm:ss tt}  {loss.Spell} — {loss.Cause}",
-                FontSize = 10.5, Margin = new Thickness(8, 0, 0, 1),
+                FontSize = DesignTokens.Spec(DesignTokens.TypeRole.Metadata).Size, Margin = new Thickness(DesignTokens.SpaceM, 0, 0, 1),
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 ToolTip = $"{loss.Spell} — {loss.Cause} at {loss.Time:h:mm:ss tt}",
             };
@@ -772,7 +772,7 @@ public partial class BreakoutWindow : Window
     /// from THIS class bucket only.</summary>
     private Grid BuffSetRow(MainWindow main, string key, string cls, BuffSetEntryState entry)
     {
-        var row = new Grid { Margin = new Thickness(4, 1, 0, 1) };
+        var row = new Grid { Margin = new Thickness(DesignTokens.SpaceXs, 1, 0, 1) };
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -785,7 +785,7 @@ public partial class BreakoutWindow : Window
         };
         var name = new TextBlock
         {
-            Text = entry.Spell, FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis,
+            Text = entry.Spell, FontSize = DesignTokens.Spec(DesignTokens.TypeRole.Body).Size, TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
         };
         if (italic) name.FontStyle = FontStyles.Italic;
@@ -793,7 +793,7 @@ public partial class BreakoutWindow : Window
         row.Children.Add(name);
         var clock = new TextBlock
         {
-            Text = BuffStatusText(entry), FontSize = 11, Margin = new Thickness(6, 0, 0, 0),
+            Text = BuffStatusText(entry), FontSize = DesignTokens.Spec(DesignTokens.TypeRole.Caption).Size, Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0),
             VerticalAlignment = VerticalAlignment.Center,
             ToolTip = entry.Status switch
             {
@@ -812,7 +812,7 @@ public partial class BreakoutWindow : Window
         {
             Style = (Style)FindResource("IconButton"),
             Content = DesignSystem.Icon("Close", size: DesignTokens.IconInline),
-            Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Remove {entry.Spell} from {cls}",
+            Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0), ToolTip = $"Remove {entry.Spell} from {cls}",
         };
         remove.Click += (_, _) =>
         {

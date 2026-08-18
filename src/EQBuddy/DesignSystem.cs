@@ -91,6 +91,19 @@ internal static class DesignSystem
         d["GripBar"] = new Thickness(DesignTokens.SpaceL, 0, DesignTokens.Indent, 0);
         d["GripLine"] = new Thickness(DesignTokens.SpaceXl, 0, DesignTokens.SpaceXl,
             DesignTokens.SpaceXxs);
+
+        // The breakout windows' chrome.
+        d["PadBreakout"] = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceS,
+            DesignTokens.SpaceM, DesignTokens.SpaceM);
+        d["PadScope"] = new Thickness(DesignTokens.SpaceS, 1, DesignTokens.SpaceS, 1);
+        d["PadXxs"] = new Thickness(DesignTokens.SpaceXxs);
+        d["InsetXs"] = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
+        d["InsetS"] = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
+        d["FlankXs"] = new Thickness(DesignTokens.SpaceXs, 0, DesignTokens.SpaceXs, 0);
+        d["FlankXxs"] = new Thickness(DesignTokens.SpaceXxs, 0, DesignTokens.SpaceXxs, 0);
+        d["FlankS"] = new Thickness(DesignTokens.SpaceS, 0, DesignTokens.SpaceS, 0);
+        d["InsetXxsLeft"] = new Thickness(DesignTokens.SpaceXxs, 0, 0, 0);
+        d["RowTightLeft"] = new Thickness(1, 0, 0, DesignTokens.SpaceXxs);
         return d;
     }
 

@@ -6,7 +6,7 @@
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
         ResizeMode="CanResize" WindowStartupLocation="Manual">
-    <Border x:Name="Chrome" CornerRadius="12" BorderThickness="1" Padding="10,7,10,9"
+    <Border x:Name="Chrome" CornerRadius="{DynamicResource CornerPanel}" BorderThickness="1" Padding="{DynamicResource PadBreakout}"
             MouseLeftButtonDown="OnDrag">
         <Grid>
             <Grid.RowDefinitions>
@@ -29,49 +29,49 @@
                      TRIMS, and a stack measures with infinite width so trimming would
                      never fire and the text would run under the buttons (trap 14). -->
                 <local:EqIcon x:Name="TitleIcon" Glyph="Info" Size="12"
-                              VerticalAlignment="Center" Margin="0,0,5,0"/>
-                <TextBlock Grid.Column="1" x:Name="TitleText" FontSize="12.5" FontWeight="SemiBold"
+                              VerticalAlignment="Center" Margin="{DynamicResource GapS}"/>
+                <TextBlock Grid.Column="1" x:Name="TitleText" FontSize="{DynamicResource FontTitleSection}" FontWeight="SemiBold"
                            TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                 <!-- Damage kind only (#102, jeremycranfill): the Combat card's ⧉ fight
                      export, reachable without leaving the minimized view. -->
                 <local:EqIcon Grid.Column="2" x:Name="CopyFight" Glyph="Copy" Size="11"
-                           VerticalAlignment="Center" Cursor="Hand" Margin="4,0"
+                           VerticalAlignment="Center" Cursor="Hand" Margin="{DynamicResource FlankXs}"
                            Visibility="Collapsed" MouseLeftButtonDown="OnCopyFight"
                            Ink="DimBrush"
                            ToolTip="Copy the last fight as Discord-ready text (a monospace block — the official Discord blocks images, so the parse travels as text). Your numbers only, from your log."/>
                 <local:EqIcon Grid.Column="3" x:Name="OpenTimeline" Glyph="Timeline" Size="11"
-                           VerticalAlignment="Center" Cursor="Hand" Margin="4,0"
+                           VerticalAlignment="Center" Cursor="Hand" Margin="{DynamicResource FlankXs}"
                            Visibility="Collapsed" MouseLeftButtonDown="OnOpenTimeline"
                            Ink="DimBrush"
                            ToolTip="Fight timeline: the whole pull, a lane per skill — every hit, miss and resist, plus DPS over time."/>
-                <Border Grid.Column="4" x:Name="ScopeBorder" CornerRadius="6" BorderThickness="1"
-                        Margin="6,0,6,0" VerticalAlignment="Center">
+                <Border Grid.Column="4" x:Name="ScopeBorder" CornerRadius="{DynamicResource CornerCard}" BorderThickness="1"
+                        Margin="{DynamicResource FlankS}" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock x:Name="ScopeFight" Text="Fight" FontSize="10" Padding="7,1"
+                        <TextBlock x:Name="ScopeFight" Text="Fight" FontSize="{DynamicResource FontMetadata}" Padding="{DynamicResource PadScope}"
                                    Cursor="Hand" MouseLeftButtonDown="OnScopeFight"/>
-                        <TextBlock x:Name="ScopeSession" Text="Session" FontSize="10" Padding="7,1"
+                        <TextBlock x:Name="ScopeSession" Text="Session" FontSize="{DynamicResource FontMetadata}" Padding="{DynamicResource PadScope}"
                                    Cursor="Hand" MouseLeftButtonDown="OnScopeSession"/>
                     </StackPanel>
                 </Border>
                 <local:EqIcon Grid.Column="5" Glyph="Close" Size="11" VerticalAlignment="Center"
-                           Cursor="Hand" Margin="2,0" MouseLeftButtonDown="OnDismiss"
+                           Cursor="Hand" Margin="{DynamicResource FlankXxs}" MouseLeftButtonDown="OnDismiss"
                            ToolTip="Hide this window for good (its star chip stays; re-enable under Options → Breakout windows)"/>
             </Grid>
-            <TextBlock Grid.Row="1" x:Name="SubText" FontSize="10.5" Margin="1,0,0,2"
+            <TextBlock Grid.Row="1" x:Name="SubText" FontSize="{DynamicResource FontMetadata}" Margin="{DynamicResource RowTightLeft}"
                        TextTrimming="CharacterEllipsis"/>
             <!-- Sort links for the stat kinds (damage/healing/pet), same metrics as the
                  main cards; hidden for Watch and Loot, whose rows aren't ability stats. -->
             <StackPanel Grid.Row="2" x:Name="SortBar" Orientation="Horizontal"
-                        HorizontalAlignment="Right" Margin="0,0,2,3">
-                <TextBlock Text="sort:" FontSize="10" Margin="0,0,4,0"
+                        HorizontalAlignment="Right" Margin="{DynamicResource GripInset}">
+                <TextBlock Text="sort:" FontSize="{DynamicResource FontMetadata}" Margin="{DynamicResource GapXs}"
                            Foreground="{DynamicResource DimBrush}"/>
-                <TextBlock x:Name="SortTotal" Text="total" FontSize="10" Cursor="Hand"
-                           Tag="total" MouseLeftButtonDown="OnSortClick" Margin="0,0,6,0"/>
-                <TextBlock x:Name="SortHits" Text="hits" FontSize="10" Cursor="Hand"
-                           Tag="hits" MouseLeftButtonDown="OnSortClick" Margin="0,0,6,0"/>
-                <TextBlock x:Name="SortAvg" Text="avg" FontSize="10" Cursor="Hand"
-                           Tag="avg" MouseLeftButtonDown="OnSortClick" Margin="0,0,6,0"/>
-                <TextBlock x:Name="SortRate" Text="dps" FontSize="10" Cursor="Hand"
+                <TextBlock x:Name="SortTotal" Text="total" FontSize="{DynamicResource FontMetadata}" Cursor="Hand"
+                           Tag="total" MouseLeftButtonDown="OnSortClick" Margin="{DynamicResource GapS}"/>
+                <TextBlock x:Name="SortHits" Text="hits" FontSize="{DynamicResource FontMetadata}" Cursor="Hand"
+                           Tag="hits" MouseLeftButtonDown="OnSortClick" Margin="{DynamicResource GapS}"/>
+                <TextBlock x:Name="SortAvg" Text="avg" FontSize="{DynamicResource FontMetadata}" Cursor="Hand"
+                           Tag="avg" MouseLeftButtonDown="OnSortClick" Margin="{DynamicResource GapS}"/>
+                <TextBlock x:Name="SortRate" Text="dps" FontSize="{DynamicResource FontMetadata}" Cursor="Hand"
                            Tag="rate" MouseLeftButtonDown="OnSortClick"/>
             </StackPanel>
             <!-- Loot Session scope only: show all / looted / other on the left and the
@@ -85,28 +85,28 @@
                           HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
                 <StackPanel>
                     <ItemsControl x:Name="Rows"/>
-                    <TextBlock x:Name="EmptyText" FontSize="11" Margin="1,1,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="EmptyText" FontSize="{DynamicResource FontCaption}" Margin="1,1,0,0" Visibility="Collapsed"/>
                 </StackPanel>
             </ScrollViewer>
             <!-- Buffs kind only (#120 stage 2, Frankthetankk): the in-place editor —
                  pick a class bucket, type a buff, done, no Options round-trip. Same
                  seen-first search the Options editor uses (BuffSetSearch). -->
-            <Grid Grid.Row="4" x:Name="BuffEditor" Visibility="Collapsed" Margin="0,5,0,0">
+            <Grid Grid.Row="4" x:Name="BuffEditor" Visibility="Collapsed" Margin="{DynamicResource LeadXs}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <ComboBox x:Name="BuffClassBox" FontSize="11" MinWidth="90" Margin="0,0,5,0"
+                <ComboBox x:Name="BuffClassBox" FontSize="{DynamicResource FontCaption}" MinWidth="90" Margin="{DynamicResource GapS}"
                           VerticalAlignment="Center"
                           ToolTip="Which class bucket the next pick goes into — (any class) applies whatever combination you run"/>
-                <TextBox Grid.Column="1" x:Name="BuffAddBox" FontSize="11.5"
+                <TextBox Grid.Column="1" x:Name="BuffAddBox" FontSize="{DynamicResource FontBodySecondary}"
                          Style="{DynamicResource InputBox}"
                          TextChanged="OnBuffSearchChanged"
                          ToolTip="Type a few letters of a buff — buffs you've been seen casting list first, then the whole catalog"/>
                 <Popup x:Name="BuffPopup" PlacementTarget="{Binding ElementName=BuffAddBox}"
                        Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
-                    <Border x:Name="BuffPopupChrome" BorderThickness="1" Padding="2" CornerRadius="6">
-                        <ListBox x:Name="BuffMatches" MaxHeight="200" MaxWidth="360" FontSize="11.5"
+                    <Border x:Name="BuffPopupChrome" BorderThickness="1" Padding="{DynamicResource PadXxs}" CornerRadius="{DynamicResource CornerCard}">
+                        <ListBox x:Name="BuffMatches" MaxHeight="200" MaxWidth="360" FontSize="{DynamicResource FontBodySecondary}"
                                  SelectionChanged="OnBuffMatchPicked"/>
                     </Border>
                 </Popup>
@@ -124,7 +124,7 @@
                     <ControlTemplate TargetType="Thumb">
                         <local:EqIcon Glyph="Expand" Size="11" Opacity="0.75"
                                    Foreground="{DynamicResource AccentBrush}"
-                                   Background="Transparent" Padding="2,0,0,0"/>
+                                   Background="Transparent" Padding="{DynamicResource InsetXxsLeft}"/>
                     </ControlTemplate>
                 </Thumb.Template>
             </Thumb>

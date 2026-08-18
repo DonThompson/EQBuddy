@@ -44,9 +44,11 @@ public class DesignRatchetTests
         "EQBuddy.Avalonia/LootCardView.cs",
         // Gate 5: the widget's own markup — the FIRST widget file to join, and the one
         // the ratchet was written for. 473 violations were measured across the widget
-        // files at the start of the gate. The two BreakoutWindow files are glyph-clean
-        // and are next; they still carry literal sizes, so they are not on this list yet.
+        // files at the start of the gate. The two BreakoutWindow files
+        // joined with it — the whole breakout surface, markup and code-behind.
         "EQBuddy/MainWindow.xaml",
+        "EQBuddy/BreakoutWindow.xaml",
+        "EQBuddy/BreakoutWindow.xaml.cs",
     ];
 
     public static TheoryData<string> MigratedFiles()
