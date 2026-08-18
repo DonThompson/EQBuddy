@@ -38,10 +38,9 @@ internal sealed class KillsCardView : IWidgetCard
 
     public KillsCardView()
     {
-        _summary = DesignSystem.Text(DesignTokens.TypeRole.BodySecondary);
-        _summary.Margin = new Thickness(0, DesignTokens.SpaceXxs, 0, DesignTokens.SpaceXs);
-        _farmingLabel = SectionLabel(KillsPresentation.FarmingLabel);
-        _partyLabel = SectionLabel(KillsPresentation.PartyKillsLabel);
+        _summary = CardParts.Summary();
+        _farmingLabel = CardParts.BlockLabel(KillsPresentation.FarmingLabel);
+        _partyLabel = CardParts.BlockLabel(KillsPresentation.PartyKillsLabel);
 
         var body = new StackPanel();
         body.Children.Add(_summary);
@@ -53,53 +52,18 @@ internal sealed class KillsCardView : IWidgetCard
         Body = body;
     }
 
-    private static TextBlock SectionLabel(string text)
-    {
-        var label = DesignSystem.Text(DesignTokens.TypeRole.Caption, text);
-        label.FontWeight = FontWeights.SemiBold;
-        label.Margin = new Thickness(0, DesignTokens.SpaceS, 0, DesignTokens.SpaceXxs);
-        label.Visibility = Visibility.Collapsed;
-        return label;
-    }
-
     public void Render(StatsSnapshot s)
     {
         _summary.Text = KillsPresentation.Summary(s);
-        Fill(_kills, KillsPresentation.YourKills(s));
+        EqCardRows.Fill(_kills, KillsPresentation.YourKills(s));
 
         _farmingLabel.Visibility = KillsPresentation.ShowFarming(s)
             ? Visibility.Visible : Visibility.Collapsed;
-        Fill(_farming, KillsPresentation.Farming(s));
+        EqCardRows.Fill(_farming, KillsPresentation.Farming(s));
 
         _partyLabel.Visibility = KillsPresentation.ShowPartyKills(s)
             ? Visibility.Visible : Visibility.Collapsed;
-        Fill(_party, KillsPresentation.PartyKills(s));
+        EqCardRows.Fill(_party, KillsPresentation.PartyKills(s));
     }
 
-    /// <summary>A name and a value on one row, the value hard right.</summary>
-    private static void Fill(ItemsControl list, IReadOnlyList<KillRow> rows)
-    {
-        list.Items.Clear();
-        foreach (var row in rows)
-        {
-            var grid = new Grid();
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var name = DesignSystem.Text(DesignTokens.TypeRole.Body, row.Name);
-            name.TextTrimming = TextTrimming.CharacterEllipsis;
-            name.ToolTip = row.Name;
-            // A drop hangs under the creature that dropped it. Real indentation, from the
-            // scale — it was six literal spaces in the name, which a proportional font
-            // renders differently at every zoom level and no test could see.
-            name.Margin = new Thickness(row.Indent ? DesignTokens.Indent : 0, 1,
-                DesignTokens.SpaceM, 1);
-            grid.Children.Add(name);
-
-            var value = DesignSystem.Text(DesignTokens.TypeRole.Body, row.Value).Ink("DimBrush");
-            Grid.SetColumn(value, 1);
-            grid.Children.Add(value);
-            list.Items.Add(grid);
-        }
-    }
 }

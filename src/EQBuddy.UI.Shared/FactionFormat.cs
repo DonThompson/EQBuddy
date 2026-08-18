@@ -19,4 +19,21 @@ public static class FactionFormat
         var cap = f.CappedDown ? "bottomed" : "maxed";
         return f.Net != 0 ? $"{(f.Net >= 0 ? "+" : "")}{f.Net} · {cap}" : cap;
     }
+
+    /// <summary>The Faction card's rows (Gate 5b). The value carries STATE — a gain reads
+    /// Good and a loss reads Bad — as a palette KEY rather than a colour, so the card can
+    /// never go off-palette and the rule is assertable without a window.
+    ///
+    /// The sign test is on the formatted string because that is what a reader sees: if
+    /// <see cref="Net"/> ever rounded a small loss to "0", colouring it red would be
+    /// claiming something the card is not showing.</summary>
+    public static List<CardRow> Rows(IEnumerable<FactionDetail> factions) =>
+    [
+        .. factions.Select(f =>
+        {
+            var net = Net(f);
+            return new CardRow(f.Faction, net,
+                ValueInk: net.StartsWith('-') ? "BadBrush" : "GoodBrush");
+        }),
+    ];
 }

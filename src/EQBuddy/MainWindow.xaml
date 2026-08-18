@@ -462,10 +462,7 @@
                                       Tag="motes" Click="OnStarChanged" ToolTip="Show motes in mini dashboard"/>
                     </Grid>
                 </Expander.Header>
-                <StackPanel>
-                    <TextBlock x:Name="MotesSummaryText" Style="{StaticResource Dim}" Margin="0,2,0,4"/>
-                    <ItemsControl x:Name="MotesList"/>
-                </StackPanel>
+                <ContentControl x:Name="MotesBody"/>
             </Expander>
 
             <!-- ONE card for every quest surface (David, 2026-08-16). It replaced the
@@ -580,11 +577,7 @@
                                       Tag="money" Click="OnStarChanged" ToolTip="Show money in mini dashboard"/>
                     </Grid>
                 </Expander.Header>
-                <StackPanel>
-                    <TextBlock x:Name="MoneySummary" Style="{StaticResource Dim}" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="SoldLabel" Text="Sold to merchants" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="SoldList" Margin="0,2,0,0"/>
-                </StackPanel>
+                <ContentControl x:Name="MoneyBody"/>
             </Expander>
 
             <Expander x:Name="ProgressSection" Style="{StaticResource Section}">
@@ -642,7 +635,7 @@
                         <TextBlock x:Name="FactionHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="—"/>
                     </Grid>
                 </Expander.Header>
-                <ItemsControl x:Name="FactionList"/>
+                <ContentControl x:Name="FactionBody"/>
             </Expander>
 
             <Expander x:Name="MiscSection" Style="{StaticResource Section}">

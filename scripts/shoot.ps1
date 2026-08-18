@@ -55,6 +55,9 @@ $Shots = [ordered]@{
     # of the same keys SectionMap uses.
     'loot-card'       = @{ Title = 'EQBuddy'; Env = @{ EQBUDDY_EXPAND = 'loot' }; Set = @{} }
     'kills-card'      = @{ Title = 'EQBuddy'; Env = @{ EQBUDDY_EXPAND = 'kills' }; Set = @{} }
+    # Gate 5b batch one, on one screen: motes and money take ICardContext (their rows are
+    # items), faction takes none.
+    'value-cards'     = @{ Title = 'EQBuddy'; Env = @{ EQBUDDY_EXPAND = 'motes,money,faction' }; Set = @{} }
     # The breakout needs no hook of its own: it shows whenever the widget is minimized and
     # its stat is starred, and both are plain settings. Session scope is the one with the
     # filter strips on it (Target is a different axis and hides them).

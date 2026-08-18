@@ -133,6 +133,16 @@ back. `IWidgetCard` + `ICardContext` (six methods, implemented explicitly) fix t
 window. Convert the remaining cards onto that seam, one at a time, presentation into
 UI.Shared first.
 
+**Batch one converted: Motes, Money, Faction** (plus Kills with the seam). Two shared
+things came out of it and should be spent, not re-invented, by every later batch:
+`UI.Shared/CardRow.cs` (what a row IS — name, value, indent, note, item-ness, value ink)
+and `EQBuddy/EqCardRows.cs` (the one place a row is drawn, replacing `FillList` and its
+per-surface copies). A card's `Item: true` rows get the wiki click, the stats hover and the
+quest badge through `ICardContext` and nothing else does.
+
+**Remaining cards: Combat, Healing, Gear, Watch, Buffs, Raids, Progress, Travels & Deaths**
+— then 5c (chrome) and 5d (`Theme.xaml` templates).
+
 **The old note, still true for the rest: 5b — the card bodies.** Lift surfaces into their own files the way `LootCardView`
 was; that is the only thing that buys hotspot headroom as well as ratchet coverage. Then
 **5c** the chrome (carries #191, and §8b's reserved widths are non-negotiable — #173), then

@@ -2,13 +2,6 @@ using EQBuddy.Core;
 
 namespace EQBuddy.UI.Shared;
 
-/// <summary>One row on the Kills card: a name, its value column, and whether it hangs
-/// under the creature above it.</summary>
-/// <param name="Indent">A drop belongs to the creature named above it. It used to be
-/// expressed by prefixing the name with six literal SPACES, which is an indent that a
-/// proportional font renders differently at every zoom level and that no test can see.</param>
-public sealed record KillRow(string Name, string Value, bool Indent = false);
-
 /// <summary>
 /// What the Kills card shows: the pace line, your kills, the per-creature farming block
 /// and the group's kills (Gate 5b).
@@ -28,21 +21,21 @@ public static class KillsPresentation
         + (s.Recent is { } r ? $" · last {(int)r.Window.TotalMinutes}m: {r.Kills}" : "");
 
     /// <summary>Your own kills, by creature.</summary>
-    public static List<KillRow> YourKills(StatsSnapshot s) =>
-        [.. s.YourKills.Select(k => new KillRow(k.Name, $"×{k.Count}"))];
+    public static List<CardRow> YourKills(StatsSnapshot s) =>
+        [.. s.YourKills.Select(k => new CardRow(k.Name, $"×{k.Count}"))];
 
     /// <summary>The farming block: a creature, then its drops beneath it. A creature with
     /// no kills is not farming and does not appear — the card is about what you have
     /// actually been killing.</summary>
-    public static List<KillRow> Farming(StatsSnapshot s)
+    public static List<CardRow> Farming(StatsSnapshot s)
     {
-        var rows = new List<KillRow>();
+        var rows = new List<CardRow>();
         foreach (var mob in s.Mobs.Where(m => m.Kills > 0))
         {
-            rows.Add(new KillRow(mob.Name,
+            rows.Add(new CardRow(mob.Name,
                 $"avg {mob.AvgFightSeconds:0}s · {StatsSnapshot.FormatCoin(mob.Copper)} · {mob.XpPercent:0.0}% xp"));
             foreach (var loot in mob.Loot)
-                rows.Add(new KillRow(loot.Item,
+                rows.Add(new CardRow(loot.Item,
                     // A drop rate is only honest per creature, which is why it lives here
                     // and not on the Loot card: that one mixes every source together.
                     loot.DropRatePct is { } pct ? $"×{loot.Count} · {pct:0}%" : $"×{loot.Count}",
@@ -55,8 +48,8 @@ public static class KillsPresentation
     /// a ranking: measuring other players is the one line this project does not cross
     /// (CLAUDE.md). "Who landed the killing blow" is bookkeeping about the camp, and it is
     /// deliberately not presented beside yours as a score.</summary>
-    public static List<KillRow> PartyKills(StatsSnapshot s) =>
-        [.. s.PartyKillsByKiller.Select(k => new KillRow(k.Name, $"×{k.Count}"))];
+    public static List<CardRow> PartyKills(StatsSnapshot s) =>
+        [.. s.PartyKillsByKiller.Select(k => new CardRow(k.Name, $"×{k.Count}"))];
 
     /// <summary>The farming block is worth a heading only when it has rows.</summary>
     public static bool ShowFarming(StatsSnapshot s) => s.Mobs.Any(m => m.Kills > 0);

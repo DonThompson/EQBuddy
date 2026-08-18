@@ -66,8 +66,12 @@ public partial class MainWindow : Window, ICardContext
     // before it: a surface migrated INSIDE MainWindow is guarded by no ratchet.
     private LootCardView _loot = null!;
 
-    // The first card on the IWidgetCard seam (Gate 5b): it takes no MainWindow at all.
+    // Cards on the IWidgetCard seam (Gate 5b). Kills and Faction take no context at all;
+    // Motes and Money take the six-method one, never this window.
     private readonly KillsCardView _kills = new();
+    private readonly FactionCardView _faction = new();
+    private MotesCardView _motes = null!;
+    private MoneyCardView _money = null!;
 
     // ---- ICardContext ----
     //
@@ -108,6 +112,9 @@ public partial class MainWindow : Window, ICardContext
         _loot = new LootCardView(this, _settings);
         LootBody.Content = _loot.Body;
         KillsBody.Content = _kills.Body;
+        _faction.Attach(); FactionBody.Content = _faction.Body;
+        _motes = new MotesCardView(this); _motes.Attach(); MotesBody.Content = _motes.Body;
+        _money = new MoneyCardView(this); _money.Attach(); MoneyBody.Content = _money.Body;
         BuildSortStrips();
         GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
@@ -2487,15 +2494,7 @@ public partial class MainWindow : Window, ICardContext
         if (LootSection.IsExpanded)
             _loot.Render(s);
 
-        if (MotesSection.IsExpanded)
-        {
-            MotesSummaryText.Text = motes.Total > 0
-                ? $"{motes.PerHour:0.#} motes/hr this session"
-                : "No motes yet this session — every Mote of … Potential you loot " +
-                  "(or store as currency) lands here.";
-            FillList(MotesList, motes.Tiers.Select(t => (t.Item, $"×{t.Count}")),
-                onNameClick: ShowItemInfo, tooltip: ItemHoverStats);
-        }
+        if (MotesSection.IsExpanded) _motes.Render(s);
 
         // The Quests card is a launcher, not a checklist: its one line reports both
         // checklists so the glance survives, and the work happens in the window.
@@ -2507,23 +2506,7 @@ public partial class MainWindow : Window, ICardContext
             _gearChecklistDirty = false;
         }
 
-        if (MoneySection.IsExpanded)
-        {
-            MoneySummary.Text =
-                $"Corpses {StatsSnapshot.FormatCoin(s.CorpseCopper)} ({s.CoinDrops} drops, biggest {StatsSnapshot.FormatCoin(s.BiggestDrop)})\n" +
-                $"Merchant sales {StatsSnapshot.FormatCoin(s.VendorCopper)} ({s.SalesCount} sales)\n" +
-                $"{StatsSnapshot.FormatCoin(s.CopperPerHour)} per hour · {StatsSnapshot.FormatCoin(s.CopperPerActiveHour)} per active hour" +
-                (s.Recent is { } rm ? $"\nLast {(int)rm.Window.TotalMinutes}m: {StatsSnapshot.FormatCoin(rm.Copper)}" : "");
-            SoldLabel.Visibility = s.SoldItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            // Sold items are drops too (#74, Snagglefern: "if an item is unknown on
-            // the wiki I definitely sold it") — same click, tooltip, and quest badges
-            // as the Loot card, with the count moved to the value column so the name
-            // stays a clean lookup key.
-            FillList(SoldList, s.SoldItems.Select(i =>
-                (i.Item, (i.Count > 1 ? $"×{i.Count} · " : "") + StatsSnapshot.FormatCoin(i.Copper))),
-                onNameClick: ShowItemInfo,
-                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
-        }
+        if (MoneySection.IsExpanded) _money.Render(s);
 
         if (ProgressSection.IsExpanded)
         {
@@ -2598,10 +2581,7 @@ public partial class MainWindow : Window, ICardContext
                     tooltip: name => AaCatalog.Find(name)?.Effect);
         }
 
-        if (FactionSection.IsExpanded)
-            FillList(FactionList, s.Faction.Select(f =>
-                (f.Faction, EQBuddy.UI.Shared.FactionFormat.Net(f))),
-                valueBrush: f => f.StartsWith('-') ? (Brush)FindResource("BadBrush") : (Brush)FindResource("GoodBrush"));
+        if (FactionSection.IsExpanded) _faction.Render(s);
 
         if (MiscSection.IsExpanded)
         {
@@ -2625,7 +2605,7 @@ public partial class MainWindow : Window, ICardContext
                 // session moved" — the E2E suite (tests/EQBuddy.E2E) asserts on both.
                 var dump = $"dmgSrc={DamageSourceList.Items.Count} dmgTaken={DamageTakenList.Items.Count} " +
                     $"kills={_kills.KillRowCount} party={_kills.PartyRowCount} loot={_loot.RowCount} " +
-                    $"skills={SkillList.Items.Count} faction={FactionList.Items.Count} " +
+                    $"skills={SkillList.Items.Count} faction={_faction.RowCount} " +
                     $"zones={ZoneList.Items.Count} deaths={DeathList.Items.Count} " +
                     $"killsTotal={s.YourKillCount} lootTotal={s.LootTotal} " +
                     $"tracked={s.Tracked.Sum(t => t.TotalQuantity)} " +
