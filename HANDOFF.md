@@ -140,7 +140,15 @@ and `EQBuddy/EqCardRows.cs` (the one place a row is drawn, replacing `FillList` 
 per-surface copies). A card's `Item: true` rows get the wiki click, the stats hover and the
 quest badge through `ICardContext` and nothing else does.
 
-**Remaining cards: Combat, Healing, Gear, Watch, Buffs, Raids, Progress, Travels & Deaths**
+**Batch two: Combat, Healing and Progress SUMMARIES** moved to
+`UI.Shared/CombatPresentation.cs` and `ProgressPresentation.cs` with tests. Their bodies
+did NOT move — those three own the sparkline, the fight split, the breakdown lists with
+their resist/blocked lookups and the ding-unlock rows, which is heavy WPF machinery and a
+separate job. The summaries were the prize: a dozen conditional fragments each, on the
+cards a player reads most, and the densest untested text left in the app.
+
+**Remaining cards: Gear, Watch, Buffs, Raids, Travels & Deaths** — plus the three bodies
+above
 — then 5c (chrome) and 5d (`Theme.xaml` templates).
 
 **The old note, still true for the rest: 5b — the card bodies.** Lift surfaces into their own files the way `LootCardView`

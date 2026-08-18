@@ -2365,54 +2365,13 @@ public partial class MainWindow : Window, ICardContext
 
         if (CombatSection.IsExpanded)
         {
-            var acc = s.HitCount + s.MissCount > 0
-                ? (double)s.HitCount / (s.HitCount + s.MissCount) * 100 : 0;
-            var critRate = s.HitCount > 0 ? (double)s.CritCount / s.HitCount * 100 : 0;
-            var incomingSwings = s.AvoidedIncoming + s.MeleeHitsTaken;
-            var avoidance = incomingSwings > 0
-                ? (double)s.AvoidedIncoming / incomingSwings * 100 : 0;
-            var combatTime = TimeSpan.FromSeconds(s.CombatSeconds);
             ShowLastFight(s, CombatFightLabel, CombatFightBody, CombatFightText, CombatFightList,
                 healing: false, _settings.ShowCombatFight);
             CombatFightCopy.Visibility = s.LastFight is not null
                 ? Visibility.Visible : Visibility.Collapsed;
             CombatFightTimeline.Visibility = CombatFightCopy.Visibility;
-            CombatSummary.Text =
-                $"Dealt {s.DamageDealt:N0} ({s.MeleeDamage:N0} melee / {s.SpellDamage:N0} spell)\n" +
-                $"{s.CritCount} crits ({critRate:0.#}% rate) · {acc:0}% accuracy\n" +
-                $"In combat {(int)combatTime.TotalMinutes}m {combatTime.Seconds}s this session\n" +
-                // Both DPS models, labeled (Companion-parity ask): in-combat is the
-                // honest camp number (medding doesn't dilute it), wall-clock is what a
-                // raid night actually produced. Neither is "the" DPS; say which is which.
-                (s.SessionDps > 0 && s.SessionStart is { } ss0 && s.LastEventTime is { } le0
-                    ? $"Session dps: {s.SessionDps:0.#} in combat · " +
-                      $"{s.DamageDealt / Math.Max(1, (le0 - ss0).TotalSeconds):0.#} wall-clock\n"
-                    : "") +
-                (s.Recent is { } rc
-                    ? $"Last {(int)rc.Window.TotalMinutes}m: {rc.Dps:0.#} dps{(rc.HasFullWindow ? "" : " (partial window)")}\n"
-                    : "") +
-                $"Biggest hit: {s.MaxHit:N0} ({s.MaxHitDesc})\n" +
-                $"Taken {s.DamageTaken:N0} · avoided {s.AvoidedIncoming} of {incomingSwings} melee attacks ({avoidance:0}%)" +
-                (s.SpecialHits.Count > 0
-                    ? "\n" + string.Join(" · ", s.SpecialHits.Select(x => $"{x.Name} {x.Count}"))
-                    : "") +
-                (s.DotDamage + s.DirectSpellDamage > 0
-                    ? $"\nYour spells: {s.DotDamage:N0} over time / {s.DirectSpellDamage:N0} direct"
-                    : "") +
-                // Cast completion subsumes the fizzle count, so only show the old
-                // fizzle/resist line for logs with no cast lines in them.
-                (s.CastCompletion is { } completion
-                    ? $"\nCasts {s.CastsStarted} · {completion * 100:0}% completed" +
-                      $" ({s.CastsInterrupted} interrupted · {s.Fizzles} fizzled · {s.Resists} resisted" +
-                      // Blocked = completed casts a standing buff refused ("did not take
-                      // hold") — a stacking fact, not a casting failure, so it joins the
-                      // parenthetical only when it happened.
-                      (s.Blocked > 0 ? $" · {s.Blocked} blocked" : "") + ")"
-                    : s.Fizzles + s.Resists + s.Blocked > 0
-                        ? $"\nFizzles {s.Fizzles} · resists {s.Resists}" +
-                          (s.Blocked > 0 ? $" · blocked {s.Blocked}" : "")
-                        : "") +
-                (s.CurrentStance.Length > 0 ? $"\nStance: {s.CurrentStance}" : "");
+            CombatSummary.Text = string.Join(Environment.NewLine,
+                EQBuddy.UI.Shared.CombatPresentation.SummaryLines(s));
             PaintCombatSpark(s);
             FillBreakdown(DamageSourceList, s.DamageBySource, _dmgOutSort, s.CombatSeconds, "dps",
                 SpellResistLookup(s), BlockedByLookup(s));
@@ -2465,17 +2424,9 @@ public partial class MainWindow : Window, ICardContext
         {
             ShowLastFight(s, HealFightLabel, HealFightBody, HealFightText, HealFightList,
                 healing: true, _settings.ShowHealFight);
-            HealingSummary.Text =
-                $"Done {s.HealingDone:N0} · received {s.HealingReceived:N0}" +
-                (s.Recent is { Hps: > 0 } rh
-                    ? $"\nLast {(int)rh.Window.TotalMinutes}m: {rh.Hps:0.#} hps"
-                    : "") +
-                (s.RegenTicks > 0 ? "\n" + RegenLine(s) : "") +
-                (s.RuneBlockCount > 0
-                    ? $"\nRune absorbed {s.RuneBlockCount} hit{(s.RuneBlockCount == 1 ? "" : "s")}" +
-                      $" (best streak {s.RuneBlockStreakMax}" +
-                      (s.RuneBlockStreak > 0 ? $", current {s.RuneBlockStreak}" : "") + ")"
-                    : "");
+            HealingSummary.Text = string.Join(Environment.NewLine,
+                EQBuddy.UI.Shared.CombatPresentation.HealingLines(
+                    s, s.RegenTicks > 0 ? RegenLine(s) : null));
             var showSpells = s.HealsBySpell.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             HealSpellsLabel.Visibility = showSpells;
             HealSortBar.Visibility = showSpells;
@@ -2485,8 +2436,7 @@ public partial class MainWindow : Window, ICardContext
             FillBreakdown(HealSpellList, s.HealsBySpell, _healSort, s.CombatSeconds, "hps",
                 SpellResistLookup(s), BlockedByLookup(s));
             HealersLabel.Visibility = s.HealsByHealer.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            FillList(HealerList, s.HealsByHealer.Select(h =>
-                (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
+            EqCardRows.Fill(HealerList, EQBuddy.UI.Shared.CombatPresentation.HealerRows(s));
         }
 
         if (KillsSection.IsExpanded) _kills.Render(s);
@@ -2510,21 +2460,8 @@ public partial class MainWindow : Window, ICardContext
 
         if (ProgressSection.IsExpanded)
         {
-            ProgressSummary.Text =
-                $"{s.XpTicks} xp gains · {s.XpPerHour:0.0}%/hr · {s.XpPerActiveHour:0.0}% active · {s.SkillUpTotal} skill-ups" +
-                (s.Recent is { } rx ? $"\nLast {(int)rx.Window.TotalMinutes}m: {rx.XpPerHour:0.0}%/hr" : "") +
-                (s.AaGained > 0
-                    ? $"\n{s.AaGained} AA point{(s.AaGained == 1 ? "" : "s")} · {s.AaPerHour:0.0} AA/hr (now {s.AaTotal} unspent)"
-                    : "") +
-                (s.HoursToLevel is { } eta ? $"\nNext level in {FormatEta(eta)} at this pace" : "") +
-                (s.Levels.Count > 0
-                    ? "\n" + string.Join(", ", s.Levels.Select((l, i) =>
-                    {
-                        var from = i == 0 ? s.SessionStart : s.Levels[i - 1].Time;
-                        var mins = from is { } f ? (int)(l.Time - f).TotalMinutes : 0;
-                        return $"{l.Text} at {l.Time:h:mm tt} ({mins}m)";
-                    }))
-                    : "");
+            ProgressSummary.Text = string.Join(Environment.NewLine,
+                EQBuddy.UI.Shared.ProgressPresentation.SummaryLines(s));
             // The ding's answer: what just became available at the session's latest
             // level, always shown while the level-up is on the card — same idiom as
             // "AA learned this session". AA class rows lead; Archetype rows are
@@ -3786,9 +3723,8 @@ public partial class MainWindow : Window, ICardContext
     }
 
 
-    private static string FormatEta(double hours) => hours >= 1
-        ? $"~{(int)hours}h {(int)((hours - (int)hours) * 60)}m"
-        : $"~{Math.Max(1, (int)(hours * 60))}m";
+    private static string FormatEta(double hours) =>
+        EQBuddy.UI.Shared.ProgressPresentation.FormatEta(hours);
 
     private void OnMinimize(object sender, RoutedEventArgs e) => SetMode(true);
     private void OnRestore(object sender, RoutedEventArgs e) => SetMode(false);
