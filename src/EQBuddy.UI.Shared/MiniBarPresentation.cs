@@ -1,0 +1,95 @@
+using EQBuddy.Core;
+
+namespace EQBuddy.UI.Shared;
+
+/// <summary>One cell of the minimized bar: which icon, and what it currently reads.</summary>
+/// <param name="Key">The settings key (<see cref="AppSettings.MiniStats"/>).</param>
+/// <param name="Icon">A name from <see cref="IconPaths"/> — never a glyph.</param>
+/// <param name="Text">The formatted value.</param>
+public sealed record MiniBarCell(string Key, string Icon, string Text);
+
+/// <summary>
+/// The minimized bar's contents, decided once (Gate 5c).
+///
+/// Both widgets carried this table by hand, identically, right down to the comments —
+/// which stat gets which glyph, how each value is formatted, and what order they sit in.
+/// Two copies of one decision is the shape every drift in this codebase has started from
+/// (#184, #122, #152), and it was the densest remaining cluster of glyphs on the surface
+/// that is on screen the ENTIRE time a player is farming.
+///
+/// The glyphs are gone. Every icon here already existed in <see cref="IconPaths"/>, so
+/// this cost no new geometry — a fair sign the vectors were being ignored rather than
+/// missing. On the Linux and macOS builds a glyph can fail to render altogether (#148,
+/// #166), and the minimized bar is precisely where a player is not looking closely enough
+/// to notice a box where a skull should be.
+///
+/// **Deliberately not a size decision.** This says what a cell CONTAINS, never how wide it
+/// is. Both widgets are <c>SizeToContent</c>, so a value that changes width on a timer
+/// asks the window manager to resize an always-on-top window over a fullscreen game —
+/// which cost #173 its keyboard. Reserved widths belong to the bar that draws these, and
+/// arrive with #191 (TheMegaSage) when its contents become configurable.
+/// </summary>
+public static class MiniBarPresentation
+{
+    /// <summary>The order cells appear in, whichever subset is switched on. Not the
+    /// order the player picked them in: a bar that reshuffles as you toggle stats is a
+    /// bar you have to re-read every time.
+    ///
+    /// "buffs" is deliberately absent — it is a valid <see cref="AppSettings.MiniStats"/>
+    /// entry that gates the Buffs breakout window and never draws a cell here.</summary>
+    public static readonly IReadOnlyList<string> Order =
+        ["kills", "dps", "hps", "pet", "procs", "loot", "motes", "money", "xp", "deaths"];
+
+    /// <summary>Stat key → <see cref="IconPaths"/> name.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Icons =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["kills"] = "Skull",
+            ["dps"] = "Swords",
+            ["hps"] = "Heal",
+            ["pet"] = "Paw",
+            ["procs"] = "Bolt",
+            ["loot"] = "Bag",
+            ["motes"] = "Sparkle",
+            ["money"] = "Coin",
+            ["xp"] = "Chart",
+            ["deaths"] = "Skull",
+        };
+
+    /// <summary>The cells to draw, in <see cref="Order"/>, for the stats switched on.
+    /// An unknown key is skipped rather than drawn blank — a settings file from a later
+    /// version must not leave a hole in the bar.</summary>
+    public static IReadOnlyList<MiniBarCell> Cells(StatsSnapshot s, IEnumerable<string> enabled)
+    {
+        var on = new HashSet<string>(enabled, StringComparer.Ordinal);
+        return
+        [
+            .. Order.Where(on.Contains)
+                .Where(Icons.ContainsKey)
+                .Select(key => new MiniBarCell(key, Icons[key], Text(s, key))),
+        ];
+    }
+
+    /// <summary>What one cell reads. Every format here was already agreed by both
+    /// widgets; the point is that it is now agreed in one place.</summary>
+    public static string Text(StatsSnapshot s, string key) => key switch
+    {
+        "kills" => $"{s.YourKillCount}",
+        "dps" => s.CurrentDps > 0 ? $"{s.CurrentDps:0} dps" : $"{s.SessionDps:0} dps",
+        "hps" => $"{s.Hps:0.#} hps",
+        "pet" => $"{s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps",
+        // Same denominator as the Procs card: combat minutes, so downtime doesn't
+        // flatter the weapon.
+        "procs" => $"{s.Procs.Sum(p => p.Count) / Math.Max(1.0 / 60, s.CombatSeconds / 60.0):0.#}/min",
+        "loot" => $"{s.LootTotal}",
+        "motes" => Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
+            ? $"{mo.Total} · {mo.PerHour:0.#}/hr" : "0",
+        "money" => StatsSnapshot.FormatCoin(s.Copper),
+        // Rate, not total: minimized is farming mode, and "how fast am I gaining" is the
+        // number a farmer watches (MorrolanTV, discussion #63).
+        "xp" => $"{s.XpPerHour:0.#}%/hr"
+            + (s.HoursToLevel is { } eta ? $" · lvl {ProgressPresentation.FormatEta(eta)}" : ""),
+        "deaths" => $"{s.Deaths.Count}",
+        _ => "",
+    };
+}

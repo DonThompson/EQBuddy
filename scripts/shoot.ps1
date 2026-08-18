@@ -129,6 +129,17 @@ $Shots = [ordered]@{
                            # to photograph the band's two states and the locked rows; do
                            # not read the count as evidence of anything.
                            Set = @{ EpicQuestCompleted = @('Cleric') } }
+    # The minimized bar with EVERY cell up — the only way to see all ten icons at once,
+    # and the surface that is on screen for the whole session. Its icons were glyphs
+    # until Gate 5c; a glyph that fails to render is a blank here and nowhere else.
+    'mini-bar'        = @{ Title = 'EQBuddy'
+                           Env = @{}
+                           # Every breakout OFF: starring dps/hps/pet/loot while minimized
+                           # is exactly what opens those windows, and the capture matches
+                           # on title — so without this it photographs a breakout instead.
+                           Set = @{ Minimized = $true
+                                    DisabledBreakouts = @('Damage','Healing','Pet','Watch','Loot','Buffs')
+                                    MiniStats = @('kills','dps','hps','pet','procs','loot','motes','money','xp','deaths') } }
     'spawns-window'   = @{ Title = 'Spawn'; Env = @{ EQBUDDY_SPAWNS = 'Runnyeye Citadel' }; Set = @{ TrackSpawns = $true } }
     'options-window'  = @{ Title = 'Options'; Env = @{ EQBUDDY_OPTIONS = '1' }; Set = @{} }
     'zone-map'        = @{ Title = 'Zone Map'; Env = @{ EQBUDDY_MAP = '1' }; Set = @{} }

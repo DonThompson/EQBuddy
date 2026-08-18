@@ -3590,7 +3590,7 @@ public partial class MainWindow : Window, ICardContext
     /// a thin hairline divider rather than any chip chrome. A counting-down watch
     /// rule still announces itself by color alone. A chip whose stat has a breakout
     /// window takes a double-click to toggle it.</summary>
-    private StackPanel MiniChip(string glyph, string value, string valueBrush, string? edgeBrush = null,
+    private StackPanel MiniChip(string iconName, string value, string valueBrush, string? edgeBrush = null,
         BreakoutKind? breakout = null)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 0) };
@@ -3628,11 +3628,13 @@ public partial class MainWindow : Window, ICardContext
                 }
             };
         }
-        panel.Children.Add(new TextBlock
-        {
-            Text = glyph, FontSize = 11.5, Opacity = 0.9,
-            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0),
-        });
+        // A vector, not a glyph (#148, #166): the minimized bar is on screen the whole
+        // time a player farms, and it is exactly where a box instead of a skull would go
+        // unnoticed on a Wine prefix.
+        var icon = DesignSystem.Icon(iconName, "AccentBrush", size: UI.Shared.DesignTokens.IconInline);
+        icon.Opacity = 0.9;
+        icon.Margin = new Thickness(0, 0, UI.Shared.DesignTokens.SpaceS, 0);
+        panel.Children.Add(icon);
         var v = new TextBlock
         {
             Text = value, FontSize = 12.5, FontWeight = FontWeights.SemiBold,
@@ -3657,30 +3659,12 @@ public partial class MainWindow : Window, ICardContext
     private void UpdateMiniChips(StatsSnapshot s)
     {
         MiniChips.Children.Clear();
-        var selected = MiniStatOrder.Where(_settings.MiniStats.Contains).ToList();
-        foreach (var key in selected)
+        // Which cells, in which order, with which icon and what each reads: all from
+        // UI.Shared. Both widgets carried this table by hand, identically, comments and
+        // all — and the Avalonia one is the lane that historically drifts.
+        foreach (var cell in UI.Shared.MiniBarPresentation.Cells(s, _settings.MiniStats))
         {
-            var (glyph, text) = key switch
-            {
-                "kills" => ("\U0001F480", $"{s.YourKillCount}"),
-                "dps" => ("⚔", s.CurrentDps > 0 ? $"{s.CurrentDps:0} dps" : $"{s.SessionDps:0} dps"),
-                "hps" => ("✚", $"{s.Hps:0.#} hps"),
-                "pet" => ("🐾", $"{s.PetAbilities.Sum(p => p.Total) / Math.Max(1, s.CombatSeconds):0.#} dps"),
-                // Same denominator as the Procs card: combat minutes, so downtime
-                // doesn't flatter the weapon.
-                "procs" => ("⚡", $"{s.Procs.Sum(p => p.Count) / Math.Max(1.0 / 60, s.CombatSeconds / 60.0):0.#}/min"),
-                "loot" => ("\U0001F392", $"{s.LootTotal}"),
-                "motes" => ("\U0001F52E", Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
-                    ? $"{mo.Total} · {mo.PerHour:0.#}/hr" : "0"),
-                "money" => ("\U0001F4B0", StatsSnapshot.FormatCoin(s.Copper)),
-                // Rate, not total: minimized is farming mode, and "how fast am I
-                // gaining" is the number a farmer watches (MorrolanTV, discussion #63).
-                "xp" => ("\U0001F4C8", $"{s.XpPerHour:0.#}%/hr" +
-                        (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : "")),
-                "deaths" => ("☠", $"{s.Deaths.Count}"),
-                _ => ("", ""),
-            };
-            BreakoutKind? breakout = key switch
+            BreakoutKind? breakout = cell.Key switch
             {
                 "dps" => BreakoutKind.Damage,
                 "hps" => BreakoutKind.Healing,
@@ -3688,7 +3672,8 @@ public partial class MainWindow : Window, ICardContext
                 "loot" => BreakoutKind.Loot,
                 _ => null,   // kills/procs/motes/money/xp/deaths have no breakout
             };
-            MiniChips.Children.Add(MiniChip(glyph, text, "AccentBrush", breakout: breakout));
+            MiniChips.Children.Add(
+                MiniChip(cell.Icon, cell.Text, "AccentBrush", breakout: breakout));
         }
 
         // Per-rule pins: only the rules you picked (📌 in Options), not every enabled one.
@@ -3705,9 +3690,9 @@ public partial class MainWindow : Window, ICardContext
             var counting = due.TryGetValue(rule.Id, out var at);
             // A counting-down chip wears the warn edge too — state has a shape.
             MiniChips.Children.Add(counting
-                ? MiniChip("⏳", $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}",
+                ? MiniChip("Timer", $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}",
                     "WarnBrush", edgeBrush: "WarnBrush", breakout: BreakoutKind.Watch)
-                : MiniChip("🎯", $"{name} {result?.TotalQuantity ?? 0}", "AccentBrush",
+                : MiniChip("Target", $"{name} {result?.TotalQuantity ?? 0}", "AccentBrush",
                     breakout: BreakoutKind.Watch));
         }
 

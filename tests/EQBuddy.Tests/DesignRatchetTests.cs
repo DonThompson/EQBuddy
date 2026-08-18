@@ -109,7 +109,27 @@ public class DesignRatchetTests
     /// This scans for the families the audit counted. It deliberately allows the
     /// typographic marks that are TEXT rather than icons: "·" separates meta fragments,
     /// "×" multiplies a completion count, "→" joins a route, "≤" prefixes an era, "…"
-    /// ends a placeholder. Those are words, not controls.</summary>
+    /// ends a placeholder. Those are words, not controls.
+    ///
+    /// **COMMENTS are exempt, and string literals are NOT** (measured 2026-08-18, when
+    /// this decision was blocking Gate 5d). The rule exists because a glyph renders at a
+    /// size and weight the app does not control, and fails to render AT ALL in some Wine
+    /// prefixes. A glyph in a comment never renders, so the argument simply does not
+    /// reach it — 56 of the glyphs left across the widget files were in comments, all of
+    /// them non-issues inflating the count.
+    ///
+    /// A glyph in a STRING does render, so the Wine failure applies to it exactly as it
+    /// applies to one in XAML — which is why exempting strings was rejected. It reads as
+    /// the reasonable concession and is the loophole that would rot the rule: the largest
+    /// single group of glyphs left in <c>MainWindow.xaml.cs</c> is not prose at all but
+    /// CONTROLS passed as string arguments — <c>AppTheme.IconButton("⧉", …)</c>, the
+    /// mini-bar's <c>"dps" =&gt; ("⚔", …)</c> icon table, expander chevrons, breakout
+    /// window titles. Those are the rule's whole target, and they happen to be quoted.
+    ///
+    /// What remains after that is a genuinely small editorial set: text that NAMES a
+    /// control elsewhere ("under ⚙ Options", "click the 🗺"). CLAUDE.md permits emoji in
+    /// user-facing text that is content rather than UI, and those qualify — but they are
+    /// still tofu on a Wine prefix, so they are worth rewording rather than exempting.</summary>
     [Theory]
     [MemberData(nameof(MigratedFiles))]
     public void MigratedSurfacesDrawIconsAsVectorsNotGlyphs(string relativePath)
@@ -118,6 +138,8 @@ public class DesignRatchetTests
         var offences = new List<string>();
         var lines = File.ReadAllLines(Path.Combine(SrcRoot, relativePath));
         for (var i = 0; i < lines.Length; i++)
+        {
+            if (IsComment(lines[i])) continue;
             foreach (var rune in lines[i].EnumerateRunes())
             {
                 var value = rune.Value;
@@ -128,11 +150,24 @@ public class DesignRatchetTests
                 if (isIconish && !allowed.Contains((char)Math.Min(value, 0xFFFF)))
                     offences.Add($"{i + 1}: U+{value:X4} {rune} — {lines[i].Trim()}");
             }
+        }
 
         Assert.True(offences.Count == 0,
             $"{relativePath} draws with glyphs. Use DesignSystem.Icon / AppTheme.Icon with " +
             "a name from EQBuddy.UI.Shared.IconPaths instead — a glyph is a Wine bug " +
             "waiting to happen (#148, #166)." +
             Environment.NewLine + string.Join(Environment.NewLine, offences));
+    }
+
+    /// <summary>A whole-line comment, in either language. Deliberately conservative: only
+    /// lines that OPEN as a comment count, so a glyph in trailing code before a `//` is
+    /// still caught. A mid-line trailing comment is the one case this over-reports, and
+    /// over-reporting is the safe direction for a ratchet.</summary>
+    private static bool IsComment(string line)
+    {
+        var t = line.TrimStart();
+        return t.StartsWith("//", StringComparison.Ordinal)
+            || t.StartsWith("*", StringComparison.Ordinal)
+            || t.StartsWith("<!--", StringComparison.Ordinal);
     }
 }

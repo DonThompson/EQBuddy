@@ -3125,14 +3125,16 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     /// glyph + semibold tabular value as clean text, separated from its neighbor by
     /// a thin hairline divider rather than any chip chrome. A counting-down watch
     /// rule still announces itself by color alone.</summary>
-    private static StackPanel MiniChip(string glyph, string value, IBrush valueBrush)
+    private static StackPanel MiniChip(string iconName, string value, IBrush valueBrush)
     {
         var panel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 10, 0) };
-        panel.Children.Add(new TextBlock
-        {
-            Text = glyph, FontSize = 11.5, Opacity = 0.9,
-            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0),
-        });
+        // A vector, not a glyph — and this lane is the one where a glyph can fail to
+        // render outright (#148, #166), on the surface that is up the whole session.
+        var icon = DesignSystem.Icon(iconName, "AccentBrush",
+            size: EQBuddy.UI.Shared.DesignTokens.IconInline);
+        icon.Opacity = 0.9;
+        icon.Margin = new Thickness(0, 0, EQBuddy.UI.Shared.DesignTokens.SpaceS, 0);
+        panel.Children.Add(icon);
         panel.Children.Add(new TextBlock
         {
             Text = value, FontSize = 12.5, FontWeight = FontWeight.SemiBold,
@@ -3158,31 +3160,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private void UpdateMiniChips(StatsSnapshot s)
     {
         _miniChips.Children.Clear();
-        var selected = MiniStatOrder.Where(_settings.MiniStats.Contains).ToList();
-        foreach (var key in selected)
-        {
-            var (glyph, text) = key switch
-            {
-                "kills" => ("\U0001F480", $"{s.YourKillCount}"),
-                "dps" => ("⚔", s.CurrentDps > 0 ? $"{s.CurrentDps:0} dps" : $"{s.SessionDps:0} dps"),
-                "hps" => ("✚", $"{s.Hps:0.#} hps"),
-                "pet" => ("🐾", $"{s.PetAbilities.Sum(row => row.Total) / Math.Max(1, s.CombatSeconds):0.#} dps"),
-                // Same denominator as the Procs card: combat minutes, so downtime
-                // doesn't flatter the weapon.
-                "procs" => ("⚡", $"{s.Procs.Sum(p => p.Count) / Math.Max(1.0 / 60, s.CombatSeconds / 60.0):0.#}/min"),
-                "loot" => ("\U0001F392", $"{s.LootTotal}"),
-                "motes" => ("\U0001F52E", Motes.Summarize(s.Loot, s.Elapsed) is { Total: > 0 } mo
-                    ? $"{mo.Total} · {mo.PerHour:0.#}/hr" : "0"),
-                "money" => ("\U0001F4B0", StatsSnapshot.FormatCoin(s.Copper)),
-                // Rate, not total: minimized is farming mode, and "how fast am I
-                // gaining" is the number a farmer watches (MorrolanTV, discussion #63).
-                "xp" => ("\U0001F4C8", $"{s.XpPerHour:0.#}%/hr" +
-                        (s.HoursToLevel is { } eta ? $" · lvl {FormatEta(eta)}" : "")),
-                "deaths" => ("☠", $"{s.Deaths.Count}"),
-                _ => ("", ""),
-            };
-            _miniChips.Children.Add(MiniChip(glyph, text, AppTheme.AccentBrush));
-        }
+        // Which cells, in which order, with which icon and what each reads: all from
+        // UI.Shared, the same call the WPF bar makes.
+        foreach (var cell in EQBuddy.UI.Shared.MiniBarPresentation.Cells(s, _settings.MiniStats))
+            _miniChips.Children.Add(MiniChip(cell.Icon, cell.Text, AppTheme.AccentBrush));
         // Per-rule pins, not every enabled rule: a mini bar with eight chips isn't a mini bar.
         var due = _delayedAlerts.NextDueByRule(DateTime.Now);
         foreach (var rule in _settings.PinWatchChips
@@ -3194,9 +3175,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             // While a cue is counting down, when it fires is the only thing worth the space.
             var counting = due.TryGetValue(rule.Id, out var at);
             _miniChips.Children.Add(counting
-                ? MiniChip("⏳", $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}",
+                ? MiniChip("Timer", $"{name} {EQBuddy.UI.Shared.Countdown.Format(at - DateTime.Now)}",
                     AppTheme.WarnBrush)
-                : MiniChip("🎯", $"{name} {result?.TotalQuantity ?? 0}", AppTheme.AccentBrush));
+                : MiniChip("Target", $"{name} {result?.TotalQuantity ?? 0}", AppTheme.AccentBrush));
         }
 
         TrimLastMiniDivider(_miniChips);
@@ -3206,9 +3187,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             _miniChips.Children.Add(AppTheme.DimText("* star stats in full view"));
     }
 
-    private static string FormatEta(double hours) => hours >= 1
-        ? $"~{(int)hours}h {(int)((hours - (int)hours) * 60)}m"
-        : $"~{Math.Max(1, (int)(hours * 60))}m";
+    // The shared one, as WPF already did. This was a verbatim copy — identical today,
+    // which is exactly when a duplicate is cheapest to remove and hardest to notice.
+    private static string FormatEta(double hours) => ProgressPresentation.FormatEta(hours);
 
     private void OnOptions(object? sender, EventArgs e)
     {

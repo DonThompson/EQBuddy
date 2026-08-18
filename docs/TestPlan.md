@@ -110,6 +110,7 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | Sky groups by REWARD (not by turn-in NPC), with ready/in-progress/done and a per-reward count | **Auto** — `QuestChecklistLayoutTests` |
 | Every checklist row names the turn-in NPC and the drop location; Epic prefers its source | **Auto** — `QuestChecklistLayoutTests` |
 | A tick the loot auto-checker placed itself wears `*` on **all three** surfaces, not just mobile | **Auto** — `QuestChecklistLayoutTests`, `CompanionProjectionTests` |
+| The minimized bar draws its ten stat icons as VECTORS, in a fixed order, from one shared table | **Auto** — `MiniBarPresentationTests`; **Shot** — `shoot.ps1 -Shot mini-bar` |
 | EQBuddy Mobile groups, orders and labels Sky **identically to the desktop**, because both call `QuestChecklistLayout` | **Auto** — `SurfaceParityTests` |
 | The state lens (any / open / ready / done) narrows the Sky and Epic tabs, and an unset or unknown state never empties the screen | **Auto** — `QuestChecklistStateTests` |
 | A Sky reward holding every piece reads **ready**; an Epic section holding every piece reads **done** — Epic has no hand-in of its own | **Auto** — `QuestChecklistStateTests` |
