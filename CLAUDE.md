@@ -24,6 +24,13 @@ where does it drop, how do I get there. The differentiator is the chain (loot �
 quest → item → mob → camp → route), learned from your own play. Filter every
 feature against that. Group monitoring is out of the product, permanently.
 
+## Roadmap
+
+[ROADMAP.md](ROADMAP.md) is the frame — what is being built, in what order, and what is
+deliberately not. It exists so an incoming community ask can be PLACED without
+re-deriving the plan, and it is written for Scribe as much as for you. Keep the gate
+table in it true; it is the one doc a non-engineer reads.
+
 ## Scribe
 
 David's Grok Bot helper for this repo. It compiles GitHub and Reddit into scoped

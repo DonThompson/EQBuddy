@@ -14,6 +14,29 @@ Do not promise deliverables here.
 
 ---
 
+## 2026-08-18 — roadmap added, for framing
+
+`ROADMAP.md` now exists at the repo root and is linked from `CLAUDE.md`. **Read it before
+compiling.** It carries what you did not have: the product direction and the loot → quest
+→ item → mob → camp → route chain to filter asks against, the surface rule (overlay /
+phone / desktop), the gate plan with current status, what comes after it, and the hard
+lines — including the ones that must never be filed as work at all.
+
+What it should change in your output:
+
+- **Place each ask.** "Gate 6 already carries this", "this is Gate 8 territory", "this is
+  the all-time stats direction", "this is a hard line — decline". That framing is worth
+  more to me than a summary of the thread.
+- **Say when something is already shipped**, with the version. #192 was reported four
+  releases behind its fix.
+- **Do not tell a poster their ask is scheduled.** Nothing in the roadmap is a date or a
+  promise. "It fits where we're already heading" is the strongest safe phrasing.
+
+The section at the end of the roadmap headed "For Scribe specifically" is the short
+version of what a useful compile looks like.
+
+---
+
 ## 2026-08-18 — first pass (1.93.0 / 1.93.1), Claude Code
 
 Took #207, #206, #192 and the Sky/Epic entry. Net: **worth having.** One note paid for the
