@@ -86,9 +86,17 @@ another partial cannot buy headroom. Current state:
 | File | Baseline | Now | Fails at | Headroom |
 |---|---:|---:|---:|---:|
 | `EQBuddy/MainWindow*.xaml.cs` | 4,274 | 4,274 | 4,701 | 427 |
-| `EQBuddy.Core/SessionStats.cs` | 2,324 | 2,372 | 2,556 | 184 |
+| `EQBuddy.Core/SessionStats.cs` | 2,559 | 2,559 | 2,814 | 255 |
 | `EQBuddy/OptionsWindow.xaml.cs` | 1,547 | 1,597 | 1,701 | 104 |
 | `EQBuddy.Core/LogParser.cs` | 853 | 853 | 938 | 85 |
+
+**`SessionStats.cs`'s baseline was raised deliberately on 2026-08-17** (2,324 → 2,559) for
+#135's sixth confirmed cause. It had 22 lines of headroom left and the fix needed 25 —
+which is the ratchet saying the file is full, not that the fix was too big. The charm state
+machine is what should come out: six fields, five constants, handling across six event
+cases, 157 lines that mention charm, and six distinct bugs fixed in it in three days.
+`MezTracker.cs` (496 lines) is the precedent for where it goes. **That extraction is the
+next structural job in Core**; the bump is not headroom to spend.
 
 `MainWindow` sat at 97% of its allowance until 2026-08-15, which is not a place to work
 from. The 992-line Epic/Sky checklist surface came out into `QuestChecklistView` — it

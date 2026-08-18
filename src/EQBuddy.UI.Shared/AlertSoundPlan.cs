@@ -1,5 +1,37 @@
 namespace EQBuddy.UI.Shared;
 
+/// <summary>
+/// What the file picker offers, in one place (#197, wizen).
+///
+/// The picker filtered on <c>*.wav;*.mp3</c>. Playback does not: it hands the file to the
+/// operating system's own media stack, which plays a good deal more than that — wizen
+/// found it by typing <c>*</c> into the picker and choosing a <c>.ogg</c>, which worked.
+/// So the picker was advertising a restriction the player does not have, and the honest
+/// fix is to widen the picker rather than to narrow the promise.
+///
+/// Nothing validates an extension anywhere else, deliberately: a format this list has
+/// never heard of still plays if the OS can play it, exactly as <c>.ogg</c> already did.
+/// This is a list of what to OFFER, not a list of what is allowed.
+/// </summary>
+public static class AlertSoundFormats
+{
+    /// <summary>Offered in the picker. Everything the Windows media stack decodes out of
+    /// the box, which is also broadly what the desktop players on Linux and macOS handle.</summary>
+    public static readonly IReadOnlyList<string> Extensions =
+    [
+        "wav", "mp3", "ogg", "opus", "m4a", "aac", "wma", "flac", "aiff", "aif", "mid", "midi",
+    ];
+
+    /// <summary>Avalonia's <c>FilePickerFileType.Patterns</c>.</summary>
+    public static string[] Patterns =>
+        [.. Extensions.Select(e => "*." + e)];
+
+    /// <summary>WPF's <c>OpenFileDialog.Filter</c>. "All files" stays second, because the
+    /// list above is what we know about rather than what the OS can do.</summary>
+    public static string WpfFilter =>
+        "Sound files|" + string.Join(";", Patterns) + "|All files (*.*)|*.*";
+}
+
 /// <summary>Where the clip that is about to play actually came from.</summary>
 public enum AlertSoundSource
 {
@@ -7,7 +39,7 @@ public enum AlertSoundSource
     Silent,
     /// <summary>One of the seven built-ins, resolved to this platform's own file.</summary>
     BuiltIn,
-    /// <summary>The player's own .wav/.mp3.</summary>
+    /// <summary>The player's own sound file, in whatever format the OS plays.</summary>
     Custom,
     /// <summary>The chosen sound could not be found, so a built-in stands in for it.
     /// <see cref="AlertSoundPlan.MissingFile"/> says what was asked for.</summary>

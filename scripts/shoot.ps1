@@ -57,6 +57,11 @@ $Shots = [ordered]@{
     # The breakout needs no hook of its own: it shows whenever the widget is minimized and
     # its stat is starred, and both are plain settings. Session scope is the one with the
     # filter strips on it (Target is a different axis and hides them).
+    # #182 (Ladylag): the damage-by-ability rows, in the narrow window she had. This is
+    # the shot whose rows read ".", ".." and nothing at all.
+    'damage-breakout' = @{ Title = 'Damage breakout'
+                           Env = @{}
+                           Set = @{ Minimized = $true; MiniStats = @('dps'); BreakoutDamageScope = 'session' } }
     'loot-breakout'   = @{ Title = 'Loot breakout'
                            Env = @{}
                            Set = @{ Minimized = $true; MiniStats = @('loot'); BreakoutLootScope = 'session' } }

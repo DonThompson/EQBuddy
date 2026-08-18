@@ -4117,17 +4117,45 @@ public partial class MainWindow : Window
     internal SpawnOverrides SpawnOverridesStore => _spawnOverrides;
     internal SpawnCatalog SpawnCatalogData => _spawnCatalog;
 
+    // What the focus hide took down, so the same windows — and only those — come back.
+    // Not "everything that is closed now": a window the player shut while alt-tabbed
+    // must stay shut, and one they opened must not be re-hidden on the way back.
+    private readonly List<Window> _focusHiddenWindows = [];
+
     /// <summary>When enabled, the widget hides while the game runs WITHOUT being the
     /// foreground app — alt-tab to a browser and the corner it lives in is the browser's
     /// again. Never hides when the game isn't running (configuring the widget outside the
     /// game must stay possible) or when EQBuddy itself is what has focus (clicking the
-    /// widget must not vanish it). Satellite windows follow via their own tick gates.</summary>
+    /// widget must not vanish it).
+    ///
+    /// **Its satellites go with it** (#189, wizen: the Quest Tracker stayed on screen
+    /// after the widget vanished). They used to be described as following "via their own
+    /// tick gates", which was only ever true of the chips and the breakouts — a window
+    /// opened from the ⚙ menu had no gate at all and nothing hid it.
+    /// <see cref="EQBuddy.UI.Shared.FocusHide.FollowsWidgetHide"/> names the exceptions;
+    /// everything else follows, including windows written after this was.</summary>
     private void UpdateFocusHide()
     {
         var hide = ShouldHideForFocus();
         if (hide == _hiddenForFocus) return;
         _hiddenForFocus = hide;
         Visibility = hide ? Visibility.Hidden : Visibility.Visible;
+
+        if (hide)
+        {
+            foreach (Window w in Application.Current.Windows)
+                if (!ReferenceEquals(w, this) && w.IsVisible
+                    && EQBuddy.UI.Shared.FocusHide.FollowsWidgetHide(w.GetType().Name))
+                {
+                    _focusHiddenWindows.Add(w);
+                    w.Hide();
+                }
+        }
+        else
+        {
+            foreach (var w in _focusHiddenWindows) if (w.IsLoaded) w.Show();
+            _focusHiddenWindows.Clear();
+        }
     }
 
     // Perf audit #6: this runs every tick, and both process calls are system-wide
@@ -4225,6 +4253,8 @@ public partial class MainWindow : Window
             // (2026-08-13 review): RefreshUi gates on this flag, so a stale true froze
             // stats and kept satellites hidden. An explicit show IS the user's choice.
             _hiddenForFocus = false;
+            foreach (var w in _focusHiddenWindows) if (w.IsLoaded) w.Show();
+            _focusHiddenWindows.Clear();
             Topmost = true;
             Activate();
         }

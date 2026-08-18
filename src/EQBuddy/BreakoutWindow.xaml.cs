@@ -283,7 +283,9 @@ public partial class BreakoutWindow : Window
                 var p = PointFromScreen(new Point(x, y));
                 // Any side, any corner (David: resize like a normal window). Zone math is
                 // pure and unit-tested in EQBuddy.UI.Shared.ResizeZones.
-                var hit = EQBuddy.UI.Shared.ResizeZones.Hit(p.X, p.Y, ActualWidth, ActualHeight);
+                var hit = EQBuddy.UI.Shared.ResizeZones.Hit(p.X, p.Y, ActualWidth, ActualHeight,
+                    EQBuddy.UI.Shared.BreakdownRowLayout.ResizeEdge,
+                    EQBuddy.UI.Shared.BreakdownRowLayout.ResizeCorner);
                 if (hit != 0) { handled = true; return hit; }
                 break;
             }

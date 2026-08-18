@@ -55,12 +55,20 @@ internal static class BreakdownRows
         var primary = sep < 0 ? value : value[..sep];
         var context = sep < 0 ? "" : value[(sep + 3)..];
 
-        var content = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto") };
-        content.Children.Add(new TextBlock
+        // Name and context are BOTH flexible, the name outweighing the context
+        // (BreakdownRowLayout, #182): an Auto context took whatever it wanted and starved
+        // the name to its ellipsis. Same defect, same fix, same change.
+        var content = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions(
+                $"{BreakdownRowLayout.NameWeight}*,Auto,{BreakdownRowLayout.ContextWeight}*,Auto"),
+        };
+        var nameBlock = new TextBlock
         {
             Text = name, FontSize = 11.5, TextTrimming = TextTrimming.CharacterEllipsis,
             Foreground = nameBrush ?? AppTheme.TextBrush,
-        });
+        };
+        content.Children.Add(nameBlock);
         if (nameBadge is not null)
         {
             Grid.SetColumn(nameBadge, 1);
@@ -72,6 +80,9 @@ internal static class BreakdownRows
             {
                 Text = context, FontSize = 10, Foreground = AppTheme.DimBrush,
                 Margin = new Thickness(8, 1.5, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis,
+                // Right-aligned in its own flexible column, so a short context still sits
+                // against the headline exactly as it did when the column was Auto.
+                HorizontalAlignment = global::Avalonia.Layout.HorizontalAlignment.Right,
             };
             Grid.SetColumn(ctx, 2);
             content.Children.Add(ctx);
@@ -104,7 +115,8 @@ internal static class BreakdownRows
         Grid.SetRow(track, 1);
         row.Children.Add(track);
 
-        if (tooltip is not null) ToolTip.SetTip(row, tooltip);
+        // Hover gives the WHOLE row back, always (#182) — see the WPF twin.
+        ToolTip.SetTip(row, BreakdownRowLayout.HoverText(name, context, tooltip));
         return row;
     }
 

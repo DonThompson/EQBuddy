@@ -515,7 +515,7 @@ public sealed class SpawnsWindow : Window
                         [
                             new FilePickerFileType("Sound files")
                             {
-                                Patterns = ["*.wav", "*.mp3", "*.ogg"],
+                                Patterns = AlertSoundFormats.Patterns,
                             },
                         ],
                     });

@@ -187,4 +187,52 @@ public class AlertSoundPlanTests
         foreach (var name in AlertSoundCatalog.Names)
             Assert.Equal(AlertSoundSource.BuiltIn, Plan(name).Source);
     }
+
+    // ---- what the picker offers (#197, wizen) ----
+
+    /// <summary>The picker filtered on wav and mp3 while playback went through the OS,
+    /// which plays a good deal more — wizen found it by typing <c>*</c> and choosing a
+    /// <c>.ogg</c>. The formats it offers now include the one that proved the point.</summary>
+    [Theory]
+    [InlineData("wav")]
+    [InlineData("mp3")]
+    [InlineData("ogg")]
+    [InlineData("flac")]
+    [InlineData("m4a")]
+    public void ThePickerOffersEveryFormatTheOsCanPlay(string extension)
+    {
+        Assert.Contains(extension, AlertSoundFormats.Extensions);
+        Assert.Contains("*." + extension, AlertSoundFormats.Patterns);
+        Assert.Contains("*." + extension, AlertSoundFormats.WpfFilter);
+    }
+
+    /// <summary>Both UIs compose their own picker from the one list — a WPF filter string
+    /// and an Avalonia pattern array are different shapes, which is exactly how the two
+    /// drifted in the first place (Avalonia already offered .ogg; Windows did not).</summary>
+    [Fact]
+    public void BothPickerShapesComeFromTheSameList()
+    {
+        Assert.Equal(AlertSoundFormats.Extensions.Count, AlertSoundFormats.Patterns.Length);
+        foreach (var pattern in AlertSoundFormats.Patterns)
+            Assert.Contains(pattern, AlertSoundFormats.WpfFilter);
+    }
+
+    /// <summary>"All files" stays on the end. The list above is what we know about, not
+    /// what the OS is capable of — a format nobody here has heard of still plays, exactly
+    /// as .ogg already did before it was listed.</summary>
+    [Fact]
+    public void TheEscapeHatchSurvives() =>
+        Assert.Contains("All files (*.*)|*.*", AlertSoundFormats.WpfFilter);
+
+    /// <summary>Extensions carry no dot: the two shapes add their own, and a stray dot in
+    /// the table would produce "*..wav" in one of them and match nothing.</summary>
+    [Fact]
+    public void ExtensionsAreBare()
+    {
+        foreach (var e in AlertSoundFormats.Extensions)
+        {
+            Assert.DoesNotContain(".", e);
+            Assert.DoesNotContain("*", e);
+        }
+    }
 }

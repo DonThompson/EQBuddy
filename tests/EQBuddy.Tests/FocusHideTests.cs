@@ -55,4 +55,71 @@ public class FocusHideTests
             Assert.Contains("saved", FocusHide.UnavailableNote);
         }
     }
+
+    // ---- which windows follow the widget down (#189, wizen) ----
+
+    /// <summary>The reported case: the Quest Tracker stayed on screen after the widget
+    /// vanished. It is a window opened from a menu, and nothing had ever said such a
+    /// window should follow — the hide took the widget and the surfaces with their own
+    /// per-tick gate, and that was all.</summary>
+    [Theory]
+    [InlineData("QuestsWindow")]
+    [InlineData("MapWindow")]
+    [InlineData("SpawnsWindow")]
+    [InlineData("DropsWindow")]
+    [InlineData("GearLockerWindow")]
+    [InlineData("HistoryWindow")]
+    [InlineData("ItemInfoWindow")]
+    [InlineData("TravelWindow")]
+    [InlineData("InventoryWindow")]
+    [InlineData("FightTimelineWindow")]
+    [InlineData("OptionsWindow")]
+    public void EveryWindowOpenedFromTheWidgetFollowsIt(string window) =>
+        Assert.True(FocusHide.FollowsWidgetHide(window));
+
+    /// <summary>The exceptions, and the reason each one is one. The breakouts matter
+    /// most: they re-derive visibility every tick from DisabledBreakouts plus the hide
+    /// flag, so hiding one here and showing it back could resurrect one the player
+    /// dismissed with its ✕.</summary>
+    [Theory]
+    [InlineData("MainWindow")]
+    [InlineData("BreakoutWindow")]
+    [InlineData("SpawnChipsWindow")]
+    [InlineData("MezChipsWindow")]
+    [InlineData("ClickThroughChip")]
+    [InlineData("AlertWindow")]
+    [InlineData("CursorRingWindow")]
+    [InlineData("GridOverlayWindow")]
+    public void TheSurfacesWithTheirOwnGateAreLeftAlone(string window) =>
+        Assert.False(FocusHide.FollowsWidgetHide(window));
+
+    /// <summary>The rule is a DENY-list on purpose. A window written tomorrow follows
+    /// the widget without anyone remembering to add it — which is the whole of #189: an
+    /// allow-list would have the same defect again on the next window.</summary>
+    [Fact]
+    public void AWindowNobodyHasThoughtOfYetFollowsByDefault() =>
+        Assert.True(FocusHide.FollowsWidgetHide("SomeWindowNobodyHasWrittenYet"));
+
+    /// <summary>Both UIs name their windows identically and read this one list, so a
+    /// class that exists in only one of them is a parity gap worth seeing. The Avalonia
+    /// build is deliberately allowed to lag (it has no CompanionWindow), so this asserts
+    /// the direction that matters: nothing exists there that Windows lacks.</summary>
+    [Fact]
+    public void TheTwoUisNameTheirWindowsTheSameWay()
+    {
+        Assert.Subset(WindowNames("EQBuddy"), WindowNames("EQBuddy.Avalonia"));
+    }
+
+    private static HashSet<string> WindowNames(string project)
+    {
+        var dir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+            "..", "..", "..", "..", "..", "src", project));
+        return Directory.EnumerateFiles(dir, "*.cs", SearchOption.AllDirectories)
+            .Where(p => !p.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
+                     && !p.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))
+            .SelectMany(p => System.Text.RegularExpressions.Regex
+                .Matches(File.ReadAllText(p), @"class\s+([A-Za-z0-9_]+)\s*:\s*(?:System\.Windows\.)?Window")
+                .Select(m => m.Groups[1].Value))
+            .ToHashSet(StringComparer.Ordinal);
+    }
 }

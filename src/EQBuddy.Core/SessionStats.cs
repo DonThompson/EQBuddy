@@ -339,7 +339,12 @@ public sealed partial class SessionStats
     // was a charm. Pet carries the creature the line named: the tell must name the SAME
     // creature to teach, so a bystander's charm coinciding with our own unrelated cast
     // (Hugzee's Heroic Leap) can never mislabel that cast as a charm (issue #29).
-    private (string Spell, DateTime Time, string Pet)? _charmCandidate;
+    //
+    // Spell is NULL when the landing had no cast of ours behind it at all — an ITEM
+    // clicky (#135, charm7.txt: Puppet Strings). Nothing to learn, and nothing claimed by
+    // the landing; the record exists so the caster-only "Master" tell can start the clock
+    // when the charm LANDED rather than when the pet happened to speak.
+    private (string? Spell, DateTime Time, string Pet)? _charmCandidate;
     // #130 (bjstrange): how long the current charm has HELD, and how long the last
     // one held. Set only by charm-path claims — a summoned pet never "breaks".
     private (string Pet, DateTime LandedAt)? _charmHold;
@@ -645,6 +650,17 @@ public sealed partial class SessionStats
                         else if (chCategory == SpellCategory.Unknown && _petName is null)
                             _charmCandidate = (chCast.Spell, ch.Time, LogParser.Normalize(ch.Name));
                     }
+                    // NO cast of ours in flight is what an ITEM looks like: Puppet
+                    // Strings clicks Allure and prints no "You begin casting" line, so
+                    // every per-spell mechanism above has nothing to key on and the
+                    // landing was dropped on the floor — no claim, and no LANDING TIME,
+                    // so the wear-off 19 s later had nothing to measure (#135, charm7).
+                    // Claims nothing here either: the line names no caster and prints for
+                    // a bystander's charm too. The "Master" tell decides, on the same
+                    // window and promotion as the unknown-cast candidate above — the only
+                    // difference being that there is no spell to learn.
+                    else if (_petName is null)
+                        _charmCandidate = (null, ch.Time, LogParser.Normalize(ch.Name));
                     break;
                 case MezzedEvent glazed:
                     // "X's eyes glaze over." lands BOTH bard charm songs and bard mez
@@ -731,7 +747,10 @@ public sealed partial class SessionStats
                     if (_charmCandidate is { } cand && pc.Time - cand.Time <= BlinkToClaim
                         && string.Equals(cand.Pet, claimed, StringComparison.OrdinalIgnoreCase))
                     {
-                        _spells.Learn(cand.Spell, SpellCategory.Charm);
+                        // Only when a cast of ours produced the landing. An item clicky
+                        // has no spell name to attach the lesson to.
+                        if (cand.Spell is { Length: > 0 } learned)
+                            _spells.Learn(learned, SpellCategory.Charm);
                         _charmHold ??= (claimed, cand.Time);   // #130: the blink was the landing
                         _charmCandidate = null;
                     }
@@ -793,6 +812,12 @@ public sealed partial class SessionStats
                         // not a charm — never even provisional.
                         break;
                     }
+                    else
+                    {
+                        // A strong blink with no cast behind it: the item-clicky case
+                        // again (#135). Remembered, not claimed — the tell decides.
+                        _charmCandidate ??= (null, pb.Time, blinked);
+                    }
                     _petName = blinked;
                     _petConfirmed = false;
                     break;
@@ -840,8 +865,8 @@ public sealed partial class SessionStats
                         // already held — evidence about the NEW cast, not the armed
                         // candidate from the original landing. Disarming there would
                         // cost a chain-charmer the claim of a genuinely held pet.
-                        if (_charmCandidate is { } bcc && string.Equals(
-                                SpellCatalog.BaseName(bcc.Spell), blkKey, StringComparison.OrdinalIgnoreCase)
+                        if (_charmCandidate is { Spell: { } bccSpell } bcc && string.Equals(
+                                SpellCatalog.BaseName(bccSpell), blkKey, StringComparison.OrdinalIgnoreCase)
                             && !string.Equals(SpellCatalog.BaseName(blk.BlockedBy), blkKey,
                                 StringComparison.OrdinalIgnoreCase))
                             _charmCandidate = null;

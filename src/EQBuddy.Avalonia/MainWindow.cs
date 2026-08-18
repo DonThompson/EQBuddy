@@ -4273,13 +4273,38 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private (IntPtr Fg, bool IsGame) _lastFgProbe = (IntPtr.Zero, false);
     private (DateTime At, bool Running) _lastGameProbe = (DateTime.MinValue, false);
 
+    // What the focus hide took down, so the same windows — and only those — come back.
+    private readonly List<Window> _focusHiddenWindows = [];
+
+    /// <summary>The widget hides, and **its satellites go with it** (#189, wizen: the
+    /// Quest Tracker stayed on screen after the widget vanished).
+    /// <see cref="EQBuddy.UI.Shared.FocusHide.FollowsWidgetHide"/> names the exceptions —
+    /// the surfaces already driven by this same flag on the widget's tick, where a second
+    /// hand on the switch is the bug. Both UIs read that one list.</summary>
     private void UpdateFocusHide()
     {
         var hide = ShouldHideForFocus();
         if (hide == _hiddenForFocus) return;
         _hiddenForFocus = hide;
-        if (hide) Hide();
-        else Show();
+        if (hide)
+        {
+            Hide();
+            if (global::Avalonia.Application.Current?.ApplicationLifetime
+                is global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+                foreach (var w in desktop.Windows.ToList())
+                    if (!ReferenceEquals(w, this) && w.IsVisible
+                        && EQBuddy.UI.Shared.FocusHide.FollowsWidgetHide(w.GetType().Name))
+                    {
+                        _focusHiddenWindows.Add(w);
+                        w.Hide();
+                    }
+        }
+        else
+        {
+            Show();
+            foreach (var w in _focusHiddenWindows) w.Show();
+            _focusHiddenWindows.Clear();
+        }
     }
 
     /// <summary>Two opt-ins share this gate (#41 unfocused / #114 not running); the

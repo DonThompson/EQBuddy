@@ -42,10 +42,17 @@ internal static class BreakdownRows
         var primary = sep < 0 ? value : value[..sep];
         var context = sep < 0 ? "" : value[(sep + 3)..];
 
+        // Name and context are BOTH flexible, the name outweighing the context
+        // (BreakdownRowLayout, #182). The context used to be Auto, which meant it took
+        // whatever it wanted and the name — the only star column — got the remainder:
+        // on a long stat line that remainder was a few pixels, and all that rendered was
+        // the ellipsis. Rows literally read "." and "..".
         var content = new Grid();
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        content.ColumnDefinitions.Add(new ColumnDefinition
+            { Width = new GridLength(BreakdownRowLayout.NameWeight, GridUnitType.Star) });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        content.ColumnDefinitions.Add(new ColumnDefinition
+            { Width = new GridLength(BreakdownRowLayout.ContextWeight, GridUnitType.Star) });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var nameBlock = new TextBlock
         {
@@ -75,6 +82,9 @@ internal static class BreakdownRows
             {
                 Text = context, FontSize = 10, Foreground = (Brush)resources.FindResource("DimBrush"),
                 Margin = new Thickness(8, 1.5, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis,
+                // Right-aligned inside its own flexible column, so a short context still
+                // sits against the headline exactly as it did when the column was Auto.
+                HorizontalAlignment = HorizontalAlignment.Right,
             };
             Grid.SetColumn(ctx, 2);
             content.Children.Add(ctx);
@@ -107,7 +117,12 @@ internal static class BreakdownRows
         Grid.SetRow(track, 1);
         row.Children.Add(track);
 
-        if (tooltip is not null) row.ToolTip = tooltip;
+        // Hover gives the WHOLE row back, always — the other half of what Ladylag asked
+        // for (#182): trimming is right, because a long name must never push the numbers
+        // off the row, but a trimmed name with no way to read it is not. On the ROW
+        // rather than on the name, so it cannot shadow the caller's own richer tooltip;
+        // that one is appended instead.
+        row.ToolTip = BreakdownRowLayout.HoverText(name, context, tooltip);
         return row;
     }
 

@@ -769,7 +769,7 @@ public partial class OptionsWindow : Window
             var dlg = new Microsoft.Win32.OpenFileDialog
             {
                 Title = "Choose an alert sound",
-                Filter = "Sound files (*.wav;*.mp3)|*.wav;*.mp3|All files (*.*)|*.*",
+                Filter = EQBuddy.UI.Shared.AlertSoundFormats.WpfFilter,
             };
             if (dlg.ShowDialog(this) == true)
                 _vm.SetCustomSound(dlg.FileName);
@@ -1318,7 +1318,7 @@ public partial class OptionsWindow : Window
                     var dlg = new Microsoft.Win32.OpenFileDialog
                     {
                         Title = $"Choose a sound for \"{(rule.Name.Length > 0 ? rule.Name : rule.Pattern)}\"",
-                        Filter = "Sound files (*.wav;*.mp3)|*.wav;*.mp3|All files (*.*)|*.*",
+                        Filter = EQBuddy.UI.Shared.AlertSoundFormats.WpfFilter,
                     };
                     if (dlg.ShowDialog(this) == true)
                     {

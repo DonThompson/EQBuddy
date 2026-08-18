@@ -441,7 +441,7 @@ public partial class SpawnsWindow : Window
                     var dlg = new Microsoft.Win32.OpenFileDialog
                     {
                         Title = $"Choose a sound for \"{row.Name}\"",
-                        Filter = "Sound files (*.wav;*.mp3)|*.wav;*.mp3|All files (*.*)|*.*",
+                        Filter = EQBuddy.UI.Shared.AlertSoundFormats.WpfFilter,
                     };
                     if (dlg.ShowDialog() == true)
                     {

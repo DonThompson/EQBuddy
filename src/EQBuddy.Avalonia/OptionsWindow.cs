@@ -1406,7 +1406,7 @@ public sealed class OptionsWindow : Window
                     {
                         Title = $"Choose a sound for \"{(rule.Name.Length > 0 ? rule.Name : rule.Pattern)}\"",
                         AllowMultiple = false,
-                        FileTypeFilter = [new FilePickerFileType("Sound files") { Patterns = ["*.wav", "*.mp3", "*.ogg"] }],
+                        FileTypeFilter = [new FilePickerFileType("Sound files") { Patterns = AlertSoundFormats.Patterns }],
                     });
                     if (picked.FirstOrDefault()?.TryGetLocalPath() is { } path)
                     {
@@ -2067,7 +2067,7 @@ public sealed class OptionsWindow : Window
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Sound files") { Patterns = ["*.wav", "*.mp3", "*.ogg"] },
+                    new FilePickerFileType("Sound files") { Patterns = AlertSoundFormats.Patterns },
                     FilePickerFileTypes.All,
                 ],
             });

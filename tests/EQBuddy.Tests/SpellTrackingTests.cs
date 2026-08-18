@@ -1600,6 +1600,74 @@ public class SpellTrackingTests
         Assert.Contains("held 3:28", tracked.LastItem);
     }
 
+    /// <summary>
+    /// #135 round SIX, from bjstrange's charm7.txt on v1.88.4 — a charm cast by an ITEM.
+    ///
+    /// Puppet Strings clicks Allure and prints no "You begin casting" line at all. Every
+    /// mechanism that had accumulated on this thread keys off the spell: the per-spell arm
+    /// window, the settle window, the catalog lookup. With no cast, the landing line was
+    /// dropped on the floor — no claim, and no LANDING TIME, so the wear-off nineteen
+    /// seconds later had nothing to measure and printed the break with no duration.
+    ///
+    /// The landing still claims nothing on its own: it names no caster and a bystander's
+    /// charm prints the same line. The pet's own "Attacking … Master." tell decides, which
+    /// is addressed to us and which no bystander's pet ever sends.
+    ///
+    /// Replaying his actual file gives "held 0:19" where it gave nothing.
+    /// </summary>
+    [Fact]
+    public void AnItemClickyCharmHasNoCastLineAndThePetTellStartsItsClock()
+    {
+        var settings = new AppSettings();
+        settings.ApplyDefaultRules();
+        var stats = Replay(
+            // No "You begin casting" anywhere: this is an item.
+            At(0, 0, "a Teir`Dal ranger has been charmed."),
+            At(0, 3, "A Teir`Dal ranger told you, 'Attacking a Teir`Dal rogue Master.'"));
+
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 0, 0), stats.Snapshot().CharmedSince);
+
+        stats.Apply(LogParser.Parse(
+            At(0, 19, "Your Allure spell has worn off of a Teir`Dal ranger."))!);
+        var tracked = Assert.Single(
+            stats.Snapshot(recentWindow: null, rules: settings.TrackedRules).Tracked);
+        Assert.Contains("held 0:19", tracked.LastItem);
+    }
+
+    /// <summary>The same, for a client that logs the blink rather than the charmed line.</summary>
+    [Fact]
+    public void AnItemClickyThatBlinksIsClaimedTheSameWay()
+    {
+        var stats = Replay(
+            At(0, 0, "a puma blinks."),
+            At(0, 5, "A puma told you, 'Attacking an orc pawn Master.'"));
+
+        Assert.Equal(new DateTime(2026, 7, 18, 15, 0, 0), stats.Snapshot().CharmedSince);
+    }
+
+    /// <summary>The landing alone is still not ours. "has been charmed." names no caster
+    /// and prints when a bystander charms something — without the tell, nothing is
+    /// claimed and no clock starts. This is the guard the item-clicky path must not
+    /// weaken, because it is the whole reason the line was never trusted (issue #29).</summary>
+    [Fact]
+    public void ACharmLandingWithNoCastAndNoTellClaimsNothing()
+    {
+        var stats = Replay(At(0, 0, "a Teir`Dal ranger has been charmed."));
+        Assert.Null(stats.Snapshot().CharmedSince);
+    }
+
+    /// <summary>And the tell has to name the creature the landing named. A stranger's
+    /// charm landing next to our OWN pet's attack order must not hand us their pet.</summary>
+    [Fact]
+    public void ATellAboutADifferentCreatureDoesNotPromoteTheLanding()
+    {
+        var stats = Replay(
+            At(0, 0, "a Teir`Dal ranger has been charmed."),
+            At(0, 3, "A puma told you, 'Attacking an orc pawn Master.'"));
+
+        Assert.Null(stats.Snapshot().CharmedSince);
+    }
+
     /// <summary>Releasing the hold gives the excuse back. A pet told to attack again and
     /// then hitting YOU has genuinely turned, and must break the claim like any other.</summary>
     [Fact]

@@ -21,11 +21,13 @@ classifier where the same commands run fine apart; split them.
 
 ---
 
-## State: Gate 4 built, HELD for review — v1.90.0 is the last thing shipped
+## State: Gate 4 + four fixes, shipped as 1.91.0
 
-`main` carries Gate 4 (Loot). **1,781 unit + 207 Avalonia + 10 E2E green.** Nothing is
-released: `Directory.Build.props` reads **1.91.0** with a `WhatsNew.json` entry waiting,
-because the Avalonia half is player-visible. **Ask David before cutting it.**
+`main` carries Gate 4 (Loot) plus four community fixes — #135, #182, #189 and #197.
+**1,834 unit + 207 Avalonia + 10 E2E green.**
+
+**Four discussion replies are owed and NOT posted**, one of them a correction to a wrong
+public diagnosis (#182). See the table below.
 
 Three releases went out on 2026-08-17:
 
@@ -33,7 +35,8 @@ Three releases went out on 2026-08-17:
   loot provenance, #199 mini-bar double-click and #200 (Disabled) alert sound.
 - **1.90.0** — Gate 3 (Spawns rebuilt with progress bars and a state-aware countdown),
   plus quasarj's #194 CrossOver overlay fix.
-- **1.91.0** — Gate 4, built and held (below).
+- **1.91.0** — Gate 4 (Loot), plus #135 item-clicky charms, #182 breakdown rows,
+  #189 auto-hide satellites and #197 sound formats.
 
 ---
 
@@ -95,10 +98,10 @@ rule is to lower it in the same commit.
 
 | # | Reporter | What | Where it belongs |
 |---|---|---|---|
-| #135 | bjstrange | **charm7.txt / Puppet Strings.** Item clickies aren't in the charm catalog (harvested from wiki *spell* pages), so the per-spell arm window has nothing to look up. I promised to replay his actual log rather than theorise — do that. | Not a gate |
-| #182 | Ladylag | Ability names rendering as literal `.` — a parser failure drawn as data. Also: breakouts only resize from the bottom edge, and truncated names should show in full on hover. | `.` bug now; the rest Gate 8 |
-| #189 | wizen | The Quest Tracker doesn't hide with the widget. Also asked him for `error.log` after an update re: settings (trap 13). | Not a gate |
-| #197 | wizen | The sound picker filters `*.wav;*.mp3` but playback is the OS's, so `.ogg` works. Widen the filter. One string, two places. | Gate 8 or now |
+| #135 | bjstrange | **DONE in 1.91.0.** Replayed charm7.txt: an item clicky prints no cast line, so nothing recorded the landing and the wear-off had nothing to measure. The caster-only "Master" tell starts the clock now; his file gives "held 0:19". **Reply not yet posted.** | closed |
+| #182 | Ladylag | **DONE in 1.91.0, and my public diagnosis was WRONG.** The `.` rows are not a parser failure — see below. Name column, hover text and resize band all fixed. **A correction is owed on the thread and is not yet posted.** | closed |
+| #189 | wizen | **DONE in 1.91.0** — every window follows the widget's auto-hide now, by a deny-list so later windows follow too. The settings-across-updates half is still waiting on his `error.log` (trap 13); his paste showed no overwrite line. **Reply not yet posted.** | half closed |
+| #197 | wizen | **DONE in 1.91.0** — one shared list, six call sites; Windows had two formats and Avalonia already had three. **Reply not yet posted.** | closed |
 | #192 | wizen | Waiting on his exact forage line — if Legends writes "some", the regex misses it and that's a one-line fix. | Waiting on him |
 | #202 | bjstrange | Mobile loot/watches card refresh loop. I checked the loot fingerprint and it has no clock in it, so my first hypothesis is dead. Four questions asked; waiting. | Waiting on him |
 | #190 | wizen | **Approved:** tracked-quest chips — double-click opens the tracker with that quest selected, right-click dismisses. | Gate 6 |
@@ -123,7 +126,17 @@ the progress bar is unit-tested but has never been *seen*. Seeding one named kil
 - **#193's damage cannot be repaired.** Wildcard ticks went through the normal path and are
   indistinguishable from honest ones. The reply says so plainly; don't promise a cleanup.
 - **Replay the reporter's actual log file.** A hand-condensed charm5.txt passed while the
-  real one failed; same for charm6 and the #183 mez log.
+  real one failed; same for charm6 and the #183 mez log. charm7 makes it seven for seven.
+- **Look at the reporter's SCREENSHOT before believing your own diagnosis.** #182's rows
+  reading `.` and `..` were called a parser bug in public — by me — and they were nothing
+  of the kind: the name column was starved to its ellipsis by a stat line that took
+  whatever width it liked, which the same screenshot proves, because "Damage shield" (short
+  stat line) printed in full three rows below one that printed nothing. **A correction is
+  owed on that thread.**
+- **Check when a fix shipped before agreeing it is broken.** The same thread has me
+  accepting "drag only works on the bottom edge" as a defect I had got wrong. Edge resize
+  landed in 1.35.0 and works; the band was six pixels wide and unmarked, so the corner grip
+  was the only findable way in. The honest fix was a wider band, not a new feature.
 - **A host that hides itself is a second switch.** Gate 4's breakout strips were correct,
   selected and never once shown, because the `ContentControl` they hang in was declared
   collapsed in XAML. When you lift a surface into a class, its host gets no `Visibility`

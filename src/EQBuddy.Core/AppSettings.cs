@@ -169,7 +169,8 @@ public sealed class AppSettings
     /// <summary>Default rolling window for "recent" rates, in minutes (5/15/30).</summary>
     public int RecentWindowMinutes { get; set; } = 15;
     /// <summary>Alert sound: a built-in name (Ding, Notify, Chimes, Chord, Tada,
-    /// Exclamation, Alarm) or the full path of a custom .wav/.mp3 file.</summary>
+    /// Exclamation, Alarm) or the full path of a custom sound file — any format the OS
+    /// can play, which is more than the picker used to offer (#197).</summary>
     public string AlertSound { get; set; } = "Ding";
     /// <summary>Alert playback volume, 0..1. Defaults to FULL — WPF's MediaPlayer
     /// default is 0.5 and nothing ever set it, so alerts played at half loudness

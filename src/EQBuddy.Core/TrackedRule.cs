@@ -128,7 +128,8 @@ public sealed class TrackedRule
     /// the identification channel when sounds are off or quiet (Chaosrah, 2026-08-06).</summary>
     public string AlertColor { get; set; } = "";
     /// <summary>
-    /// Which sound this rule plays: a built-in name, a full .wav/.mp3 path, or empty to
+    /// Which sound this rule plays: a built-in name, the full path of any sound file the
+    /// OS can play, or empty to
     /// use the shared <see cref="AppSettings.AlertSound"/>. Giving each rule its own
     /// sound is the point — you learn what happened from the audio without looking.
     /// Empty by default so rules saved before this existed keep the shared sound.
