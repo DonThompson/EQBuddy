@@ -58,7 +58,11 @@ internal static class DesignSystem
     /// <summary>An icon that behaves like a button but reads like a glyph. A real Button,
     /// so it is keyboard-reachable and has a hit area — the controls this replaces were
     /// click-handled TextBlocks, one set per card, on every card in the list.</summary>
-    public static Button IconButton(string name, string tip, Action onClick,
+    /// <summary><paramref name="onClick"/> is optional: several call sites hold the
+    /// button and attach <c>Click</c> themselves (they need the instance for other
+    /// reasons), and forcing an empty lambda on those reads as a handler that does
+    /// nothing rather than one attached elsewhere.</summary>
+    public static Button IconButton(string name, string tip, Action? onClick = null,
         string colorKey = "DimBrush", double opacity = 1.0)
     {
         var button = new Button
@@ -74,7 +78,7 @@ internal static class DesignSystem
             Cursor = new Cursor(StandardCursorType.Hand),
         };
         ToolTip.SetTip(button, tip);
-        button.Click += (_, _) => onClick();
+        if (onClick is not null) button.Click += (_, _) => onClick();
         return button;
     }
 

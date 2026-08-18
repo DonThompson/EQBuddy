@@ -79,7 +79,7 @@ public sealed class BreakoutWindow : Window
         _fight = ScopeButton("Fight", true);
         _session = ScopeButton("Session", false);
         var close = AppTheme.IconButton("x",
-            "Hide this window for good (its ⭐ chip stays; re-enable under ⚙ Options → Breakout windows)");
+            "Hide this window for good (its star chip stays; re-enable under Options → Breakout windows)");
         close.Click += (_, _) => { HideAndSave(); Dismissed?.Invoke(_kind); };
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto,Auto,Auto,Auto") };
         header.Children.Add(_title);
@@ -87,17 +87,15 @@ public sealed class BreakoutWindow : Window
         {
             // #102 (jeremycranfill): the Combat card's fight export and timeline,
             // reachable without leaving the minimized view.
-            _copyFight = AppTheme.IconButton("⧉",
+            _copyFight = DesignSystem.IconButton("Copy",
                 "Copy the last fight as Discord-ready text (a monospace block — the official Discord " +
-                "blocks images, so the parse travels as text). Your numbers only, from your log.");
-            _copyFight.FontSize = 11;
-            _copyFight.Click += async (_, _) => await OnCopyFight();
+                "blocks images, so the parse travels as text). Your numbers only, from your log.",
+                onClick: () => _ = OnCopyFight());
             Grid.SetColumn(_copyFight, 1); header.Children.Add(_copyFight);
-            var timeline = AppTheme.IconButton("⧗",
+            var timeline = DesignSystem.IconButton("Timeline",
                 "Fight timeline: the whole pull, a lane per skill — every hit, miss and resist, " +
-                "plus DPS over time.");
-            timeline.FontSize = 11;
-            timeline.Click += (_, _) => OpenTimeline?.Invoke();
+                "plus DPS over time.",
+                onClick: () => OpenTimeline?.Invoke());
             Grid.SetColumn(timeline, 2); header.Children.Add(timeline);
         }
         // No Fight/Session axis on the buff set — the axis is the class combination,
@@ -161,9 +159,9 @@ public sealed class BreakoutWindow : Window
             if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
                 await clipboard.SetTextAsync(FightExport.ToText(
                     f, CharacterName?.Invoke() ?? "", $"v{UpdateChecker.CurrentVersion}"));
-            _copyFight.Content = "✓";
+            _copyFight.Content = DesignSystem.Icon("Check", "GoodBrush");
             var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
-            t.Tick += (_, _) => { _copyFight.Content = "⧉"; t.Stop(); };
+            t.Tick += (_, _) => { _copyFight.Content = DesignSystem.Icon("Copy"); t.Stop(); };
             t.Start();
         }
         catch (Exception ex) { App.LogError(ex); }
@@ -195,13 +193,11 @@ public sealed class BreakoutWindow : Window
         var fight = s.LastFight;
         var (title, stats, seconds, rateLabel) = _kind switch
         {
-            BreakoutKind.Damage => ("⚔ Your damage", _fightScope ? fight?.ByAbility ?? [] : s.DamageBySource,
+            BreakoutKind.Damage => (BreakoutPresentation.Title(BreakoutPresentation.Damage), _fightScope ? fight?.ByAbility ?? [] : s.DamageBySource,
                 _fightScope ? fight?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
-            BreakoutKind.Healing => ("⚕ Your healing", _fightScope ? fight?.HealsBySpell ?? [] : s.HealsBySpell,
+            BreakoutKind.Healing => (BreakoutPresentation.Title(BreakoutPresentation.Healing), _fightScope ? fight?.HealsBySpell ?? [] : s.HealsBySpell,
                 _fightScope ? fight?.DurationSeconds ?? 0 : s.CombatSeconds, "hps"),
-            _ => (s.PetName.Length > 0
-                    ? $"🐾 Pet damage — {s.PetName}" + EQBuddy.UI.Shared.CharmHoldText.Suffix(s.CharmedSince, DateTime.Now)
-                    : "🐾 Pet damage",
+            _ => (BreakoutPresentation.PetTitle(s.PetName, s.CharmedSince, DateTime.Now),
                 _fightScope ? fight?.PetAbilities ?? [] : s.PetAbilities,
                 _fightScope ? fight?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
         };
@@ -366,7 +362,7 @@ public sealed class BreakoutWindow : Window
     /// a change that waits for the next tick reads as a silent no-op.</summary>
     private void UpdateBuffs(StatsSnapshot s)
     {
-        _title.Text = "⏳ Buff set";
+        _title.Text = BreakoutPresentation.Title(BreakoutPresentation.Buffs);
         if (BuffHost is not { } host || host.BuffSetKey is not { Length: > 0 } key)
         {
             _subtitle.Text = "No character detected yet";
@@ -419,7 +415,7 @@ public sealed class BreakoutWindow : Window
         var sig = "buffs|" + _subtitle.Text + "|" + string.Join(";", sections.Select(sec =>
                 sec.Class + ":" + string.Join(",", sec.Entries.Select(e => $"{e.Spell}·{e.Status}"))))
             + "|sug:" + string.Join(",", suggestions.Select(x => x.Spell + "@" + x.Class))
-            + "|loss:" + losses.Count + (_lossesOpen ? "▾" : "▸")
+            + "|loss:" + losses.Count + (_lossesOpen ? "-open" : "-shut")
             + (losses.Count > 0 ? losses[0].Time.Ticks + losses[0].Spell : "");
         if (sig == _signature)
         {
@@ -500,7 +496,7 @@ public sealed class BreakoutWindow : Window
         Grid.SetColumn(clock, 1);
         row.Children.Add(clock);
         _buffSetClocks.Add(clock);
-        var remove = AppTheme.IconButton("✕", $"Remove {entry.Spell} from {cls}");
+        var remove = DesignSystem.IconButton("Close", $"Remove {entry.Spell} from {cls}");
         remove.FontSize = 11;
         remove.Margin = new Thickness(4, 0, 0, 0);
         remove.Click += (_, _) =>
@@ -533,17 +529,17 @@ public sealed class BreakoutWindow : Window
             Foreground = AppTheme.DimBrush,
         };
         ToolTip.SetTip(text,
-            "Your level-up made this buff available. ✓ adds it to that class's "
-            + "bucket; ✕ never asks again for this character. A new RANK of a set "
+            "Your level-up made this buff available. The tick adds it to that class's "
+            + "bucket; the cross never asks again for this character. A new RANK of a set "
             + "buff folds into the same slot and is never suggested.");
         row.Children.Add(text);
-        var add = AppTheme.IconButton("✓", $"Add {sug.Spell} to your {sug.Class} set");
+        var add = DesignSystem.IconButton("Check", $"Add {sug.Spell} to your {sug.Class} set", colorKey: "GoodBrush");
         add.FontSize = 11;
         add.Margin = new Thickness(4, 0, 0, 0);
         add.Click += (_, _) => host.AcceptBuffSuggestion(sug);
         Grid.SetColumn(add, 1);
         row.Children.Add(add);
-        var dismiss = AppTheme.IconButton("✕",
+        var dismiss = DesignSystem.IconButton("Close",
             "Dismiss — never suggest this buff for this character again");
         dismiss.FontSize = 11;
         dismiss.Margin = new Thickness(4, 0, 0, 0);
@@ -563,12 +559,20 @@ public sealed class BreakoutWindow : Window
         if (losses.Count == 0) return;
         var head = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
             Margin = new Thickness(0, 5, 0, 0),
         };
+        // The chevron was typed into the label. A vector now, and still a chevron: it is
+        // the only thing saying whether the fold is open.
+        var chevron = DesignSystem.Icon(_lossesOpen ? "ChevronDown" : "ChevronRight",
+            size: EQBuddy.UI.Shared.DesignTokens.IconInline);
+        chevron.Cursor = new Cursor(StandardCursorType.Hand);
+        chevron.VerticalAlignment = VerticalAlignment.Center;
+        chevron.Margin = new Thickness(0, 0, EQBuddy.UI.Shared.DesignTokens.SpaceXs, 0);
+        head.Children.Add(chevron);
         var label = new TextBlock
         {
-            Text = $"{(_lossesOpen ? "▾" : "▸")} lost this session ({losses.Count})",
+            Text = $"lost this session ({losses.Count})",
             FontSize = 11,
             Cursor = new Cursor(StandardCursorType.Hand),
             Foreground = AppTheme.DimBrush,
@@ -585,15 +589,11 @@ public sealed class BreakoutWindow : Window
             _lossesOpen = !_lossesOpen;
             RefreshBuffSet(host.CurrentSnapshot());   // repaint now, not next tick
         };
+        Grid.SetColumn(label, 1);
         head.Children.Add(label);
-        var copy = new TextBlock
-        {
-            Text = "⧉",
-            FontSize = 11,
-            Cursor = new Cursor(StandardCursorType.Hand),
-            Padding = new Thickness(4, 0, 0, 0),
-            Foreground = AppTheme.DimBrush,
-        };
+        var copy = DesignSystem.Icon("Copy", size: EQBuddy.UI.Shared.DesignTokens.IconInline);
+        copy.Cursor = new Cursor(StandardCursorType.Hand);
+        copy.Margin = new Thickness(EQBuddy.UI.Shared.DesignTokens.SpaceXs, 0, 0, 0);
         ToolTip.SetTip(copy,
             "Copy the list as plain text — evidence for a bug report to the game devs.");
         copy.PointerPressed += async (_, e) =>
@@ -603,14 +603,14 @@ public sealed class BreakoutWindow : Window
             {
                 if (TopLevel.GetTopLevel(this)?.Clipboard is { } cb)
                     await cb.SetTextAsync(host.BuffLosses.ExportText(host.BuffSetCharacterName));
-                copy.Text = "✓";
+                copy.Data = StreamGeometry.Parse(IconPaths.Path("Check"));
                 var t = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
-                t.Tick += (_, _) => { copy.Text = "⧉"; t.Stop(); };
+                t.Tick += (_, _) => { copy.Data = StreamGeometry.Parse(IconPaths.Path("Copy")); t.Stop(); };
                 t.Start();
             }
             catch (Exception ex) { App.LogError(ex); }
         };
-        Grid.SetColumn(copy, 1);
+        Grid.SetColumn(copy, 2);
         head.Children.Add(copy);
         _rows.Children.Add(head);
         if (!_lossesOpen) return;

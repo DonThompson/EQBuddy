@@ -619,6 +619,7 @@ only way it gets covered at all.
 | Icon | `IconPaths["Target"]` | The 🎯 that was baked into a heading STRING |
 | Token | `DesignTokens.IconInline` | 12 — an icon inside a line of text. `IconButtonSize` (24) would make every loot row a third taller, and on the widget row height is window height |
 | Token | `DesignTokens.IconInlineHit` | 16 — the TARGET of an inline icon that is clickable, which is bigger than the icon drawn in it. A vector only hit-tests where it is painted, so the map-pin badge that replaced an emoji had gaps you could click through (#211). Fits inside one line of body text, so the target grows and the row does not |
+| Decision | `UI.Shared/BreakoutPresentation.cs` | What a breakout window calls itself and which vector it wears. Keyed by STRING, not `BreakoutKind` — that enum is declared separately per UI and the two disagree (WPF has Watch and Loot; Avalonia does not). A shared enum would have to pick a side, and that gap is a missing feature rather than a labelling one |
 | Decision | `UI.Shared/MiniBarPresentation.cs` | The minimized bar's cells — order, icon name, formatted value. Both widgets carried this table by hand, identically, comments and all. Says what a cell CONTAINS and never how wide it is: reserved widths belong to the bar that draws them (#173), and arrive with #191 |
 | Control | `DesignSystem.InlineIconButton` | THE clickable inline icon, both UIs. A real button, so it has a transparent ground, a hover, and keyboard reach — never a bare `Icon()` with a `Cursor` and a handler |
 

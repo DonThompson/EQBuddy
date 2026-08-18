@@ -533,7 +533,7 @@ public class WidgetRenderTests : IDisposable
 
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("⏳ Buff set", text);
+        Assert.Contains("Buff set", text);
         Assert.Contains("Spirit of Wolf", text);
         Assert.Contains("Strength", text);
         // The class combination is named, and says it was picked rather than inferred.
@@ -594,7 +594,7 @@ public class WidgetRenderTests : IDisposable
         Assert.NotNull(window.CaptureRenderedFrame());
         var text = window.GetVisualDescendants().OfType<TextBlock>()
             .Select(t => t.Text ?? "").ToList();
-        Assert.Contains("⚔ Your damage", text);
+        Assert.Contains("Your damage", text);
         Assert.Contains("Backstab", text);
         // BreakdownRows layout: "100" is the semibold headline, the columns read dim beside it.
         Assert.Contains("100", text);

@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using EQBuddy.Core;
+using EQBuddy.UI.Shared;
 
 namespace EQBuddy;
 
@@ -379,19 +380,23 @@ public partial class BreakoutWindow : Window
         var f = s.LastFight;
         var (title, rows, secs, rateLabel) = _kind switch
         {
-            BreakoutKind.Damage => ("⚔ Your damage",
+            BreakoutKind.Damage => (BreakoutPresentation.Title(BreakoutPresentation.Damage),
                 _fightScope ? f?.ByAbility ?? [] : s.DamageBySource,
                 _fightScope ? f?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
-            BreakoutKind.Healing => ("⚕ Your healing",
+            BreakoutKind.Healing => (BreakoutPresentation.Title(BreakoutPresentation.Healing),
                 _fightScope ? f?.HealsBySpell ?? [] : s.HealsBySpell,
                 _fightScope ? f?.DurationSeconds ?? 0 : s.CombatSeconds, "hps"),
-            _ => (s.PetName.Length > 0
-                    ? $"🐾 Pet damage — {s.PetName}" + EQBuddy.UI.Shared.CharmHoldText.Suffix(s.CharmedSince, DateTime.Now)
-                    : "🐾 Pet damage",
+            _ => (BreakoutPresentation.PetTitle(s.PetName, s.CharmedSince, DateTime.Now),
                 _fightScope ? f?.PetAbilities ?? [] : s.PetAbilities,
                 _fightScope ? f?.DurationSeconds ?? 0 : s.CombatSeconds, "dps"),
         };
         TitleText.Text = title;
+        TitleIcon.Glyph = BreakoutPresentation.Icon(_kind switch
+        {
+            BreakoutKind.Damage => BreakoutPresentation.Damage,
+            BreakoutKind.Healing => BreakoutPresentation.Healing,
+            _ => BreakoutPresentation.Pet,
+        });
 
         var total = rows.Sum(r => r.Total);
         var rate = total / Math.Max(1, secs);
@@ -462,10 +467,11 @@ public partial class BreakoutWindow : Window
             Clipboard.SetText(EQBuddy.UI.Shared.FightExport.ToText(
                 f, Main?.Identity.Character ?? "", $"v{UpdateChecker.CurrentVersion}",
                 EQBuddy.UI.Shared.FightExport.DeathsDuring(f.Start, f.DurationSeconds, _deaths)));
-            CopyFight.Text = "✓";
+            // The tick IS the confirmation — the clipboard gives no other feedback.
+            CopyFight.Glyph = "Check";
             var t = new System.Windows.Threading.DispatcherTimer
                 { Interval = TimeSpan.FromSeconds(1.5) };
-            t.Tick += (_, _) => { CopyFight.Text = "⧉"; t.Stop(); };
+            t.Tick += (_, _) => { CopyFight.Glyph = "Copy"; t.Stop(); };
             t.Start();
         }
         catch (Exception ex) { App.LogError(ex); }
@@ -477,7 +483,8 @@ public partial class BreakoutWindow : Window
     /// second tracking system (CrispyPigeon131's mote window, discussion #44).</summary>
     private void UpdateWatch(StatsSnapshot s)
     {
-        TitleText.Text = "🎯 Watch list";
+        TitleText.Text = BreakoutPresentation.Title(BreakoutPresentation.Watch);
+        TitleIcon.Glyph = BreakoutPresentation.Icon(BreakoutPresentation.Watch);
         var pinnedIds = _settings.TrackedRules
             .Where(r => r.Enabled && r.Pinned).Select(r => r.Id)
             .ToHashSet(StringComparer.Ordinal);
@@ -490,7 +497,7 @@ public partial class BreakoutWindow : Window
         EmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
         if (empty)
         {
-            EmptyText.Text = "Pin 📌 a watch rule in Options to track it here.";
+            EmptyText.Text = "Pin a watch rule in Options to track it here.";
             Rows.Items.Clear();
             _signature = "";
             return;
@@ -516,7 +523,8 @@ public partial class BreakoutWindow : Window
     /// everything below it belongs to <see cref="LootBreakoutView"/>.</summary>
     private void UpdateLoot(StatsSnapshot s)
     {
-        TitleText.Text = "🎒 Loot";
+        TitleText.Text = BreakoutPresentation.Title(BreakoutPresentation.Loot);
+        TitleIcon.Glyph = BreakoutPresentation.Icon(BreakoutPresentation.Loot);
         _lootView?.Render(s);
     }
 
@@ -538,7 +546,8 @@ public partial class BreakoutWindow : Window
     /// </summary>
     private void UpdateBuffs(StatsSnapshot s)
     {
-        TitleText.Text = "⏳ Buff set";
+        TitleText.Text = BreakoutPresentation.Title(BreakoutPresentation.Buffs);
+        TitleIcon.Glyph = BreakoutPresentation.Icon(BreakoutPresentation.Buffs);
         if (Main is not { } main || main.BuffSetKey is not { Length: > 0 } key)
         {
             SubText.Text = "No character detected yet";
@@ -590,7 +599,7 @@ public partial class BreakoutWindow : Window
         var sig = "buffs|" + SubText.Text + "|" + string.Join(";", sections.Select(sec =>
                 sec.Class + ":" + string.Join(",", sec.Entries.Select(e => $"{e.Spell}·{e.Status}"))))
             + "|sug:" + string.Join(",", suggestions.Select(x => x.Spell + "@" + x.Class))
-            + "|loss:" + losses.Count + (_lossesOpen ? "▾" : "▸")
+            + "|loss:" + losses.Count + (_lossesOpen ? "-open" : "-shut")
             + (losses.Count > 0 ? losses[0].Time.Ticks + losses[0].Spell : "");
         if (sig == _signature)
         {
@@ -640,15 +649,16 @@ public partial class BreakoutWindow : Window
             FontSize = 11, FontStyle = FontStyles.Italic,
             TextTrimming = TextTrimming.CharacterEllipsis,
             VerticalAlignment = VerticalAlignment.Center,
-            ToolTip = "Your level-up made this buff available. ✓ adds it to that class's "
-                + "bucket; ✕ never asks again for this character. A new RANK of a set "
-                + "buff folds into the same slot and is never suggested.",
+            ToolTip = "Your level-up made this buff available. The tick adds it to that "
+                + "class's bucket; the cross never asks again for this character. A new "
+                + "RANK of a set buff folds into the same slot and is never suggested.",
         };
         text.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
         row.Children.Add(text);
         var add = new Button
         {
-            Style = (Style)FindResource("IconButton"), Content = "✓", FontSize = 11,
+            Style = (Style)FindResource("IconButton"),
+            Content = DesignSystem.Icon("Check", "GoodBrush", size: DesignTokens.IconInline),
             Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Add {sug.Spell} to your {sug.Class} set",
         };
         add.Click += (_, _) => main.AcceptBuffSuggestion(sug);
@@ -656,7 +666,8 @@ public partial class BreakoutWindow : Window
         row.Children.Add(add);
         var dismiss = new Button
         {
-            Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+            Style = (Style)FindResource("IconButton"),
+            Content = DesignSystem.Icon("Close", size: DesignTokens.IconInline),
             Margin = new Thickness(4, 0, 0, 0),
             ToolTip = "Dismiss — never suggest this buff for this character again",
         };
@@ -677,11 +688,24 @@ public partial class BreakoutWindow : Window
     {
         if (losses.Count == 0) return;
         var head = new Grid { Margin = new Thickness(0, 5, 0, 0) };
+        head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        // The chevron was "▾"/"▸" typed into the label. It is a vector now, and it stays
+        // a chevron: dropping it would take away the only thing that says whether the
+        // fold is open, which is the affordance rather than decoration.
+        var chevron = new EqIcon
+        {
+            Glyph = _lossesOpen ? "ChevronDown" : "ChevronRight",
+            Size = DesignTokens.IconInline,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, DesignTokens.SpaceXs, 0),
+        };
+        head.Children.Add(chevron);
         var label = new TextBlock
         {
-            Text = $"{(_lossesOpen ? "▾" : "▸")} lost this session ({losses.Count})",
+            Text = $"lost this session ({losses.Count})",
             FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
             ToolTip = "Every set buff that went missing this session, newest first, with "
                 + "the best cause the log names: expired (the countdown ran out; est = "
@@ -696,29 +720,36 @@ public partial class BreakoutWindow : Window
             _lossesOpen = !_lossesOpen;
             if (Main is { } m) RefreshBuffSet(m.CurrentSnapshot());   // repaint now, not next tick
         };
-        head.Children.Add(label);
-        var copy = new TextBlock
+        chevron.MouseLeftButtonDown += (_, e) =>
         {
-            Text = "⧉", FontSize = 11, Cursor = System.Windows.Input.Cursors.Hand,
-            Padding = new Thickness(4, 0, 0, 0),
+            e.Handled = true;
+            _lossesOpen = !_lossesOpen;
+            if (Main is { } m) RefreshBuffSet(m.CurrentSnapshot());
+        };
+        Grid.SetColumn(label, 1);
+        head.Children.Add(label);
+        var copy = new EqIcon
+        {
+            Glyph = "Copy", Size = DesignTokens.IconInline,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0),
             ToolTip = "Copy the list as plain text — evidence for a bug report to the game devs.",
         };
-        copy.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
         copy.MouseLeftButtonDown += (_, e) =>
         {
             e.Handled = true;
             try
             {
                 Clipboard.SetText(main.BuffLosses.ExportText(main.BuffSetCharacterName));
-                copy.Text = "✓";
+                copy.Glyph = "Check";
                 var t = new System.Windows.Threading.DispatcherTimer
                     { Interval = TimeSpan.FromSeconds(1.5) };
-                t.Tick += (_, _) => { copy.Text = "⧉"; t.Stop(); };
+                t.Tick += (_, _) => { copy.Glyph = "Copy"; t.Stop(); };
                 t.Start();
             }
             catch (Exception ex) { App.LogError(ex); }
         };
-        Grid.SetColumn(copy, 1);
+        Grid.SetColumn(copy, 2);
         head.Children.Add(copy);
         Rows.Items.Add(head);
         if (!_lossesOpen) return;
@@ -779,7 +810,8 @@ public partial class BreakoutWindow : Window
         _buffSetClocks.Add(clock);
         var remove = new Button
         {
-            Style = (Style)FindResource("IconButton"), Content = "✕", FontSize = 11,
+            Style = (Style)FindResource("IconButton"),
+            Content = DesignSystem.Icon("Close", size: DesignTokens.IconInline),
             Margin = new Thickness(4, 0, 0, 0), ToolTip = $"Remove {entry.Spell} from {cls}",
         };
         remove.Click += (_, _) =>

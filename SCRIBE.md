@@ -16,6 +16,17 @@ After you take items, write a short note in `SCRIBE-FEEDBACK.md` so Scribe can l
 
 ---
 
+### Avalonia has no Watch or Loot breakout window
+- **Source:** found while converting breakout chrome, 2026-08-18. Not reported by anyone.
+- **Evidence:** `BreakoutKind` is declared twice and the two do not agree —
+  `src/EQBuddy/BreakoutWindow.xaml.cs:12` has `{ Damage, Healing, Pet, Watch, Loot, Buffs }`,
+  `src/EQBuddy.Avalonia/BreakoutWindow.cs:17` has `{ Damage, Healing, Pet, Buffs }`.
+- **Why it matters:** a Linux/macOS player who stars the watch or loot stat while
+  minimized gets nothing where a Windows player gets a window. Mobile/desktop parity is a
+  standing rule (David, 2026-08-18) and this is the same class of gap, one lane over.
+- **Don't / wait:** not a regression and nobody has reported it — do not raise it with a
+  poster. Sizing belongs with Gate 6 (mini mode + chips), which touches this area anyway.
+
 ### Item-grouped Sky search
 - **Priority:** leftover from the 1.93.0 restore (do this before the Reddit pile)
 - **Source:** #108 / #210 liminalwarmth
