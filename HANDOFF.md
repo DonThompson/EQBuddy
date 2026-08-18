@@ -26,8 +26,8 @@ classifier where the same commands run fine apart; split them.
 `main` carries Gate 4 (Loot) plus four community fixes — #135, #182, #189 and #197.
 **1,834 unit + 207 Avalonia + 10 E2E green.**
 
-**Four discussion replies are owed and NOT posted**, one of them a correction to a wrong
-public diagnosis (#182). See the table below.
+All four discussion replies are posted, including the correction on #182 where a wrong
+public diagnosis had to be withdrawn.
 
 Three releases went out on 2026-08-17:
 
@@ -98,10 +98,10 @@ rule is to lower it in the same commit.
 
 | # | Reporter | What | Where it belongs |
 |---|---|---|---|
-| #135 | bjstrange | **DONE in 1.91.0.** Replayed charm7.txt: an item clicky prints no cast line, so nothing recorded the landing and the wear-off had nothing to measure. The caster-only "Master" tell starts the clock now; his file gives "held 0:19". **Reply not yet posted.** | closed |
-| #182 | Ladylag | **DONE in 1.91.0, and my public diagnosis was WRONG.** The `.` rows are not a parser failure — see below. Name column, hover text and resize band all fixed. **A correction is owed on the thread and is not yet posted.** | closed |
-| #189 | wizen | **DONE in 1.91.0** — every window follows the widget's auto-hide now, by a deny-list so later windows follow too. The settings-across-updates half is still waiting on his `error.log` (trap 13); his paste showed no overwrite line. **Reply not yet posted.** | half closed |
-| #197 | wizen | **DONE in 1.91.0** — one shared list, six call sites; Windows had two formats and Avalonia already had three. **Reply not yet posted.** | closed |
+| #135 | bjstrange | **DONE in 1.91.0.** Replayed charm7.txt: an item clicky prints no cast line, so nothing recorded the landing and the wear-off had nothing to measure. The caster-only "Master" tell starts the clock now; his file gives "held 0:19". | closed |
+| #182 | Ladylag | **DONE in 1.91.0, and my public diagnosis was WRONG.** The `.` rows are not a parser failure — see below. Name column, hover text and resize band all fixed. **The correction is posted.** | closed |
+| #189 | wizen | **DONE in 1.91.0** — every window follows the widget's auto-hide now, by a deny-list so later windows follow too. The settings-across-updates half is still waiting on his `error.log` (trap 13); his paste showed no overwrite line. | half closed |
+| #197 | wizen | **DONE in 1.91.0** — one shared list, six call sites; Windows had two formats and Avalonia already had three. | closed |
 | #192 | wizen | Waiting on his exact forage line — if Legends writes "some", the regex misses it and that's a one-line fix. | Waiting on him |
 | #202 | bjstrange | Mobile loot/watches card refresh loop. I checked the loot fingerprint and it has no clock in it, so my first hypothesis is dead. Four questions asked; waiting. | Waiting on him |
 | #190 | wizen | **Approved:** tracked-quest chips — double-click opens the tracker with that quest selected, right-click dismisses. | Gate 6 |
@@ -131,8 +131,7 @@ the progress bar is unit-tested but has never been *seen*. Seeding one named kil
   reading `.` and `..` were called a parser bug in public — by me — and they were nothing
   of the kind: the name column was starved to its ellipsis by a stat line that took
   whatever width it liked, which the same screenshot proves, because "Damage shield" (short
-  stat line) printed in full three rows below one that printed nothing. **A correction is
-  owed on that thread.**
+  stat line) printed in full three rows below one that printed nothing. The correction is posted.
 - **Check when a fix shipped before agreeing it is broken.** The same thread has me
   accepting "drag only works on the bottom edge" as a defect I had got wrong. Edge resize
   landed in 1.35.0 and works; the band was six pixels wide and unmarked, so the corner grip
