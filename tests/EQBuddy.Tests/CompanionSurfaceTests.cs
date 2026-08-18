@@ -216,11 +216,22 @@ public class CompanionSurfaceTests
         var sky = Build(new CompanionInputs { Settings = Checklists() }).Quests!.Sky;
         Assert.Equal("★ Ready 1", sky.Groups[0].Heading);
         Assert.Contains("Shield of Rainbow Hues", sky.Groups[0].Rows[0].Text);
-        // Then the per-reward groups, alphabetical and class-prefixed because no Sky
-        // class is picked: nothing in hand for the Cape, every piece for the Shield.
-        Assert.Equal("Cleric — Cape of the Wind", sky.Groups[1].Heading);
-        Assert.Null(sky.Groups[1].Note);
-        Assert.Equal("ready", sky.Groups[2].Note);
+
+        // Then the per-reward groups, class-prefixed because no Sky class is picked —
+        // ordered by ACTIONABILITY since this projection moved onto QuestChecklistLayout,
+        // not alphabetically as it was. The Shield (every piece in hand) leads the Cape
+        // (nothing in hand), where the alphabet used to put the Cape first. This is the
+        // desktop's restored ordering (#205/#209/#210) reaching the phone for free, which
+        // is the entire argument for the shared module: mobile and desktop are both
+        // first-class and must not drift in either direction (David, 2026-08-18).
+        Assert.Equal("Cleric · Shield of Rainbow Hues", sky.Groups[1].Heading);
+        Assert.Equal("ready", sky.Groups[1].Note);
+        Assert.Equal("Cleric · Cape of the Wind", sky.Groups[2].Heading);
+        Assert.Null(sky.Groups[2].Note);
+
+        // The separator is the desktop's "·" now, where this projection had its own em
+        // dash. A difference nobody chose is still a difference the player sees.
+        Assert.All(sky.Groups.Skip(1), g => Assert.Contains(" · ", g.Heading));
     }
 
     [Fact]

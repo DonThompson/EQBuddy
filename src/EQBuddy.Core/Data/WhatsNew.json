@@ -1,5 +1,13 @@
 [
  {
+  "version": "1.93.1",
+  "date": "2026-08-19",
+  "highlights": [
+   "THE PHONE NOW GETS THE SAME PLANE OF SKY LIST THE DESKTOP DOES. EQBuddy Mobile had been building its Sky list from its own private copy of the rules - which is how it ended up BETTER than the desktop for a couple of days (it kept the cross-class ready list after the big window lost it in 1.88.3) and would have ended up worse immediately afterwards, once 1.93.0 gave the desktop back everything else. It now reads exactly the same shared code both desktop builds do. In practice that means your phone lists rewards closest-to-done first instead of alphabetically, and says the same \"ready\" / \"in progress\" / \"done\" as the PC for the same reward - and the two can no longer drift apart in either direction, which is the part that actually matters.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.93.0",
   "date": "2026-08-19",
   "highlights": [

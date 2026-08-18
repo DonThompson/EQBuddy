@@ -56,22 +56,36 @@ public static partial class CompanionProjection
         }
     }
 
+    /// <summary>
+    /// Plane of Sky for the phone — grouping, ordering, state and the notes all from
+    /// <see cref="QuestChecklistLayout"/>, the same call the two desktop windows make.
+    ///
+    /// **This used to hand-roll all of it**, and that is precisely how the surfaces drift.
+    /// The layout module was created for #184 because the three screens had already
+    /// disagreed once; the two desktops were converted and this was not, so it stayed a
+    /// fourth copy of the same four decisions — which reward groups with which, when a
+    /// reward reads "ready", what the note says, and how the reward key is spelled.
+    ///
+    /// #210 (liminalwarmth) is what made the cost visible from the other direction: this
+    /// projection had the cross-class ready list when the DESKTOP had lost it, so the
+    /// phone answered a question the big window could not. David, 2026-08-18: mobile and
+    /// desktop are both first-class and must work the same way, in both directions. That
+    /// is only true structurally — a shared module they all call — and not as a list of
+    /// features someone keeps level by hand.
+    /// </summary>
     private static CompanionChecklistSection BuildSky(AppSettings? settings)
     {
         var items = settings?.SkyQuestChecklist ?? [];
-        var completed = new HashSet<string>(settings?.SkyQuestCompleted ?? [], StringComparer.OrdinalIgnoreCase);
         var picked = settings?.SkyQuestClass ?? "";
-
-        // The ★ Ready cross-class view first: every reward whose pieces are all in
-        // hand and which isn't marked done — the whole point of the desktop's tab.
-        var ready = items
-            .GroupBy(i => (i.ClassName, i.Reward))
-            .Where(g => g.All(i => i.Acquired) && !completed.Contains(RewardKey(g.Key.ClassName, g.Key.Reward)))
-            .OrderBy(g => g.Key.ClassName, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(g => g.Key.Reward, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var all = QuestChecklistLayout.Sky(items, settings?.SkyQuestCompleted);
 
         var groups = new List<CompanionChecklistGroup>();
+
+        // The cross-class ready view first — every reward whose pieces are all in hand,
+        // whoever it belongs to. Deliberately BEFORE the class scope below: "what can I
+        // turn in right now" is the one question here with an action attached, and
+        // narrowing it to one class is what makes it not worth asking.
+        var ready = QuestChecklistLayout.ReadyToTurnIn(all);
         if (ready.Count > 0)
             groups.Add(new CompanionChecklistGroup(
                 $"★ Ready {ready.Count}",
@@ -79,33 +93,28 @@ public static partial class CompanionProjection
                 [.. ready.Select(g => new CompanionChecklistRow(
                     // A ready ROW is a summary, not a togglable item: its id is the
                     // reward key, which no tick action accepts.
-                    RewardKey(g.Key.ClassName, g.Key.Reward),
-                    $"{g.Key.ClassName} — {g.Key.Reward}",
-                    g.First().Npc,
+                    g.CompletionKey ?? QuestChecklistLayout.RewardKey(g.ClassName, g.Title),
+                    $"{g.ClassName} — {g.Title}",
+                    g.TurnInNpc,
                     true))]));
 
-        var scoped = items
-            .Where(i => picked.Length == 0
-                || string.Equals(i.ClassName, picked, StringComparison.OrdinalIgnoreCase))
+        var scoped = all
+            .Where(g => picked.Length == 0
+                || g.ClassName.Equals(picked, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        groups.AddRange(scoped
-            .GroupBy(i => (i.ClassName, i.Reward))
-            .OrderBy(g => g.Key.ClassName, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(g => g.Key.Reward, StringComparer.OrdinalIgnoreCase)
-            .Select(g => new CompanionChecklistGroup(
-                picked.Length > 0 ? g.Key.Reward : $"{g.Key.ClassName} — {g.Key.Reward}",
-                completed.Contains(RewardKey(g.Key.ClassName, g.Key.Reward)) ? "done"
-                    : g.All(i => i.Acquired) ? "ready"
-                    : g.Any(i => i.Acquired) ? "in progress" : null,
-                [.. g.Select(i => new CompanionChecklistRow(
-                    i.Id,
-                    i.QuestItem.Length > 0 ? i.QuestItem : i.Reward,
-                    i.AcquiredUnassigned ? i.Npc + UnassignedMark : i.Npc,
-                    i.Acquired))],
-                Class: g.Key.ClassName)));
+        groups.AddRange(scoped.Select(g => new CompanionChecklistGroup(
+            picked.Length > 0 ? g.Title : g.Heading,
+            g.Note,
+            [.. g.Rows.Select(r => new CompanionChecklistRow(
+                r.Id,
+                r.Title,
+                r.Unassigned ? r.Detail + UnassignedMark : r.Detail,
+                r.Acquired))],
+            Class: g.ClassName)));
 
-        return new CompanionChecklistSection(scoped.Count(i => i.Acquired), scoped.Count, groups);
+        return new CompanionChecklistSection(
+            scoped.Sum(g => g.Done), scoped.Sum(g => g.Total), groups);
     }
 
     /// <summary>The desktop's reward key (class + reward), so "done" means the same
