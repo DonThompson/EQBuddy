@@ -111,6 +111,7 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | Every checklist row names the turn-in NPC and the drop location; Epic prefers its source | **Auto** — `QuestChecklistLayoutTests` |
 | A tick the loot auto-checker placed itself wears `*` on **all three** surfaces, not just mobile | **Auto** — `QuestChecklistLayoutTests`, `CompanionProjectionTests` |
 | The minimized bar draws its ten stat icons as VECTORS, in a fixed order, from one shared table | **Auto** — `MiniBarPresentationTests`; **Shot** — `shoot.ps1 -Shot mini-bar` |
+| No setting gains readers without a writer — the signature behind #204, #210 and #212 | **Auto** — `DeadSettingTests` |
 | Mobile's Sky list is never narrowed by a setting no player can change, and its ★ Ready band is a summary — no checkbox, never struck through | **Auto** — `SurfaceParityTests` |
 | EQBuddy Mobile groups, orders and labels Sky **identically to the desktop**, because both call `QuestChecklistLayout` | **Auto** — `SurfaceParityTests` |
 | The state lens (any / open / ready / done) narrows the Sky and Epic tabs, and an unset or unknown state never empties the screen | **Auto** — `QuestChecklistStateTests` |

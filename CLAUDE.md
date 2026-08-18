@@ -327,6 +327,18 @@ Read this list before touching the areas it names. Every entry cost a release.
     express the look in `DesignTokens` and skip the lookup. Only the screenshot said
     anything was wrong, and it took two attempts because the first fix looked right.
 
+20. **A setting that only READERS touch is the signature of a lost capability.** Three
+    player-facing bugs came from one event — a surface folded into another, the DATA
+    survived the move and the WRITE path did not: `SkyQuestCompleted` (#204/#209),
+    `EpicQuestCompleted` (#210, whose helper had passing tests and NO CALLER), and
+    `SkyQuestClass` (#212, which filtered EQBuddy Mobile's whole Sky list forever). None
+    were visible to a compiler, a test or the ratchet.
+    → **Now guarded:** `DeadSettingTests` scans for settings read but never written and
+    holds the result to a list with a reason per entry. A sweep on 2026-08-18 found no
+    fourth live bug — the two remaining writer-less lenses are guarded by their readers,
+    and six more are deliberate edit-the-JSON knobs. **When you fold a surface, check what
+    still writes each setting it owned.**
+
 ## Tooling notes that cost time when ignored
 
 - **`pwsh -NoProfile -File scripts/status.ps1`** answers "where did we leave off?" in one

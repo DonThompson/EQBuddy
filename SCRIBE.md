@@ -16,6 +16,15 @@ After you take items, write a short note in `SCRIBE-FEEDBACK.md` so Scribe can l
 
 ---
 
+### Mac in-app update points at the Linux tarball
+- **Priority:** must-fix
+- **Place:** in-app update / download URL. Native Mac builds already exist. Not Gate 5.
+- **Source:** #93 Amatyr Aug 18, 6:33 PM CT. Old thread — did not reply.
+- **Ask:** "the link in app to download the update points to EQBuddy-linux-x84.tar.gz — if it can't point to the Mac download, how about it just opens the releases page?"
+- **Already shipped:** native `EQBuddy-osx-arm64` / `osx-x64` artifacts; Linux tarball is a different download. They wrote `x84` (likely `x64`).
+- **Where it might live:** hypothesis — the Avalonia/macOS update URL or platform detector. Do not assert which file without a quote.
+
+
 ### Token/primary unlock ticks Sky as quested
 - **Priority:** waiting (Claude asked wizen for a quested vs token achievements export pair)
 - **Place:** Sky/Epic checklist accuracy (the quest chain). Not Gate 5 UI.
