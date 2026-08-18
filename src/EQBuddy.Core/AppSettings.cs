@@ -481,6 +481,7 @@ public sealed class AppSettings
         // anchors itself to the quests slot.
         changed |= settings.MigrateQuestSections();
         changed |= settings.ApplyDefaultGearSection();
+        changed |= settings.MigrateSkyRewardRenames();
         changed |= settings.ApplyDefaultSkyQuestChecklist();
         changed |= settings.ApplyDefaultEpicQuestChecklist();
         changed |= settings.MigrateBuffSetsToClassBuckets();
@@ -555,6 +556,42 @@ public sealed class AppSettings
     ///
     /// Idempotent — once neither old key is present there is nothing left to fold.
     /// </summary>
+    /// <summary>Reward names corrected in the catalog, so a turn-in already recorded
+    /// against the old name is not orphaned.
+    ///
+    /// <see cref="SkyQuestCompleted"/> is keyed by class + REWARD NAME, so renaming a
+    /// reward silently un-completes it: the item ticks survive (they key on stable ids)
+    /// but the "I handed this in" does not, and the player has no way to tell what
+    /// happened. Any future rename belongs in this list rather than in the catalog alone.
+    ///
+    /// The first entry is #206 (bjstrange), whose achievements export named "Shimmering
+    /// Bracer of Protection" while our catalog carried "Scintillating". eqlwiki serves the
+    /// SHIMMERING page and redirects Scintillating to it — trap 3, an alias recorded as
+    /// the title — and the game's own export agrees with the wiki, so the catalog was
+    /// uniquely wrong, which is the case CLAUDE.md says costs the most trust.</summary>
+    public bool MigrateSkyRewardRenames()
+    {
+        var renames = new (string Class, string From, string To)[]
+        {
+            ("Rogue", "Scintillating Bracer of Protection", "Shimmering Bracer of Protection"),
+        };
+
+        var changed = false;
+        foreach (var (cls, from, to) in renames)
+        {
+            var oldKey = QuestChecklistLayout.RewardKey(cls, from);
+            var newKey = QuestChecklistLayout.RewardKey(cls, to);
+            var at = SkyQuestCompleted.FindIndex(k =>
+                k.Equals(oldKey, StringComparison.OrdinalIgnoreCase));
+            if (at < 0) continue;
+            SkyQuestCompleted.RemoveAt(at);
+            if (!SkyQuestCompleted.Contains(newKey, StringComparer.OrdinalIgnoreCase))
+                SkyQuestCompleted.Add(newKey);
+            changed = true;
+        }
+        return changed;
+    }
+
     public bool MigrateQuestSections()
     {
         var firstSlot = -1;

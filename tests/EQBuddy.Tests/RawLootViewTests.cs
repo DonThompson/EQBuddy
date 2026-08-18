@@ -158,6 +158,10 @@ public class RawLootViewTests
     [InlineData("You have scrounged up Pod of Water.", "Pod of Water")]
     [InlineData("You have scrounged up Rabbit Meat.", "Rabbit Meat")]
     [InlineData("You have scrounged up Roots.", "Roots")]
+    // wizen's own line from #192, verbatim, pasted out of his log on 2026-08-18. He
+    // reported on 1.88.3, where the article was still required; the fix had already
+    // shipped in 1.89.0 with #198. Pinned so the answer to that thread stays true.
+    [InlineData("You have scrounged up Kejekan Palm Fruit.", "Kejekan Palm Fruit")]
     [InlineData("You have scrounged up Fishing Grubs.", "Fishing Grubs")]
     public void AForagedItemWithNoArticleParses(string line, string item)
     {
