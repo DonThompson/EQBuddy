@@ -147,6 +147,28 @@ their resist/blocked lookups and the ding-unlock rows, which is heavy WPF machin
 separate job. The summaries were the prize: a dozen conditional fragments each, on the
 cards a player reads most, and the densest untested text left in the app.
 
+**Batch three started, and stopped at a safe point rather than half-done.**
+`EQBuddy/EqIcon.cs` is the XAML-addressable icon (`<local:EqIcon Glyph="Copy"/>`) — WPF's
+`Path` is sealed, so it wraps one — plus Bolt, Paw and Phone in `IconPaths`. The Combat
+card's ⧉/⧗ buttons and the 🐾/⚡ star glyphs are vectors now.
+`MainWindow.xaml` is at **79 literal attributes and 16 glyphs**, down from 87/20.
+
+**Read this before continuing — the finish line is not where §11.8 assumed.**
+
+`MainWindow.xaml` can be made ratchet-clean: the remaining 16 glyphs are chevrons in
+toggle labels (▸/▾, flipped from code), three menu headers, and **six occurrences inside
+XML COMMENTS**, which the ratchet counts because it scans every line. All are convertible
+or rewordable.
+
+**`MainWindow.xaml.cs` probably cannot, and that is a real finding rather than a shortfall.**
+It carries ~74 glyphs and most of them are not controls: they are inside user-facing
+STRINGS — alert text, tooltips, "re-enable in ⚙ Options → Breakout windows". `CLAUDE.md`
+explicitly permits emoji in "user-facing TEXT where they are content rather than UI", and
+`DesignRatchetTests` cannot tell the two apart. So either those strings move to a resource
+the ratchet doesn't scan, or the glyph test needs a way to exempt string literals, or that
+file joins the list only after a deliberate pass over its copy. **Decide which before
+starting 5d** — it changes what "Gate 5 complete" means.
+
 **Remaining cards: Gear, Watch, Buffs, Raids, Travels & Deaths** — plus the three bodies
 above
 — then 5c (chrome) and 5d (`Theme.xaml` templates).
