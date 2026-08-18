@@ -56,8 +56,7 @@ internal static class EqCardRows
         if (row.Item && context is not null) MakeItem(name, row.Name, context);
         grid.Children.Add(name);
 
-        if (row.Item && context is { } ctx && ctx.IsActiveQuestItem(row.Name)
-            && QuestBadge(ctx, row.Name) is { } badge)
+        if (row.Item && context is { } ctx && QuestBadge(ctx, row.Name) is { } badge)
         {
             Grid.SetColumn(badge, 1);
             grid.Children.Add(badge);
@@ -88,21 +87,17 @@ internal static class EqCardRows
     }
 
     /// <summary>The quest marker beside an item: click for the Quest Tracker filtered to
-    /// this item's quests, while the item's own name still opens its wiki page (David's
-    /// shape, 2026-08-07). A vector — the emoji it replaces is what failed to render under
-    /// Wine in #148 and #166.</summary>
-    private static UIElement QuestBadge(ICardContext context, string item)
+    /// this item's quests; the item's own name still opens its wiki page (David's shape,
+    /// 2026-08-07). The one copy — the Loot card and the Loot breakout drew their own
+    /// until #211, and drawing a badge in three places is how a badge ends up clickable
+    /// in one of them.</summary>
+    internal static UIElement? QuestBadge(ICardContext context, string item)
     {
-        var badge = DesignSystem.Icon("Map", "GoodBrush", size: DesignTokens.IconInline);
-        badge.Margin = new Thickness(0, 1, DesignTokens.SpaceS, 1);
-        badge.Cursor = Cursors.Hand;
-        badge.ToolTip = "Part of a quest — click for its quest info";
-        badge.MouseLeftButtonDown += (_, e) => e.Handled = true;
-        badge.MouseLeftButtonUp += (_, e) =>
-        {
-            e.Handled = true;
-            context.OpenQuestInfoForItem(item);
-        };
+        if (!context.IsActiveQuestItem(item)) return null;
+        var badge = DesignSystem.InlineIconButton("Map",
+            "Part of a quest — click for its quest info",
+            (_, _) => context.OpenQuestInfoForItem(item), "GoodBrush");
+        badge.Margin = new Thickness(0, 0, DesignTokens.SpaceXs, 0);
         return badge;
     }
 

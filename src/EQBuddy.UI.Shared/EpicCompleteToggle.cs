@@ -2,13 +2,102 @@ using EQBuddy.Core;
 
 namespace EQBuddy.UI.Shared;
 
-/// <summary>#138 (aodgizmo): the "Epic complete" master check flips a whole class's
-/// rows in one click — and one stray click left unchecking every row by hand as the
-/// only way back. The bulk check now snapshots the state it overwrites so unchecking
-/// the master restores it. This owns only the state; the confirmation dialog stays
-/// in the views.</summary>
+/// <summary>
+/// #138 (aodgizmo): the "Epic complete" master check flips a whole class's rows in one
+/// click — and one stray click left unchecking every row by hand as the only way back.
+/// The bulk check snapshots the state it overwrites so unchecking the master restores it.
+/// This owns the state; the confirmation dialog stays in the views.
+///
+/// **Restored 2026-08-19, and it had been gone longer than the Sky one.** When the
+/// widget's Epic card became a launcher (66f6abc) the master check went with it, and the
+/// helpers below survived with tests and NO CALLER — <see cref="AppSettings.EpicQuestCompleted"/>
+/// had a reader in <c>QuestChecklistView</c> that nothing called and a writer nowhere at
+/// all. liminalwarmth found it by reading both sides of the move (#210) after #203 and
+/// #205 reported the Sky half; the Sky turn-in was restored on 2026-08-18 and this was
+/// still outstanding.
+///
+/// That is the same signature twice: **the data survived the move and the write path did
+/// not**, which no test and no ratchet can see — a passing test suite over an unreachable
+/// helper is exactly as green as one over a working feature. The lesson is in CLAUDE.md;
+/// this file is the second entry in its evidence.
+///
+/// <see cref="SkyCompleteToggle"/> is the same job for the other checklist and the two
+/// are deliberately shaped alike, because the ASYMMETRY between them is what let the Sky
+/// turn-in go missing unnoticed for two days.
+/// </summary>
 public static class EpicCompleteToggle
 {
+    /// <summary>Mark a class's epic complete: every remaining row acquired, and a
+    /// snapshot of what was already ticked so <see cref="Reopen"/> can put it back.
+    /// Idempotent, like its Sky twin — a second call re-snapshots nothing new because
+    /// every row is already acquired.</summary>
+    public static void MarkComplete(AppSettings settings, string className,
+        IReadOnlyList<EpicQuestChecklistItem> classItems)
+    {
+        if (IsComplete(settings, className)) return;
+        settings.EpicQuestCompleted.Add(className);
+        // BEFORE the bulk check, or the snapshot records the state it was meant to
+        // preserve and the undo restores nothing.
+        settings.EpicQuestPreCompleteAcquired[className] = Snapshot(classItems);
+        CheckAll(classItems);
+    }
+
+    /// <summary>Reopen a class. Unlike the Sky turn-in — which deliberately leaves its
+    /// item boxes alone — this DOES put the rows back, because the master check is what
+    /// moved them: restoring the snapshot returns the player's own ticks rather than
+    /// discarding them. A class completed before the snapshot existed has no entry and
+    /// its rows are left as they are, which is the old fallback.</summary>
+    public static void Reopen(AppSettings settings, string className)
+    {
+        settings.EpicQuestCompleted.RemoveAll(k =>
+            k.Equals(className, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>The half of <see cref="Reopen"/> that touches rows — separate because the
+    /// caller holds the class's items and this needs the snapshot removed either way.
+    /// Returns true when a snapshot was found and applied.</summary>
+    public static bool RestoreFrom(AppSettings settings, string className,
+        IReadOnlyList<EpicQuestChecklistItem> classItems)
+    {
+        var key = settings.EpicQuestPreCompleteAcquired.Keys
+            .FirstOrDefault(k => k.Equals(className, StringComparison.OrdinalIgnoreCase));
+        if (key is null) return false;
+        var acquired = settings.EpicQuestPreCompleteAcquired[key];
+        settings.EpicQuestPreCompleteAcquired.Remove(key);
+        Restore(classItems, acquired);
+        return true;
+    }
+
+    public static bool IsComplete(AppSettings settings, string className) =>
+        settings.EpicQuestCompleted.Contains(className, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The class's own rows, honouring the classic-era lens the way the tracker
+    /// does — the master check must flip exactly what the player can see, or it ticks
+    /// rows that are not on screen.</summary>
+    public static List<EpicQuestChecklistItem> ItemsFor(
+        IEnumerable<EpicQuestChecklistItem> all, string className, bool classicOnly) =>
+    [
+        .. all.Where(i => i.ClassName.Equals(className, StringComparison.OrdinalIgnoreCase))
+            .Where(i => !classicOnly || i.AvailableInClassic),
+    ];
+
+    /// <summary>What the control says, matching <see cref="SkyCompleteToggle.ButtonLabel"/>
+    /// so the two checklists offer one vocabulary.</summary>
+    public static string ButtonLabel(bool completed) =>
+        completed ? "Reopen" : "Epic complete";
+
+    /// <summary>The confirmation a view must ask before a bulk flip, or null when nothing
+    /// would be overwritten — every row already ticked by hand means no dialog. The views
+    /// own the dialog; the DECISION to show one is the same on every surface.</summary>
+    public static string? ConfirmPrompt(string className,
+        IReadOnlyList<EpicQuestChecklistItem> classItems)
+    {
+        var remaining = CountUnchecked(classItems);
+        return remaining == 0 ? null
+            : $"Mark all {remaining} remaining {className} "
+              + (remaining == 1 ? "step" : "steps") + " complete?";
+    }
+
     /// <summary>Rows the bulk check would actually flip — the number the confirmation
     /// names. Zero means nothing gets overwritten and no dialog is warranted.</summary>
     public static int CountUnchecked(IEnumerable<EpicQuestChecklistItem> items) =>

@@ -77,8 +77,15 @@ $Shots = [ordered]@{
     # ApplyDefaultSkyQuestChecklist matches on Id and never touches Acquired.
     'sky-checklist'   = @{ Title = 'Quest Tracker'
                            Env = @{ EQBUDDY_QUESTS = 'sky' }
+                           # TWO classes, because the cross-class surfaces are the whole
+                           # point of #205/#209/#210 and neither of them draws itself for
+                           # one class: the Ready band would list a single row and the
+                           # D/R/P summary suppresses itself below two. Shot with one
+                           # class, both are invisible and the screenshot proves nothing.
+                           Ledger = @{ Classes = @('Warrior', 'Cleric') }
                            Set = @{
-                               # Warrior, because that is what the fixture log infers.
+                               # Warrior is what the fixture log infers; Cleric rides in
+                               # on the ledger above.
                                SkyQuestCompleted = @('Warrior|Azure Ruby Ring')
                                SkyQuestChecklist = @(
                                    @{ Id = 'sky-194'; Acquired = $true }   # turned in
@@ -87,8 +94,41 @@ $Shots = [ordered]@{
                                    @{ Id = 'sky-201'; Acquired = $true }
                                    @{ Id = 'sky-202'; Acquired = $true }
                                    @{ Id = 'sky-203'; Acquired = $true }   # part collected
+                                   @{ Id = 'sky-050'; Acquired = $true }   # Cleric, ready
+                                   @{ Id = 'sky-051'; Acquired = $true }
+                                   @{ Id = 'sky-041'; Acquired = $true }   # Cleric, part
                                )
                            } }
+    # The same staging, with the state lens ON — the control restored for #205/#209 acts
+    # only on OTHER controls, so a shot of it switched off proves nothing.
+    'sky-ready'       = @{ Title = 'Quest Tracker'
+                           Env = @{ EQBUDDY_QUESTS = 'sky:ready' }
+                           Ledger = @{ Classes = @('Warrior', 'Cleric') }
+                           Set = @{
+                               SkyQuestCompleted = @('Warrior|Azure Ruby Ring')
+                               SkyQuestChecklist = @(
+                                   @{ Id = 'sky-194'; Acquired = $true }
+                                   @{ Id = 'sky-195'; Acquired = $true }
+                                   @{ Id = 'sky-200'; Acquired = $true }
+                                   @{ Id = 'sky-201'; Acquired = $true }
+                                   @{ Id = 'sky-202'; Acquired = $true }
+                                   @{ Id = 'sky-203'; Acquired = $true }
+                                   @{ Id = 'sky-050'; Acquired = $true }
+                                   @{ Id = 'sky-051'; Acquired = $true }
+                                   @{ Id = 'sky-041'; Acquired = $true }
+                               )
+                           } }
+    # The Epic tab's per-class master check (#138, restored for #210). Two classes, so
+    # the band is visibly PER CLASS rather than a single header that could be anything.
+    'epic-checklist'  = @{ Title = 'Quest Tracker'
+                           Env = @{ EQBUDDY_QUESTS = 'epic' }
+                           Ledger = @{ Classes = @('Warrior', 'Cleric') }
+                           # The flag is written DIRECTLY, so Cleric reads "complete" at
+                           # 0/20 — a state the app itself never produces, because the
+                           # real MarkComplete ticks every row on its way in. It is here
+                           # to photograph the band's two states and the locked rows; do
+                           # not read the count as evidence of anything.
+                           Set = @{ EpicQuestCompleted = @('Cleric') } }
     'spawns-window'   = @{ Title = 'Spawn'; Env = @{ EQBUDDY_SPAWNS = 'Runnyeye Citadel' }; Set = @{ TrackSpawns = $true } }
     'options-window'  = @{ Title = 'Options'; Env = @{ EQBUDDY_OPTIONS = '1' }; Set = @{} }
     'zone-map'        = @{ Title = 'Zone Map'; Env = @{ EQBUDDY_MAP = '1' }; Set = @{} }
@@ -152,6 +192,16 @@ function Write-Settings([hashtable]$extra) {
     $s | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $profileDir 'settings.json') -Encoding UTF8
 }
 
+# The class picker lives in quest-ledger.json, NOT settings.json, so a shot that needs
+# more than the one class the log infers has to seed it here. Key is the ledger's own
+# "{character}_{server}" lowercased, which for the fixture session is fixed.
+function Write-Ledger([hashtable]$ledger) {
+    $path = Join-Path $profileDir 'quest-ledger.json'
+    if ($null -eq $ledger) { Remove-Item $path -ErrorAction SilentlyContinue; return }
+    @{ 'testchar_test' = $ledger } | ConvertTo-Json -Depth 6 |
+        Set-Content $path -Encoding UTF8
+}
+
 # --- the backdrop ------------------------------------------------------------------
 # A plain maximized form, NOT topmost, so the app's own always-on-top windows stay above
 # it. This is what stops a rounded corner photographing the desktop.
@@ -173,6 +223,7 @@ try {
         $spec = $Shots[$name]
         Write-Host "`n=== $name → $($spec.Title) ==="
         Write-Settings $spec.Set
+        Write-Ledger $spec.Ledger
 
         $psi = New-Object Diagnostics.ProcessStartInfo $exe
         $psi.UseShellExecute = $false

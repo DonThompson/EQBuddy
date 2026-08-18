@@ -65,11 +65,6 @@ internal sealed class QuestChecklistView
         _epicQuestLootSeen.Clear();
     }
 
-    private static string EpicQuestCompletedKey(string className) => className;
-
-    private bool IsEpicQuestCompleted(string className) =>
-        _settings.EpicQuestCompleted.Contains(EpicQuestCompletedKey(className), StringComparer.OrdinalIgnoreCase);
-
     private IEnumerable<EpicQuestChecklistItem> FilterEpicQuestRows(IEnumerable<EpicQuestChecklistItem> items) =>
         _settings.EpicQuestClassicOnly ? items.Where(i => i.AvailableInClassic) : items;
 

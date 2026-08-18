@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -191,7 +192,9 @@ public sealed class QuestsWindow : Window
         foreach (var era in QuestEraLadder.Eras) _eraCombo.Items.Add($"≤ {era}");
         var savedEra = Array.IndexOf(QuestEraLadder.Eras, _settings.QuestEraFilter);
         _eraCombo.SelectedIndex = savedEra >= 0 ? savedEra + 1 : 0;
-        foreach (var s in new[] { "any state", "open", "ready", "done" }) _stateCombo.Items.Add(s);
+        // From Core, so the combo, the checklist filter and EQBuddy Mobile cannot end up
+        // offering three different vocabularies for one lens.
+        foreach (var s in QuestChecklistLayout.States) _stateCombo.Items.Add(s);
         _stateCombo.SelectedIndex = 0;
         _eraCombo.SelectionChanged += (_, _) => OnEraChanged();
         _stateCombo.SelectionChanged += (_, _) => OnStateChanged();
@@ -521,13 +524,15 @@ public sealed class QuestsWindow : Window
         // The class strip keys on "" for Any, because a null key would make "nothing
         // selected" and "Any selected" the same answer.
         _classes.Select(_classLens ?? "");
-        // Era, state and the mode strip are catalog concepts — meaningless against a
-        // fixed checklist. The CLASS picker is not: David, 2026-08-15, "we may be
-        // helping a friend", so every tab must be able to reach a class you don't play.
+        // Era and the mode strip are catalog concepts — meaningless against a fixed
+        // checklist. The CLASS picker is not: David, 2026-08-15, "we may be helping a
+        // friend", so every tab must be able to reach a class you don't play.
         var catalogOnly = _tab == QuestTab.General;
         _eraCombo.IsVisible = catalogOnly;
-        _stateCombo.IsVisible = catalogOnly;
         _modeStrip.IsVisible = catalogOnly;
+        // STATE is not a catalog concept, and calling it one is what #205 and #209
+        // reported: a checklist is the surface where "ready" and "done" mean the most.
+        _stateCombo.IsVisible = true;
         _classicOnlyCheck.IsVisible = _tab == QuestTab.Epic;
         _classBtn.IsVisible = true;
         // A checklist has nothing to select, so the pane would only ever be empty. Give
@@ -537,6 +542,179 @@ public sealed class QuestsWindow : Window
     }
 
     private void ApplyModeVisual() => _modes.Select(_mode);
+
+    /// <summary>The Epic tab's per-class band: the class name and the "Epic complete"
+    /// master check (#138 aodgizmo, restored for #210). At class level and not on a
+    /// section heading because epic completion IS per class — a per-section button would
+    /// promise a hand-in that does not exist.</summary>
+    private Border EpicClassBand(string className)
+    {
+        var complete = EpicCompleteToggle.IsComplete(_settings, className);
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+
+        var name = DesignSystem.Text(Role.TitleSection, className);
+        name.VerticalAlignment = VerticalAlignment.Center;
+        name.Foreground = AppTheme.BrushFor(complete ? "GoodBrush" : "TextBrush");
+        row.Children.Add(name);
+
+        var button = new Button
+        {
+            Content = EpicCompleteToggle.ButtonLabel(complete),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        ToolTip.SetTip(button, complete
+            ? "Reopen this epic. Rows go back the way they were before the master check "
+              + "ticked them — your own ticks are returned, not discarded."
+            : "You finished this epic: ticks every remaining step for this class. "
+              + "Reopening puts them back.");
+        button.Click += async (_, _) => await ToggleEpicComplete(className, complete);
+        Grid.SetColumn(button, 1);
+        row.Children.Add(button);
+
+        return new Border
+        {
+            Child = row,
+            Background = AppTheme.BrushFor("RaisedBrush"),
+            CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+            Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceS,
+                DesignTokens.SpaceM, DesignTokens.SpaceS),
+            Margin = new Thickness(0, DesignTokens.SpaceL, 0, 0),
+        };
+    }
+
+    private async Task ToggleEpicComplete(string className, bool complete)
+    {
+        var items = EpicCompleteToggle.ItemsFor(
+            _settings.EpicQuestChecklist, className, _settings.EpicQuestClassicOnly);
+        if (complete)
+        {
+            EpicCompleteToggle.Reopen(_settings, className);
+            EpicCompleteToggle.RestoreFrom(_settings, className, items);
+        }
+        else
+        {
+            // One click flips every unchecked row, which is bulk enough to warrant a
+            // confirmation (#138). Nothing to overwrite means no dialog.
+            if (EpicCompleteToggle.ConfirmPrompt(className, items) is { } prompt
+                && !await ConfirmDialog.Ask(this, "Epic complete", prompt, "Mark complete"))
+                return;
+            EpicCompleteToggle.MarkComplete(_settings, className, items);
+        }
+        _settings.Save();
+        Refresh(force: true);
+    }
+
+    /// <summary>"What can I turn in right now, across every class" (#129 bjstrange,
+    /// restored for #205/#209/#210) — a band above the list naming every reward whose
+    /// pieces are all in hand, and the NPC who takes it. Sky only, and only while
+    /// something is ready: a permanently-present band reading "nothing" is how a player
+    /// learns to stop looking at it.</summary>
+    private void RenderReadyBand(QuestTab tab, IReadOnlyList<QuestChecklistGroup> groups)
+    {
+        if (tab != QuestTab.Sky) return;
+        var ready = QuestChecklistLayout.ReadyToTurnIn(groups);
+        if (ready.Count == 0) return;
+
+        var panel = new StackPanel();
+        // Built here rather than through IconLabel, which leaves its text at the caption
+        // default: this heading names the one actionable thing on the page and cannot be
+        // the dimmest line in its own band.
+        var heading = new StackPanel { Orientation = Orientation.Horizontal };
+        heading.Children.Add(DesignSystem.Icon("Check", "GoodBrush", size: 12));
+        var headingText = DesignSystem.Text(Role.Caption, $"Ready to turn in — {ready.Count}");
+        headingText.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
+        headingText.FontWeight = FontWeight.SemiBold;
+        headingText.Foreground = AppTheme.BrushFor("GoodBrush");
+        heading.Children.Add(headingText);
+        panel.Children.Add(heading);
+
+        foreach (var group in ready)
+        {
+            var line = DesignSystem.Text(Role.Body, "");
+            line.TextWrapping = TextWrapping.Wrap;
+            line.Margin = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXxs, 0, 0);
+            line.Inlines!.Add(new Run(
+                $"{QuestClassFilter.Abbrev(group.ClassName)} — {group.Title}")
+            { FontWeight = FontWeight.SemiBold });
+            if (group.TurnInNpc is { Length: > 0 } npc)
+                line.Inlines.Add(new Run($"   {npc}") { Foreground = AppTheme.DimBrush });
+            ToolTip.SetTip(line, $"{group.ClassName}: all {group.Total} "
+                + (group.Total == 1 ? "item" : "items") + " acquired"
+                + (group.TurnInNpc is { Length: > 0 } n ? $" — turn in to {n}" : ""));
+            panel.Children.Add(line);
+        }
+
+        _questsPanel.Children.Add(new Border
+        {
+            Child = panel,
+            Background = AppTheme.BrushFor("RaisedBrush"),
+            CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+            Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceS,
+                DesignTokens.SpaceM, DesignTokens.SpaceS),
+            Margin = new Thickness(0, 0, 0, DesignTokens.SpaceM),
+        });
+    }
+
+    /// <summary>Done / Ready / Partial / Total per class (#136 bjstrange, restored with
+    /// the band above) — "how am I doing across all sixteen" without a scroll. Only worth
+    /// drawing for more than one class; a summary of one line is furniture.</summary>
+    private void RenderClassCounts(QuestTab tab, IReadOnlyList<QuestChecklistGroup> groups)
+    {
+        if (tab != QuestTab.Sky) return;
+        var counts = QuestChecklistLayout.ClassCounts(groups);
+        if (counts.Count < 2) return;
+
+        var wrap = new WrapPanel { Margin = new Thickness(0, 0, 0, DesignTokens.SpaceM) };
+        foreach (var c in counts)
+        {
+            var line = DesignSystem.Text(Role.Caption, "");
+            line.Inlines!.Add(new Run(QuestClassFilter.Abbrev(c.ClassName) + " ")
+            { FontWeight = FontWeight.SemiBold, Foreground = AppTheme.BrushFor("TextBrush") });
+            Metric("D", c.Done, "GoodBrush");
+            Metric("R", c.Ready, "WarnBrush");
+            Metric("P", c.Partial, "AccentBrush");
+            // The total, because D+R+P deliberately does NOT sum to it — a reward you
+            // have not started sits in no bucket (#136).
+            line.Inlines.Add(new Run($" /{c.Total}") { Foreground = AppTheme.DimBrush });
+
+            void Metric(string label, int count, string brushKey)
+            {
+                line.Inlines!.Add(new Run(label) { Foreground = AppTheme.DimBrush });
+                line.Inlines.Add(new Run(count.ToString() + " ")
+                { FontWeight = FontWeight.SemiBold, Foreground = AppTheme.BrushFor(brushKey) });
+            }
+
+            var chip = new Border
+            {
+                Child = line,
+                Background = AppTheme.BrushFor("RaisedBrush"),
+                CornerRadius = new CornerRadius(DesignTokens.RadiusPill),
+                Padding = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceXxs,
+                    DesignTokens.SpaceS, DesignTokens.SpaceXxs),
+                Margin = new Thickness(0, 0, DesignTokens.SpaceXs, DesignTokens.SpaceXs),
+                Cursor = new Cursor(StandardCursorType.Hand),
+            };
+            ToolTip.SetTip(chip,
+                $"{c.ClassName}: {c.Done} turned in, {c.Ready} ready to turn in, "
+                + $"{c.Partial} started, of {c.Total}. Click to show only this class.");
+            var className = c.ClassName;
+            chip.PointerPressed += (_, e) => e.Handled = true;
+            chip.PointerReleased += (_, e) =>
+            {
+                if (e.InitialPressMouseButton != MouseButton.Left) return;
+                e.Handled = true;
+                // A second click clears it, so the summary can put a class back as well
+                // as take one away — a lens you can only enter is a trap.
+                _classLens = _classLens is { } lens
+                    && lens.Equals(className, StringComparison.OrdinalIgnoreCase)
+                        ? null : className;
+                ApplyTabVisual();
+                Refresh(force: true);
+            };
+            wrap.Children.Add(chip);
+        }
+        _questsPanel.Children.Add(wrap);
+    }
 
     /// <summary>The Epic and Sky tabs. Rows come straight from the same settings lists
     /// the loot auto-checkers tick and EQBuddy Mobile reads, so ticking here, on the
@@ -572,11 +750,20 @@ public sealed class QuestsWindow : Window
         // The picker chooses WHICH classes are in view — including ones you don't play,
         // because "we may be helping a friend" (David, 2026-08-15). The chips then narrow
         // to one of them. An empty pick means every class, never an empty window.
-        var matching = groups
+        var inScope = groups
             .Where(g => classes.Count == 0
                 || classes.Contains(g.ClassName, StringComparer.OrdinalIgnoreCase))
             .Where(g => _classLens is null
                 || g.ClassName.Equals(_classLens, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // The two cross-class summaries go ABOVE the lens: they answer "what can I do
+        // right now" and "how am I doing overall", and a filter that hid them would leave
+        // the player narrowing a list to find out what they were already being told.
+        RenderReadyBand(tab, inScope);
+        RenderClassCounts(tab, inScope);
+
+        var matching = QuestChecklistLayout.InState(inScope, _state)
             .Select(g => filter.Length == 0 || Hit(g.Heading)
                 ? g
                 : g with { Rows = [.. g.Rows.Where(r => Hit(r.Title) || Hit(r.Detail))] })
@@ -587,18 +774,40 @@ public sealed class QuestsWindow : Window
 
         if (matching.Count == 0)
         {
-            _questsPanel.Children.Add(EmptyState(filter.Length > 0
-                ? "Nothing on this checklist matches that search."
+            // NAME what emptied the list. "Nothing matches" over a checklist that is
+            // merely filtered reads as a broken tracker.
+            _questsPanel.Children.Add(EmptyState(
+                filter.Length > 0 ? "Nothing on this checklist matches that search."
+                : _state != QuestChecklistLayout.StateAny
+                    ? $"Nothing here is “{_state}” right now — the state filter "
+                      + "above is narrowing the list."
+                : groups.Count > 0
+                    ? "Nothing for the classes you have picked — the class picker above "
+                      + "chooses which checklists this tab shows."
                 : "This checklist is empty — it fills in from the wiki catalog and your own "
                   + "progress. Scan bags or import achievements to catch it up."));
             return;
         }
 
+        var lastClass = "";
         foreach (var group in matching)
         {
+            // A class whose epic is marked complete has LOCKED rows. Not decoration: the
+            // master check's undo restores the snapshot it took, so a tick made while
+            // complete would be silently discarded on Reopen.
+            var locked = tab == QuestTab.Epic
+                && EpicCompleteToggle.IsComplete(_settings, group.ClassName);
+            // One band per CLASS on the Epic tab, carrying the master complete. Epic
+            // completion is per class — never per section — so this cannot ride on a
+            // group heading the way the Sky turn-in does.
+            if (tab == QuestTab.Epic && !group.ClassName.Equals(lastClass, StringComparison.OrdinalIgnoreCase))
+            {
+                lastClass = group.ClassName;
+                _questsPanel.Children.Add(EpicClassBand(group.ClassName));
+            }
             // The heading opens the wiki page for the reward it names — the "way to view
             // details of sky quests" #184 asked back for.
-            var rewardName = group.Heading.Split('·').Last().Trim();
+            var rewardName = group.Title;
             var headingText = DesignSystem.Text(Role.TitleSection,
                 $"{group.Heading}   {group.Done}/{group.Total}"
                 + (group.Note is { } n ? $"  · {n}" : ""));
@@ -662,6 +871,15 @@ public sealed class QuestsWindow : Window
                         "EQBuddy ticked this itself — several classes want this item and the "
                         + "log couldn't say which one earned it. Move the tick if it's on the "
                         + "wrong class; either way, toggling it settles the question.");
+                if (locked)
+                {
+                    check.IsEnabled = false;
+                    // And LOOK disabled — see the WPF twin: IsEnabled alone leaves a
+                    // control that reads as live and silently ignores clicks.
+                    check.Opacity = 0.5;
+                    ToolTip.SetTip(check, $"{group.ClassName}'s epic is marked complete. "
+                        + "Reopen it above to change individual steps.");
+                }
                 var was = row.Acquired;
                 check.IsCheckedChanged += (_, _) =>
                 {

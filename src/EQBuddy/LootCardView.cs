@@ -226,7 +226,7 @@ internal sealed class LootCardView
         name.MouseLeftButtonUp += (_, _) => _w.ShowItemInfo(item);
         grid.Children.Add(name);
 
-        if (QuestBadge(_w, row.Item) is { } badge)
+        if (EqCardRows.QuestBadge(_w, row.Item) is { } badge)
         {
             Grid.SetColumn(badge, 1);
             grid.Children.Add(badge);
@@ -238,25 +238,6 @@ internal sealed class LootCardView
         return grid;
     }
 
-    /// <summary>The quest marker beside an item, or null when the item wants no quest.
-    /// Click → the Quest Tracker filtered to this item's quests; the item's own name still
-    /// opens its wiki page (David's final shape, 2026-08-07). Shared with the Loot
-    /// breakout, which draws the same badge on the same items.</summary>
-    internal static UIElement? QuestBadge(MainWindow w, string item)
-    {
-        if (!w.IsActiveQuestItem(item)) return null;
-        var badge = DesignSystem.Icon("Map", "GoodBrush", size: DesignTokens.IconInline);
-        badge.Margin = new Thickness(0, 1, DesignTokens.SpaceS, 1);
-        badge.Cursor = Cursors.Hand;
-        badge.ToolTip = "Part of a quest — click for its quest info";
-        badge.MouseLeftButtonDown += (_, e) => e.Handled = true;
-        badge.MouseLeftButtonUp += (_, e) =>
-        {
-            e.Handled = true;
-            w.OpenQuestInfoForItem(item);
-        };
-        return badge;
-    }
 
     private void RenderTargetDrops(StatsSnapshot s)
     {

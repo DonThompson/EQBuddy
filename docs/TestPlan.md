@@ -110,6 +110,14 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | Sky groups by REWARD (not by turn-in NPC), with ready/in-progress/done and a per-reward count | **Auto** — `QuestChecklistLayoutTests` |
 | Every checklist row names the turn-in NPC and the drop location; Epic prefers its source | **Auto** — `QuestChecklistLayoutTests` |
 | A tick the loot auto-checker placed itself wears `*` on **all three** surfaces, not just mobile | **Auto** — `QuestChecklistLayoutTests`, `CompanionProjectionTests` |
+| The state lens (any / open / ready / done) narrows the Sky and Epic tabs, and an unset or unknown state never empties the screen | **Auto** — `QuestChecklistStateTests` |
+| A Sky reward holding every piece reads **ready**; an Epic section holding every piece reads **done** — Epic has no hand-in of its own | **Auto** — `QuestChecklistStateTests` |
+| Sky is ordered by ACTIONABILITY within a class: ready, then closest-to-done, then untouched, with the turned-in sunk to the bottom | **Auto** — `QuestChecklistStateTests` |
+| The Ready band lists every all-pieces-in-hand reward across EVERY class, names its NPC, and is absent when nothing is ready | **Auto** — `QuestChecklistStateTests`; **Shot** — `shoot.ps1 -Shot sky-checklist` |
+| Per-class D / R / P counts are drawn, and D+R+P deliberately does not sum to the total | **Auto** — `QuestChecklistStateTests`; **Shot** — `shoot.ps1 -Shot sky-checklist` |
+| "Epic complete" WRITES `EpicQuestCompleted`, snapshots what it overwrites, and Reopen restores the player's own ticks | **Auto** — `EpicCompleteWritePathTests`; **Shot** — `shoot.ps1 -Shot epic-checklist` |
+| While a class's epic is complete its rows are locked **and look locked** — the undo restores a snapshot, so a tick made meanwhile would be discarded | **Auto** — `EpicCompleteWritePathTests`; **Shot** — `shoot.ps1 -Shot epic-checklist` |
+| A clickable inline icon responds across its whole square, not only where the vector is painted | **Manual** — Loot card, click the gap inside the green quest marker (#211) |
 | The class-filter button face never grows with the selection, so the mode strip stays on screen | **Auto** — `ClassFilterLabelTests` |
 | A quest's status badge and its state rule say the SAME thing, in every theme's palette | **Auto** — `QuestPresentationTests` |
 | A finished REPEATABLE whose turn-ins are in hand reads "ready", never "done" | **Auto** — `QuestPresentationTests` |

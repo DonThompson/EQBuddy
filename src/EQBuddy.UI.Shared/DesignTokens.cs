@@ -113,6 +113,20 @@ public static class DesignTokens
     /// widget row height is window height.</summary>
     public const double IconInline = 12;
 
+    /// <summary>The hit target of an inline icon that is CLICKABLE, which is larger than
+    /// the icon drawn inside it.
+    ///
+    /// A vector only hit-tests where it is painted. The emoji these replaced were
+    /// TextBlocks, and a TextBlock hit-tests over its whole layout rect — so converting
+    /// the loot row's quest badge from a glyph to a <see cref="IconInline"/> Path turned
+    /// a solid square into the green strokes of a map pin, with dead space between them
+    /// (#211, n3cr0nk1tt3n). Nothing about that shows in a diff: the icon is in the right
+    /// place, the right colour and the right size, and the handler is attached.
+    ///
+    /// 16 rather than <see cref="IconButtonSize"/> for the reason above — it fits inside
+    /// one line of body text, so the target grows and the row does not.</summary>
+    public const double IconInlineHit = 16;
+
     /// <summary>The state rule down a list row's leading edge — the substitute for the
     /// quest-type icon the mockups drew, which cannot be sourced (docs/DesignSystem.md
     /// §8a). Carries <c>ready</c> / <c>in progress</c> / <c>done</c>, which is real.</summary>
@@ -139,6 +153,7 @@ public static class DesignTokens
             ["ControlHeight"] = ControlHeight,
             ["IconButtonSize"] = IconButtonSize,
             ["IconInline"] = IconInline,
+            ["IconInlineHit"] = IconInlineHit,
             ["StateRuleWidth"] = StateRuleWidth,
             ["FontTitleWindow"] = 14,
             ["FontTitleSection"] = 12.5,

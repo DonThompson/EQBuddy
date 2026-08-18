@@ -139,6 +139,25 @@ internal static class DesignSystem
         button.Click += onClick;
         return button;
     }
+
+    /// <summary>A clickable icon that sits INSIDE a line of text — the loot row's quest
+    /// badge and its family. <see cref="IconButton"/> is the same idea at
+    /// <see cref="DesignTokens.IconButtonSize"/>, which on the widget would make every
+    /// loot row a third taller; this keeps the drawn size and widens only the target.
+    ///
+    /// The point is the transparent ground the button template paints: a bare
+    /// <see cref="Path"/> only receives a click where it is painted, so the map-pin badge
+    /// had holes you could click straight through (#211). It is a real Button rather than
+    /// a handled Path so it is keyboard-reachable and shows the same hover as the rest of
+    /// the icon family.</summary>
+    public static Button InlineIconButton(string name, string tip, RoutedEventHandler onClick,
+        string colorKey = "DimBrush", double size = DesignTokens.IconInline)
+    {
+        var button = IconButton(name, tip, onClick, colorKey);
+        button.Width = button.Height = DesignTokens.IconInlineHit;
+        if (button.Content is Path icon) icon.Width = icon.Height = size;
+        return button;
+    }
 }
 
 /// <summary>

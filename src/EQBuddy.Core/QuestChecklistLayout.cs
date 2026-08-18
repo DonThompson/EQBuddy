@@ -12,6 +12,11 @@ public sealed record QuestChecklistRow(
     bool Unassigned);
 
 /// <summary>A group of rows under one heading, with the state of the reward as a whole.</summary>
+/// <param name="Title">The reward (Sky) or section (Epic) on its own, WITHOUT the class.
+/// <see cref="Heading"/> joins the two. Carried rather than parsed back out: the window
+/// used to recover the reward by splitting the heading on "·", which is one fact stored
+/// in one place and read out of another (trap 4) and would have broken on the first
+/// reward name containing the separator.</param>
 /// <param name="CompletionKey">For Sky, the key that says "this reward is turned in"
 /// (<see cref="QuestChecklistLayout.RewardKey"/>). Null for Epic, whose completion is
 /// per CLASS rather than per group. A view needs this to offer the turn-in control at
@@ -19,21 +24,63 @@ public sealed record QuestChecklistRow(
 /// <param name="Completed">Turned in. Distinct from every item being acquired: holding
 /// the pieces and having handed them over are different states, and the whole point of
 /// the reward group is to tell them apart.</param>
+/// <param name="TurnInNpc">Who takes the hand-in, when the catalog names one. The Ready
+/// band shows it, because "what can I turn in right now" is only actionable with the
+/// "and to whom" attached.</param>
 public sealed record QuestChecklistGroup(
     string ClassName,
-    string Heading,
-    string? Note,
+    string Title,
     IReadOnlyList<QuestChecklistRow> Rows,
     string? CompletionKey = null,
-    bool Completed = false)
+    bool Completed = false,
+    string? TurnInNpc = null)
 {
+    /// <summary>"Bard · Mask of Song" — what a heading reads as.</summary>
+    public string Heading => ClassName + " · " + Title;
+
     /// <summary>Every item in hand, and not yet turned in — the moment the turn-in
     /// control is worth offering.</summary>
     public bool ReadyToTurnIn => !Completed && Rows.Count > 0 && Rows.All(r => r.Acquired);
 
     public int Done => Rows.Count(r => r.Acquired);
     public int Total => Rows.Count;
+
+    /// <summary>Which slice of the state lens this group falls in — one of
+    /// <see cref="QuestChecklistLayout.States"/>, never "any state", which is the absence
+    /// of a filter rather than a state a group can be in.
+    ///
+    /// An EPIC section has no turn-in of its own (no <see cref="CompletionKey"/>), so
+    /// every piece collected IS its terminal state and reads as done. A SKY reward with
+    /// every piece collected is only <em>ready</em> — the hand-in has still to happen,
+    /// and telling those two apart is the entire job of this screen.</summary>
+    public string State =>
+        Completed ? QuestChecklistLayout.StateDone
+        : Rows.Count > 0 && Rows.All(r => r.Acquired)
+            ? CompletionKey is null ? QuestChecklistLayout.StateDone : QuestChecklistLayout.StateReady
+        : QuestChecklistLayout.StateOpen;
+
+    /// <summary>The word after the count on the heading. Finer than <see cref="State"/>
+    /// on purpose: a group nobody has started says nothing at all, where the lens puts it
+    /// in "open" alongside one that is half done. Derived from the same fields as
+    /// <see cref="State"/> so the label and the filter cannot disagree.</summary>
+    public string? Note =>
+        Completed ? "done"
+        : Rows.Count > 0 && Rows.All(r => r.Acquired) ? "ready"
+        : Rows.Any(r => r.Acquired) ? "in progress"
+        : null;
+
+    /// <summary>How close to finished, for the actionability sort. Untouched is 0 and
+    /// every piece held is 1.</summary>
+    public double Progress => Total == 0 ? 0 : (double)Done / Total;
 }
+
+/// <summary>Done / Ready / Partial / Total for one class (#136, bjstrange).</summary>
+/// <remarks>D + R + P deliberately does NOT sum to <paramref name="Total"/> — a reward
+/// you have not started sits in no bucket. bjstrange read three numbers that didn't add
+/// up and reasonably concluded they were wrong; showing what they are out of turns a
+/// puzzle into a subtraction.</remarks>
+public sealed record ChecklistClassCounts(
+    string ClassName, int Done, int Ready, int Partial, int Total);
 
 /// <summary>
 /// How the Epic and Sky checklists are grouped and labelled — for every surface.
@@ -60,7 +107,15 @@ public static class QuestChecklistLayout
 
     /// <summary>Sky, grouped by the REWARD you are working toward — the unit of "am I
     /// done", and the unit the player turns in. The NPC is still shown, on every row,
-    /// where it belongs next to the drop location.</summary>
+    /// where it belongs next to the drop location.
+    ///
+    /// Ordered by ACTIONABILITY within a class, which is the old widget card's rule
+    /// restored verbatim (#205 bjstrange, #209 crydeevisions-arch, #210 liminalwarmth):
+    /// unfinished first, and among the unfinished the CLOSEST TO DONE leads, because the
+    /// question this screen answers is "which reward is actually in reach". Turned-in
+    /// rewards sink to the bottom and read fine there as trophies. Alphabetical order
+    /// interleaved all four states and buried the reward that needed one more piece
+    /// wherever the alphabet happened to put it.</summary>
     public static IReadOnlyList<QuestChecklistGroup> Sky(
         IEnumerable<SkyQuestChecklistItem> items,
         IReadOnlyCollection<string>? completedRewardKeys = null)
@@ -70,15 +125,9 @@ public static class QuestChecklistLayout
         [
             .. items
                 .GroupBy(i => (i.ClassName, i.Reward))
-                .OrderBy(g => g.Key.ClassName, StringComparer.OrdinalIgnoreCase)
-                .ThenBy(g => g.Key.Reward, StringComparer.OrdinalIgnoreCase)
                 .Select(g => new QuestChecklistGroup(
                     g.Key.ClassName,
-                    $"{g.Key.ClassName} · {g.Key.Reward}",
-                    completed.Contains(RewardKey(g.Key.ClassName, g.Key.Reward)) ? "done"
-                        : g.All(i => i.Acquired) ? "ready"
-                        : g.Any(i => i.Acquired) ? "in progress"
-                        : null,
+                    g.Key.Reward,
                     [
                         .. g.OrderBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
                             .Select(i => new QuestChecklistRow(
@@ -90,7 +139,12 @@ public static class QuestChecklistLayout
                                 i.AcquiredUnassigned)),
                     ],
                     RewardKey(g.Key.ClassName, g.Key.Reward),
-                    completed.Contains(RewardKey(g.Key.ClassName, g.Key.Reward)))),
+                    completed.Contains(RewardKey(g.Key.ClassName, g.Key.Reward)),
+                    g.Select(i => i.Npc).FirstOrDefault(n => n.Trim().Length > 0)?.Trim()))
+                .OrderBy(g => g.ClassName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(g => g.Completed)
+                .ThenByDescending(g => g.Progress)
+                .ThenBy(g => g.Title, StringComparer.OrdinalIgnoreCase),
         ];
     }
 
@@ -107,10 +161,7 @@ public static class QuestChecklistLayout
                 .ThenBy(g => g.Key.Section, StringComparer.OrdinalIgnoreCase)
                 .Select(g => new QuestChecklistGroup(
                     g.Key.ClassName,
-                    $"{g.Key.ClassName} · {g.Key.Section}",
-                    g.All(i => i.Acquired) ? "ready"
-                        : g.Any(i => i.Acquired) ? "in progress"
-                        : null,
+                    g.Key.Section,
                     [
                         .. g.OrderBy(i => i.Order)
                             .ThenBy(i => i.QuestItem, StringComparer.OrdinalIgnoreCase)
@@ -128,6 +179,75 @@ public static class QuestChecklistLayout
                     ])),
         ];
     }
+
+    // ---- the state lens, the Ready band and the per-class counts ----
+    //
+    // All three came off the widget's Sky card when it became a launcher (66f6abc,
+    // 2026-08-16) and none came back with the rest of it. #203, #205, #209 and #210 are
+    // four people reporting the same hole from four angles, and #210 makes the argument
+    // that settles where the code goes: Sky drops are random across classes, so most
+    // players work all sixteen checklists at once and every question they bring to this
+    // screen is cross-class and state-first. That is grouping, ordering and state — which
+    // is what this file is for — so it lands HERE and not in a window, and the two
+    // desktops and EQBuddy Mobile get the same answer (the #184 lesson).
+
+    /// <summary>No filter. Not a state a group can be in — <see cref="States"/> lists it
+    /// first because a lens needs a way to be switched off.</summary>
+    public const string StateAny = "any state";
+    /// <summary>Not turned in, and at least one piece still missing.</summary>
+    public const string StateOpen = "open";
+    /// <summary>Every piece in hand, hand-in outstanding. The Sky-specific prize, and the
+    /// only state that names something to DO right now.</summary>
+    public const string StateReady = "ready";
+    /// <summary>Turned in (Sky), or finished (Epic, which has no separate hand-in).</summary>
+    public const string StateDone = "done";
+
+    /// <summary>The lens vocabulary, in the order a strip should offer it. The same four
+    /// words the General tab's own state filter uses, so a player learns them once.</summary>
+    public static readonly IReadOnlyList<string> States = [StateAny, StateOpen, StateReady, StateDone];
+
+    /// <summary>Narrow to one slice of the lens. An unknown or absent state is "any" —
+    /// a filter nobody set must never empty the screen.</summary>
+    public static IEnumerable<QuestChecklistGroup> InState(
+        IEnumerable<QuestChecklistGroup> groups, string? state) =>
+        string.IsNullOrWhiteSpace(state) || state == StateAny || !States.Contains(state)
+            ? groups
+            : groups.Where(g => g.State == state);
+
+    /// <summary>"What can I turn in right now, across every class" (#129, bjstrange) —
+    /// every reward with all its pieces in hand and the hand-in outstanding, whoever it
+    /// belongs to. The one question on this screen that names an action with a deadline,
+    /// and the reason it survived on EQBuddy Mobile while the desktop lost it.
+    ///
+    /// Ordered by class then reward rather than by actionability: everything in here is
+    /// equally actionable, so a stable, scannable order beats a ranking.</summary>
+    public static IReadOnlyList<QuestChecklistGroup> ReadyToTurnIn(
+        IEnumerable<QuestChecklistGroup> groups) =>
+        [
+            .. groups.Where(g => g.ReadyToTurnIn)
+                .OrderBy(g => g.ClassName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(g => g.Title, StringComparer.OrdinalIgnoreCase),
+        ];
+
+    /// <summary>Done / Ready / Partial / Total per class (#136, bjstrange), so "how am I
+    /// doing across all sixteen" is one glance rather than a scroll. Classes come back in
+    /// the order the groups arrive, which is already alphabetical.</summary>
+    public static IReadOnlyList<ChecklistClassCounts> ClassCounts(
+        IEnumerable<QuestChecklistGroup> groups) =>
+        [
+            .. groups
+                .GroupBy(g => g.ClassName, StringComparer.OrdinalIgnoreCase)
+                .Select(c => new ChecklistClassCounts(
+                    c.First().ClassName,
+                    c.Count(g => g.State == StateDone),
+                    c.Count(g => g.State == StateReady),
+                    // PARTIAL is "started but not finished", which is narrower than open:
+                    // a reward nobody has touched is open and is not partial, and that is
+                    // exactly why D+R+P does not sum to the total.
+                    c.Count(g => g.State == StateOpen && g.Done > 0),
+                    c.Count()))
+                .OrderBy(c => c.ClassName, StringComparer.OrdinalIgnoreCase),
+        ];
 
     /// <summary>The desktop's reward key (class + reward), so "done" means the same
     /// thing on every screen.</summary>

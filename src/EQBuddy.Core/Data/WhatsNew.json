@@ -1,5 +1,18 @@
 [
  {
+  "version": "1.93.0",
+  "date": "2026-08-19",
+  "highlights": [
+   "RESTORED - THE PLANE OF SKY TRACKER CAN ANSWER \"WHAT CAN I TURN IN RIGHT NOW\" AGAIN (discussions #203 BenthamAutoIcon, #205 and #209, thanks bjstrange and crydeevisions-arch; issue #210, thanks Liminal Warmth). Four of you reported the same hole from four directions, and you were right about all of it. When the widget's Sky card became a launcher, the checklist came across and the way you WORKED it did not: the state filter, the cross-class ready list, and the per-class scores all went, leaving an alphabetical list that mixed finished, ready, half-done and untouched together. They are back, and they are back in the shared code this time, so the Windows build, the Linux and macOS build and your phone all agree.",
+   "A READY BAND SITS AT THE TOP OF THE SKY TAB. Every reward whose pieces you are all holding, across every class you play, with the NPC who takes it. Sky drops fall for classes you may not even play, so most people are working all sixteen checklists at once - this is the one question on that screen with something to actually DO about it, and it was answerable on the phone but not on the desktop.",
+   "THE STATE FILTER IS BACK ON THE SKY AND EPIC TABS. any state / open / ready / done, the same words the main quest list already uses. It was hidden on those two tabs on the grounds that state is a catalog idea; that was backwards, because a checklist is exactly where ready and done matter most.",
+   "AND THE LIST IS ORDERED BY WHAT IS IN REACH. Unfinished first, and among the unfinished the closest-to-done leads; what you have handed in sinks to the bottom as trophies. Each class also carries a D / R / P score - turned in, ready, started - out of its total, so how you are doing across every class is one glance instead of a scroll. (Those three deliberately do not add up to the total: a reward you have not started sits in none of them.)",
+   "RESTORED - \"EPIC COMPLETE\" IS BACK ON THE EPIC TAB (issue #210 again, and originally #138, thanks aodgizmo). This one had been gone longer than the Sky turn-in and nobody had noticed: the code that did the work was still there, still tested, and nothing anywhere could reach it - so the setting that records a finished epic had a reader and no writer at all. Each class now carries an \"Epic complete\" button that ticks its remaining steps after asking, and a \"Reopen\" that puts your own ticks back exactly as they were. While a class is marked complete its steps are locked, and they look locked.",
+   "FIXED (discussion #211, thanks n3cr0nk1tt3n) - THE QUEST MARKER BESIDE A LOOTED ITEM HAD HOLES IN IT. Clicking the little green map beside an item opens its quest info, and you could click straight through the gap between the map's two folds and have nothing happen. That is ours and it is new: the marker used to be an emoji, and text responds across its whole square, while the vector that replaced it in 1.91.0 only responded where it was actually painted. It is a proper button now with the whole square live, on both builds - and it is one piece of code instead of the three near-identical copies that let it be clickable in one place and not another.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.92.0",
   "date": "2026-08-18",
   "highlights": [

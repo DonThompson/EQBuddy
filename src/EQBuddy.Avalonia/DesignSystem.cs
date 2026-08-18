@@ -78,6 +78,23 @@ internal static class DesignSystem
         return button;
     }
 
+    /// <summary>A clickable icon that sits INSIDE a line of text — the loot row's quest
+    /// badge and its family. <see cref="IconButton"/> is the same idea at
+    /// <see cref="DesignTokens.IconButtonSize"/>, which on the widget would make every
+    /// loot row a third taller; this keeps the drawn size and widens only the target.
+    ///
+    /// The point is the transparent ground: a bare vector only receives a click where it
+    /// is painted, so the map-pin badge had holes you could click straight through
+    /// (#211). Windows found it first; this lane had the identical badge.</summary>
+    public static Button InlineIconButton(string name, string tip, Action onClick,
+        string colorKey = "DimBrush", double size = DesignTokens.IconInline)
+    {
+        var button = IconButton(name, tip, onClick, colorKey);
+        button.Width = button.Height = DesignTokens.IconInlineHit;
+        if (button.Content is PathIcon icon) icon.Width = icon.Height = size;
+        return button;
+    }
+
     /// <summary>An icon and a word on one baseline — the shape every textual button in
     /// the migrated surfaces takes.</summary>
     public static StackPanel IconLabel(string icon, string label, string colorKey = "DimBrush")

@@ -170,7 +170,7 @@ internal sealed class LootBreakoutView
     private Grid BuildRow(LootRow r, Brush barBrush)
     {
         var cachedTip = _w.Main?.CachedItemStats(r.Item);
-        var badge = _w.Main is { } main ? LootCardView.QuestBadge(main, r.Item) : null;
+        var badge = _w.Main is { } main ? EqCardRows.QuestBadge(main, r.Item) : null;
 
         var row = BreakdownRows.Row(_w, r.Item, r.Value, 0, barBrush, null,
             nameBadge: badge, nameNote: LootPresentation.Note(r.Tag));

@@ -224,17 +224,12 @@ internal sealed class LootCardView
         if (_w.IsActiveQuestItem(item))
         {
             // Click → the Quest Tracker filtered to this item's quests; the item's own
-            // name still opens its wiki page (David's shape, 2026-08-07).
-            var badge = DesignSystem.Icon("Map", "GoodBrush", size: DesignTokens.IconInline);
-            badge.Margin = new Thickness(0, 1, DesignTokens.SpaceS, 1);
-            badge.Cursor = new Cursor(StandardCursorType.Hand);
-            ToolTip.SetTip(badge, "Part of a quest — click for its quest info");
-            badge.PointerPressed += (_, e) =>
-            {
-                if (!e.GetCurrentPoint(badge).Properties.IsLeftButtonPressed) return;
-                e.Handled = true;
-                _w.OpenQuestInfoForItem(item);
-            };
+            // name still opens its wiki page (David's shape, 2026-08-07). A button rather
+            // than a handled vector, so the whole square is clickable (#211).
+            var badge = DesignSystem.InlineIconButton("Map",
+                "Part of a quest — click for its quest info",
+                () => _w.OpenQuestInfoForItem(item), "GoodBrush");
+            badge.Margin = new Thickness(0, 0, DesignTokens.SpaceXs, 0);
             Grid.SetColumn(badge, 1);
             grid.Children.Add(badge);
         }
