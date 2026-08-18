@@ -223,6 +223,14 @@ completion is per class, and a turn-in button must not appear there by accident.
 Surfaced as **"Mark turned in" / "Reopen"** on the reward heading in both Quest Trackers,
 matching the General tab's own turn-in button from Gate 2 rather than inventing a control.
 
+**Visually inspected 2026-08-18** — `shoot.ps1 -Shot sky-checklist` stages all three reward
+states on one screen (turned in → "Reopen", every piece held → "Mark turned in", part
+collected → neither) and `EQBUDDY_QUESTS=sky` opens straight onto the tab. Staging it found
+a SECOND bug, in Core rather than in the new code: `ApplyDefaultSkyQuestChecklist` refreshed
+a row's NPC, reward, item and source by Id but never its **ClassName** — and every surface
+groups and filters by class, so a row whose class drifted from the catalog was invisible in
+all of them while its tick sat in `settings.json`. Fixed and pinned.
+
 **Worth generalising:** this went missing because the DATA survived the move and only the
 WRITE path did not, which no test and no ratchet can see. When folding a surface, check
 what still writes each setting it owned — a setting that only readers touch is the

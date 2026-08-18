@@ -356,7 +356,8 @@ public partial class MainWindow : Window, ICardContext
             Loaded += (_, _) => Dispatcher.BeginInvoke(() =>
             {
                 ShowQuestsWindow();
-                if (questsMode is "zone" or "all") _questsWindow?.SetMode(questsMode);
+                if (questsMode is "sky" or "epic") _questsWindow?.SetTab(questsMode);
+                else if (questsMode is "zone" or "all") _questsWindow?.SetMode(questsMode);
             }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
         // Same family, and the one that was missing: the Spawns window deliberately stays

@@ -71,6 +71,24 @@ $Shots = [ordered]@{
                            Set = @{ Minimized = $true; MiniStats = @('loot'); BreakoutLootScope = 'session' } }
     'quest-tracker'   = @{ Title = 'Quest Tracker'; Env = @{ EQBUDDY_QUESTS = '1' }; Set = @{} }
     'quest-tracker-all' = @{ Title = 'Quest Tracker'; Env = @{ EQBUDDY_QUESTS = 'all' }; Set = @{} }
+    # The Plane of Sky checklist, staged so all three reward states are on one screen:
+    # one turned in (offers Reopen), one with every piece held (offers Mark turned in),
+    # one part-collected (offers neither). Ticks survive the catalog merge because
+    # ApplyDefaultSkyQuestChecklist matches on Id and never touches Acquired.
+    'sky-checklist'   = @{ Title = 'Quest Tracker'
+                           Env = @{ EQBUDDY_QUESTS = 'sky' }
+                           Set = @{
+                               # Warrior, because that is what the fixture log infers.
+                               SkyQuestCompleted = @('Warrior|Azure Ruby Ring')
+                               SkyQuestChecklist = @(
+                                   @{ Id = 'sky-194'; Acquired = $true }   # turned in
+                                   @{ Id = 'sky-195'; Acquired = $true }
+                                   @{ Id = 'sky-200'; Acquired = $true }   # every piece held
+                                   @{ Id = 'sky-201'; Acquired = $true }
+                                   @{ Id = 'sky-202'; Acquired = $true }
+                                   @{ Id = 'sky-203'; Acquired = $true }   # part collected
+                               )
+                           } }
     'spawns-window'   = @{ Title = 'Spawn'; Env = @{ EQBUDDY_SPAWNS = 'Runnyeye Citadel' }; Set = @{ TrackSpawns = $true } }
     'options-window'  = @{ Title = 'Options'; Env = @{ EQBUDDY_OPTIONS = '1' }; Set = @{} }
     'zone-map'        = @{ Title = 'Zone Map'; Env = @{ EQBUDDY_MAP = '1' }; Set = @{} }

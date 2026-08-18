@@ -170,6 +170,18 @@ public partial class QuestsWindow : Window
         Refresh(force: true);
     }
 
+    /// <summary>Open straight onto a tab — the screenshot hook's half of the tab strip
+    /// (<c>EQBUDDY_QUESTS=sky</c>). The checklist tabs have controls the General tab does
+    /// not, and a review criterion that cannot reach them is not one.</summary>
+    internal void SetTab(string tab)
+    {
+        _tab = tab.Equals("sky", StringComparison.OrdinalIgnoreCase) ? QuestTab.Sky
+            : tab.Equals("epic", StringComparison.OrdinalIgnoreCase) ? QuestTab.Epic
+            : QuestTab.General;
+        ApplyTabVisual();
+        Refresh(force: true);
+    }
+
     // ---- top-level tabs: General · Epic 1.0 · Plane of Sky ----
     //
     // The tabs, the class lens and the mode strip are three features and ONE shape, so

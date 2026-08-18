@@ -170,4 +170,26 @@ public class SkyCompleteToggleTests
         Assert.Equal("Mark turned in", SkyCompleteToggle.ButtonLabel(completed: false));
         Assert.Equal("Reopen", SkyCompleteToggle.ButtonLabel(completed: true));
     }
+
+    /// <summary>A row whose ClassName has drifted from the catalog is INVISIBLE: every
+    /// surface groups and filters by class, so the tick survives in settings.json and the
+    /// player never sees it again. The catalog merge refreshes the class with the rest of
+    /// the metadata — found on 2026-08-18 by seeding a checklist for a screenshot and
+    /// watching the ticked rows disappear.</summary>
+    [Fact]
+    public void TheCatalogMergeRepairsARowWhoseClassDrifted()
+    {
+        var s = new AppSettings();
+        s.ApplyDefaultSkyQuestChecklist();
+        var row = s.SkyQuestChecklist[0];
+        var realClass = row.ClassName;
+
+        row.ClassName = "";        // what a hand-edited or partially-seeded profile looks like
+        row.Acquired = true;       // and the player's tick, which must survive the repair
+
+        s.ApplyDefaultSkyQuestChecklist();
+
+        Assert.Equal(realClass, row.ClassName);
+        Assert.True(row.Acquired);
+    }
 }

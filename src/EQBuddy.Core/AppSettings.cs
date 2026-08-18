@@ -600,12 +600,19 @@ public sealed class AppSettings
                 // already carrying the row (#139's mask/mantle swap). Acquired and
                 // AcquiredUnassigned are the player's record and are never touched —
                 // a tick placed on the old text stays on the corrected row.
-                if (existing.Npc == item.Npc &&
+                // ClassName is refreshed with the rest, and it is the one that MATTERS
+                // most: every surface groups and filters by it, so a row whose class does
+                // not match the catalog is invisible in all of them — the tick survives in
+                // settings.json and the player never sees it again. Found on 2026-08-18 by
+                // seeding a checklist for a screenshot and watching the ticked rows vanish.
+                if (existing.ClassName == item.ClassName &&
+                    existing.Npc == item.Npc &&
                     existing.Reward == item.Reward &&
                     existing.QuestItem == item.QuestItem &&
                     existing.Source == item.Source)
                     continue;
 
+                existing.ClassName = item.ClassName;
                 existing.Npc = item.Npc;
                 existing.Reward = item.Reward;
                 existing.QuestItem = item.QuestItem;
