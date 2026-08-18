@@ -112,9 +112,6 @@ public sealed partial class SessionStats
     private static double Distance(LocationEvent a, LocationEvent b) =>
         Math.Sqrt((a.LocX - b.LocX) * (a.LocX - b.LocX) + (a.LocY - b.LocY) * (a.LocY - b.LocY));
 
-    /// <summary>Bumped whenever <see cref="_charmHoldByBreak"/> gains an entry —
-    /// the tracked scan's invalidation guards (SessionStats.Tracked.cs) watch it.</summary>
-    private int _charmHoldRevision;
 
     /// <summary>Perf audit #12: the last snapshot built, keyed by everything that can
     /// change its content — the version (every applied event bumps it), the recent
@@ -302,11 +299,16 @@ public sealed partial class SessionStats
     private double _closedCombatSeconds; private long _closedCombatDamage;
     private DateTime? _combatStart; private DateTime? _combatLast; private long _combatDamage;
     private DateTime? _lastOwnAction;
-    private string? _petName;        // normalized (article stripped, capitalized)
-    private bool _petConfirmed;      // false = blink-only (charm suspected, no "Master" tell yet)
 
     // ---- spell tracking ----
     private readonly SpellCatalog _spells = new();
+
+    /// <summary>Whose pet that is, and how long the charm has held. Lifted out on
+    /// 2026-08-18: six distinct causes of one symptom were fixed in it in three days
+    /// (#135), every one found by replaying an attached log, and a subsystem with that
+    /// history does not belong inside a switch statement. See <see cref="CharmTracker"/>
+    /// — it is the same move <c>MezTracker</c> already represents.</summary>
+    private readonly CharmTracker _charm;
     /// <summary>The spell classifier, exposed so the apps can attach the persistent
     /// learned-category store (tests don't, keeping learning session-local).</summary>
     public SpellCatalog Spells => _spells;
@@ -335,64 +337,6 @@ public sealed partial class SessionStats
     // name; songs count too — they resist the same.
     private readonly Dictionary<string, (int Casts, int Resists, int Blocked)> _spellOutcomes = new(StringComparer.OrdinalIgnoreCase);
     private (string Item, DateTime Time)? _lastItemProc;
-    // A cast that preceded a blink or charmed line, held until a "Master" tell proves it
-    // was a charm. Pet carries the creature the line named: the tell must name the SAME
-    // creature to teach, so a bystander's charm coinciding with our own unrelated cast
-    // (Hugzee's Heroic Leap) can never mislabel that cast as a charm (issue #29).
-    //
-    // Spell is NULL when the landing had no cast of ours behind it at all — an ITEM
-    // clicky (#135, charm7.txt: Puppet Strings). Nothing to learn, and nothing claimed by
-    // the landing; the record exists so the caster-only "Master" tell can start the clock
-    // when the charm LANDED rather than when the pet happened to speak.
-    private (string? Spell, DateTime Time, string Pet)? _charmCandidate;
-    // #130 (bjstrange): how long the current charm has HELD, and how long the last
-    // one held. Set only by charm-path claims — a summoned pet never "breaks".
-    private (string Pet, DateTime LandedAt)? _charmHold;
-    // Provisional charm claims (late landings, unknown spells) start the clock too;
-    // the Master tell that confirms them keeps the original landing time.
-    private (string Pet, DateTime LandedAt)? _charmProvisional;
-    // Break-time → held seconds, so the fade alert's label can say "held 4:32"
-    // (the journal scan rebuilds labels repeatedly; this is its lookaside).
-    private readonly Dictionary<DateTime, double> _charmHoldByBreak = new();
-    // The game prints a charm's fade line up to several seconds AFTER the event that
-    // actually broke it. One window covers both faces of that skew: FadeLabel looks
-    // this far back for a recorded hold (#135, v1.76.0: attack-then-fade), and the
-    // wear-off ingest treats a fade this close to an already-recorded break as that
-    // break's delayed echo rather than a new break (#135, bjstrange: re-charm cascade).
-    private const int CharmFadeSkewSeconds = 10;
-    // A swing already in flight when the charm lands still hits YOU a beat later — the
-    // mob was mid-round, and the game resolves that round before the charm takes hold.
-    // Reading it as "my pet turned on me" destroys the claim one second after making it,
-    // so the real fade minutes later has no landing to measure from and prints no hold
-    // (#135, bjstrange: "3 charms announced, the 4th didn't", different mobs, random —
-    // random because it depends on whether the mob happened to be mid-swing). A melee
-    // round is ~2 s, so 3 covers the tail without hiding a genuine instant break: the
-    // authoritative "worn off" line still records that a moment later.
-    private const int CharmSettleSeconds = 3;
-    // When we last had PROOF that two creatures share the pet's name: a line where the
-    // pet both attacks and is attacked under the same name — "A greater ice bones
-    // slashes a greater ice bones" (#135, bjstrange's charm4.txt). EQ's log identifies
-    // creatures by name and nothing else, so while a duplicate is known to exist, a
-    // same-named attacker hitting US is ambiguous and must not destroy the charm claim;
-    // the unambiguous "worn off" line settles it instead.
-    //
-    // Deliberately narrower than "the pet is busy with someone else". A pet fighting a
-    // GHOUL and then turning on you is a real break with no ambiguity about identity,
-    // and suppressing that would keep crediting a creature that is now hitting you.
-    private const int SameNameProofSeconds = 30;
-    private DateTime? _sameNameProofAt;
-    // Since when your pet has been on HOLD, from its own reply ("Now holding, Master. I
-    // will not start attacks until ordered."). A held pet does not initiate attacks, so
-    // a same-named creature swinging at you while yours is held is a DIFFERENT creature —
-    // the second, independent proof of a duplicate, and the one #135's fifth log needed.
-    //
-    // charm6.txt: Bzzazzt charmed at 01:25:21, told to hold at 01:25:28, and at 01:25:36
-    // "Bzzazzt" lands a full five-hit round on the player. The 1.87.0 guard could not
-    // help, because its only proof is a creature attacking something of its own name and
-    // the two Bzzazzts never fought each other — one fought the player, the charmed one
-    // fought (and killed) Eye of Veeshan. So the claim died 15 seconds into a 3:28 charm
-    // and the wear-off at 01:28:49 had no landing left to measure.
-    private DateTime? _petHeldSince;
     private int _castsStarted, _castsInterrupted;
     private long _dotDamage, _directSpellDamage;
 
@@ -422,33 +366,6 @@ public sealed partial class SessionStats
 
     private readonly Dictionary<string, SpellBurst> _openBursts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, CastAgg> _castAgg = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>How long after a cast starts a blink can still belong to it. Charm casts
-    /// run a few seconds; observed gap in real logs is ~4s. This is the FALLBACK for
-    /// spells whose cast time the catalog doesn't know — known charms use the tighter
-    /// per-spell arm window below.</summary>
-    private static readonly TimeSpan CastToBlink = TimeSpan.FromSeconds(30);
-
-    /// <summary>Slack past a spell's cast time in the arm window: log timestamps round
-    /// to the second and the server adds a beat, but a landing seconds after our cast
-    /// COMPLETED is somebody else's charm.</summary>
-    internal const double CharmArmSlackSeconds = 1.5;
-
-    /// <summary>Per-spell charm arm window (approved 2026-08-13): a landing line is
-    /// ours only within the spell's own cast time + slack of the cast starting. The
-    /// old fixed 30s meant a bystander's charm landing 20s after our failed Beguile
-    /// (3.5s cast) could steal the claim; now the window fits the spell.
-    /// Two honesty guards from the review: log stamps are WHOLE seconds (a real
-    /// 3.02s gap can log as 4), so the fractional cast time rounds UP before the
-    /// slack is added; and a zero/absent cast time means "instant or unknown" —
-    /// either way the generic window applies, never a 1.5s trap.</summary>
-    private TimeSpan ArmWindow(string spell) =>
-        _spells.CastTimeSeconds(spell) is { } ct && ct > 0
-            ? TimeSpan.FromSeconds(Math.Ceiling(ct) + CharmArmSlackSeconds)
-            : CastToBlink;
-    /// <summary>How long after a blink a "Master" tell still confirms the same charm.
-    /// Observed gap in real logs is ~5s; pets can be slow to announce.</summary>
-    private static readonly TimeSpan BlinkToClaim = TimeSpan.FromSeconds(60);
 
     public event Action? SessionRolledOver;
     /// <summary>Raised (outside the lock) with the final snapshot of a session that just
@@ -603,224 +520,28 @@ public sealed partial class SessionStats
                     ClaimPendingRewards(k.Target, k.Time);
                     break;
                 case CharmedEvent ch:
-                    // The direct charm-success line — but it names NO caster and is
-                    // bystander-visible (12 of 43 in eqlog_Hugzee had no own cast near
-                    // them: other players charming nearby; David called this before it
-                    // shipped wrong). Worse, "unknown cast in flight" is no proof of
-                    // ownership either: Hugzee spams Heroic Leap (unknown to the
-                    // catalog), and one leap coinciding with a bystander's charm would
-                    // both steal the pet AND teach the catalog that Heroic Leap is a
-                    // charm. So this line claims ONLY behind a cast already KNOWN to be
-                    // a charm — where it beats the "Attacking … Master." tell by up to
-                    // 9 s of otherwise-unclaimed damage. Unknown charm spells still get
-                    // learned via the Master tell, which is caster-only and unspoofable.
-                    // Deliberately NO TrackCombat: charming isn't fighting.
-                    if (_pendingCast is { } chCast && ch.Time - chCast.Time <= CastToBlink)
-                    {
-                        var chCategory = _spells.Classify(chCast.Spell);
-                        // Known charm: claim only inside ITS arm window (cast time +
-                        // slack) — past that our cast completed without this landing,
-                        // so the line is probably a bystander's charm.
-                        if (chCategory == SpellCategory.Charm
-                            && ch.Time - chCast.Time <= ArmWindow(chCast.Spell))
-                        {
-                            _pendingCast = null;
-                            ConfirmPet(LogParser.Normalize(ch.Name));
-                            _charmHold = (LogParser.Normalize(ch.Name), ch.Time);   // #130
-                        }
-                        // Outside the window but our charm cast IS still recent:
-                        // degrade to the provisional "Pet?" state instead of nothing
-                        // (lag/rounding cases) — the "Master" tell resolves it and
-                        // merges the provisional damage, same as the blink path.
-                        else if (chCategory == SpellCategory.Charm && _petName is null)
-                        {
-                            _petName = LogParser.Normalize(ch.Name);
-                            _petConfirmed = false;
-                            _charmProvisional = (_petName, ch.Time);   // #130: clock starts at the landing
-                        }
-                        // Unknown cast + no pet of our own: record the cast as a charm
-                        // candidate — NO claim, no damage credit (a bystander's charm
-                        // coinciding with Heroic Leap must not steal anything) — so the
-                        // "Master" tell that follows the first attack order can teach the
-                        // spell. Before this, the learning hook only existed on the blink
-                        // path: a client whose charms log "has been charmed." with a spell
-                        // outside the catalog never learned it, and every charm waited for
-                        // the attack button (issue #29). With the persistent store, that
-                        // wait now happens once per spell ever.
-                        else if (chCategory == SpellCategory.Unknown && _petName is null)
-                            _charmCandidate = (chCast.Spell, ch.Time, LogParser.Normalize(ch.Name));
-                    }
-                    // NO cast of ours in flight is what an ITEM looks like: Puppet
-                    // Strings clicks Allure and prints no "You begin casting" line, so
-                    // every per-spell mechanism above has nothing to key on and the
-                    // landing was dropped on the floor — no claim, and no LANDING TIME,
-                    // so the wear-off 19 s later had nothing to measure (#135, charm7).
-                    // Claims nothing here either: the line names no caster and prints for
-                    // a bystander's charm too. The "Master" tell decides, on the same
-                    // window and promotion as the unknown-cast candidate above — the only
-                    // difference being that there is no spell to learn.
-                    else if (_petName is null)
-                        _charmCandidate = (null, ch.Time, LogParser.Normalize(ch.Name));
+                    // Deliberately NO TrackCombat: charming isn't fighting. Every rule
+                    // about whether this line is ours lives in CharmTracker.
+                    if (_charm.OnCharmed(ch, _pendingCast)) _pendingCast = null;
                     break;
                 case MezzedEvent glazed:
                     // "X's eyes glaze over." lands BOTH bard charm songs and bard mez
-                    // songs (eqlwiki: Solon's line vs Crission's/Sionachie's — identical
-                    // message). The parser can't tell them apart; the pending SONG can.
-                    // MezTracker consumes this event for mez songs; here, a pending
-                    // charm-classified cast makes it a charm landing.
-                    if (_pendingCast is { } glazeCast
-                        && glazed.Time - glazeCast.Time <= CastToBlink
-                        && _spells.Classify(glazeCast.Spell) == SpellCategory.Charm)
-                    {
-                        // Inside the song's own arm window the claim is certain; a
-                        // glaze on a LATER pulse (bard songs pulse ~6s and only the
-                        // first "begin to sing" logs) degrades to provisional — the
-                        // attack-order tell confirms and merges, never loses.
-                        if (glazed.Time - glazeCast.Time <= ArmWindow(glazeCast.Spell))
-                        {
-                            _pendingCast = null;
-                            ConfirmPet(glazed.Target);
-                            _charmHold = (glazed.Target, glazed.Time);   // #130
-                        }
-                        else if (_petName is null)
-                        {
-                            _petName = glazed.Target;
-                            _petConfirmed = false;
-                            _charmProvisional = (glazed.Target, glazed.Time);
-                        }
-                    }
+                    // songs — identical message. MezTracker consumes this event for mez
+                    // songs; the charm half is the tracker's.
+                    if (_charm.OnGlaze(glazed, _pendingCast)) _pendingCast = null;
                     break;
                 case PetClaimEvent pc:
-                    // "My leader is X." rides the broadcast say channel, so a nearby player's
-                    // pet answering THEIR /pet leader lands in our log too — the name is what
-                    // separates them, and it has to be ours. An unknown character name can't
-                    // check it, and an unverifiable claim is not one we take: _petName is a
-                    // single slot, so a wrong one swaps our pet's damage out for a stranger's.
-                    // (The attack order names nobody and needs none — it is a tell addressed
-                    // to us, which no bystander's pet ever sends.)
-                    if (pc.Leader is { } leader
-                        && !string.Equals(leader, _characterName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // …and when it names somebody ELSE, it is not merely unhelpful:
-                        // it is the one line in the log that DISPROVES ownership, which
-                        // is chrstahl's own suggestion in #177 and settles the cases
-                        // inference cannot. Inference has to guess from timing alone —
-                        // two charmers in one camp and a landing line that names no
-                        // caster — and a wrong guess quietly credits a stranger's pet
-                        // to us for as long as it lives. Drop the claim.
-                        //
-                        // Only against a character name we actually know: with none, the
-                        // leader may well BE us and the "disproof" would be us releasing
-                        // our own pet. And only for the creature the line names, since a
-                        // statement about a different pet says nothing about ours.
-                        var disproved = LogParser.Normalize(pc.PetName);
-                        if (_characterName is { Length: > 0 } && _petName is not null
-                            && string.Equals(_petName, disproved, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Deliberately NOT a charm break: nothing of ours ended, so
-                            // recording a hold would print a duration for a pet we never
-                            // had. Damage already credited stays as it was booked —
-                            // rewinding aggregates would leave the session totals and
-                            // the per-source rows disagreeing, and the provisional rows
-                            // say "Pet?" precisely because they might be wrong.
-                            _petName = null;
-                            _petConfirmed = false;
-                            if (_charmHold is { } hold && string.Equals(
-                                    hold.Pet, disproved, StringComparison.OrdinalIgnoreCase))
-                                _charmHold = null;
-                            if (_charmProvisional is { } prv && string.Equals(
-                                    prv.Pet, disproved, StringComparison.OrdinalIgnoreCase))
-                                _charmProvisional = null;
-                        }
-                        // The held cast must go too, or the next landing line re-claims
-                        // the creature we were just told is not ours.
-                        if (_charmCandidate is { } foreign
-                            && string.Equals(foreign.Pet, disproved, StringComparison.OrdinalIgnoreCase))
-                            _charmCandidate = null;
-                        break;
-                    }
-                    // A blink/charmed line that followed an unrecognised cast, now proven
-                    // ours: that cast was a charm spell, so remember it — permanently, via
-                    // the attached store. The claim must name the same creature the line
-                    // did; a claim about a different pet proves nothing about that cast.
-                    var claimed = LogParser.Normalize(pc.PetName);
-                    if (_charmCandidate is { } cand && pc.Time - cand.Time <= BlinkToClaim
-                        && string.Equals(cand.Pet, claimed, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Only when a cast of ours produced the landing. An item clicky
-                        // has no spell name to attach the lesson to.
-                        if (cand.Spell is { Length: > 0 } learned)
-                            _spells.Learn(learned, SpellCategory.Charm);
-                        _charmHold ??= (claimed, cand.Time);   // #130: the blink was the landing
-                        _charmCandidate = null;
-                    }
-                    // A provisional charm claim the tell just confirmed keeps its
-                    // original landing time — the clock started when the charm did.
-                    if (_charmProvisional is { } prov && pc.Time - prov.LandedAt <= BlinkToClaim
-                        && string.Equals(prov.Pet, claimed, StringComparison.OrdinalIgnoreCase))
-                    {
-                        _charmHold ??= (claimed, prov.LandedAt);
-                        _charmProvisional = null;
-                    }
-                    ConfirmPet(claimed);
-                    // Only the attack order proves a fight; the leader response would
-                    // otherwise open a combat span while camped.
-                    if (pc.Fighting) TrackCombat(pc.Time);
+                    if (_charm.OnPetClaim(pc, _characterName)) TrackCombat(pc.Time);
                     break;
                 case PetHoldEvent ph:
-                    // Only for the creature the line names, and only when that is our
-                    // pet: a nearby charmer's pet answering THEIR hold order rides the
-                    // same say channel, and taking it would excuse a genuine break by
-                    // ours. Same name test the leader line uses.
-                    if (_petName is not null
-                        && string.Equals(_petName, LogParser.Normalize(ph.PetName),
-                            StringComparison.OrdinalIgnoreCase))
-                        _petHeldSince = ph.Holding ? ph.Time : null;
+                    _charm.OnPetHold(ph);
                     break;
-
                 case PetBlinkEvent pb:
-                    // Charm just landed. If one of our charm casts is still in flight the
-                    // claim is certain, so skip the provisional "Pet?" state entirely.
-                    var blinked = LogParser.Normalize(pb.Name);
-                    if (_pendingCast is { } cast && pb.Time - cast.Time <= CastToBlink)
-                    {
-                        var category = _spells.Classify(cast.Spell);
-                        // Certain only inside the spell's own arm window; a blink
-                        // seconds after our cast completed gets the provisional
-                        // treatment below instead of a confident claim.
-                        if (category == SpellCategory.Charm
-                            && pb.Time - cast.Time <= ArmWindow(cast.Spell))
-                        {
-                            ConfirmPet(blinked);
-                            _pendingCast = null;
-                            _charmHold = (blinked, pb.Time);   // #130
-                            break;
-                        }
-                        // A known charm whose arm window already closed: a weak line
-                        // (moan) is ambient flavor again — our cast completed without
-                        // it. Strong blinks fall through to the provisional state.
-                        if (category == SpellCategory.Charm && pb.Weak)
-                            break;
-                        // Unrecognised spell: hold onto it so a following "Master" tell
-                        // can teach us it was a charm.
-                        if (category == SpellCategory.Unknown)
-                            _charmCandidate = (cast.Spell, pb.Time, blinked);
-                    }
-                    else if (pb.Weak)
-                    {
-                        // A moan with no cast of ours in flight is ambient flavor,
-                        // not a charm — never even provisional.
-                        break;
-                    }
-                    else
-                    {
-                        // A strong blink with no cast behind it: the item-clicky case
-                        // again (#135). Remembered, not claimed — the tell decides.
-                        _charmCandidate ??= (null, pb.Time, blinked);
-                    }
-                    _petName = blinked;
-                    _petConfirmed = false;
+                {
+                    var blink = _charm.OnBlink(pb, _pendingCast);
+                    if (blink.ConsumedCast) _pendingCast = null;
                     break;
+                }
                 case SpellCastEvent started:
                     // Songs correlate (bard charms/mezzes ARE songs) but stay out of the
                     // cast-completion stats — twisting would swamp them.
@@ -865,44 +586,23 @@ public sealed partial class SessionStats
                         // already held — evidence about the NEW cast, not the armed
                         // candidate from the original landing. Disarming there would
                         // cost a chain-charmer the claim of a genuinely held pet.
-                        if (_charmCandidate is { Spell: { } bccSpell } bcc && string.Equals(
-                                SpellCatalog.BaseName(bccSpell), blkKey, StringComparison.OrdinalIgnoreCase)
-                            && !string.Equals(SpellCatalog.BaseName(blk.BlockedBy), blkKey,
-                                StringComparison.OrdinalIgnoreCase))
-                            _charmCandidate = null;
+                        _charm.OnSpellBlocked(blkKey, blk.BlockedBy);
                         // A blocker-less line still counts above; only a NAMED pair is
                         // a stacking fact the ledger can hold.
                         if (blk.BlockedBy.Length > 0 && !StoresSuppressed)
                             StackingStore?.Record(AaCharacterKey, blkKey, blk.BlockedBy, blk.Time);
                     }
                     break;
-                case SpellWornOffEvent { Pet: false } wo when _petName is not null && wo.Target.Length > 0
-                        && IsPet(wo.Target) && _spells.Classify(wo.Spell) == SpellCategory.Charm:
-                    // A fade this soon after a recorded break is that break's delayed
-                    // echo: the break already dropped the OLD claim, so the claim held
-                    // now belongs to a re-charm of the same creature and must survive
-                    // the stale line (#135, bjstrange: re-charm echo cascade).
-                    if (IsCharmBreakEcho(wo.Time)) break;
-                    // Charm broke on our pet. Drop the claim now instead of waiting for the
-                    // creature to turn around and hit us.
-                    RecordCharmBreak(wo.Time);
-                    _petName = null;
-                    _petConfirmed = false;
-                    break;
-                case SpellWornOffEvent { Pet: false, Target.Length: 0 } woNoTarget
-                        when _petName is not null
-                        && _spells.Classify(woNoTarget.Spell) == SpellCategory.Charm:
-                    // Befriend Animal's break line names NO target — "Your charm spell
-                    // has worn off." (eqlwiki; unique among the animal charms). Only one
-                    // charm can be active, so a targetless charm fade is ours.
-                    if (IsCharmBreakEcho(woNoTarget.Time)) break;   // #135: stale echo, claim is the re-charm's
-                    RecordCharmBreak(woNoTarget.Time);
-                    _petName = null;
-                    _petConfirmed = false;
+                case SpellWornOffEvent wo when _charm.IsOurCharmFade(wo):
+                    // Charm broke on our pet — drop the claim now instead of waiting for
+                    // the creature to turn around and hit us. Befriend Animal's line names
+                    // no target and is covered by the same guard. A stale echo of an
+                    // already-recorded break changes nothing (#135).
+                    _charm.OnCharmFade(wo);
                     break;
                 case ThirdMeleeEvent tm when IsPet(tm.Attacker):
                     // Attacker AND target share the pet's name: there are two of them.
-                    if (IsPet(tm.Target)) _sameNameProofAt = tm.Time;
+                    if (IsPet(tm.Target)) _charm.NoteSameNameProof(tm.Time);
                     AddPetDamage(tm.Time, tm.Amount, DamageKind.Melee, tm.Target, tm.Skill, tm.Critical);
                     break;
                 case ThirdDotEvent td when IsPet(td.Caster):
@@ -1060,9 +760,7 @@ public sealed partial class SessionStats
                     // bjstrange's Choking ticked six seconds into a 5:31 charm and threw
                     // the clock away — the real fade minutes later then had no landing to
                     // measure and printed no hold (#135, charm5.txt).
-                    if (IsPet(dt.Attacker) && !dt.OverTime && !CharmJustLanded(dt.Time)
-                        && !SameNameDuplicateKnown(dt.Time))
-                    { RecordCharmBreak(dt.Time); _petName = null; }
+                    _charm.OnIncomingHit(dt);
                     _damageTaken += dt.Amount;
                     if (dt.Melee) { _meleeHitsTaken++; _runeBlockStreak = 0; }
                     TouchFight(dt.Attacker, dt.Time, dmgIn: dt.Amount);
@@ -1364,84 +1062,6 @@ public sealed partial class SessionStats
         _trackedScanIndex -= removedBeforeScanIndex;
     }
 
-    /// <summary>#130 (bjstrange): close the charm-hold clock at a break and remember
-    /// how long it held, keyed by the break time so the fade alert's label can carry
-    /// it ("Charm (a gnoll) — held 4:32").</summary>
-    /// <summary>Did the charm land so recently that a hit on us is the mob's own
-    /// in-flight swing rather than a break? (#135 — see <see cref="CharmSettleSeconds"/>.)</summary>
-    private bool CharmJustLanded(DateTime at) =>
-        (_charmHold?.LandedAt ?? _charmProvisional?.LandedAt) is { } landed
-        && at >= landed && (at - landed).TotalSeconds <= CharmSettleSeconds;
-
-    /// <summary>Do we know a second creature shares the pet's name right now? Then a
-    /// same-named attacker hitting us proves nothing, and the claim survives until the
-    /// wear-off line settles it (#135 — see <see cref="SameNameProofSeconds"/>).</summary>
-    private bool SameNameDuplicateKnown(DateTime at) =>
-        (_sameNameProofAt is { } seen
-            && at >= seen && (at - seen).TotalSeconds <= SameNameProofSeconds)
-        || PetHeldAt(at);
-
-    /// <summary>Was the pet under a HOLD order at this moment? Then it did not start this
-    /// attack, so a same-named attacker is someone else (#135, charm6.txt). Unlike the
-    /// attacked-its-own-name proof this does not expire on a timer — hold is a state the
-    /// pet stays in until released, and the release line says so.</summary>
-    private bool PetHeldAt(DateTime at) =>
-        _petHeldSince is { } since && at >= since;
-
-    private void RecordCharmBreak(DateTime at)
-    {
-        var landed = _charmHold?.LandedAt ?? _charmProvisional?.LandedAt;
-        _charmHold = null;
-        _charmProvisional = null;
-        _sameNameProofAt = null;
-        _petHeldSince = null;   // the hold belonged to the pet we just stopped claiming
-        if (landed is not { } l) return;
-        var held = (at - l).TotalSeconds;
-        if (held <= 0) return;
-        _charmHoldByBreak[at] = held;
-        // A new hold can retroactively relabel an already-scanned fade (FadeLabel
-        // tolerates ordering skew), so the incremental tracked scan must rebuild.
-        _charmHoldRevision++;
-        if (_charmHoldByBreak.Count > 64)
-            foreach (var old in _charmHoldByBreak.Keys.OrderBy(k => k)
-                         .Take(_charmHoldByBreak.Count - 64).ToList())
-                _charmHoldByBreak.Remove(old);
-    }
-
-    /// <summary>#135 (bjstrange): a charm fade line landing within the skew window of
-    /// an already-recorded break is that break's delayed echo, not a new break. Acting
-    /// on it would measure a bogus tiny hold from any re-charm in between AND null the
-    /// re-charm's live claim — the later real break then has no landing to measure from,
-    /// which is exactly the missing "held M:SS" bjstrange kept seeing.</summary>
-    private bool IsCharmBreakEcho(DateTime at) => _charmHoldByBreak.Keys
-        .Any(k => k <= at && (at - k).TotalSeconds <= CharmFadeSkewSeconds);
-
-    /// <summary>Journal label for a fade row/alert — a charm break gets its hold
-    /// duration appended (#130). The lookup tolerates ordering skew (#135,
-    /// bjstrange: "doesn't always trigger the time"): when the pet turning on you
-    /// is what breaks the charm, the hold gets recorded at the ATTACK's timestamp
-    /// and the fade line prints a few seconds later — so an exact-time miss falls
-    /// back to the most recent hold recorded within the skew window.</summary>
-    private string FadeLabel(SpellWornOffEvent wo)
-    {
-        var label = wo.Target.Length > 0 ? $"{wo.Spell} ({wo.Target})" : wo.Spell;
-        if (!_charmHoldByBreak.TryGetValue(wo.Time, out var held))
-        {
-            var near = _charmHoldByBreak.Keys
-                .Where(k => k <= wo.Time && (wo.Time - k).TotalSeconds <= CharmFadeSkewSeconds)
-                .OrderByDescending(k => k)
-                .Cast<DateTime?>()
-                .FirstOrDefault();
-            if (near is not { } n) return label;
-            held = _charmHoldByBreak[n];
-        }
-        var t = TimeSpan.FromSeconds(held);
-        var text = t.TotalHours >= 1
-            ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}"
-            : $"{t.Minutes}:{t.Seconds:00}";
-        return label + $" — held {text}";
-    }
-
     /// <summary>The filters that mean "my crowd control of a MOB ended" — the ones a
     /// first-person self-fade line must never satisfy (see the BuffFadeEvent match).</summary>
     private static bool IsCcFilter(SpellFilter f) => f is SpellFilter.AnyCrowdControl
@@ -1540,37 +1160,27 @@ public sealed partial class SessionStats
         agg.MaxTargets = Math.Max(agg.MaxTargets, burst.Targets.Count);
     }
 
-    /// <summary>The game sometimes refers to the pet generically instead of by name —
-    /// confirmed in real logs by "Your pet's Tangling Weeds spell has worn off.". Nothing
-    /// but your own pet is ever called this, so it needs no prior identification: it works
-    /// for a summoned pet that has never been given an attack order, which is the one case
-    /// the "Attacking … Master." line can't cover.</summary>
-    private const string GenericPetName = "Your pet";
-
-    private bool IsPet(string name)
+    public SessionStats()
     {
-        var normalized = LogParser.Normalize(name);
-        if (string.Equals(normalized, GenericPetName, StringComparison.OrdinalIgnoreCase))
-            return true;
-        return _petName is not null &&
-            string.Equals(normalized, _petName, StringComparison.OrdinalIgnoreCase);
+        // The merge callback is the tracker's one reach back into the aggregates: it owns
+        // no damage, so when a pet stops being provisional the rows are re-keyed here.
+        _charm = new CharmTracker(_spells) { PetConfirmedFirstTime = MergeProvisionalPetDamage };
     }
 
-    /// <summary>A "Master" tell proves the pet is ours — upgrade any provisional damage.</summary>
-    private void ConfirmPet(string name)
+    private bool IsPet(string name) => _charm.IsPet(name);
+
+    /// <summary>The tracker has just confirmed a pet for the first time: merge the
+    /// provisional "Pet? (X)" damage rows into "Pet (X)". The rows live here, so this
+    /// does; the tracker owns no damage.</summary>
+    private void MergeProvisionalPetDamage(string name)
     {
-        _petName = name;
-        if (_petConfirmed) return;
-        _petConfirmed = true;
-        if (_damageBySource.Remove($"Pet? ({name})", out var provisional))
-        {
-            var cur = Ability(_damageBySource, $"Pet ({name})");
-            cur.Count += provisional.Count;
-            cur.Total += provisional.Total;
-            cur.Crits += provisional.Crits;
-            cur.ActiveSeconds += provisional.ActiveSeconds;
-            if (provisional.LastTime > cur.LastTime) cur.LastTime = provisional.LastTime;
-        }
+        if (!_damageBySource.Remove($"Pet? ({name})", out var provisional)) return;
+        var cur = Ability(_damageBySource, $"Pet ({name})");
+        cur.Count += provisional.Count;
+        cur.Total += provisional.Total;
+        cur.Crits += provisional.Crits;
+        cur.ActiveSeconds += provisional.ActiveSeconds;
+        if (provisional.LastTime > cur.LastTime) cur.LastTime = provisional.LastTime;
     }
 
     private void AddTimelineDamage(DateTime t, int amount)
@@ -1591,8 +1201,7 @@ public sealed partial class SessionStats
         if (kind == DamageKind.Melee) _meleeDamage += amount; else _spellDamage += amount;
         // No name yet means this arrived via the generic "Your pet" form — still certainly
         // ours, so it gets the confirmed label rather than the provisional one.
-        var label = _petName is null ? "Pet"
-            : _petConfirmed ? $"Pet ({_petName})" : $"Pet? ({_petName})";
+        var label = _charm.SourceLabel;
         if (amount > _maxHit) { _maxHit = amount; _maxHitDesc = $"{label} on {target}"; }
         // Pet crits carry the same "(Critical)" annotation your own hits do, so the pet rows
         // show a real crit % rather than a blank one. Pet hits stay out of YOUR accuracy
@@ -1926,9 +1535,9 @@ public sealed partial class SessionStats
         _fizzles = 0; _resists = 0; _blocked = 0;
         _closedCombatSeconds = 0; _closedCombatDamage = 0;
         _combatStart = null; _combatLast = null; _combatDamage = 0;
-        _lastOwnAction = null; _petName = null; _petConfirmed = false;
-        _charmHold = null; _charmProvisional = null; _charmHoldByBreak.Clear();
-        _pendingCast = null; _charmCandidate = null;
+        _lastOwnAction = null;
+        _charm.Reset();
+        _pendingCast = null;
         _castsStarted = 0; _castsInterrupted = 0;
         _dotDamage = 0; _directSpellDamage = 0;
         _openBursts.Clear(); _castAgg.Clear();
@@ -2157,8 +1766,8 @@ public sealed partial class SessionStats
                 MaxHitDesc = _maxHitDesc,
                 DamageBySource = Breakdown(_damageBySource),
                 PetAbilities = Breakdown(_petAbilities),
-                PetName = _petName ?? "",
-                CharmedSince = _charmHold?.LandedAt ?? _charmProvisional?.LandedAt,
+                PetName = _charm.PetName ?? "",
+                CharmedSince = _charm.CharmedSince,
                 SpecialHits = _specialHits.OrderByDescending(kv => kv.Value)
                     .Select(kv => new NameCount(kv.Key, kv.Value)).ToList(),
                 SessionDps = sessionDps,

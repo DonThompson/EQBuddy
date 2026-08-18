@@ -32,8 +32,8 @@ public sealed partial class SessionStats
     /// prune adjusts it by however many entries it removed below it, so the index keeps
     /// pointing at the same unscanned entry.</summary>
     private int _trackedScanIndex;
-    // The scan's answers depend on more than the journal + rules: FadeLabel reads
-    // _charmHoldByBreak, SpellFadeMatches/BuffFadeMatches classify via the (learning)
+    // The scan's answers depend on more than the journal + rules: CharmTracker.FadeLabel
+    // reads its own hold ledger, SpellFadeMatches/BuffFadeMatches classify via the (learning)
     // spell catalog, and Kill rules ask IsPet against the CURRENT pet name. A
     // from-scratch scan re-evaluates all of that per tick; the incremental scan must
     // therefore rebuild whenever any of them changes, or an already-folded event
@@ -70,10 +70,10 @@ public sealed partial class SessionStats
     private List<TrackedScan> ScanTrackedLocked(IReadOnlyList<TrackedRule> rules, string rulesFp)
     {
         var active = ActiveTrackedRules(rules);
-        var petName = _petName ?? "";
+        var petName = _charm.PetName ?? "";
         var fpChanged = _trackedAccs is null || _trackedAccFingerprint != rulesFp;
         var stateChanged = _trackedSpellsRevision != _spells.Revision
-            || _trackedHoldRevision != _charmHoldRevision
+            || _trackedHoldRevision != _charm.HoldRevision
             || !string.Equals(_trackedPetName, petName, StringComparison.OrdinalIgnoreCase);
         var start = _trackedScanIndex;
         var textStart = start;
@@ -96,7 +96,7 @@ public sealed partial class SessionStats
             _trackedAccs = fresh;
             _trackedAccFingerprint = rulesFp;
             _trackedSpellsRevision = _spells.Revision;
-            _trackedHoldRevision = _charmHoldRevision;
+            _trackedHoldRevision = _charm.HoldRevision;
             _trackedPetName = petName;
         }
         for (var i = start; i < _journal.Count; i++)
@@ -175,7 +175,7 @@ public sealed partial class SessionStats
             (WatchKind.Milestone, AaEvent) => ("AA point", 1),
             (WatchKind.SpellFade, SpellWornOffEvent { Pet: false } wo)
                 when SpellFadeMatches(rule, wo.Spell)
-                => (FadeLabel(wo), 1),
+                => (_charm.FadeLabel(wo), 1),
             // Buff/HoT fades carry candidate spells (the log named
             // none); the rule fires if ANY candidate satisfies it, and
             // the row shows the catalog label ("Haste") since we can't

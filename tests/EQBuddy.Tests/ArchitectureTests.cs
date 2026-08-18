@@ -85,10 +85,11 @@ public class ArchitectureTests
         // of headroom and the fix needed 25. Then → 2766 here, which is not a third
         // grant: it is the same code, finally all being counted.
         //
-        // **The charm state machine is what comes out next** — six fields, five
-        // constants, six event cases, and six distinct bugs fixed in it in three days.
-        // MezTracker.cs is the precedent and is 496 lines of exactly this shape.
-        (@"EQBuddy.Core/SessionStats*.cs", 2766),
+        // Lowered 2766 → 2375 on 2026-08-18: the charm state machine came out into
+        // CharmTracker.cs, as the two notes above said it should. 391 lines, verified
+        // behaviour-preserving by replaying all seven of bjstrange's #135 logs and
+        // diffing every charm-state transition — byte for byte identical.
+        (@"EQBuddy.Core/SessionStats*.cs", 2375),
         (@"EQBuddy/OptionsWindow.xaml.cs", 1547),
         (@"EQBuddy.Core/LogParser.cs", 853),
     ];

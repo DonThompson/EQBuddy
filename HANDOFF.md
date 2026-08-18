@@ -72,6 +72,45 @@ shows whenever the widget is minimized and its stat is starred, both plain setti
 
 ---
 
+## CharmTracker is out of SessionStats (2026-08-18)
+
+`EQBuddy.Core/CharmTracker.cs`, 550 lines, and the ratchet baseline came down **2,766 →
+2,375** with it. `Apply()` went from 787 lines to about 570. `MezTracker.cs` was the
+precedent; this is the same move for the same reason.
+
+**How it was verified**, because "behaviour-preserving" is a claim and not a fact: all
+seven logs bjstrange attached to #135 were replayed before and after, tracing every
+charm-state transition and every watch-rule label they produced. The two traces are
+identical byte for byte. Do that again for the next refactor down there — the logs are
+public on the discussion and the harness is twenty lines.
+
+`CharmTrackerTests` is the half that could not be written before: 18 cases that ask the
+state machine a question without building a session.
+
+**Two process notes worth keeping:**
+
+- The audit that led here found the SessionStats ratchet entry was a **literal path** while
+  MainWindow's is a glob, so `SessionStats.Tracked.cs` had never been counted. Check the
+  shape of a ratchet entry before trusting its number.
+- Writing a test file with a shell heredoc failed exactly as `CLAUDE.md` says it will.
+  Use the editing tools.
+
+### Open: charm4.txt still reports no held time
+
+Found while building the corpus, NOT fixed, and deliberately not guessed at. bjstrange's
+charm4.txt replays with no `held` on its break — the charm is never claimed at all, so
+there is nothing for the wear-off to measure. The public reply on that log addressed the
+BREAK (two creatures sharing a name); the claim never happening is a different question.
+
+A first look says `_petName` was already set when the landing arrived, so the
+unknown-cast candidate path was skipped — but that is a hypothesis, and the last two times
+this thread was reasoned about rather than replayed, the reasoning was wrong. **Replay it
+and print every state change before touching anything.** A synthetic test written from a
+guess passed while the real log failed, again, during this very session — it was written,
+seen to pass for the wrong reason, and deleted.
+
+---
+
 ## THE NEXT TASK — Gate 5 of the UI/UX rework: the main widget
 
 `docs/DesignSystem.md` §11.5 is the amended order; §10, §11.6 and §11.7 are the three

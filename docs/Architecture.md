@@ -86,7 +86,7 @@ another partial cannot buy headroom. Current state:
 | File | Baseline | Now | Fails at | Headroom |
 |---|---:|---:|---:|---:|
 | `EQBuddy/MainWindow*.xaml.cs` | 4,274 | 4,274 | 4,701 | 427 |
-| `EQBuddy.Core/SessionStats*.cs` | 2,766 | 2,766 | 3,042 | 276 |
+| `EQBuddy.Core/SessionStats*.cs` | 2,375 | 2,375 | 2,612 | 237 |
 | `EQBuddy/OptionsWindow.xaml.cs` | 1,547 | 1,597 | 1,701 | 104 |
 | `EQBuddy.Core/LogParser.cs` | 853 | 853 | 938 | 85 |
 
@@ -103,14 +103,18 @@ fix needed 25, which is the ratchet saying the file is full rather than that the
 too big. Then **→ 2,766** when the glob landed, which is not a further grant: it is the
 same code finally being counted in full.
 
-**The charm state machine is what comes out next** — six fields, five constants, handling
-across six event cases, ~340 clustered lines, and six distinct bugs fixed in it in three
-days, every one found from a user's attached log. `MezTracker.cs` (496 lines) is the
-precedent for where it goes, and the extraction should land `SessionStats*.cs` back near
-its pre-#135 size. An audit on 2026-08-18 found it is the only large coherent seam in the
-file: every other subsystem (procs, money, fights, journal, faction) is 7–31 scattered
-lines inside `Apply`'s switch and the snapshot builder, where extraction would buy
-indirection and remove nothing.
+**The charm state machine came out on 2026-08-18** into `EQBuddy.Core/CharmTracker.cs`,
+and the baseline dropped **2,766 → 2,375** with it — 391 lines, `Apply` down from 787 to
+about 570. It was the only large coherent seam in the file: the same audit found every
+other subsystem (procs, money, fights, journal, faction) to be 7–31 scattered lines inside
+`Apply`'s switch and the snapshot builder, where extraction buys indirection and removes
+nothing. Trimming prose is not a lever either — the file is 31% doc and comment, which is
+why six charm causes were diagnosable at all.
+
+**How the move was verified**, because a behaviour-preserving refactor has to prove it:
+all seven logs bjstrange attached to #135 were replayed before and after, tracing every
+charm-state transition and every resulting watch-rule label, and the two traces are
+identical byte for byte. `MezTracker.cs` is the older instance of the same move.
 
 `MainWindow` sat at 97% of its allowance until 2026-08-15, which is not a place to work
 from. The 992-line Epic/Sky checklist surface came out into `QuestChecklistView` — it
