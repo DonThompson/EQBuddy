@@ -137,9 +137,21 @@ public class DesignRatchetTests
         const string allowed = "·×→←≤≥…‑–—’‘“”";
         var offences = new List<string>();
         var lines = File.ReadAllLines(Path.Combine(SrcRoot, relativePath));
+        var inXmlComment = false;
         for (var i = 0; i < lines.Length; i++)
         {
-            if (IsComment(lines[i])) continue;
+            // XML comments span lines, and only the FIRST carries "<!--". Tracking the
+            // block matters: MainWindow.xaml's comments run several lines each and their
+            // continuations were being counted as offences, which inflates the number a
+            // migration is measured against and hides the real ones among them.
+            var line = lines[i];
+            var opens = line.Contains("<!--", StringComparison.Ordinal);
+            var closes = line.Contains("-->", StringComparison.Ordinal);
+            var wasInComment = inXmlComment;
+            if (opens && !closes) inXmlComment = true;
+            else if (closes) inXmlComment = false;
+            if (wasInComment || opens) continue;
+            if (IsComment(line)) continue;
             foreach (var rune in lines[i].EnumerateRunes())
             {
                 var value = rune.Value;
@@ -159,10 +171,12 @@ public class DesignRatchetTests
             Environment.NewLine + string.Join(Environment.NewLine, offences));
     }
 
-    /// <summary>A whole-line comment, in either language. Deliberately conservative: only
-    /// lines that OPEN as a comment count, so a glyph in trailing code before a `//` is
-    /// still caught. A mid-line trailing comment is the one case this over-reports, and
-    /// over-reporting is the safe direction for a ratchet.</summary>
+    /// <summary>A whole-line C#-style comment. XML comment BLOCKS are tracked separately
+    /// by the caller, because they span lines and only the first carries the marker.
+    ///
+    /// Deliberately conservative: only lines that OPEN as a comment count, so a glyph in
+    /// trailing code before a `//` is still caught. A mid-line trailing comment is the
+    /// one case this over-reports, and over-reporting is the safe direction.</summary>
     private static bool IsComment(string line)
     {
         var t = line.TrimStart();

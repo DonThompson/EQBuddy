@@ -319,6 +319,14 @@ Read this list before touching the areas it names. Every entry cost a release.
     Zero for a string you can see in the source means `rm -rf src/EQBuddy/obj src/EQBuddy/bin`
     and rebuild — not a redesign.
 
+19. **A resource lookup inside a property setter runs before the control is in a tree.**
+    `EqFoldLabel.LabelStyle` did `Application.Current.TryFindResource("SectionLabel")` and
+    silently got nothing while XAML was parsing, so two folded-section headings rendered
+    as body text — bigger and brighter than every other heading, with no error anywhere.
+    → Use `SetResourceReference`, which resolves on load and survives a theme swap, or
+    express the look in `DesignTokens` and skip the lookup. Only the screenshot said
+    anything was wrong, and it took two attempts because the first fix looked right.
+
 ## Tooling notes that cost time when ignored
 
 - **`pwsh -NoProfile -File scripts/status.ps1`** answers "where did we leave off?" in one

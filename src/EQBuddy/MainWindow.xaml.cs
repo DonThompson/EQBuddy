@@ -2381,9 +2381,9 @@ public partial class MainWindow : Window, ICardContext
             // class drowning in rows): the pet's overall damage is already a row in the
             // list above; the per-ability split is a click away.
             PetAbilityLabel.Visibility = s.PetAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            PetAbilityLabel.Text = _settings.ShowPetAbilities
-                ? "▾ Pet abilities"
-                : $"▸ Pet abilities ({s.PetAbilities.Count})";
+            PetAbilityLabel.Set(_settings.ShowPetAbilities, _settings.ShowPetAbilities
+                ? "Pet abilities"
+                : $"Pet abilities ({s.PetAbilities.Count})");
             PetAbilityList.Visibility = _settings.ShowPetAbilities ? Visibility.Visible : Visibility.Collapsed;
             if (_settings.ShowPetAbilities)
                 FillBreakdown(PetAbilityList, s.PetAbilities, _dmgOutSort, s.CombatSeconds, "dps");
@@ -2509,9 +2509,9 @@ public partial class MainWindow : Window, ICardContext
                     (a.Name, a.Rank > 1 ? $"rank {a.Rank}" : "")),
                 tooltip: name => AaCatalog.Find(name)?.Effect);
             AaAbilitiesLabel.Visibility = s.AaAbilities.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            AaAbilitiesLabel.Text = _settings.ShowAllAAs
-                ? "▾ All AA abilities"
-                : $"▸ All AA abilities ({s.AaAbilities.Count})";
+            AaAbilitiesLabel.Set(_settings.ShowAllAAs, _settings.ShowAllAAs
+                ? "All AA abilities"
+                : $"All AA abilities ({s.AaAbilities.Count})");
             AaAbilityList.Visibility = _settings.ShowAllAAs ? Visibility.Visible : Visibility.Collapsed;
             if (_settings.ShowAllAAs)
                 FillList(AaAbilityList, s.AaAbilities.Select(a =>
@@ -3187,7 +3187,8 @@ public partial class MainWindow : Window, ICardContext
         body.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
         // "Current" while it's still running, so a duration that keeps growing reads as
         // in-progress rather than as a fight that took a suspiciously long time.
-        label.Content = $"{(open ? "▾" : "▸")} {(f.InProgress ? "Current fight" : "Last fight")}";
+        if (label.Content is EqFoldLabel fold)
+            fold.Set(open, f.InProgress ? "Current fight" : "Last fight");
         if (!open) return;
 
         // Rates within the fight use the fight's own length, not session combat time —
@@ -3243,9 +3244,9 @@ public partial class MainWindow : Window, ICardContext
     /// <summary>Session bodies are plain show/hide — their content is filled elsewhere.</summary>
     private void ApplySessionSubsections()
     {
-        CombatSessionLabel.Content = (_settings.ShowCombatSession ? "▾" : "▸") + " Session so far";
+        if (CombatSessionLabel.Content is EqFoldLabel cs) cs.Open = _settings.ShowCombatSession;
         CombatSessionBody.Visibility = _settings.ShowCombatSession ? Visibility.Visible : Visibility.Collapsed;
-        HealSessionLabel.Content = (_settings.ShowHealSession ? "▾" : "▸") + " Session so far";
+        if (HealSessionLabel.Content is EqFoldLabel hs) hs.Open = _settings.ShowHealSession;
         HealSessionBody.Visibility = _settings.ShowHealSession ? Visibility.Visible : Visibility.Collapsed;
     }
 

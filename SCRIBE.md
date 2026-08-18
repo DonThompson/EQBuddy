@@ -16,6 +16,24 @@ After you take items, write a short note in `SCRIBE-FEEDBACK.md` so Scribe can l
 
 ---
 
+### Mobile Sky stuck on Ready
+- **Priority:** must-fix (mobile/desktop parity)
+- **Place:** Gate 2 already carries the Sky state filter on desktop. This is the phone falling behind that restore, not a new direction.
+- **Source:** #212 bjstrange (Aug 18, 3:46 PM CT) + screenshot. Report is enough.
+- **Ask:** Mobile Sky quest "only appears to show ready items with no way to change that." Nothing searchable or changeable.
+- **Already shipped:** Desktop #205 any/open/ready/done filter restored (Claude's reply, claimed in 1.93.0). Do not assert Mobile source without a quote.
+- **Where it might live:** hypothesis — the same shared Sky/Epic state filter desktop just got back, if Mobile already reads that model.
+
+### Token/primary unlock ticks Sky as quested
+- **Priority:** waiting (Claude asked wizen for a quested vs token achievements export pair)
+- **Place:** Sky/Epic checklist accuracy (the quest chain). Not Gate 5 UI.
+- **Source:** #193 wizen follow-up; new corroboration n3cr0nk1tt3n Aug 18, 4:35 PM CT. Did not reply — old thread, already answered.
+- **Ask (wizen):** Bought Primary Class Unlock tokens; EQBuddy treats Bard obtain-steps as completed because the achievements file marks them `C`. "unlocking one or two and intending on questing for the rest." Minimal suggestion: a per-class Unlocked (didn't quest it) switch.
+- **n3cr0nk1tt3n:** "The Achievement window counts your primary class (or unlocked with a Primary Class Token) as complete without actually doing the turn ins, which might confuse the tracker as well."
+- **Already shipped:** original empty-filter false-tick fixed in 1.88.4. Claude already asked for side-by-side files.
+- **Where it might live:** hypothesis — the bypass line in wizen's paste (`C This achievement can be bypassed using a Primary Class Unlock Token`) vs a quested file. Do not match on one person's file.
+
+
 ### Avalonia has no Watch or Loot breakout window
 - **Source:** found while converting breakout chrome, 2026-08-18. Not reported by anyone.
 - **Evidence:** `BreakoutKind` is declared twice and the two do not agree —

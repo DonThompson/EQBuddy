@@ -26,7 +26,7 @@
                 <Separator/>
                 <!-- First in the windows list because it is the one you reach for at the
                      start of a session, not a setting you visit once. -->
-                <MenuItem x:Name="MobileMenuItem" Header="📱 EQBuddy Mobile (Beta)…" Click="OnCompanion"
+                <MenuItem x:Name="MobileMenuItem" Header="EQBuddy Mobile (Beta)…" Click="OnCompanion"
                           ToolTip="Show EQBuddy on a phone or tablet on your Wi-Fi — scan the code, pick which windows that device shows. LAN-only; nothing leaves your network."/>
                 <MenuItem Header="Zone map…" Click="OnZoneMap"
                           ToolTip="Your zone's map with your last /log position — type /loc in game to update the marker"/>
@@ -47,10 +47,10 @@
                 <MenuItem Header="Data &amp; imports">
                     <MenuItem Header="Import achievements…" Click="OnImportAchievements"
                               ToolTip="Read the game's /outputfile achievements dump and pre-mark Sky quest rewards (and raid clears) you completed before EQBuddy — preview first, adds only, never unticks"/>
-                    <MenuItem Header="⧉ Copy /outputfile achievements" Click="OnCopyAchievementsCommand"
+                    <MenuItem Header="Copy /outputfile achievements" Click="OnCopyAchievementsCommand"
                               ToolTip="Puts the command on your clipboard — paste it into the game's chat, the game writes its achievements dump, then Import achievements… reads it"/>
                     <MenuItem x:Name="ReviewLogItem" Header="Review an archived log…" Click="OnReviewLog"
-                              ToolTip="Replay a saved log read-only — Drops by Creature and ✦ Copy for wiki work against that session"/>
+                              ToolTip="Replay a saved log read-only — Drops by Creature and Copy for wiki work against that session"/>
                     <MenuItem x:Name="ChooseLogFolderItem" Header="Choose log folder…" Click="OnChooseLogFolder"/>
                     <MenuItem Header="Auto-detect log folder" Click="OnAutoDetectLogFolder"/>
                 </MenuItem>
@@ -282,8 +282,10 @@
                          nothing about whether this pull is going badly. -->
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="CombatFightLabel" Style="{StaticResource IconButton}" FontSize="11"
-                                HorizontalAlignment="Left" Content="▾ Last fight" Visibility="Collapsed"
-                                Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatFight"/>
+                                HorizontalAlignment="Left" Visibility="Collapsed"
+                                Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatFight">
+                            <local:EqFoldLabel Text="Last fight" Ink="AccentBrush"/>
+                        </Button>
                         <Button x:Name="CombatFightCopy" Style="{StaticResource IconButton}"
                                 Margin="{DynamicResource GapS}" Visibility="Collapsed"
                                 Click="OnCopyFight"
@@ -310,8 +312,10 @@
                         <ItemsControl x:Name="CombatFightInList" Margin="0,2,0,4"/>
                     </StackPanel>
                     <Button x:Name="CombatSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
-                            HorizontalAlignment="Left" Content="▾ Session so far"
-                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatSession"/>
+                            HorizontalAlignment="Left"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatSession">
+                        <local:EqFoldLabel Text="Session so far" Ink="AccentBrush"/>
+                    </Button>
                     <StackPanel x:Name="CombatSessionBody">
                     <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
@@ -325,7 +329,8 @@
                         <StackPanel Grid.Column="1" x:Name="DmgOutSortBar" Orientation="Horizontal"/>
                     </Grid>
                     <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="PetAbilityLabel" Text="▸ Pet abilities" Style="{StaticResource SectionLabel}" Visibility="Collapsed"
+                    <local:EqFoldLabel x:Name="PetAbilityLabel" Text="Pet abilities" Open="False"
+                               Section="True" Margin="0,6,0,2" Visibility="Collapsed"
                                Cursor="Hand" MouseLeftButtonDown="OnPetAbilitiesToggled"
                                ToolTip="What your pet is using, split out of its Pet row above — click to expand"/>
                     <ItemsControl x:Name="PetAbilityList" Margin="0,2,0,4" Visibility="Collapsed"/>
@@ -344,7 +349,7 @@
                     <ItemsControl x:Name="RecentFightsList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="AreaSpellLabel" Text="Area spells (per cast)" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
                     <ItemsControl x:Name="AreaSpellList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="ProcLabel" Text="⚡ Procs" Style="{StaticResource SectionLabel}" Visibility="Collapsed"
+                    <local:EqCardTitle x:Name="ProcLabel" Icon="Bolt" Text="Procs" Visibility="Collapsed"
                                ToolTip="Spell damage that fired without a cast — weapon procs, poisons, item effects. Rate is per minute of combat, the same denominator as DPS."/>
                     <ItemsControl x:Name="ProcList" Margin="0,2,0,4"/>
                     <TextBlock x:Name="StanceLabel" Text="By stance" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
@@ -371,16 +376,20 @@
                 </Expander.Header>
                 <StackPanel>
                     <Button x:Name="HealFightLabel" Style="{StaticResource IconButton}" FontSize="11"
-                            HorizontalAlignment="Left" Content="▾ Last fight" Visibility="Collapsed"
-                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealFight"/>
+                            HorizontalAlignment="Left" Visibility="Collapsed"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealFight">
+                        <local:EqFoldLabel Text="Last fight" Ink="AccentBrush"/>
+                    </Button>
                     <StackPanel x:Name="HealFightBody" Visibility="Collapsed">
                         <TextBlock x:Name="HealFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
                                    Margin="0,1,0,2"/>
                         <ItemsControl x:Name="HealFightList" Margin="0,0,0,4"/>
                     </StackPanel>
                     <Button x:Name="HealSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
-                            HorizontalAlignment="Left" Content="▾ Session so far"
-                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealSession"/>
+                            HorizontalAlignment="Left"
+                            Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealSession">
+                        <local:EqFoldLabel Text="Session so far" Ink="AccentBrush"/>
+                    </Button>
                     <StackPanel x:Name="HealSessionBody">
                     <TextBlock x:Name="HealingSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
                     <Grid>
@@ -613,7 +622,8 @@
                     <TextBlock x:Name="AaNewLabel" Text="AA learned this session" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
                                Visibility="Collapsed"/>
                     <ItemsControl x:Name="AaNewList" Margin="0,2,0,0" Visibility="Collapsed"/>
-                    <TextBlock x:Name="AaAbilitiesLabel" Text="▸ All AA abilities" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
+                    <local:EqFoldLabel x:Name="AaAbilitiesLabel" Text="All AA abilities" Open="False"
+                               Section="True" Margin="0,4,0,0"
                                Visibility="Collapsed" Cursor="Hand" MouseLeftButtonDown="OnAaAllToggled"
                                ToolTip="Everything the log's history (plus the durable ledger) says this character owns — click to expand or fold"/>
                     <ItemsControl x:Name="AaAbilityList" Margin="0,2,0,0" Visibility="Collapsed"/>
