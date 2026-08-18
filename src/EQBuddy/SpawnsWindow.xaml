@@ -4,61 +4,120 @@
         Title="EQBuddy Spawns" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
-        Width="470" WindowStartupLocation="Manual">
-    <!-- Same custom chrome as Options. Height auto-fits but is clamped to the work area
-         at runtime; the body scrolls, the title row stays reachable. -->
-    <Border Background="{DynamicResource BgBrush}" CornerRadius="10"
+        Width="560" WindowStartupLocation="Manual">
+    <!-- Gate 3 of the UI/UX rework (docs/DesignSystem.md §10, §11.5). The Gate 1 audit
+         used THIS window as its worked example, and its three findings were one defect:
+         a countdown that is only a string has no state.
+
+           · the countdown and the editable duration carried near-identical weight, so a
+             glanceable value and a configuration field read as two equal columns;
+           · every row showed two empty input boxes as visible rectangles — a status
+             surface wearing an editing surface's chrome, permanently;
+           · a row with no timer left the countdown blank, so UNKNOWN and NOTHING looked
+             the same;
+           · and there was no progress toward respawn anywhere, so "due in 4:21" and
+             "due in 18:31" looked equally urgent.
+
+         All four are answered by UI.Shared/TimerView, which gives a timer a STATE that
+         decides its words, its colour and whether it has a bar at all.
+
+         Functionality is unchanged. Per §8c the duration stays FREE TEXT — SpawnDurationText
+         parses 5m, 90s, 22m and 3d 12h, and the numeric spinner the mockup drew would
+         regress week-long raid targets. What it gains is the placeholder guidance the
+         mockup added, which is a real improvement.
+
+         No literal sizes here: every number resolves out of the token dictionary. -->
+    <Border Background="{DynamicResource BgBrush}" CornerRadius="{DynamicResource CornerPanel}"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
       <Grid>
         <Grid.RowDefinitions>
           <RowDefinition Height="Auto"/>
           <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
           <RowDefinition Height="*"/>
           <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="16,16,16,6">
-            <TextBlock x:Name="TitleText" Text="🕒 Spawns" FontWeight="Bold" FontSize="14"
-                       Foreground="{DynamicResource AccentBrush}"/>
-            <Button Style="{StaticResource IconButton}" Content="&#x2715;"
+        <Grid Grid.Row="0" Margin="{DynamicResource PadCard}">
+            <StackPanel x:Name="TitleRow" Orientation="Horizontal" VerticalAlignment="Center"/>
+            <Button x:Name="CloseBtn" Style="{StaticResource EqIconButton}"
                     ToolTip="Hide — the window returns when the next named dies (turn tracking off in Options or the right-click menu)"
                     HorizontalAlignment="Right" Click="OnClose"/>
         </Grid>
 
-        <Grid Grid.Row="1" Margin="16,0,16,8">
+        <Grid Grid.Row="1" Margin="{DynamicResource PadCard}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <ComboBox x:Name="ZoneCombo" Grid.Column="0" FontSize="11"
+            <ComboBox x:Name="ZoneCombo" Grid.Column="0"
+                      FontSize="{DynamicResource FontBody}"
+                      Height="{DynamicResource ControlHeight}"
                       SelectionChanged="OnZonePicked"
                       ToolTip="Which zone's named to show"/>
-            <CheckBox x:Name="FollowCheck" Grid.Column="1" Margin="10,2,0,0"
-                      Content="Follow" FontSize="11" Checked="OnFollowChanged" Unchecked="OnFollowChanged"
+            <CheckBox x:Name="FollowCheck" Grid.Column="1" Margin="{DynamicResource GapS}"
+                      VerticalAlignment="Center"
+                      Content="Follow" FontSize="{DynamicResource FontCaption}"
+                      Checked="OnFollowChanged" Unchecked="OnFollowChanged"
                       ToolTip="Switch to whatever zone the log says you are in"/>
         </Grid>
 
-        <ScrollViewer x:Name="BodyScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto"
+        <!-- Column headers. The mockup's, and adopted wholesale: five unlabelled columns
+             of boxes and glyphs is a puzzle the first time and a memory test after that. -->
+        <Grid x:Name="HeaderRow" Grid.Row="2" Margin="{DynamicResource PadCard}"/>
+
+        <ScrollViewer x:Name="BodyScroll" Grid.Row="3" VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
-            <StackPanel x:Name="RowsPanel" Margin="16,0,16,4"/>
+            <StackPanel x:Name="RowsPanel" Margin="{DynamicResource PadCard}"/>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="3" Margin="16,4,16,14">
-            <TextBlock Text="Kill a named (or its placeholder) and its countdown starts from the log. ▶ starts one by hand — type how long ago it died first (5m, 90s) or leave empty for now. We captured the respawn times we could from community sources; if what you see in game disagrees, just type over the duration — your number wins and survives updates."
-                       FontSize="10" Opacity="0.65" TextWrapping="Wrap" Margin="0,0,0,6"/>
+        <StackPanel Grid.Row="4" Margin="{DynamicResource PadCard}">
+            <!-- The help text as an INFO CALLOUT rather than a grey paragraph (the
+                 mockup's improvement): it is the accuracy contract for this window —
+                 our numbers came from community sources and yours win — and a paragraph
+                 at 65% opacity is how that stopped being read. -->
+            <Border x:Name="HelpCallout" Background="{DynamicResource RaisedBrush}"
+                    BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
+                    CornerRadius="{DynamicResource CornerCard}"
+                    Padding="{DynamicResource PadRow}"
+                    Margin="{DynamicResource StackM}"/>
+
+            <TextBlock Text="Add a named this zone's catalog doesn't have"
+                       Style="{StaticResource SectionLabel}"/>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="70"/>
+                    <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="AddNameBox" Grid.Column="0" FontSize="11"
-                         ToolTip="Add a named the catalog doesn't know (this zone)"/>
-                <TextBox x:Name="AddDurationBox" Grid.Column="1" Margin="6,0,0,0" FontSize="11"
-                         ToolTip="Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40"/>
-                <Button Grid.Column="2" Content="+" Margin="6,0,0,0" Padding="8,1"
-                        Style="{StaticResource ActionButton}" ToolTip="Add" Click="OnAddCustom"/>
+                <!-- Labelled fields, per the mockup. Two unlabelled boxes and a "+" made
+                     the second one unguessable — and it is the one with syntax. -->
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Name" FontSize="{DynamicResource FontMetadata}"
+                               Foreground="{DynamicResource DimBrush}"/>
+                    <TextBox x:Name="AddNameBox" Style="{StaticResource InputBox}"
+                             FontSize="{DynamicResource FontCaption}"
+                             Height="{DynamicResource ControlHeight}"
+                             VerticalContentAlignment="Center"
+                             ToolTip="Add a named the catalog doesn't know (this zone)"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Margin="{DynamicResource GapS}">
+                    <TextBlock Text="Respawn" FontSize="{DynamicResource FontMetadata}"
+                               Foreground="{DynamicResource DimBrush}"/>
+                    <TextBox x:Name="AddDurationBox" Style="{StaticResource InputBox}"
+                             FontSize="{DynamicResource FontCaption}"
+                             Height="{DynamicResource ControlHeight}"
+                             VerticalContentAlignment="Center"
+                             ToolTip="22 (minutes), 90s, 12h, 3d, 3d 12h, 6:40"/>
+                </StackPanel>
+                <Button x:Name="AddBtn" Grid.Column="2" Content="Add"
+                        Margin="{DynamicResource GapS}"
+                        VerticalAlignment="Bottom"
+                        Height="{DynamicResource ControlHeight}"
+                        FontSize="{DynamicResource FontCaption}"
+                        Style="{StaticResource ActionButton}"
+                        ToolTip="Add this named to the zone" Click="OnAddCustom"/>
             </Grid>
         </StackPanel>
       </Grid>

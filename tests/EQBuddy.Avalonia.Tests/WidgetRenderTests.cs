@@ -190,8 +190,16 @@ public class WidgetRenderTests : IDisposable
             new SpawnsViewModel(catalog, overrides, timers), "Befallen");
         tracker.Show(main);
 
-        Assert.Contains(tracker.GetVisualDescendants().OfType<TextBlock>(),
-            text => text.Text == "🕒 Spawns - Befallen");
+        // Gate 3 (docs/DesignSystem.md §11.5): the clock emoji in the title is a vector
+        // now, and the window grew the column headers the audit asked for — five
+        // unlabelled columns of boxes and glyphs was a puzzle the first time and a memory
+        // test after that.
+        var text = tracker.GetVisualDescendants().OfType<TextBlock>()
+            .Select(t => t.Text ?? "").ToList();
+        Assert.Contains("Spawns — Befallen", text);
+        Assert.Contains("Named", text);
+        Assert.Contains("Next spawn", text);
+        Assert.Contains("Respawn", text);
         tracker.Close();
         Assert.True(main.Settings.TrackSpawns);
 

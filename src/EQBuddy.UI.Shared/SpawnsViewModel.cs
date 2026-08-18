@@ -37,7 +37,26 @@ public sealed record SpawnRow(
     string SoundName,
     bool IsCustom,
     /// <summary>Variance/source/note rolled into tooltip text; "" when there's nothing.</summary>
-    string Detail);
+    string Detail)
+{
+    // Gate 3 (docs/DesignSystem.md §6): the row already knew everything a progress bar
+    // needs and was throwing it away, keeping only the formatted countdown — which is why
+    // the window could not show progress toward respawn and why "unknown" rendered as a
+    // blank. These are the SAME values BuildRow already had in hand; nothing new is
+    // computed, it is simply no longer discarded. Both UIs feed them to TimerView.
+
+    /// <summary>When this named is next up, or null when a kill was seen with no known
+    /// respawn (and null when there is no timer at all — <see cref="HasActiveTimer"/>
+    /// tells those two apart).</summary>
+    public DateTime? DueAt { get; init; }
+
+    /// <summary>The full respawn cycle, for the progress fraction.</summary>
+    public double? DurationSeconds { get; init; }
+
+    /// <summary>Raid-instanced with no player-typed duration: deliberately not counted
+    /// (#109), and it says so rather than showing a blank.</summary>
+    public bool Suppressed { get; init; }
+}
 
 /// <summary>
 /// Presentation and edit logic for the Spawns window, shared by both UIs. The window
@@ -153,7 +172,14 @@ public sealed class SpawnsViewModel
 
         return new SpawnRow(zoneName, name, display,
             SpawnDurationText.Format(duration), countdown,
-            hasTimer, isDue, o?.Alert ?? false, o?.SoundName ?? "", o?.Custom ?? false, detail);
+            hasTimer, isDue, o?.Alert ?? false, o?.SoundName ?? "", o?.Custom ?? false, detail)
+        {
+            DueAt = timer?.DueAt,
+            // The timer's own duration when one is running (it may have been learned or
+            // manually started with a different value than the row's), else the row's.
+            DurationSeconds = timer?.DurationSeconds ?? duration,
+            Suppressed = suppressedInstance,
+        };
     }
 
     // ---- user actions ----

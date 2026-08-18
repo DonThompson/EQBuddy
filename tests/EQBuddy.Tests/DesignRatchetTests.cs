@@ -24,12 +24,15 @@ namespace EQBuddy.Tests;
 public class DesignRatchetTests
 {
     /// <summary>Surfaces rebuilt on the design system, and therefore held to it.
-    /// Gate 2: Quests, both UIs. Gate 3 adds Spawns, and so on down §6.</summary>
+    /// Gate 2: Quests, both UIs. Gate 3: Spawns, both UIs. And so on down §6/§11.5.</summary>
     private static readonly string[] Migrated =
     [
         "EQBuddy/QuestsWindow.xaml",
         "EQBuddy/QuestsWindow.xaml.cs",
         "EQBuddy.Avalonia/QuestsWindow.cs",
+        "EQBuddy/SpawnsWindow.xaml",
+        "EQBuddy/SpawnsWindow.xaml.cs",
+        "EQBuddy.Avalonia/SpawnsWindow.cs",
     ];
 
     public static TheoryData<string> MigratedFiles()

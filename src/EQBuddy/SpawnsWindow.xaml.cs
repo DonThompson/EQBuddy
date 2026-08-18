@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
+using Role = EQBuddy.UI.Shared.DesignTokens.TypeRole;
 
 namespace EQBuddy;
 
@@ -13,7 +14,7 @@ namespace EQBuddy;
 /// fed by <see cref="SpawnsViewModel"/>. While "Track spawns" is armed the window stays
 /// HIDDEN until a countdown exists — it pops when a named (or placeholder) death starts
 /// one, including timers recovered from the log at startup — and MainWindow closes it
-/// again when the last timer runs out. ✕ only hides it; the next kill brings it back.
+/// again when the last timer runs out. Closing only hides it; the next kill brings it back.
 /// David's call (2026-08-02): a tracker parked on screen all session is noise, a tracker
 /// that appears because something died is information. Alerts fire from MainWindow's
 /// shared tick, not here, so they don't depend on this window's lifetime.
@@ -28,7 +29,8 @@ public partial class SpawnsWindow : Window
     // Rebuilds are keyed on a signature of everything except the countdown text, so a
     // ticking clock updates labels in place and never yanks focus out of an edit box.
     private string _signature = "";
-    private readonly List<TextBlock> _countdowns = [];
+    private readonly List<TimerCell> _timerCells = [];
+    private TextBlock _titleText = null!;
     private List<SpawnRow> _rows = [];
     private bool _syncingZone;
 
@@ -41,6 +43,7 @@ public partial class SpawnsWindow : Window
         _main = main;
         _vm = vm;
         _settings = main.Settings;
+        BuildStaticChrome();
 
         MaxHeight = SystemParameters.WorkArea.Height - 40;
         BodyScroll.MaxHeight = SystemParameters.WorkArea.Height - 220;
@@ -105,7 +108,7 @@ public partial class SpawnsWindow : Window
         }
 
         var zone = SelectedZone;
-        TitleText.Text = zone.Length > 0 ? $"🕒 Spawns — {zone}" : "🕒 Spawns";
+        _titleText.Text = zone.Length > 0 ? $"Spawns — {zone}" : "Spawns";
         if (zone.Length == 0) return;
 
         var now = DateTime.Now;
@@ -121,60 +124,198 @@ public partial class SpawnsWindow : Window
         }
         else
         {
-            for (var i = 0; i < _rows.Count && i < _countdowns.Count; i++)
-                _countdowns[i].Text = _rows[i].CountdownText;
+            // Same rows, one second later: repaint the clocks in place rather than
+            // rebuilding. The BAR has to move with the text or the two disagree for as
+            // long as nothing else changes — which, on a 3-day raid timer, is days.
+            for (var i = 0; i < _rows.Count && i < _timerCells.Count; i++)
+                _timerCells[i].Update(_rows[i], now);
+        }
+    }
+
+    /// <summary>The chrome that never changes: the title icon, the close icon, and the
+    /// help callout. Built in code because each is a vector Path whose geometry comes
+    /// from a shared table, which XAML cannot express.</summary>
+    private void BuildStaticChrome()
+    {
+        TitleRow.Children.Add(DesignSystem.Icon("Timer", "AccentBrush", size: 15));
+        _titleText = DesignSystem.Text(Role.TitleWindow, "Spawns");
+        _titleText.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
+        _titleText.Ink("AccentBrush");
+        TitleRow.Children.Add(_titleText);
+        CloseBtn.Content = DesignSystem.Icon("Close");
+
+        // The accuracy contract for this window, and the reason it is a callout rather
+        // than a 65%-opacity paragraph: "our numbers came from community sources and
+        // YOURS WIN" is the sentence that makes a wrong respawn time survivable, and
+        // nobody was reading it.
+        var callout = new Grid();
+        callout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        callout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var icon = DesignSystem.Icon("Info", "DimBrush", size: 13);
+        icon.VerticalAlignment = VerticalAlignment.Top;
+        icon.Margin = new Thickness(0, 1, DesignTokens.SpaceS, 0);
+        callout.Children.Add(icon);
+        var text = DesignSystem.Text(Role.Caption,
+            "Kill a named (or its placeholder) and its countdown starts from the log. "
+            + "Start one by hand with the play button — type how long ago it died first (5m, 90s) or "
+            + "leave it empty for now. Respawn times came from community sources: if what "
+            + "you see in game disagrees, type over the duration. Your number wins, and it "
+            + "survives updates.");
+        text.TextWrapping = TextWrapping.Wrap;
+        Grid.SetColumn(text, 1);
+        callout.Children.Add(text);
+        HelpCallout.Child = callout;
+    }
+
+    /// <summary>The row's column widths, in one place because the HEADER has to agree
+    /// with them exactly — a header that drifts from its columns is worse than none.</summary>
+    private static void DefineColumns(Grid grid)
+    {
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });  // timer + bar
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });   // respawn
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });   // died
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });      // actions
+    }
+
+    /// <summary>Column headers (the mockup's, adopted wholesale): five unlabelled columns
+    /// of boxes and glyphs is a puzzle the first time and a memory test after that.</summary>
+    private void BuildHeader()
+    {
+        HeaderRow.Children.Clear();
+        HeaderRow.ColumnDefinitions.Clear();
+        DefineColumns(HeaderRow);
+        var labels = new[] { "Named", "Next spawn", "Respawn", "Died", "" };
+        for (var i = 0; i < labels.Length; i++)
+        {
+            if (labels[i].Length == 0) continue;
+            var text = DesignSystem.Text(Role.Metadata, labels[i]);
+            text.Margin = new Thickness(0, 0, DesignTokens.SpaceS, DesignTokens.SpaceXs);
+            Grid.SetColumn(text, i);
+            HeaderRow.Children.Add(text);
+        }
+    }
+
+    /// <summary>
+    /// One row's countdown AND its progress toward respawn, as one thing — because they
+    /// are one fact and the audit's finding was that showing only the text made "due in
+    /// 4:21" and "due in 18:31" look equally urgent.
+    ///
+    /// The bar is a two-column Grid whose star weights are the fraction, not a Width
+    /// computed from ActualWidth: a measured width would be wrong on the first layout
+    /// pass, wrong again after a Ctrl+wheel zoom, and wrong in a different way under the
+    /// UI-scale transform (trap 1). Star weights are resolved by the layout system in
+    /// whatever units it is actually working in.
+    /// </summary>
+    private sealed class TimerCell
+    {
+        public Grid Root { get; }
+        private readonly TextBlock _text;
+        private readonly TextBlock _percent;
+        private readonly Border _track;
+        private readonly Border _fill;
+        private readonly ColumnDefinition _filled;
+        private readonly ColumnDefinition _rest;
+
+        public TimerCell()
+        {
+            _text = DesignSystem.Text(Role.Body);
+            _text.FontWeight = FontWeights.SemiBold;
+            _percent = DesignSystem.Text(Role.Metadata);
+            _percent.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
+            _percent.VerticalAlignment = VerticalAlignment.Bottom;
+
+            var line = new StackPanel { Orientation = Orientation.Horizontal };
+            line.Children.Add(_text);
+            line.Children.Add(_percent);
+
+            _filled = new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) };
+            _rest = new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) };
+            var bar = new Grid { Height = DesignTokens.StateRuleWidth };
+            bar.ColumnDefinitions.Add(_filled);
+            bar.ColumnDefinitions.Add(_rest);
+            _fill = new Border { CornerRadius = new CornerRadius(DesignTokens.StateRuleWidth / 2) };
+            bar.Children.Add(_fill);
+            _track = new Border
+            {
+                Child = bar,
+                CornerRadius = new CornerRadius(DesignTokens.StateRuleWidth / 2),
+                Margin = new Thickness(0, DesignTokens.SpaceXxs, DesignTokens.SpaceS, 0),
+            };
+
+            Root = new Grid();
+            Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Root.Children.Add(line);
+            Grid.SetRow(_track, 1);
+            Root.Children.Add(_track);
+        }
+
+        public void Update(SpawnRow row, DateTime now)
+        {
+            var view = TimerView.For(row.DueAt, row.DurationSeconds, now,
+                row.HasActiveTimer, row.Suppressed);
+            _text.Text = TimerView.Text(view, row.DueAt, now);
+            _text.Ink(view.TextColorKey);
+
+            // The percentage is the mockup's, and it earns its place on a long cycle:
+            // "2d 3h" says nothing about whether that is nearly over.
+            _percent.Text = view.Fraction is { } f && view.State is not TimerView.State.Due
+                ? $"{f * 100:0}%" : "";
+
+            _track.Visibility = view.HasTrack ? Visibility.Visible : Visibility.Collapsed;
+            if (!view.HasTrack) return;
+            _track.SetResourceReference(Border.BackgroundProperty, view.TrackColorKey);
+            // Null fraction keeps the track and draws no fill: the row still has a slot
+            // for progress, it just has no claim to make.
+            var frac = view.Fraction ?? 0;
+            _filled.Width = new GridLength(frac, GridUnitType.Star);
+            _rest.Width = new GridLength(1 - frac, GridUnitType.Star);
+            if (view.FillColorKey is { } key) _fill.SetResourceReference(Border.BackgroundProperty, key);
+            _fill.Visibility = view.Fraction is null ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 
     private void Rebuild()
     {
         RowsPanel.Children.Clear();
-        _countdowns.Clear();
+        _timerCells.Clear();
+        BuildHeader();
 
         if (_rows.Count == 0)
         {
-            RowsPanel.Children.Add(new TextBlock
-            {
-                Text = "No named catalogued for this zone yet — add one below.",
-                FontSize = 11, Opacity = 0.65, Margin = new Thickness(0, 4, 0, 4),
-            });
+            var empty = DesignSystem.Text(Role.Body,
+                "No named catalogued for this zone yet — add one below.");
+            empty.TextWrapping = TextWrapping.Wrap;
+            empty.Margin = new Thickness(0, DesignTokens.SpaceM, 0, DesignTokens.SpaceM);
+            RowsPanel.Children.Add(empty);
             return;
         }
 
+        var now = DateTime.Now;
         foreach (var row in _rows)
         {
-            var grid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(62) });   // countdown
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(56) });   // duration
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(34) });   // ago
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });      // buttons
+            var grid = new Grid();
+            DefineColumns(grid);
 
-            var name = new TextBlock
-            {
-                Text = row.DisplayName, FontSize = 11,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center,
-                ToolTip = row.Detail.Length > 0 ? row.Detail : null,
-            };
-            Grid.SetColumn(name, 0);
+            var name = DesignSystem.Text(Role.Body, row.DisplayName);
+            name.TextTrimming = TextTrimming.CharacterEllipsis;
+            name.VerticalAlignment = VerticalAlignment.Center;
+            name.Margin = new Thickness(0, 0, DesignTokens.SpaceS, 0);
+            if (row.Detail.Length > 0) name.ToolTip = row.Detail;
             grid.Children.Add(name);
 
-            var countdown = new TextBlock
-            {
-                Text = row.CountdownText, FontSize = 11, FontWeight = FontWeights.SemiBold,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 0, 6, 0),
-            };
-            countdown.SetResourceReference(TextBlock.ForegroundProperty,
-                row.IsDue ? "WarnBrush" : "AccentBrush");
-            Grid.SetColumn(countdown, 1);
-            grid.Children.Add(countdown);
-            _countdowns.Add(countdown);
+            var cell = new TimerCell();
+            cell.Update(row, now);
+            _timerCells.Add(cell);
+            Grid.SetColumn(cell.Root, 1);
+            grid.Children.Add(cell.Root);
 
+            // FREE TEXT, deliberately (docs/DesignSystem.md §8c): SpawnDurationText parses
+            // 5m, 90s, 22m and "3d 12h", and the numeric spinner the mockup drew would
+            // regress week-long raid targets. The placeholder guidance IS adopted.
             var duration = DarkBox(row.DurationText,
-                "Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40 — edits persist as yours");
+                "Respawn time: 22 (minutes), 90s, 12h, 3d, 3d 12h, 6:40 — your edit persists and outranks the catalog");
             duration.Tag = row.Name;
             duration.LostFocus += (_, _) => CommitDuration(duration, row);
             duration.KeyDown += (_, e) => { if (e.Key == Key.Enter) CommitDuration(duration, row); };
@@ -182,29 +323,60 @@ public partial class SpawnsWindow : Window
             grid.Children.Add(duration);
 
             var ago = DarkBox("", "Died how long ago? (5m, 90s) Empty = just now");
-            ago.Margin = new Thickness(4, 0, 0, 0);
+            ago.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
             Grid.SetColumn(ago, 3);
             grid.Children.Add(ago);
 
-            var buttons = new StackPanel { Orientation = Orientation.Horizontal };
-            buttons.Children.Add(RowButton("▶", "Start the countdown from a kill you saw yourself",
-                () => { _vm.StartNow(row.Zone, row.Name, ago.Text); Kick(); }));
-            var bell = RowButton(row.Alert ? "🔔" : "🔕",
-                "Sound when this one comes due — off by default, like watch-rule sounds (the chicklet shows DUE either way)",
-                () => { _vm.ToggleAlert(row.Zone, row.Name); Kick(); });
-            bell.Opacity = row.Alert ? 1.0 : 0.45;
-            buttons.Children.Add(bell);
+            // GROUPED actions (the mockup's, and the audit's complaint that three
+            // controls sat at identical size with no hierarchy). Start is the one thing
+            // you do TO a camp; the rest configure or undo it, and sit behind a divider.
+            var buttons = new StackPanel
+            {
+                Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center,
+            };
+            buttons.Children.Add(DesignSystem.IconButton("Play",
+                "Start the countdown from a kill you saw yourself",
+                (_, _) => { _vm.StartNow(row.Zone, row.Name, ago.Text); Kick(); }, "AccentBrush"));
+            buttons.Children.Add(new Border
+            {
+                Width = 1,
+                Margin = new Thickness(DesignTokens.SpaceXs, DesignTokens.SpaceXs,
+                    DesignTokens.SpaceXs, DesignTokens.SpaceXs),
+                Background = (System.Windows.Media.Brush)FindResource("HairlineBrush"),
+            });
+            // A vector bell can be COLOURED, which an emoji one could not — the old
+            // toggle had to signal "on" with opacity because the glyph ignored
+            // Foreground entirely.
+            buttons.Children.Add(DesignSystem.IconButton(row.Alert ? "Bell" : "BellOff",
+                "Sound when this one comes due — off by default, like watch-rule sounds (the chip shows DUE either way)",
+                (_, _) => { _vm.ToggleAlert(row.Zone, row.Name); Kick(); },
+                row.Alert ? "AccentBrush" : "DimBrush", row.Alert ? 1.0 : 0.55));
             buttons.Children.Add(BuildSoundPicker(row));
             if (row.HasActiveTimer)
-                buttons.Children.Add(RowButton("✕", "Forget this countdown",
-                    () => { _vm.ClearTimer(row.Zone, row.Name); Kick(); }));
+                buttons.Children.Add(DesignSystem.IconButton("Close", "Forget this countdown",
+                    (_, _) => { _vm.ClearTimer(row.Zone, row.Name); Kick(); }, "DimBrush", 0.55));
             if (row.IsCustom)
-                buttons.Children.Add(RowButton("🗑", "Remove this named (you added it)",
-                    () => { _vm.RemoveCustom(row.Zone, row.Name); Kick(); }));
+                buttons.Children.Add(DesignSystem.IconButton("Trash",
+                    "Remove this named (you added it)",
+                    (_, _) => { _vm.RemoveCustom(row.Zone, row.Name); Kick(); }, "DimBrush", 0.55));
             Grid.SetColumn(buttons, 4);
             grid.Children.Add(buttons);
 
-            RowsPanel.Children.Add(grid);
+            // A row is a card now, so a due one can be picked out of forty by its edge.
+            var card = new Border
+            {
+                Child = grid,
+                CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+                Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs,
+                    DesignTokens.SpaceM, DesignTokens.SpaceXs),
+                Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXxs),
+                BorderThickness = new Thickness(1),
+            };
+            card.SetResourceReference(Border.BackgroundProperty,
+                row.IsDue ? "WarnWashBrush" : "PanelBrush");
+            card.SetResourceReference(Border.BorderBrushProperty,
+                row.IsDue ? "WarnBrush" : "HairlineBrush");
+            RowsPanel.Children.Add(card);
         }
     }
 
@@ -215,7 +387,8 @@ public partial class SpawnsWindow : Window
     {
         var combo = new ComboBox
         {
-            FontSize = 10, Width = 66, Margin = new Thickness(4, 0, 0, 0),
+            FontSize = DesignTokens.Spec(Role.Metadata).Size, Width = 66,
+            Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0),
             ToolTip = "Sound for this named — Default is Alarm",
         };
         foreach (var item in (string[])["Default", "Off", .. EQBuddy.UI.Shared.AlertSoundCatalog.Names, "Custom…"])
@@ -283,8 +456,8 @@ public partial class SpawnsWindow : Window
     {
         var box = new TextBox
         {
-            Text = text, FontSize = 11, ToolTip = tooltip,
-            Padding = new Thickness(3, 1, 3, 1),
+            Text = text, FontSize = DesignTokens.Spec(Role.Caption).Size, ToolTip = tooltip,
+            Padding = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceXxs, DesignTokens.SpaceS, DesignTokens.SpaceXxs),
             VerticalContentAlignment = VerticalAlignment.Center,
         };
         // SetResourceReference so an in-place theme switch repaints rebuilt rows too.
@@ -294,17 +467,6 @@ public partial class SpawnsWindow : Window
         return box;
     }
 
-    private Button RowButton(string glyph, string tooltip, Action onClick)
-    {
-        var b = new Button
-        {
-            Content = glyph, ToolTip = tooltip, FontSize = 11,
-            Style = (Style)FindResource("IconButton"),
-            Margin = new Thickness(4, 0, 0, 0),
-        };
-        b.Click += (_, _) => onClick();
-        return b;
-    }
 
     // ---- chrome ----
 
@@ -313,7 +475,7 @@ public partial class SpawnsWindow : Window
         if (e.ChangedButton == MouseButton.Left && e.OriginalSource is not TextBox) DragMove();
     }
 
-    // ✕ hides the window; tracking stays armed and the next kill re-opens it. Turning
+    // Closing hides the window; tracking stays armed and the next kill re-opens it. Turning
     // the feature off lives in the menu and Options, deliberately elsewhere.
     /// <summary>Height caps follow the monitor this window occupies (portrait
     /// secondary screens are taller than the primary — discussion #31).</summary>

@@ -9,6 +9,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using EQBuddy.Core;
 using EQBuddy.UI.Shared;
+using Role = EQBuddy.UI.Shared.DesignTokens.TypeRole;
 
 namespace EQBuddy.Avalonia;
 
@@ -24,8 +25,8 @@ public sealed class SpawnsWindow : Window
     private readonly SpawnsViewModel _vm;
     private readonly AppSettings _settings;
     private readonly TextBlock _title = new();
-    private readonly ComboBox _zoneCombo = new() { FontSize = 11 };
-    private readonly CheckBox _followCheck = new() { Content = "Follow", FontSize = 11 };
+    private readonly ComboBox _zoneCombo = new() { FontSize = DesignTokens.Spec(Role.Body).Size };
+    private readonly CheckBox _followCheck = new() { Content = "Follow", FontSize = DesignTokens.Spec(Role.Caption).Size };
     private readonly StackPanel _rowsPanel = new();
     private readonly ScrollViewer _bodyScroll = new()
     {
@@ -35,7 +36,8 @@ public sealed class SpawnsWindow : Window
     private readonly TextBox _addName = DarkBox("", "Add a named the catalog doesn't know");
     private readonly TextBox _addDuration = DarkBox("", "Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40");
     private readonly DispatcherTimer _tick;
-    private readonly List<TextBlock> _countdowns = [];
+    private readonly List<TimerCell> _timerCells = [];
+    private readonly Grid _headerRow = new();
     private List<SpawnRow> _rows = [];
     private string _signature = "";
     private bool _syncingZone;
@@ -112,42 +114,61 @@ public sealed class SpawnsWindow : Window
         RefreshRows();
     }
 
+    /// <summary>Window-edge padding, from the spacing scale — the same value the WPF
+    /// window's PadCard resource composes.</summary>
+    private static Thickness CardPad => new(
+        DesignTokens.SpaceL, DesignTokens.SpaceM, DesignTokens.SpaceL, DesignTokens.SpaceM);
+
+    private static Button ActionButton(string text) => new()
+    {
+        Content = text,
+        FontSize = DesignTokens.Spec(Role.Caption).Size,
+        Height = DesignTokens.ControlHeight,
+        Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs),
+        Background = AppTheme.PanelBrush,
+        Foreground = AppTheme.TextBrush,
+        BorderThickness = new Thickness(0),
+        CornerRadius = new CornerRadius(DesignTokens.RadiusControl),
+        VerticalContentAlignment = VerticalAlignment.Center,
+        Cursor = new Cursor(StandardCursorType.Hand),
+    };
+
     private Control BuildContent()
     {
-        _title.FontSize = 14;
-        _title.FontWeight = FontWeight.Bold;
+        _title.FontSize = DesignTokens.Spec(Role.TitleWindow).Size;
+        _title.FontWeight = FontWeight.SemiBold;
         _title.Foreground = AppTheme.AccentBrush;
-        var close = AppTheme.IconButton("x",
-            "Hide - the tracker returns on the next named kill; disable tracking in Options or the main menu");
+        var close = DesignSystem.IconButton("Close",
+            "Hide — the tracker returns on the next named kill; disable tracking in Options or the main menu",
+            Close);
         close.HorizontalAlignment = HorizontalAlignment.Right;
-        close.Click += (_, _) => Close();
-        var header = new Grid { Margin = new Thickness(16, 14, 16, 6) };
+        var header = new Grid { Margin = CardPad };
         header.Children.Add(_title);
         header.Children.Add(close);
 
-        var zoneRow = new Grid { Margin = new Thickness(16, 0, 16, 8) };
+        var zoneRow = new Grid { Margin = CardPad };
         zoneRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         zoneRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         ToolTip.SetTip(_zoneCombo, "Which zone's named to show");
         zoneRow.Children.Add(_zoneCombo);
-        _followCheck.Margin = new Thickness(10, 2, 0, 0);
+        _followCheck.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
         ToolTip.SetTip(_followCheck, "Switch to whatever zone the log says you are in");
         Grid.SetColumn(_followCheck, 1);
         zoneRow.Children.Add(_followCheck);
 
         _bodyScroll.Content = _rowsPanel;
-        _rowsPanel.Margin = new Thickness(16, 0, 16, 4);
+        _rowsPanel.Margin = CardPad;
 
         var addRow = new Grid();
         addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        addRow.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(76)));
+        addRow.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(110)));
         addRow.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         addRow.Children.Add(_addName);
-        _addDuration.Margin = new Thickness(6, 0, 0, 0);
+        _addDuration.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
         Grid.SetColumn(_addDuration, 1);
         addRow.Children.Add(_addDuration);
-        var add = AppTheme.IconButton("+", "Add named");
-        add.Margin = new Thickness(6, 0, 0, 0);
+        var add = ActionButton("Add");
+        add.Margin = new Thickness(DesignTokens.SpaceS, 0, 0, 0);
         add.Click += (_, _) =>
         {
             if (_vm.AddCustom(SelectedZone, _addName.Text ?? "", _addDuration.Text ?? ""))
@@ -160,13 +181,14 @@ public sealed class SpawnsWindow : Window
         Grid.SetColumn(add, 2);
         addRow.Children.Add(add);
 
-        var footer = new StackPanel { Margin = new Thickness(16, 4, 16, 14) };
+        var footer = new StackPanel { Margin = CardPad };
         footer.Children.Add(AppTheme.DimText(
-            "Kill a named (or its placeholder) and its countdown starts from the log. ▶ starts one by hand. Community times are a starting point: edit any discrepancy you see in game; your value wins and survives updates.",
-            new Thickness(0, 0, 0, 6)));
+            "Kill a named (or its placeholder) and its countdown starts from the log. Start one by hand with the play button — type how long ago it died first (5m, 90s) or leave it empty for now. Respawn times came from community sources: if what you see in game disagrees, type over the duration. Your number wins, and it survives updates.",
+            new Thickness(0, 0, 0, DesignTokens.SpaceS)));
         footer.Children.Add(addRow);
 
         var layout = new Grid();
+        layout.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         layout.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         layout.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
         layout.RowDefinitions.Add(new RowDefinition(GridLength.Star));
@@ -174,16 +196,19 @@ public sealed class SpawnsWindow : Window
         layout.Children.Add(header);
         Grid.SetRow(zoneRow, 1);
         layout.Children.Add(zoneRow);
-        Grid.SetRow(_bodyScroll, 2);
+        _headerRow.Margin = CardPad;
+        Grid.SetRow(_headerRow, 2);
+        layout.Children.Add(_headerRow);
+        Grid.SetRow(_bodyScroll, 3);
         layout.Children.Add(_bodyScroll);
-        Grid.SetRow(footer, 3);
+        Grid.SetRow(footer, 4);
         layout.Children.Add(footer);
         return new Border
         {
             Background = AppTheme.BgBrush,
             BorderBrush = AppTheme.HairlineBrush,
             BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(10),
+            CornerRadius = new CornerRadius(DesignTokens.RadiusPanel),
             Child = layout,
         };
     }
@@ -210,7 +235,7 @@ public sealed class SpawnsWindow : Window
             if (current != SelectedZone) SelectZone(current);
         }
         var zone = SelectedZone;
-        _title.Text = zone.Length > 0 ? $"🕒 Spawns - {zone}" : "🕒 Spawns";
+        _title.Text = zone.Length > 0 ? $"Spawns — {zone}" : "Spawns";
         if (zone.Length == 0) return;
         _rows = _vm.RowsFor(zone, DateTime.Now);
         var signature = zone + "\u0001" + string.Join("\u0001", _rows.Select(r =>
@@ -222,52 +247,43 @@ public sealed class SpawnsWindow : Window
             Rebuild();
         }
         else
-            for (var i = 0; i < _rows.Count && i < _countdowns.Count; i++)
-                _countdowns[i].Text = _rows[i].CountdownText;
+            for (var i = 0; i < _rows.Count && i < _timerCells.Count; i++)
+                _timerCells[i].Update(_rows[i], DateTime.Now);
     }
 
     private void Rebuild()
     {
         _rowsPanel.Children.Clear();
-        _countdowns.Clear();
+        _timerCells.Clear();
+        BuildHeader();
         if (_rows.Count == 0)
         {
             _rowsPanel.Children.Add(AppTheme.DimText("No named catalogued for this zone yet - add one below."));
             return;
         }
+        var now = DateTime.Now;
         foreach (var row in _rows)
         {
-            var grid = new Grid { Margin = new Thickness(0, 1) };
-            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(72)));   // countdown
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(70)));   // duration
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(60)));   // died ago
-            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(232)));  // actions + sound
-            var name = new TextBlock
-            {
-                Text = row.DisplayName,
-                FontSize = 11,
-                Foreground = AppTheme.TextBrush,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center,
-            };
+            var grid = new Grid();
+            DefineColumns(grid);
+            var name = DesignSystem.Text(Role.Body, row.DisplayName);
+            name.TextTrimming = TextTrimming.CharacterEllipsis;
+            name.VerticalAlignment = VerticalAlignment.Center;
+            name.Margin = new Thickness(0, 0, DesignTokens.SpaceS, 0);
             if (row.Detail.Length > 0) ToolTip.SetTip(name, row.Detail);
             grid.Children.Add(name);
-            var countdown = new TextBlock
-            {
-                Text = row.CountdownText,
-                FontSize = 11,
-                FontWeight = FontWeight.SemiBold,
-                Foreground = row.IsDue ? AppTheme.WarnBrush : AppTheme.AccentBrush,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 6, 0),
-            };
-            Grid.SetColumn(countdown, 1);
-            grid.Children.Add(countdown);
-            _countdowns.Add(countdown);
-            var duration = DarkBox(row.DurationText, "Respawn time: 22 (minutes), 90s, 12h, 3d, 6:40");
-            duration.Margin = new Thickness(0, 0, 6, 0);
+
+            var cell = new TimerCell();
+            cell.Update(row, now);
+            _timerCells.Add(cell);
+            Grid.SetColumn(cell.Root, 1);
+            grid.Children.Add(cell.Root);
+
+            // FREE TEXT, deliberately (docs/DesignSystem.md §8c): SpawnDurationText parses
+            // 5m, 90s, 22m and "3d 12h", and the numeric spinner the mockup drew would
+            // regress week-long raid targets.
+            var duration = DarkBox(row.DurationText,
+                "Respawn time: 22 (minutes), 90s, 12h, 3d, 3d 12h, 6:40 — your edit persists and outranks the catalog");
             duration.LostFocus += (_, _) =>
             {
                 if ((duration.Text ?? "").Trim() == row.DurationText) return;
@@ -276,43 +292,153 @@ public sealed class SpawnsWindow : Window
             };
             Grid.SetColumn(duration, 2);
             grid.Children.Add(duration);
-            var ago = DarkBox("", "Died how long ago? 5m, 90s; empty means now");
-            ago.Margin = new Thickness(0, 0, 8, 0);
+
+            var ago = DarkBox("", "Died how long ago? (5m, 90s) Empty = just now");
+            ago.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
             Grid.SetColumn(ago, 3);
             grid.Children.Add(ago);
+
+            // GROUPED actions: start is the one thing you do TO a camp; the rest
+            // configure or undo it and sit behind a divider.
             var buttons = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Center,
             };
-            buttons.Children.Add(RowButton("▶", "Start countdown", () =>
+            buttons.Children.Add(DesignSystem.IconButton("Play",
+                "Start the countdown from a kill you saw yourself",
+                () => { _vm.StartNow(row.Zone, row.Name, ago.Text ?? ""); Kick(); }, "AccentBrush"));
+            buttons.Children.Add(new Border
             {
-                _vm.StartNow(row.Zone, row.Name, ago.Text ?? "");
-                Kick();
-            }));
-            var bell = RowButton(row.Alert ? "🔔" : "🔕", "Toggle due alert", () =>
-            {
-                _vm.ToggleAlert(row.Zone, row.Name);
-                Kick();
+                Width = 1,
+                Margin = new Thickness(DesignTokens.SpaceXs),
+                Background = AppTheme.HairlineBrush,
             });
-            bell.Opacity = row.Alert ? 1 : 0.45;
-            buttons.Children.Add(bell);
+            // A vector bell can be COLOURED, which an emoji one could not.
+            buttons.Children.Add(DesignSystem.IconButton(row.Alert ? "Bell" : "BellOff",
+                "Sound when this one comes due — off by default, like watch-rule sounds (the chip shows DUE either way)",
+                () => { _vm.ToggleAlert(row.Zone, row.Name); Kick(); },
+                row.Alert ? "AccentBrush" : "DimBrush", row.Alert ? 1.0 : 0.55));
             buttons.Children.Add(BuildSoundPicker(row));
             if (row.HasActiveTimer)
-                buttons.Children.Add(RowButton("x", "Forget countdown", () =>
-                {
-                    _vm.ClearTimer(row.Zone, row.Name);
-                    Kick();
-                }));
+                buttons.Children.Add(DesignSystem.IconButton("Close", "Forget this countdown",
+                    () => { _vm.ClearTimer(row.Zone, row.Name); Kick(); }, "DimBrush", 0.55));
             if (row.IsCustom)
-                buttons.Children.Add(RowButton("🗑", "Remove custom named", () =>
-                {
-                    _vm.RemoveCustom(row.Zone, row.Name);
-                    Kick();
-                }));
+                buttons.Children.Add(DesignSystem.IconButton("Trash",
+                    "Remove this named (you added it)",
+                    () => { _vm.RemoveCustom(row.Zone, row.Name); Kick(); }, "DimBrush", 0.55));
             Grid.SetColumn(buttons, 4);
             grid.Children.Add(buttons);
-            _rowsPanel.Children.Add(grid);
+
+            // A row is a card now, so a due one can be picked out of forty by its edge.
+            _rowsPanel.Children.Add(new Border
+            {
+                Child = grid,
+                Background = row.IsDue ? AppTheme.WarnWashBrush : AppTheme.PanelBrush,
+                BorderBrush = row.IsDue ? AppTheme.WarnBrush : AppTheme.HairlineBrush,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(DesignTokens.RadiusCard),
+                Padding = new Thickness(DesignTokens.SpaceM, DesignTokens.SpaceXs),
+                Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXxs),
+            });
+        }
+    }
+
+    /// <summary>The row's column widths, in one place because the HEADER has to agree
+    /// with them exactly.</summary>
+    private static void DefineColumns(Grid grid)
+    {
+        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+        grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(150)));  // timer + bar
+        grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(70)));   // respawn
+        grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(52)));   // died
+        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));      // actions
+    }
+
+    /// <summary>Column headers — five unlabelled columns of boxes and glyphs is a puzzle
+    /// the first time and a memory test after that.</summary>
+    private void BuildHeader()
+    {
+        _headerRow.Children.Clear();
+        _headerRow.ColumnDefinitions.Clear();
+        DefineColumns(_headerRow);
+        var labels = new[] { "Named", "Next spawn", "Respawn", "Died", "" };
+        for (var i = 0; i < labels.Length; i++)
+        {
+            if (labels[i].Length == 0) continue;
+            var text = DesignSystem.Text(Role.Metadata, labels[i]);
+            text.Margin = new Thickness(0, 0, DesignTokens.SpaceS, DesignTokens.SpaceXs);
+            Grid.SetColumn(text, i);
+            _headerRow.Children.Add(text);
+        }
+    }
+
+    /// <summary>One row's countdown AND its progress toward respawn, as one thing —
+    /// because they are one fact, and showing only the text made "due in 4:21" and
+    /// "due in 18:31" look equally urgent (the Gate 1 audit's finding about this window).
+    /// The bar's star weights ARE the fraction, so the layout system resolves it in
+    /// whatever units it is actually working in rather than a measured width.</summary>
+    private sealed class TimerCell
+    {
+        public Grid Root { get; }
+        private readonly TextBlock _text;
+        private readonly TextBlock _percent;
+        private readonly Border _track;
+        private readonly Border _fill;
+        private readonly ColumnDefinition _filled;
+        private readonly ColumnDefinition _rest;
+
+        public TimerCell()
+        {
+            _text = DesignSystem.Text(Role.Body);
+            _text.FontWeight = FontWeight.SemiBold;
+            _percent = DesignSystem.Text(Role.Metadata);
+            _percent.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
+            _percent.VerticalAlignment = VerticalAlignment.Bottom;
+
+            var line = new StackPanel { Orientation = Orientation.Horizontal };
+            line.Children.Add(_text);
+            line.Children.Add(_percent);
+
+            _filled = new ColumnDefinition(new GridLength(0, GridUnitType.Star));
+            _rest = new ColumnDefinition(new GridLength(1, GridUnitType.Star));
+            var bar = new Grid { Height = DesignTokens.StateRuleWidth };
+            bar.ColumnDefinitions.Add(_filled);
+            bar.ColumnDefinitions.Add(_rest);
+            _fill = new Border { CornerRadius = new CornerRadius(DesignTokens.StateRuleWidth / 2) };
+            bar.Children.Add(_fill);
+            _track = new Border
+            {
+                Child = bar,
+                CornerRadius = new CornerRadius(DesignTokens.StateRuleWidth / 2),
+                Margin = new Thickness(0, DesignTokens.SpaceXxs, DesignTokens.SpaceS, 0),
+            };
+
+            Root = new Grid();
+            Root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            Root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
+            Root.Children.Add(line);
+            Grid.SetRow(_track, 1);
+            Root.Children.Add(_track);
+        }
+
+        public void Update(SpawnRow row, DateTime now)
+        {
+            var view = TimerView.For(row.DueAt, row.DurationSeconds, now,
+                row.HasActiveTimer, row.Suppressed);
+            _text.Text = TimerView.Text(view, row.DueAt, now);
+            _text.Foreground = AppTheme.BrushFor(view.TextColorKey);
+            _percent.Text = view.Fraction is { } f && view.State is not TimerView.State.Due
+                ? $"{f * 100:0}%" : "";
+
+            _track.IsVisible = view.HasTrack;
+            if (!view.HasTrack) return;
+            _track.Background = AppTheme.BrushFor(view.TrackColorKey);
+            var frac = view.Fraction ?? 0;
+            _filled.Width = new GridLength(frac, GridUnitType.Star);
+            _rest.Width = new GridLength(1 - frac, GridUnitType.Star);
+            if (view.FillColorKey is { } key) _fill.Background = AppTheme.BrushFor(key);
+            _fill.IsVisible = view.Fraction is not null;
         }
     }
 
@@ -321,8 +447,8 @@ public sealed class SpawnsWindow : Window
         var box = new TextBox
         {
             Text = text,
-            FontSize = 11,
-            Padding = new Thickness(3, 1),
+            FontSize = DesignTokens.Spec(Role.Caption).Size,
+            Padding = new Thickness(DesignTokens.SpaceS, DesignTokens.SpaceXxs),
             Background = AppTheme.ComboBoxBrush,
             Foreground = AppTheme.TextBrush,
             BorderBrush = AppTheme.BorderBrush,
@@ -336,9 +462,9 @@ public sealed class SpawnsWindow : Window
     {
         var picker = new ComboBox
         {
-            FontSize = 10,
+            FontSize = DesignTokens.Spec(Role.Metadata).Size,
             Width = 78,
-            Margin = new Thickness(4, 0, 0, 0),
+            Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0),
         };
         foreach (var choice in (string[])["Default", "Off", .. AlertSoundCatalog.Names, "Custom…"])
             picker.Items.Add(choice);
@@ -402,8 +528,8 @@ public sealed class SpawnsWindow : Window
     private static Button RowButton(string text, string tip, Action click)
     {
         var button = AppTheme.IconButton(text, tip);
-        button.FontSize = 11;
-        button.Margin = new Thickness(4, 0, 0, 0);
+        button.FontSize = DesignTokens.Spec(Role.Caption).Size;
+        button.Margin = new Thickness(DesignTokens.SpaceXs, 0, 0, 0);
         button.Click += (_, _) => click();
         return button;
     }

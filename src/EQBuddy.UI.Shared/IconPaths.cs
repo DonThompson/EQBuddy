@@ -63,6 +63,16 @@ public static class IconPaths
         ["Book"] = "M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Zm0 18H6V4h1v9l2.5-1.75L12 13V4h6v16Z",
         ["Filter"] = "M10 18h4v-2h-4v2ZM3 6v2h18V6H3Zm3 7h12v-2H6v2Z",
         ["Warning"] = "M1 21h22L12 2 1 21Zm12-3h-2v-2h2v2Zm0-4h-2v-4h2v4Z",
+
+        // Gate 3 (Spawns + timers). Replaces ▶ 🔔 🔕 ✕ 🗑 🕒 — and the bell pair is the
+        // reason a vector set matters: an emoji bell ignores Foreground entirely, so
+        // "alert on" had to be signalled with opacity because the glyph could not be
+        // coloured (see the old IconToggle template's comment).
+        ["Play"] = "M8 5v14l11-7L8 5Z",
+        ["Timer"] = "M15 1H9v2h6V1Zm-4 13h2V8h-2v6Zm8-6.6 1.4-1.4a10 10 0 0 0-1.4-1.4L17.6 6A9 9 0 1 0 19 7.4ZM12 20a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z",
+        ["Bell"] = "M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6v-5a6 6 0 0 0-5-5.91V4a1 1 0 1 0-2 0v1.09A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2Z",
+        ["BellOff"] = "M20.5 19.1 4.9 3.5 3.5 4.9l2 2A6 6 0 0 0 6 11v5l-2 2v1h13.2l1.9 1.9 1.4-1.4ZM12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6.3V11a6 6 0 0 0-5-5.91V4a1 1 0 1 0-2 0v1.09c-.42.06-.83.16-1.22.31L18 15.7Z",
+        ["Trash"] = "M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z",
     };
 
     // ---- reward slot silhouettes ----

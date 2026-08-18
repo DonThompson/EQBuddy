@@ -530,7 +530,7 @@ a rework that absorbs every open bug stops being a rework.
 |---|---|---|
 | 2 | Quests | done |
 | **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **done** — `UI.Shared/ChipStyle.cs` + one control per UI; the Quests window now spends it. Render verified byte-for-byte unchanged |
-| 3 | Spawns + timers | unchanged; `EqTimer` + `EqProgress` |
+| 3 | Spawns + timers | **built** — `UI.Shared/TimerView.cs` is `EqTimer` + `EqProgress`; both windows rebuilt on it. **Screenshot review still outstanding**, see below |
 | **4** | **Loot card + Loot breakout** | **moved up** — #198 concentrated the debt here |
 | 5 | Main widget | was 4 |
 | 6 | Mini mode + chips | carries #190, #191, #199's gesture |
@@ -539,3 +539,32 @@ a rework that absorbs every open bug stops being a rework.
 
 The one structural change is **2b**: a shared chip is worth more than any single gate,
 because every gate after it spends the primitive instead of minting one.
+
+### 11.6 Gate 3, as built — and the one thing still open
+
+`UI.Shared/TimerView.cs` is the §3 `EqTimer`/`EqProgress` pair, and it answers all four of
+the Gate 1 findings about this window at once, because they were one defect: **a countdown
+that is only a string has no state.** A timer now has one, and the state decides the words,
+the ink, and whether there is a bar at all — so a caller cannot draw an amber countdown
+with a green bar, and cannot render "we don't know" as an empty cell.
+
+- Progress toward respawn, with a percentage, so "due in 4:21" and "due in 18:31" no longer
+  look equally urgent. The bar's **star weights are the fraction** rather than a width
+  computed from `ActualWidth`, which would be wrong on the first layout pass, wrong again
+  after a Ctrl+wheel zoom, and wrong differently under the UI-scale transform (trap 1).
+- `—` and an **empty track** for a kill with no known respawn. Unknown and absent are now
+  different states, and `TimerViewTests` holds them apart.
+- Column headers, grouped actions behind a divider, the help text as an info callout, and
+  labelled add-row fields — all the mockup's, all adopted.
+- Rows are cards, so a due one is findable among forty by its edge.
+- **§8c honoured: the duration is still free text.** `SpawnDurationText` parses `5m`, `90s`,
+  `22m` and `3d 12h`; the mockup's numeric spinner would regress week-long raid targets.
+  The placeholder guidance it added is adopted.
+
+**Still open: the screenshot review.** `scripts/shoot.ps1` cannot capture this window,
+because the window deliberately stays hidden until a countdown exists (David, 2026-08-02:
+"a tracker parked on screen all session is noise") and the fixture log's kills do not start
+one. Every other satellite has an `EQBUDDY_*` hook to open it; Spawns does not. **Add
+`EQBUDDY_SPAWNS=1` to MainWindow's hook family and re-shoot** — small, and the review is an
+acceptance criterion, not a nicety: the Gate 2 wrapping bug was found this way and by
+nothing else.
