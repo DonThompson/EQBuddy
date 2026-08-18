@@ -135,6 +135,42 @@ public class SurfaceParityTests
     }
 
     [Fact]
+    public void ASettingNoPlayerCanChangeNeverNarrowsThePhone()
+    {
+        // #212 (bjstrange). The projection scoped the whole Sky list by
+        // AppSettings.SkyQuestClass, and NOTHING in the codebase writes that setting —
+        // the widget's Sky card was its only writer and the 2026-08-16 consolidation
+        // deleted it. So a value persisted before that day filtered the phone forever,
+        // and no control on it could change the answer.
+        var s = Settings();
+        s.SkyQuestClass = "Necromancer";   // a class with nothing in this checklist
+
+        Assert.Equal(Desktop(s).Count, Sky(s).Groups.Skip(1).Count());
+        Assert.Contains(Sky(s).Groups, g => g.Class == "Bard");
+    }
+
+    [Fact]
+    public void TheReadyBandIsNotAChecklist()
+    {
+        // Its rows name REWARDS and their ids are reward keys no tick accepts, so the
+        // checkboxes it used to draw were silent no-ops — and "ready" rendered as done,
+        // which the phone strikes through. On the one band whose whole job is "go hand
+        // these in", that read as "already handed in".
+        var band = Sky(Settings()).Groups[0];
+
+        Assert.False(band.Tickable);
+        Assert.All(band.Rows, r => Assert.False(r.Done));
+    }
+
+    [Fact]
+    public void EveryOtherGroupStaysTickable()
+    {
+        // The fix must not cost the phone its actual checklist — ticking an item there
+        // is the whole point of the surface.
+        Assert.All(Sky(Settings()).Groups.Skip(1), g => Assert.True(g.Tickable));
+    }
+
+    [Fact]
     public void ThePhoneCountsWhatTheDesktopCounts()
     {
         var s = Settings();

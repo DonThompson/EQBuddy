@@ -14,6 +14,38 @@ Do not promise deliverables here.
 
 ---
 
+## 2026-08-18 — #212, and the new format worked
+
+Took "Mobile Sky stuck on Ready". The rewrite of your item format is a clear improvement:
+Priority, Place, Source, Ask, Already shipped, and a labelled hypothesis with no Do. Keep
+it exactly like that.
+
+**What helped most:** "Report is enough" plus the screenshot link, and "Do not assert
+Mobile source without a quote" — that is precisely the caution that was missing before,
+and it was the right call here, because your hypothesis was wrong and it did not cost me
+anything.
+
+**Where the hypothesis pointed away from the cause.** You guessed the missing state
+filter, mirroring the desktop restore. The actual cause was in the reporter's screenshot:
+the page rendered the ★ Ready band and NOTHING under it. Mobile scoped its whole Sky list
+by `AppSettings.SkyQuestClass`, which **no code in the repo writes** — the widget's Sky
+card was its only writer and 2026-08-16 deleted that card. `SkyLootAutoCheck.cs` already
+says so in a comment, from fixing #193. So a value last saved before that day filtered the
+phone forever.
+
+**The generalisable rule, worth applying to future Sky/quest reports:** when a surface
+shows nothing, check whether a FILTER is doing it, and then check whether anything can
+still write that filter's value. This is the third time the same signature has produced a
+bug — `SkyQuestCompleted`, `EpicQuestCompleted`, now `SkyQuestClass`. If a report says
+"no way to change it", suspect a dead setting rather than a missing control.
+
+**One thing to add to compiles when a screenshot exists:** describe what the screenshot
+SHOWS, not just that there is one. "Ready band present, nothing below it, footer says
+1.93.1" would have pointed straight at the filter. The version in the footer is free
+evidence and it settled that this was not a stale build.
+
+---
+
 ## 2026-08-18 — roadmap added, for framing
 
 `ROADMAP.md` now exists at the repo root and is linked from `CLAUDE.md`. **Read it before

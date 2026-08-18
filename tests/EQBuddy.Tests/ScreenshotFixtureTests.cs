@@ -145,11 +145,23 @@ public class ScreenshotFixtureTests
                 new EpicQuestChecklistItem { Id = "e2", ClassName = "Bard", Section = "Pieces", QuestItem = "Mace of the Shadowed Soul", Order = 2 },
                 new EpicQuestChecklistItem { Id = "e3", ClassName = "Monk", Section = "Pieces", QuestItem = "Robe of the Whistling Fists", Order = 1 },
             ],
+            // TWO classes, and one reward with every piece in hand, so the ★ Ready band
+            // actually appears — without that the mobile Sky surface could not show the
+            // shape #212 (bjstrange) reported, which is why nothing here caught it.
             SkyQuestChecklist =
             [
                 new SkyQuestChecklistItem { Id = "s1", ClassName = "Bard", Reward = "Singing Short Sword", Npc = "Gorgalosk", QuestItem = "Bracelet of the Sky", Acquired = true },
                 new SkyQuestChecklistItem { Id = "s2", ClassName = "Bard", Reward = "Singing Short Sword", Npc = "Gorgalosk", QuestItem = "Efreeti War Spear" },
+                new SkyQuestChecklistItem { Id = "s3", ClassName = "Bard", Reward = "Mask of Song", Npc = "Cilin Spellsinger", QuestItem = "Light Woolen Mask", Acquired = true },
+                new SkyQuestChecklistItem { Id = "s4", ClassName = "Bard", Reward = "Mask of Song", Npc = "Cilin Spellsinger", QuestItem = "Wind Rune Meda", Acquired = true },
+                new SkyQuestChecklistItem { Id = "s5", ClassName = "Cleric", Reward = "Baton of the Sky", Npc = "Josin Faithbringer", QuestItem = "Efreeti Standard" },
             ],
+            // A class NOBODY here plays, and nothing in the app can change it — the
+            // widget's Sky card was its only writer and 2026-08-16 deleted that card.
+            // Mobile used to scope its whole Sky list by this, so a stale value emptied
+            // the page below the Ready band forever (#212). Staged deliberately: the
+            // fixture must carry the poison for the shot to prove the antidote.
+            SkyQuestClass = "Necromancer",
         };
 
         var request = new CompanionQuestRequest

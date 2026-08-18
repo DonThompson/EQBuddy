@@ -1,5 +1,14 @@
 [
  {
+  "version": "1.93.2",
+  "date": "2026-08-19",
+  "highlights": [
+   "FIXED (discussion #212, thanks bjstrange) - EQBUDDY MOBILE'S PLANE OF SKY SHOWED NOTHING BUT THE READY LIST. Your screenshot was the whole diagnosis, so thank you for attaching it. The phone was filtering its entire Sky list by a setting that NOTHING in EQBuddy has been able to change since 16 August - it belonged to the old Sky card on the widget, and when that card became a launcher its last saved value got stuck there for good. If that value happened not to match a class you play, everything below the Ready band vanished and no control on the phone could bring it back. Every class is sent to the phone now, and the class chips on the page do the choosing, which is what they looked like they were doing all along.",
+   "AND THE READY LIST NO LONGER READS AS ALREADY DONE (same report). Those three rewards were drawn ticked and crossed out - the styling for a finished item - on the one band whose entire job is to say \"go and hand these in\". They are plain lines now. The tick boxes they carried were doing nothing anyway: those rows name a reward rather than an item, so tapping one was a silent no-op.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.93.1",
   "date": "2026-08-19",
   "highlights": [

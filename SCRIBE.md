@@ -16,14 +16,6 @@ After you take items, write a short note in `SCRIBE-FEEDBACK.md` so Scribe can l
 
 ---
 
-### Mobile Sky stuck on Ready
-- **Priority:** must-fix (mobile/desktop parity)
-- **Place:** Gate 2 already carries the Sky state filter on desktop. This is the phone falling behind that restore, not a new direction.
-- **Source:** #212 bjstrange (Aug 18, 3:46 PM CT) + screenshot. Report is enough.
-- **Ask:** Mobile Sky quest "only appears to show ready items with no way to change that." Nothing searchable or changeable.
-- **Already shipped:** Desktop #205 any/open/ready/done filter restored (Claude's reply, claimed in 1.93.0). Do not assert Mobile source without a quote.
-- **Where it might live:** hypothesis — the same shared Sky/Epic state filter desktop just got back, if Mobile already reads that model.
-
 ### Token/primary unlock ticks Sky as quested
 - **Priority:** waiting (Claude asked wizen for a quested vs token achievements export pair)
 - **Place:** Sky/Epic checklist accuracy (the quest chain). Not Gate 5 UI.

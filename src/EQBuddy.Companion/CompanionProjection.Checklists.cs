@@ -76,7 +76,6 @@ public static partial class CompanionProjection
     private static CompanionChecklistSection BuildSky(AppSettings? settings)
     {
         var items = settings?.SkyQuestChecklist ?? [];
-        var picked = settings?.SkyQuestClass ?? "";
         var all = QuestChecklistLayout.Sky(items, settings?.SkyQuestCompleted);
 
         var groups = new List<CompanionChecklistGroup>();
@@ -96,15 +95,30 @@ public static partial class CompanionProjection
                     g.CompletionKey ?? QuestChecklistLayout.RewardKey(g.ClassName, g.Title),
                     $"{g.ClassName} — {g.Title}",
                     g.TurnInNpc,
-                    true))]));
+                    // NOT done — ready is the opposite of done, and the phone strikes a
+                    // done row through. bjstrange's screenshot on #212 shows all three of
+                    // his ready rewards ticked and crossed out, which reads as "handed
+                    // in" on the one band whose entire job is "go hand these in".
+                    Done: false))],
+                Tickable: false));
 
-        var scoped = all
-            .Where(g => picked.Length == 0
-                || g.ClassName.Equals(picked, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        // EVERY class goes to the phone, and the page's own class chips narrow it there.
+        //
+        // This used to scope by AppSettings.SkyQuestClass, and NOTHING IN THE CODEBASE
+        // WRITES THAT SETTING — SkyLootAutoCheck already says so in as many words, from
+        // fixing #193: the widget's Sky card was the only writer and the 2026-08-16
+        // consolidation deleted it. So the value is whatever was last persisted before
+        // that day, forever. For bjstrange (#212) it did not match any class he plays, so
+        // his entire Sky list was empty below the Ready band and no control on the phone
+        // could change it — "only appears to show ready items with no way to change that".
+        //
+        // Third instance of one signature: the DATA survived a fold and the WRITE path
+        // did not (SkyQuestCompleted, EpicQuestCompleted, and now this). A filter whose
+        // value no player can change is not a filter.
+        var scoped = all.ToList();
 
         groups.AddRange(scoped.Select(g => new CompanionChecklistGroup(
-            picked.Length > 0 ? g.Title : g.Heading,
+            g.Heading,
             g.Note,
             [.. g.Rows.Select(r => new CompanionChecklistRow(
                 r.Id,

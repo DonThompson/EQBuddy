@@ -955,11 +955,15 @@ function boot() {
       if (g.note) h.append(el("span", "note", g.note));
       wrap.appendChild(h);
       const ul = el("ul", "rows");
+      // A SUMMARY group's rows are not items — the Sky ready band names rewards, and its
+      // ids are reward keys no tick accepts. It drew checkboxes anyway, so every tap was
+      // a silent no-op (#212, bjstrange).
+      const tickable = opts.tickable && g.tickable !== false;
       for (const r of rows) {
-        const li = el("li", (r.done ? "done " : "") + (opts.tickable ? "tickable" : ""));
+        const li = el("li", (r.done ? "done " : "") + (tickable ? "tickable" : ""));
         const rn = el("div", "rn", r.text);
         if (r.detail) rn.appendChild(el("span", "sub", r.detail));
-        if (opts.tickable) {
+        if (tickable) {
           const cb = el("input");
           cb.type = "checkbox"; cb.checked = !!r.done;
           cb.onchange = () => {

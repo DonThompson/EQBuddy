@@ -211,11 +211,16 @@ public sealed record CompanionChecklistSection(
 /// <summary><see cref="Class"/> is the group's class when it has exactly one (Epic and
 /// Sky groups do; Gear's and Sky's cross-class ★ Ready group don't) — the quest
 /// surface's class lens filters on it rather than parsing headings.</summary>
+/// <param name="Tickable">False for a SUMMARY group whose rows are not items — the Sky
+/// ★ Ready band names rewards, and its row ids are reward keys that no tick action
+/// accepts. It rendered checkboxes anyway, so every one of them was a silent no-op, and
+/// "silent no-ops are broken" is a house rule (#212, bjstrange).</param>
 public sealed record CompanionChecklistGroup(
     string Heading,
     string? Note,
     IReadOnlyList<CompanionChecklistRow> Rows,
-    string? Class = null);
+    string? Class = null,
+    bool Tickable = true);
 
 /// <summary><see cref="Id"/> is what a tap sends back to tick the row — the stored
 /// item's own id for Epics/Sky, slot|item for Gear (which has no id of its own).</summary>
