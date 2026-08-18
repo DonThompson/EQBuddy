@@ -411,14 +411,10 @@
                                       Tag="kills" Click="OnStarChanged" ToolTip="Show kills in mini dashboard"/>
                     </Grid>
                 </Expander.Header>
-                <StackPanel>
-                    <TextBlock x:Name="KillsSummary" Style="{StaticResource Dim}" Margin="0,2,0,4"/>
-                    <ItemsControl x:Name="KillList"/>
-                    <TextBlock x:Name="FarmingLabel" Text="Farming (per creature)" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="FarmingList" Margin="0,2,0,0"/>
-                    <TextBlock x:Name="PartyKillsLabel" Text="Group kills" Style="{StaticResource SectionLabel}" Margin="0,6,0,0"/>
-                    <ItemsControl x:Name="PartyKillList" Margin="0,2,0,0"/>
-                </StackPanel>
+                <!-- Built in code by KillsCardView (Gate 5b) — the first card written as
+                     an IWidgetCard against ICardContext rather than against MainWindow.
+                     What it SHOWS is UI.Shared/KillsPresentation, tested without a window. -->
+                <ContentControl x:Name="KillsBody"/>
             </Expander>
 
             <Expander x:Name="LootSection" Style="{StaticResource Section}">

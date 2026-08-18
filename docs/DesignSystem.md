@@ -725,3 +725,39 @@ one of them is gone, so the remaining stages are:
   and must respect §8b's reserved widths (#173).
 - **5d — `Theme.xaml`'s templates**: the ⭐ star toggle and the ▸ expander chevron are
   glyphs inside shared ControlTemplates, so they belong to no single card.
+
+---
+
+## 11.9 Gate 5b — the card seam, proved on one card (2026-08-18)
+
+**Lifting files was moving lines without moving dependencies.** `QuestChecklistView`,
+`LootCardView` and `LootBreakoutView` each took `MainWindow` as a constructor argument and
+reached back through it, and `MainWindow` now carries **61 internal members**, most of them
+there for exactly that. Repeating that another thirteen times ends with a small host class
+and an enormous service surface — and the line ratchet would be perfectly happy about it,
+because the lines really did move.
+
+So 5b introduces two seams before converting anything else:
+
+- **`IWidgetCard`** — key, body, `Render(snapshot)`. The host orders cards by
+  `SectionOrder`, hides them by `HiddenSections` and renders the expanded ones; a fifteenth
+  card touches the host nowhere.
+- **`ICardContext`** — the six things a card may ask the widget for, implemented
+  **explicitly** by `MainWindow` so none of them becomes public API. This is the half that
+  matters: a card depends on six methods rather than on 4,552 lines, and can be exercised
+  against a fake. **If this interface starts growing, that is the signal that something is
+  being pushed into cards which should have gone to UI.Shared.**
+
+**Proved on the Kills card, chosen because it asks the widget for nothing** — no item
+popups, no wiki lookups, no repaints. If a card could not be built and tested this way,
+that is worth learning for the price of one card rather than fourteen.
+
+`UI.Shared/KillsPresentation.cs` holds what the card SAYS, and `KillsPresentationTests`
+asserts it with no window at all — the first time any card's content has been testable
+(docs/TestPlan.md §5). It immediately paid for itself: the farming block's indentation was
+**six literal spaces prefixed to the item name**, which a proportional font renders
+differently at every zoom and which nothing could assert. It is a flag and a real margin
+from the spacing scale now.
+
+**Definition of done for the rest of 5b:** `MainWindow.xaml.cs` under ~800 lines of host
+logic, each card ≤300, both ratchets green, every card testable headless.

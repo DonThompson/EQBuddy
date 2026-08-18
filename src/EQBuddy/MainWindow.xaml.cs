@@ -11,7 +11,7 @@ using SpawnChip = EQBuddy.UI.Shared.SpawnChip;
 
 namespace EQBuddy;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, ICardContext
 {
     private readonly AppSettings _settings = AppSettings.Load();
     private readonly SessionStats _stats = new();
@@ -65,6 +65,24 @@ public partial class MainWindow : Window
     // The Loot card, lifted out for Gate 4 the way QuestChecklistView was lifted out
     // before it: a surface migrated INSIDE MainWindow is guarded by no ratchet.
     private LootCardView _loot = null!;
+
+    // The first card on the IWidgetCard seam (Gate 5b): it takes no MainWindow at all.
+    private readonly KillsCardView _kills = new();
+
+    // ---- ICardContext ----
+    //
+    // Implemented EXPLICITLY, so the six methods a card may use become an interface
+    // without any of them becoming public API on this class. That is the whole point of
+    // the seam: a card depends on these six, not on the other fifty-five internals this
+    // window carries, and can therefore be exercised against a fake in a unit test —
+    // which is the hole docs/TestPlan.md §5 has recorded since the WPF layer was written.
+    StatsSnapshot ICardContext.CurrentSnapshot() => CurrentSnapshot();
+    void ICardContext.ShowItemInfo(string itemName) => ShowItemInfo(itemName);
+    bool ICardContext.IsActiveQuestItem(string itemName) => IsActiveQuestItem(itemName);
+    string? ICardContext.QuestAwareTooltip(string itemName, string? baseTip) =>
+        QuestAwareTooltip(itemName, baseTip);
+    string ICardContext.ItemHoverStats(string itemName) => ItemHoverStats(itemName);
+    void ICardContext.OpenQuestInfoForItem(string itemName) => OpenQuestInfoForItem(itemName);
     // Perf audit #1: the version last painted into the expanded sections, and the
     // last time a full paint happened (10 s heartbeat keeps time-derived rates live).
     private long _lastRenderedVersion = -1;
@@ -89,6 +107,7 @@ public partial class MainWindow : Window
         _quests = new QuestChecklistView(this, _settings, () => _raidLedger);
         _loot = new LootCardView(this, _settings);
         LootBody.Content = _loot.Body;
+        KillsBody.Content = _kills.Body;
         BuildSortStrips();
         GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
@@ -2463,27 +2482,7 @@ public partial class MainWindow : Window
                 (h.Name, $"{h.Total:N0} · {h.Hits} heal{(h.Hits == 1 ? "" : "s")}")));
         }
 
-        if (KillsSection.IsExpanded)
-        {
-            KillsSummary.Text = $"{s.KillsPerHour:0.0} kills/hr · {s.KillsPerActiveHour:0.0} active" +
-                (s.Recent is { } rk ? $" · last {(int)rk.Window.TotalMinutes}m: {rk.Kills}" : "");
-            FillList(KillList, s.YourKills.Select(k => (k.Name, $"×{k.Count}")));
-            var farmed = s.Mobs.Where(m => m.Kills > 0).ToList();
-            FarmingLabel.Visibility = farmed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            var farmRows = new List<(string, string)>();
-            foreach (var m in farmed)
-            {
-                farmRows.Add((m.Name,
-                    $"avg {m.AvgFightSeconds:0}s · {StatsSnapshot.FormatCoin(m.Copper)} · {m.XpPercent:0.0}% xp"));
-                foreach (var l in m.Loot)
-                    farmRows.Add(($"      {l.Item}",
-                        l.DropRatePct is { } pct ? $"×{l.Count} · {pct:0}%" : $"×{l.Count}"));
-            }
-            FillList(FarmingList, farmRows);
-            var showParty = s.PartyKillsByKiller.Count > 0;
-            PartyKillsLabel.Visibility = showParty ? Visibility.Visible : Visibility.Collapsed;
-            FillList(PartyKillList, s.PartyKillsByKiller.Select(k => (k.Name, $"×{k.Count}")));
-        }
+        if (KillsSection.IsExpanded) _kills.Render(s);
 
         if (LootSection.IsExpanded)
             _loot.Render(s);
@@ -2625,7 +2624,7 @@ public partial class MainWindow : Window
                 // Row counts say "a new name appeared"; the snapshot totals say "the
                 // session moved" — the E2E suite (tests/EQBuddy.E2E) asserts on both.
                 var dump = $"dmgSrc={DamageSourceList.Items.Count} dmgTaken={DamageTakenList.Items.Count} " +
-                    $"kills={KillList.Items.Count} party={PartyKillList.Items.Count} loot={_loot.RowCount} " +
+                    $"kills={_kills.KillRowCount} party={_kills.PartyRowCount} loot={_loot.RowCount} " +
                     $"skills={SkillList.Items.Count} faction={FactionList.Items.Count} " +
                     $"zones={ZoneList.Items.Count} deaths={DeathList.Items.Count} " +
                     $"killsTotal={s.YourKillCount} lootTotal={s.LootTotal} " +

@@ -125,7 +125,15 @@ the strips first OVERLAPPED their headings (one-cell Grid, fine as four small wo
 collision as pills), then TRIMMED them ("Damage b…") until the redundant "sort:" caption
 went. Neither is visible in a diff or a test.
 
-**Next: 5b — the card bodies.** Lift surfaces into their own files the way `LootCardView`
+**5b has started: the card SEAM exists and is proved on the Kills card** (§11.9). The
+lesson that shaped it: lifting files was moving lines without moving dependencies —
+`MainWindow` carries **61 internal members**, most of them there so a lifted view can reach
+back. `IWidgetCard` + `ICardContext` (six methods, implemented explicitly) fix that, and
+`KillsPresentationTests` is the first card content ever asserted without launching a
+window. Convert the remaining cards onto that seam, one at a time, presentation into
+UI.Shared first.
+
+**The old note, still true for the rest: 5b — the card bodies.** Lift surfaces into their own files the way `LootCardView`
 was; that is the only thing that buys hotspot headroom as well as ratchet coverage. Then
 **5c** the chrome (carries #191, and §8b's reserved widths are non-negotiable — #173), then
 **5d** `Theme.xaml`'s templates, where the ⭐ and ▸ glyphs live inside shared
