@@ -311,6 +311,14 @@ public partial class MainWindow : Window
                 if (questsMode is "zone" or "all") _questsWindow?.SetMode(questsMode);
             }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
 
+        // Same family, and the one that was missing: the Spawns window deliberately stays
+        // hidden until a countdown exists, so scripts/shoot.ps1 could never capture it and
+        // Gate 3 shipped without a screenshot review. "1" opens it on the current zone.
+        if (Environment.GetEnvironmentVariable("EQBUDDY_SPAWNS") is { Length: > 0 } spawnZone)
+            Loaded += (_, _) => Dispatcher.BeginInvoke(
+                () => ShowSpawnsWindow(spawnZone == "1" ? null : spawnZone),
+                System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+
         if (Environment.GetEnvironmentVariable("EQBUDDY_OPTIONS") == "1")
             Loaded += (_, _) => OnOptions(this, new RoutedEventArgs());
 

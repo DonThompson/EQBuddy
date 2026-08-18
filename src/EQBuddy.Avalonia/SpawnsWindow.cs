@@ -196,7 +196,6 @@ public sealed class SpawnsWindow : Window
         layout.Children.Add(header);
         Grid.SetRow(zoneRow, 1);
         layout.Children.Add(zoneRow);
-        _headerRow.Margin = CardPad;
         Grid.SetRow(_headerRow, 2);
         layout.Children.Add(_headerRow);
         Grid.SetRow(_bodyScroll, 3);
@@ -331,9 +330,12 @@ public sealed class SpawnsWindow : Window
             grid.Children.Add(buttons);
 
             // A row is a card now, so a due one can be picked out of forty by its edge.
+            var body = new StackPanel();
+            body.Children.Add(grid);
+            body.Children.Add(cell.Track);
             _rowsPanel.Children.Add(new Border
             {
-                Child = grid,
+                Child = body,
                 Background = row.IsDue ? AppTheme.WarnWashBrush : AppTheme.PanelBrush,
                 BorderBrush = row.IsDue ? AppTheme.WarnBrush : AppTheme.HairlineBrush,
                 BorderThickness = new Thickness(1),
@@ -346,13 +348,19 @@ public sealed class SpawnsWindow : Window
 
     /// <summary>The row's column widths, in one place because the HEADER has to agree
     /// with them exactly.</summary>
+    /// <summary>Room for start · bell · sound · clear · delete, always reserved.</summary>
+    private const double ActionLaneWidth = 132;
+
     private static void DefineColumns(Grid grid)
     {
         grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(150)));  // timer + bar
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(70)));   // respawn
         grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(52)));   // died
-        grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));      // actions
+        // FIXED, not Auto: the header has no buttons, so an Auto column is zero-wide
+        // there and every label lands left of the column it names — and a row grows a
+        // Clear button when its timer starts, which would reflow the inputs mid-edit.
+        grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(ActionLaneWidth)));
     }
 
     /// <summary>Column headers — five unlabelled columns of boxes and glyphs is a puzzle
@@ -362,6 +370,11 @@ public sealed class SpawnsWindow : Window
         _headerRow.Children.Clear();
         _headerRow.ColumnDefinitions.Clear();
         DefineColumns(_headerRow);
+        // A row is a CARD, so its content sits one card-padding further in than the raw
+        // grid does. Without matching that, every label is offset from the column it
+        // names — worse than no header, and what the first Gate 3 capture showed.
+        _headerRow.Margin = new Thickness(DesignTokens.SpaceL + DesignTokens.SpaceM,
+            DesignTokens.SpaceM, DesignTokens.SpaceL + DesignTokens.SpaceM, 0);
         var labels = new[] { "Named", "Next spawn", "Respawn", "Died", "" };
         for (var i = 0; i < labels.Length; i++)
         {
@@ -380,7 +393,7 @@ public sealed class SpawnsWindow : Window
     /// whatever units it is actually working in rather than a measured width.</summary>
     private sealed class TimerCell
     {
-        public Grid Root { get; }
+        public StackPanel Root { get; }
         private readonly TextBlock _text;
         private readonly TextBlock _percent;
         private readonly Border _track;
@@ -414,13 +427,15 @@ public sealed class SpawnsWindow : Window
                 Margin = new Thickness(0, DesignTokens.SpaceXxs, DesignTokens.SpaceS, 0),
             };
 
-            Root = new Grid();
-            Root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            Root.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-            Root.Children.Add(line);
-            Grid.SetRow(_track, 1);
-            Root.Children.Add(_track);
+            // The bar is NOT parented here — it spans the whole row underneath every
+            // column, because that is where the room is. The row places it; this still
+            // owns it, since the text and the bar are one fact.
+            Root = line;
+            _track.Margin = new Thickness(0, DesignTokens.SpaceXs, 0, 0);
         }
+
+        /// <summary>The progress bar, for the row to span across its full width.</summary>
+        public Border Track => _track;
 
         public void Update(SpawnRow row, DateTime now)
         {

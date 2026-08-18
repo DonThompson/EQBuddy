@@ -530,7 +530,7 @@ a rework that absorbs every open bug stops being a rework.
 |---|---|---|
 | 2 | Quests | done |
 | **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **done** — `UI.Shared/ChipStyle.cs` + one control per UI; the Quests window now spends it. Render verified byte-for-byte unchanged |
-| 3 | Spawns + timers | **built** — `UI.Shared/TimerView.cs` is `EqTimer` + `EqProgress`; both windows rebuilt on it. **Screenshot review still outstanding**, see below |
+| 3 | Spawns + timers | **built** — `UI.Shared/TimerView.cs` is `EqTimer` + `EqProgress`; both windows rebuilt on it. reviewed; see §11.6 |
 | **4** | **Loot card + Loot breakout** | **moved up** — #198 concentrated the debt here |
 | 5 | Main widget | was 4 |
 | 6 | Mini mode + chips | carries #190, #191, #199's gesture |
@@ -561,7 +561,24 @@ with a green bar, and cannot render "we don't know" as an empty cell.
   `22m` and `3d 12h`; the mockup's numeric spinner would regress week-long raid targets.
   The placeholder guidance it added is adopted.
 
-**Still open: the screenshot review.** `scripts/shoot.ps1` cannot capture this window,
+**The screenshot review is now possible, and it immediately earned itself again.**
+`EQBUDDY_SPAWNS=1` (or a zone name) joins the hook family, so `scripts/shoot.ps1` can open
+a window that deliberately hides itself. The first two captures showed two real defects no
+test could see:
+
+1. **The progress bar was penned inside the 150px timer column.** David, looking at the
+   released window: *"we have room between the columns."* Right — the bar now spans the
+   whole card beneath the columns, which is where the room is and what a bar is for.
+2. **Every column header sat 115px left of the column it named.** The actions column was
+   `Auto`, so it measured zero in the header (which has no buttons) and ~115 in a row. It
+   is a fixed lane now, which also stops a row reflowing under the player's cursor the
+   moment a timer starts and a Clear button appears.
+
+**Still worth doing:** the fixture has no running timer in a catalogued zone, so the bar
+itself is unit-tested but has not been seen. Seeding one named kill into the fixture log
+would close that.
+
+**Previously open:** `scripts/shoot.ps1` cannot capture this window,
 because the window deliberately stays hidden until a countdown exists (David, 2026-08-02:
 "a tracker parked on screen all session is noise") and the fixture log's kills do not start
 one. Every other satellite has an `EQBUDDY_*` hook to open it; Spawns does not. **Add
