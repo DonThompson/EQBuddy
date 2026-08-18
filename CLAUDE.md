@@ -15,6 +15,15 @@ your session. **Log-only, by principle**: never reads game memory, never phones 
 never measures other players. A cross-platform Avalonia build tracks it a few releases
 behind. EQBuddy Mobile serves a phone/tablet over the LAN from inside `EQBuddy.exe`.
 
+**What it is becoming:** the personal operating companion for EverQuest Legends —
+private, local, personal, non-judgmental. Not a parser recap of what happened, and
+not a coach. It understands *your* character, gear, inventory, quests, loot history,
+camps, spawn timers, maps, travel, and past sessions, then helps turn that into
+action: what am I working on, what upgrade can I actually get, what am I missing,
+where does it drop, how do I get there. The differentiator is the chain (loot →
+quest → item → mob → camp → route), learned from your own play. Filter every
+feature against that. Group monitoring is out of the product, permanently.
+
 ## Scribe
 
 David's Grok Bot helper for this repo (2026-08-18). Hourly weekday catch-up of
@@ -46,9 +55,11 @@ retrying, because a killed run may already have built, signed and copied.
 
 ## Rules that are not up for renegotiation
 
-- **Never measure other players.** No DPS meters for the group, no rankings, no
-  leaderboards. Decline warmly, point at the MIT licence, invite a fork. This is a
-  values line, not a technical one.
+- **Never measure other players.** EQBuddy is not a group monitoring tool and never
+  will be as long as David owns it. No party DPS, no raid meters, no rankings, no
+  leaderboards, no watching other people. Decline warmly, point at the MIT licence,
+  invite a fork. This is a values line, not a technical one. Do not file these asks
+  as requirements.
 - **Hold releases** until David explicitly says ship. Commit and push source freely.
 - **Every player-noticeable change needs a `WhatsNew.json` entry** in the release that
   ships it. A user-visible fix landing after a tag earns its own release. Credit

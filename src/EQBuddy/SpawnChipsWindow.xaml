@@ -4,6 +4,7 @@
         Title="EQBuddy Spawn Chips" SizeToContent="WidthAndHeight"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        ShowActivated="False"
         WindowStartupLocation="Manual">
     <!-- The minimized face of spawn tracking: one small chicklet per running countdown,
          stacked vertically, the whole stack draggable as one. No chrome beyond the
