@@ -1,5 +1,18 @@
 [
  {
+  "version": "1.90.0",
+  "date": "2026-08-17",
+  "highlights": [
+   "THE SPAWNS WINDOW NOW SHOWS HOW FAR THROUGH A RESPAWN YOU ACTUALLY ARE. Every row has a progress bar across it and a percentage beside the countdown, so \"due in 4:21\" and \"due in 18:31\" stop looking equally urgent - which matters most on the long ones, where \"2d 3h\" told you nothing about whether that was nearly over.",
+   "AND A ROW THAT DOESN'T KNOW ITS RESPAWN SAYS SO. A named you've killed with no respawn time yet used to show an empty countdown column, which looked exactly like a row with nothing happening. It now shows a dash and an empty bar - \"we don't know\" and \"nothing here\" are different answers and finally look different.",
+   "THE ROWS ARE READABLE NOW. Columns have headers (Named / Next spawn / Respawn / Died), each row is a card so a due one can be picked out of forty by its edge, the start button is separated from the configure-and-undo controls instead of five identical glyphs in a line, and the \"your number wins\" note is a proper callout rather than grey small print nobody read.",
+   "THE RESPAWN FIELD IS STILL FREE TEXT, deliberately. 22 (minutes), 90s, 12h, 3d, \"3d 12h\" and 6:40 all still work - a plain up/down number box would have looked tidier and quietly broken week-long raid timers.",
+   "A ROW NO LONGER JUMPS UNDER YOUR CURSOR when you start a timer. Starting one adds a Clear button, which used to widen that column and shove the respawn and died boxes sideways mid-edit. The action lane is a fixed width now.",
+   "FIXED (contributed by Quasar Jarosz) - THE CROSSOVER OVERLAY SETUP SCRIPT COULDN'T FETCH ITS SOURCE. On macOS, floating the widget over a fullscreen game needs a small patch built from CodeWeavers' own published source on your machine - we deliberately ship no prebuilt binary for a step that replaces a library inside your CrossOver install. The download and the build were both broken, so the whole door was shut with a confusing failure a long way from the cause.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.89.0",
   "date": "2026-08-17",
   "highlights": [
