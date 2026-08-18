@@ -73,15 +73,22 @@ public class ArchitectureTests
     private static readonly (string RelativePath, int BaselineLines)[] Hotspots =
     [
         (@"EQBuddy/MainWindow*.xaml.cs", 4274),
-        // Bumped 2324 → 2559 on 2026-08-17, deliberately, for #135's sixth confirmed
-        // cause (a charm cast by an ITEM, which prints no cast line). The file was 22
-        // lines from its ceiling before that fix, and the ratchet is right about what
-        // that means: the charm state machine — six fields, five constants, handling
-        // spread across six event cases and 157 lines that say "charm" — has outgrown
-        // the class it lives in. MezTracker.cs is the precedent for where it goes, and
-        // is 496 lines of exactly this shape. **The extraction is the next structural
-        // job in Core; this is the last bump before it**, not a licence to refill.
-        (@"EQBuddy.Core/SessionStats.cs", 2559),
+        // A GLOB, like MainWindow's above, and for the same reason — but this one was a
+        // literal path until 2026-08-18 and SessionStats is a partial class, so
+        // SessionStats.Tracked.cs (207 lines) was never counted at all. The entry read
+        // 2,559 for a class that is 2,766, and the "split it into another partial"
+        // escape this test exists to refuse was standing open on the one file that had
+        // just needed a baseline bump. Globbing costs nothing today and shuts it.
+        //
+        // Baseline history: 2324 → 2559 on 2026-08-17 for #135's sixth confirmed cause
+        // (a charm cast by an ITEM, which prints no cast line) — the file had 22 lines
+        // of headroom and the fix needed 25. Then → 2766 here, which is not a third
+        // grant: it is the same code, finally all being counted.
+        //
+        // **The charm state machine is what comes out next** — six fields, five
+        // constants, six event cases, and six distinct bugs fixed in it in three days.
+        // MezTracker.cs is the precedent and is 496 lines of exactly this shape.
+        (@"EQBuddy.Core/SessionStats*.cs", 2766),
         (@"EQBuddy/OptionsWindow.xaml.cs", 1547),
         (@"EQBuddy.Core/LogParser.cs", 853),
     ];

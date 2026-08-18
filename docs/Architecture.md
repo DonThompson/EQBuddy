@@ -86,17 +86,31 @@ another partial cannot buy headroom. Current state:
 | File | Baseline | Now | Fails at | Headroom |
 |---|---:|---:|---:|---:|
 | `EQBuddy/MainWindow*.xaml.cs` | 4,274 | 4,274 | 4,701 | 427 |
-| `EQBuddy.Core/SessionStats.cs` | 2,559 | 2,559 | 2,814 | 255 |
+| `EQBuddy.Core/SessionStats*.cs` | 2,766 | 2,766 | 3,042 | 276 |
 | `EQBuddy/OptionsWindow.xaml.cs` | 1,547 | 1,597 | 1,701 | 104 |
 | `EQBuddy.Core/LogParser.cs` | 853 | 853 | 938 | 85 |
 
-**`SessionStats.cs`'s baseline was raised deliberately on 2026-08-17** (2,324 → 2,559) for
-#135's sixth confirmed cause. It had 22 lines of headroom left and the fix needed 25 —
-which is the ratchet saying the file is full, not that the fix was too big. The charm state
-machine is what should come out: six fields, five constants, handling across six event
-cases, 157 lines that mention charm, and six distinct bugs fixed in it in three days.
-`MezTracker.cs` (496 lines) is the precedent for where it goes. **That extraction is the
-next structural job in Core**; the bump is not headroom to spend.
+**`SessionStats` is a GLOB entry as of 2026-08-18, and that is the interesting half.** It
+was a literal path, and `SessionStats` is a partial class — so `SessionStats.Tracked.cs`
+(207 lines) was never counted, the entry read 2,559 for a class that is 2,766, and the
+"just add another partial" escape this ratchet exists to refuse was open on the very file
+that had needed a bump. `MainWindow*.xaml.cs` has been a glob for exactly this reason;
+this one simply never was. Globbing it costs no headroom today and closes the hole.
+
+Baseline history: **2,324 → 2,559** on 2026-08-17 for #135's sixth confirmed cause (a charm
+cast from an ITEM, which prints no cast line) — the file had 22 lines of headroom and the
+fix needed 25, which is the ratchet saying the file is full rather than that the fix was
+too big. Then **→ 2,766** when the glob landed, which is not a further grant: it is the
+same code finally being counted in full.
+
+**The charm state machine is what comes out next** — six fields, five constants, handling
+across six event cases, ~340 clustered lines, and six distinct bugs fixed in it in three
+days, every one found from a user's attached log. `MezTracker.cs` (496 lines) is the
+precedent for where it goes, and the extraction should land `SessionStats*.cs` back near
+its pre-#135 size. An audit on 2026-08-18 found it is the only large coherent seam in the
+file: every other subsystem (procs, money, fights, journal, faction) is 7–31 scattered
+lines inside `Apply`'s switch and the snapshot builder, where extraction would buy
+indirection and remove nothing.
 
 `MainWindow` sat at 97% of its allowance until 2026-08-15, which is not a place to work
 from. The 992-line Epic/Sky checklist surface came out into `QuestChecklistView` — it
