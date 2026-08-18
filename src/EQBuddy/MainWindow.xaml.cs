@@ -61,6 +61,10 @@ public partial class MainWindow : Window
     /// (extracted 2026-08-15). Assigned after InitializeComponent, since it caches
     /// the controls.</summary>
     private QuestChecklistView _quests = null!;
+
+    // The Loot card, lifted out for Gate 4 the way QuestChecklistView was lifted out
+    // before it: a surface migrated INSIDE MainWindow is guarded by no ratchet.
+    private LootCardView _loot = null!;
     // Perf audit #1: the version last painted into the expanded sections, and the
     // last time a full paint happened (10 s heartbeat keeps time-derived rates live).
     private long _lastRenderedVersion = -1;
@@ -83,6 +87,8 @@ public partial class MainWindow : Window
         // 1.84.0, leaving a process with no window (#158, twidget76). Anything the
         // XAML can call must exist before the XAML is touched.
         _quests = new QuestChecklistView(this, _settings, () => _raidLedger);
+        _loot = new LootCardView(this, _settings);
+        LootBody.Content = _loot.Body;
         GearByZoneCheck.IsChecked = _settings.GearGroupByZone;
         // Before the watcher's startup replay, so already-logged charms classify with
         // everything learned in earlier sessions (issue #29).
@@ -263,11 +269,26 @@ public partial class MainWindow : Window
             });
         }
 
-        if (Environment.GetEnvironmentVariable("EQBUDDY_EXPAND") == "1")
+        // EQBUDDY_EXPAND=1 opens the review set (and turns on the E2E dump below);
+        // EQBUDDY_EXPAND=loot,kills opens just those cards. The named form exists for
+        // scripts/shoot.ps1: a card's expanded state is not persisted, so without it the
+        // only way to photograph a card BODY was to open every card at once and crop —
+        // and the review is an acceptance criterion, not a nicety (Gate 3's §11.6).
+        var expand = Environment.GetEnvironmentVariable("EQBUDDY_EXPAND");
+        if (expand == "1")
             foreach (var ex in new[] { CombatSection, HealingSection, KillsSection, LootSection,
                          MotesSection, GearSection, TrackedSection, MoneySection,
                          ProgressSection, FactionSection, MiscSection })
                 ex.IsExpanded = true;
+        else if (!string.IsNullOrWhiteSpace(expand))
+        {
+            var wanted = expand.Split(',', StringSplitOptions.RemoveEmptyEntries
+                                           | StringSplitOptions.TrimEntries);
+            foreach (var (key, element) in SectionMap())
+                if (element is Expander card
+                    && wanted.Contains(key, StringComparer.OrdinalIgnoreCase))
+                    card.IsExpanded = true;
+        }
 
         // Expanding a card renders it NOW (David's field report: sections only fill
         // inside the fullRender gate, so a click during a quiet moment stared at an
@@ -848,10 +869,11 @@ public partial class MainWindow : Window
         };
     }
 
-    internal (string Header, List<(string Name, string Value)> Rows) TargetDropsContent(StatsSnapshot s)
+    internal (string Names, string Detail, List<(string Name, string Value)> Rows)
+        TargetDropsContent(StatsSnapshot s)
     {
         var targets = _settings.ShowTargetDrops ? s.CurrentTargets : [];
-        if (targets.Count == 0) return ("", []);
+        if (targets.Count == 0) return ("", "", []);
         foreach (var t in targets)
             if (!_targetResults.ContainsKey(t))
             {
@@ -909,24 +931,12 @@ public partial class MainWindow : Window
             : pending ? "looking up…" : "merged pull";
         var names = string.Join(" + ", targets.Take(3)) +
             (targets.Count > 3 ? $" +{targets.Count - 3}" : "");
-        var header = $"🎯 Fighting: {names}" +
-            (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
+        // The NAMES and everything ABOUT them, apart: the card writes "Fighting: <names>"
+        // under a target icon and the breakout writes just the names, and each composes
+        // its own line through LootPresentation rather than string-replacing the other's.
+        var detail = (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
             $" · drops (eqlwiki · {state}{(extra > 0 ? $" · +{extra} more" : "")})";
-        return (header, rows);
-    }
-
-    private void RenderTargetDrops(StatsSnapshot s)
-    {
-        var (header, rows) = TargetDropsContent(s);
-        if (header.Length == 0)
-        {
-            TargetBlock.Visibility = Visibility.Collapsed;
-            return;
-        }
-        TargetBlock.Visibility = Visibility.Visible;
-        TargetHeader.Text = header;
-        FillList(TargetDropsList, rows, onNameClick: ShowItemInfo,
-            tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
+        return (names, detail, rows);
     }
 
     /// <summary>Full tooltip text for an item, FETCHING from the wiki when the cache is
@@ -1778,95 +1788,13 @@ public partial class MainWindow : Window
         return $"{s.RegenSpell}: est. ~{s.RegenEstimatedHealed:N0} healed over {s.RegenTicks} ticks ({basis})";
     }
 
-    private void OnLootSort(object sender, MouseButtonEventArgs e)
+    /// <summary>Repaint the Loot card alone, from the snapshot we already have. Its two
+    /// filter chips call this: a full RefreshUi recomputes nothing new (the memo hands
+    /// back the same snapshot) and repaints every card, both breakouts and the whole
+    /// mobile projection.</summary>
+    internal void RepaintLootCard()
     {
-        _settings.LootSort = (string)((FrameworkElement)sender).Tag;
-        _settings.Save();
-        // Reorder just the loot list from the snapshot we already have — a full RefreshUi
-        // here recomputed nothing new (the memo would hand back the same snapshot) yet
-        // repainted every card, both breakouts and the whole mobile projection. The sort
-        // is microseconds; the repaint was the cost.
-        if (_latestSnapshot is { } s) RenderLoot(s);
-        e.Handled = true;
-    }
-
-    /// <summary>Paints the Loot card from a snapshot: the show/sort visuals, one row list
-    /// (looted and made mixed under "all", or either alone), and the target-drops panel.
-    /// Split out of RefreshUi so a sort or view click repaints this card, not the whole
-    /// widget. Row order lives in <see cref="EQBuddy.UI.Shared.LootRows"/> — shared with
-    /// the breakout so the two can't drift.</summary>
-    private void RenderLoot(StatsSnapshot s)
-    {
-        var mode = _settings.LootSort;
-        var view = _settings.LootView == "made" ? "other" : _settings.LootView;   // all | looted | other
-
-        // Provenance split: corpse drops are "looted"; forage/parcel (in s.Loot) plus merges
-        // (s.Crafted) and crafts (s.Fashioned) are "other". Auto-sells never reach s.Loot
-        // or s.RecentLoot at all — dismissed at the corpse is not loot (LW, 2026-08-17).
-        static bool IsOther(string src) =>
-            src is EQBuddy.UI.Shared.LootRows.ForageSource or EQBuddy.UI.Shared.LootRows.ParcelSource;
-        var hasLooted = s.Loot.Any(l => !IsOther(l.LastSource));
-        var hasOther = s.Loot.Any(l => IsOther(l.LastSource))
-                       || s.Crafted.Count > 0 || s.Fashioned.Count > 0;
-
-        // The show toggle stays up whenever the card holds ANY loot, even when one slice is
-        // empty — otherwise a player can't tell the filter is there (LW, 2026-08-17).
-        LootViewBar.Visibility = hasLooted || hasOther ? Visibility.Visible : Visibility.Collapsed;
-        LootViewAll.Foreground = (Brush)FindResource(view is "looted" or "other" ? "DimBrush" : "AccentBrush");
-        LootViewLooted.Foreground = (Brush)FindResource(view == "looted" ? "AccentBrush" : "DimBrush");
-        LootViewOther.Foreground = (Brush)FindResource(view == "other" ? "AccentBrush" : "DimBrush");
-
-        var rows = EQBuddy.UI.Shared.LootRows.Build(s.Loot, s.Crafted, s.Fashioned, s.RecentLoot, view, mode);
-
-        // Every acquisition now carries a timestamp (crafts/merges included, via RecentLoot),
-        // so "recent" is meaningful for any non-empty view.
-        var hasTimeline = view switch
-        {
-            "looted" => hasLooted,
-            "other" => hasOther,
-            _ => hasLooted || hasOther,
-        };
-        LootSortBar.Visibility = rows.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-        LootSortRecent.Visibility = hasTimeline ? Visibility.Visible : Visibility.Collapsed;
-        LootSortCount.Foreground = (Brush)FindResource(mode == "name" || mode == "recent" ? "DimBrush" : "AccentBrush");
-        LootSortName.Foreground = (Brush)FindResource(mode == "name" ? "AccentBrush" : "DimBrush");
-        LootSortRecent.Foreground = (Brush)FindResource(mode == "recent" ? "AccentBrush" : "DimBrush");
-
-        if (rows.Count == 0 && (hasLooted || hasOther))
-        {
-            // The chosen slice is empty but the card isn't — name the empty slice rather
-            // than blanking (or silently showing a different one).
-            LootList.Items.Clear();
-            var note = new TextBlock
-            {
-                Text = view == "looted" ? "No looted items yet." : "Nothing else yet.",
-                FontSize = 12, Margin = new Thickness(0, 1, 0, 1),
-            };
-            note.SetResourceReference(TextBlock.ForegroundProperty, "DimBrush");
-            LootList.Items.Add(note);
-        }
-        else
-        {
-            // Provenance rides inline as a muted "(Foraged)"/"(Crafted)"/"(Merged)"/"(Parcel)"
-            // so it's clear without becoming part of the name (LW, 2026-08-17).
-            var tagByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var r in rows) if (r.Tag is { } t) tagByName[r.Item] = $"({t})";
-            FillList(LootList, rows.Select(r => (r.Item, r.Value)), onNameClick: ShowItemInfo,
-                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true,
-                noteFor: tagByName.Count > 0 ? n => tagByName.GetValueOrDefault(n) : null);
-        }
-        CraftedLabel.Visibility = Visibility.Collapsed;
-        CraftedList.Items.Clear();
-
-        RenderTargetDrops(s);
-    }
-
-    private void OnLootView(object sender, MouseButtonEventArgs e)
-    {
-        _settings.LootView = (string)((FrameworkElement)sender).Tag;
-        _settings.Save();
-        if (_latestSnapshot is { } s) RenderLoot(s);
-        e.Handled = true;
+        if (_latestSnapshot is { } s) _loot.Render(s);
     }
 
     private void OnPetAbilitiesToggled(object sender, MouseButtonEventArgs e)
@@ -2355,10 +2283,10 @@ public partial class MainWindow : Window
         KpiLoot.Text = $"{s.LootTotal}";
         KpiXp.Text = $"{s.XpPerHour:0.#}%";
         KillsHeader.Text = s.PartyKillCount > 0 ? $"{s.YourKillCount} (+{s.PartyKillCount})" : $"{s.YourKillCount}";
-        var madeTotal = s.CraftedTotal + s.FashionedTotal;   // merges + crafts
-        LootHeader.Text = madeTotal > 0
-            ? $"{s.LootTotal} items (+{madeTotal} made)"
-            : $"{s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")}";
+        // Merges + crafts counted apart from drops (#131); the breakout's subheader
+        // reports the same two numbers from the same place, so they cannot disagree.
+        LootHeader.Text = EQBuddy.UI.Shared.LootPresentation.Header(
+            s.LootTotal, s.CraftedTotal + s.FashionedTotal);
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         MotesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         // A session rollover empties the loot lists lazily, inside the same batch
@@ -2557,7 +2485,7 @@ public partial class MainWindow : Window
         }
 
         if (LootSection.IsExpanded)
-            RenderLoot(s);
+            _loot.Render(s);
 
         if (MotesSection.IsExpanded)
         {
@@ -2696,8 +2624,8 @@ public partial class MainWindow : Window
                 // Row counts say "a new name appeared"; the snapshot totals say "the
                 // session moved" — the E2E suite (tests/EQBuddy.E2E) asserts on both.
                 var dump = $"dmgSrc={DamageSourceList.Items.Count} dmgTaken={DamageTakenList.Items.Count} " +
-                    $"kills={KillList.Items.Count} party={PartyKillList.Items.Count} loot={LootList.Items.Count} " +
-                    $"crafted={CraftedList.Items.Count} skills={SkillList.Items.Count} faction={FactionList.Items.Count} " +
+                    $"kills={KillList.Items.Count} party={PartyKillList.Items.Count} loot={_loot.RowCount} " +
+                    $"skills={SkillList.Items.Count} faction={FactionList.Items.Count} " +
                     $"zones={ZoneList.Items.Count} deaths={DeathList.Items.Count} " +
                     $"killsTotal={s.YourKillCount} lootTotal={s.LootTotal} " +
                     $"tracked={s.Tracked.Sum(t => t.TotalQuantity)} " +
@@ -4020,7 +3948,8 @@ public partial class MainWindow : Window
     /// the fold). Sorting still surfaces anything; breakouts and History stay uncapped.</summary>
     private const int CardRowCap = 30;
 
-    private static readonly FontFamily MonoFamily = new("Consolas");
+    // Internal: the lifted Loot card formats the same stat-block tooltips.
+    internal static readonly FontFamily MonoFamily = new("Consolas");
 
     private void FillBreakdown(ItemsControl list, IEnumerable<SourceDamage> stats,
         StatSort sort, double combatSeconds, string rateLabel,

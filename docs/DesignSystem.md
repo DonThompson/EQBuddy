@@ -531,7 +531,7 @@ a rework that absorbs every open bug stops being a rework.
 | 2 | Quests | done |
 | **2b** | **Lift `EqChip` / `EqSegmentedStrip` out of `QuestsWindow`** | **done** — `UI.Shared/ChipStyle.cs` + one control per UI; the Quests window now spends it. Render verified byte-for-byte unchanged |
 | 3 | Spawns + timers | **built** — `UI.Shared/TimerView.cs` is `EqTimer` + `EqProgress`; both windows rebuilt on it. reviewed; see §11.6 |
-| **4** | **Loot card + Loot breakout** | **moved up** — #198 concentrated the debt here |
+| **4** | **Loot card + Loot breakout** | **built** — see §11.7; moved up because #198 concentrated the debt here |
 | 5 | Main widget | was 4 |
 | 6 | Mini mode + chips | carries #190, #191, #199's gesture |
 | 7 | Map | unchanged |
@@ -585,3 +585,74 @@ one. Every other satellite has an `EQBUDDY_*` hook to open it; Spawns does not. 
 `EQBUDDY_SPAWNS=1` to MainWindow's hook family and re-shoot** — small, and the review is an
 acceptance criterion, not a nicety: the Gate 2 wrapping bug was found this way and by
 nothing else.
+
+---
+
+## 11.7 Gate 4, as built — Loot (2026-08-17)
+
+**Four surfaces, one set of decisions.** The Loot card and its breakout on Windows, the
+Loot card on Linux/macOS, and the rules all three read. The two hand-built strips #198
+added are now the app's `EqChip`/`EqSegmentedStrip`, which was most of the gate as
+predicted — but converting them exposed the thing worth recording:
+
+### The strips were the symptom; the duplicated rules were the disease
+
+`LootRows` already owned row ORDER and was already shared. Everything *around* the rows
+was not. **Which strips are up, which chip is lit, whether "recent" is worth offering, and
+what an empty slice says** were derived twice from the same four snapshot lists — once in
+`MainWindow.RenderLoot`, once in `BreakoutWindow.UpdateLoot` — and the copies had already
+drifted: the breakout's chips carried no hover copy at all, and the legacy `"made"` view
+alias was spelled inline in both. That is trap 4 (one entry, two sources for one fact) in
+a surface small enough that nobody noticed.
+
+`UI.Shared/LootPresentation.cs` is now the one source, and because it is framework-free it
+is *tested* — `LootPresentationTests`, 34 cases — which none of it was before. The WPF
+layer has no test project (docs/TestPlan.md §5), so moving a rule into UI.Shared is the
+only way it gets covered at all.
+
+| Layer | File | Notes |
+|---|---|---|
+| Decisions | `EQBuddy.UI.Shared/LootPresentation.cs` | Strip options + tooltips, view/sort normalization, strip visibility, empty-slice wording, both headers, the target heading |
+| WPF card | `EQBuddy/LootCardView.cs` | Lifted out of `MainWindow.xaml`, the way `QuestChecklistView` was |
+| WPF breakout | `EQBuddy/LootBreakoutView.cs` | Lifted out of `BreakoutWindow`, which serves six kinds |
+| Avalonia card | `EQBuddy.Avalonia/LootCardView.cs` | See below — this lane was a whole feature behind |
+| Icon | `IconPaths["Target"]` | The 🎯 that was baked into a heading STRING |
+| Token | `DesignTokens.IconInline` | 12 — an icon inside a line of text. `IconButtonSize` (24) would make every loot row a third taller, and on the widget row height is window height |
+
+### The Avalonia card was a release behind, and that is the interesting part
+
+This is the one place in Gate 4 where behaviour changes. #198 gave the Windows card a
+show filter, a sort strip and inline provenance on 2026-08-17; the Avalonia card still
+listed `s.Loot` raw, with merges in a separate "Created by merging" block and no way to
+tell a foraged root from a corpse drop. **The shared row builder existed the whole time
+and this UI simply never called it** — the same shape as the chip stacks carrying #122 and
+#152 to Linux after Windows had already paid for both. Both filters, the provenance tags,
+the timeline sort and the empty-slice wording arrive there in this change, reading the same
+two settings, so a profile shared between a Windows and a Linux machine behaves the same.
+
+### Why the card HEADER was left alone
+
+Thirteen cards wear the same `Section` expander and the same emoji-and-count header.
+Migrating one of them would read as a bug rather than as a migration, so Gate 5 changes
+them together. The same argument keeps the breakout's title row, `Target|Session` toggle
+and size grip out of this gate: six kinds share them, and the last of the six is Gate 8.
+**A gate migrates a surface, not everything a surface touches.**
+
+### What the screenshot review caught, again
+
+Two new shots exist so this gate could be reviewed at all — and a card body could not be
+photographed before, because expansion is not persisted:
+
+- **`EQBUDDY_EXPAND` now takes card keys** (`EQBUDDY_EXPAND=loot`), alongside the existing
+  `=1`. It is the same move Gate 3 made with `EQBUDDY_SPAWNS`, and `scripts/shoot.ps1`
+  gained `loot-card` for it.
+- **`loot-breakout` needed no hook at all** — that window shows whenever the widget is
+  minimized and its stat is starred, and both are plain settings.
+
+The first breakout capture came back with **no filter strips on it**. They were built,
+selected and painted; the `ContentControl` they hang in was declared `Visibility="Collapsed"`
+in XAML and nothing ever set it back. **A control that hides itself inside a host that also
+hides itself has two switches for one state, and only one of them is ever wired.** Nothing
+about that is visible in a diff, in a unit test, or in a build — the same category as the
+Gate 2 clipping and the Gate 3 header offset, and the third gate running to find its own
+bug this way.

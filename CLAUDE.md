@@ -124,7 +124,8 @@ busier.
 | The mobile page | `Companion/Web/index.html` (one self-contained file) |
 | Type roles, spacing, radii, control sizes | `UI.Shared/DesignTokens.cs` — data, like `ThemePalettes`; each UI composes it |
 | Icon geometry (and reward slot silhouettes) | `UI.Shared/IconPaths.cs` — vectors, never glyphs (#148, #166) |
-| The selectable pill (tabs, lenses, filter and sort strips) | `UI.Shared/ChipStyle.cs` + `EqChip`/`EqSegmentedStrip` in each UI's `DesignSystem.cs`. **Never hand-build another one** — there are already 16 in `MainWindow.xaml`/`BreakoutWindow.xaml` waiting to be converted |
+| The selectable pill (tabs, lenses, filter and sort strips) | `UI.Shared/ChipStyle.cs` + `EqChip`/`EqSegmentedStrip` in each UI's `DesignSystem.cs`. **Never hand-build another one** — there are ~14 left in `MainWindow.xaml`/`BreakoutWindow.xaml` waiting to be converted |
+| What a Loot surface shows (slice, order, strips, empty wording) | `UI.Shared/LootPresentation.cs` — rows from `LootRows`, everything around them from here. Four surfaces read it: `EQBuddy/LootCardView.cs`, `EQBuddy/LootBreakoutView.cs`, `EQBuddy.Avalonia/LootCardView.cs` |
 | What a quest row's badge and state rule say | `UI.Shared/QuestPresentation.cs` |
 | Anything shared by both UIs | `UI.Shared/` — must stay framework-free (a test enforces it) |
 
@@ -216,6 +217,15 @@ Read this list before touching the areas it names. Every entry cost a release.
     could, which is the argument for screenshot review being an acceptance criterion.
     → **Use a two-column `Grid` (`Auto,*`)** whenever an icon sits beside wrapping text.
     `QuestsWindow.IconLine` is the worked example, in both UIs.
+15. **A control that hides itself, inside a host that also hides itself, has two switches
+    for one state — and only one of them is ever wired.** The Gate 4 Loot breakout built
+    its filter strips, selected the right chips and painted them into a `ContentControl`
+    that XAML had declared `Visibility="Collapsed"`; the render only ever set the visibility
+    of the panel INSIDE it. The strips were correct and invisible, on every launch. Nothing
+    about that shows in a diff, a unit test or a build — only in a picture.
+    → **Visibility and spacing belong to the thing that decides them.** When you lift a
+    surface into a class, the host it hangs in gets no state of its own: give it no
+    `Visibility` and no `Margin`, and let the lifted control carry both.
 
 ## Tooling notes that cost time when ignored
 

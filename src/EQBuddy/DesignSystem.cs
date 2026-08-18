@@ -223,6 +223,12 @@ internal sealed class EqSegmentedStrip(Panel host)
         return chip;
     }
 
+    /// <summary>One chip by its key, or null. A strip sometimes has to hide a segment
+    /// rather than disable it — the Loot card withholds "recent" when nothing on screen
+    /// carries a timestamp — and reaching for it by key beats every caller keeping its
+    /// own field.</summary>
+    public EqChip? Chip(object key) => _chips.FirstOrDefault(c => Equals(c.Key, key));
+
     /// <summary>Paints the selection. Compared with <see cref="object.Equals(object?,
     /// object?)"/> so strips keyed on strings, enums or null all work without the caller
     /// casting.</summary>

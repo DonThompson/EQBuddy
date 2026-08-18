@@ -1,5 +1,17 @@
 [
  {
+  "version": "1.91.0",
+  "date": "2026-08-17",
+  "highlights": [
+   "THE LOOT CARD'S FILTERS HAVE ARRIVED ON LINUX AND MACOS (contributed by Liminal Warmth). The all / looted / other filter and the count / name / recent sort shipped on Windows in 1.89.0 and simply were not there on the other builds - that card still listed everything in one lump, with merges pushed into a separate \"Created by merging\" block underneath and nothing to tell a foraged root from a corpse drop. Both filters, the arrival-order view, and the little (Foraged) / (Crafted) / (Merged) / (Parcel) note after each name are all there now, reading the same settings, so a profile you carry between a Windows machine and a Linux one behaves the same on both.",
+   "THE LOOT FILTERS NOW LOOK LIKE FILTERS. On every build, show: and sort: are proper pills that fill with your theme's accent when selected, instead of three words in a row where the lit one was a slightly different colour - the same controls the Quest Tracker and the Spawns window already use. Hovering one explains what it does, which the breakout window's copy never did.",
+   "AND \"RECENT\" ONLY OFFERS ITSELF WHEN IT MEANS SOMETHING. If nothing on screen carries a timestamp, the option is gone rather than sitting there doing nothing when clicked.",
+   "THE QUEST MARKER BESIDE LOOT IS DRAWN, NOT TYPED. It was an emoji, and emoji are exactly what failed to render at all under Wine on Linux and macOS in earlier releases. It is a vector now, in your theme's colour, in the Loot card and its breakout window.",
+   "NOTHING ELSE ABOUT LOOT HAS CHANGED - same rows, same counts, same click-for-item-info, same hover stats, same Target drops, same two settings shared between the card and the minimized window.",
+   "EQBuddy is a BETA - if something reads wrong, tell us: ⚙ → Help → Send feedback."
+  ]
+ },
+ {
   "version": "1.90.0",
   "date": "2026-08-17",
   "highlights": [

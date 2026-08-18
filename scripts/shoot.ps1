@@ -50,6 +50,16 @@ if ($Out -eq '') { $Out = Join-Path $repo 'docs/screenshots' }
 $Shots = [ordered]@{
     'widget-cards'    = @{ Title = 'EQBuddy'; Env = @{}; Set = @{} }
     'widget-expanded' = @{ Title = 'EQBuddy'; Env = @{ EQBUDDY_EXPAND = '1' }; Set = @{} }
+    # One card, opened by name: a card's expanded state is not persisted, so a body can
+    # only be photographed through this hook. EQBUDDY_EXPAND takes a comma-separated list
+    # of the same keys SectionMap uses.
+    'loot-card'       = @{ Title = 'EQBuddy'; Env = @{ EQBUDDY_EXPAND = 'loot' }; Set = @{} }
+    # The breakout needs no hook of its own: it shows whenever the widget is minimized and
+    # its stat is starred, and both are plain settings. Session scope is the one with the
+    # filter strips on it (Target is a different axis and hides them).
+    'loot-breakout'   = @{ Title = 'Loot breakout'
+                           Env = @{}
+                           Set = @{ Minimized = $true; MiniStats = @('loot'); BreakoutLootScope = 'session' } }
     'quest-tracker'   = @{ Title = 'Quest Tracker'; Env = @{ EQBUDDY_QUESTS = '1' }; Set = @{} }
     'quest-tracker-all' = @{ Title = 'Quest Tracker'; Env = @{ EQBUDDY_QUESTS = 'all' }; Set = @{} }
     'spawns-window'   = @{ Title = 'Spawn'; Env = @{ EQBUDDY_SPAWNS = 'Runnyeye Citadel' }; Set = @{ TrackSpawns = $true } }

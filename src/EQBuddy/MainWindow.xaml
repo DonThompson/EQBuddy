@@ -453,56 +453,12 @@
                                       Tag="loot" Click="OnStarChanged" ToolTip="Show loot count in mini dashboard"/>
                     </Grid>
                 </Expander.Header>
-                <StackPanel>
-                    <!-- View filter on the left, sort on the right, one row. -->
-                    <Grid Margin="0,0,2,1">
-                        <!-- Show: all / looted / other — pick the slice you care about.
-                             Looted is corpse drops; other is everything else you acquired
-                             (foraged, crafted, merged, parcel), each tagged in the list.
-                             Auto-sold pickups appear nowhere here — dismissed at the corpse
-                             means not loot; their coin lives in the money tracker. -->
-                        <StackPanel x:Name="LootViewBar" Orientation="Horizontal"
-                                    HorizontalAlignment="Left">
-                            <TextBlock Text="show:" FontSize="10" Foreground="{DynamicResource DimBrush}"
-                                       Margin="0,0,4,0"/>
-                            <TextBlock x:Name="LootViewAll" Text="all" FontSize="10" Cursor="Hand"
-                                       Tag="all" MouseLeftButtonDown="OnLootView" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="LootViewLooted" Text="looted" FontSize="10" Cursor="Hand"
-                                       Tag="looted" MouseLeftButtonDown="OnLootView" Margin="0,0,6,0"
-                                       ToolTip="Items you looted from corpses."/>
-                            <TextBlock x:Name="LootViewOther" Text="other" FontSize="10" Cursor="Hand"
-                                       Tag="other" MouseLeftButtonDown="OnLootView"
-                                       ToolTip="Everything else: foraged, crafted, merged, or parcel."/>
-                        </StackPanel>
-                        <!-- Sort toggle (Klona11, discussion #43): count keeps the original
-                             biggest-stacks-first order; name is alphabetical. -->
-                        <StackPanel x:Name="LootSortBar" Orientation="Horizontal"
-                                    HorizontalAlignment="Right">
-                            <TextBlock Text="sort:" FontSize="10" Foreground="{DynamicResource DimBrush}"
-                                       Margin="0,0,4,0"/>
-                            <TextBlock x:Name="LootSortCount" Text="count" FontSize="10" Cursor="Hand"
-                                       Tag="count" MouseLeftButtonDown="OnLootSort" Margin="0,0,6,0"/>
-                            <TextBlock x:Name="LootSortName" Text="name" FontSize="10" Cursor="Hand"
-                                       Tag="name" MouseLeftButtonDown="OnLootSort" Margin="0,0,6,0"/>
-                            <!-- Every drop in arrival order, not the totals (#160, wizen):
-                                 the way to spot the one rare thing among 200 of the same. -->
-                            <TextBlock x:Name="LootSortRecent" Text="recent" FontSize="10" Cursor="Hand"
-                                       Tag="recent" MouseLeftButtonDown="OnLootSort"
-                                       ToolTip="Every drop as it happened, newest first — how you catch the one unusual thing in a long farm. Runs of the same item collapse into a single row."/>
-                        </StackPanel>
-                    </Grid>
-                    <ItemsControl x:Name="LootList"/>
-                    <TextBlock x:Name="CraftedLabel" Text="Created by merging" Style="{StaticResource SectionLabel}" Margin="0,6,0,0" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="CraftedList" Margin="0,2,0,0"/>
-                    <!-- Target drops (TARGET-*): what the creature you're fighting can drop,
-                         wiki knowledge merged with this session's observed counts. -->
-                    <StackPanel x:Name="TargetBlock" Visibility="Collapsed"
-                                Margin="0,6,0,0">
-                        <TextBlock x:Name="TargetHeader" FontSize="11" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WarnBrush}" TextWrapping="Wrap"/>
-                        <ItemsControl x:Name="TargetDropsList" Margin="10,2,0,0"/>
-                    </StackPanel>
-                </StackPanel>
+                <!-- The card BODY is built in code by LootCardView (Gate 4,
+                     docs/DesignSystem.md §11.5): the show/sort filters are the app's
+                     EqSegmentedStrip rather than the sixteenth hand-built copy, and the
+                     ratchet holds the file to the scale — which it cannot do here, because
+                     MainWindow.xaml does not join DesignRatchetTests until Gate 5. -->
+                <ContentControl x:Name="LootBody"/>
             </Expander>
 
             <!-- Motes (discussion #49, flipwon): the Potential upgrade-currency ladder as a

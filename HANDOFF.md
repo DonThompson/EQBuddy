@@ -1,7 +1,7 @@
 # EQBuddy — handoff
 
 **Don't re-derive the codebase.** `CLAUDE.md` loads automatically and carries the commands,
-the non-negotiable rules, the where-things-live index, the trap list (14) and the
+the non-negotiable rules, the where-things-live index, the trap list (15) and the
 surface-allocation rule. `docs/Architecture.md` and `docs/TestPlan.md` sit behind it, and
 `DocumentationTests` fails the build if any go stale. Start with
 `pwsh -NoProfile -File scripts/status.ps1`.
@@ -21,66 +21,73 @@ classifier where the same commands run fine apart; split them.
 
 ---
 
-## State: v1.90.0 shipped, board clear
+## State: Gate 4 built, HELD for review — v1.90.0 is the last thing shipped
 
-Tag, GitHub release, OneDrive and the local install all verified. `main` is clean and
-pushed. **1,738 unit + 205 Avalonia + 10 E2E green. Zero open PRs. Every discussion has a
-reply.**
+`main` carries Gate 4 (Loot). **1,781 unit + 207 Avalonia + 10 E2E green.** Nothing is
+released: `Directory.Build.props` reads **1.91.0** with a `WhatsNew.json` entry waiting,
+because the Avalonia half is player-visible. **Ask David before cutting it.**
 
-Two releases went out on 2026-08-17:
+Three releases went out on 2026-08-17:
 
 - **1.89.0** — Gate 2 (Quests rebuilt as list + detail pane), plus liminalwarmth's #198
   loot provenance, #199 mini-bar double-click and #200 (Disabled) alert sound.
 - **1.90.0** — Gate 3 (Spawns rebuilt with progress bars and a state-aware countdown),
   plus quasarj's #194 CrossOver overlay fix.
+- **1.91.0** — Gate 4, built and held (below).
 
 ---
 
-## THE NEXT TASK — Gate 4 of the UI/UX rework: Loot
+## Gate 4, as built — Loot. Full write-up in `docs/DesignSystem.md` §11.7
 
-`docs/DesignSystem.md` is the whole plan and the gate log. **Read §11 first** — it is the
-amended order and it explains why Loot moved up. Then §10 (Gate 2 as built) and §11.6
-(Gate 3 as built) for the worked examples.
+Four files joined `DesignRatchetTests.Migrated`:
 
-**Gate 4 is the Loot card + the Loot breakout window**, both UIs in one change. It moved
-ahead of the widget because #198 concentrated the debt there: it added a `show: all /
-looted / other` filter strip and a `sort: count / name / recent` strip to both surfaces,
-built the old way — bare `TextBlock`s with a `Tag`, a click handler and literal sizes.
+| File | What it is |
+|---|---|
+| `UI.Shared/LootPresentation.cs` | The decisions, once: strip options + tooltips, view/sort normalization, strip visibility, empty-slice wording, both headers, the target heading. **34 unit tests where there were none** |
+| `EQBuddy/LootCardView.cs` | The widget's Loot card, lifted out the way `QuestChecklistView` was |
+| `EQBuddy/LootBreakoutView.cs` | The Loot breakout's contents, lifted out of the six-kind `BreakoutWindow` |
+| `EQBuddy.Avalonia/LootCardView.cs` | The Linux/macOS card — **which was a whole feature behind** |
 
-**Spend the primitives; do not mint new ones.**
+Three things worth carrying forward:
 
-- `EqChip` / `EqSegmentedStrip` (each UI's `DesignSystem.cs`, spec in
-  `UI.Shared/ChipStyle.cs`) — those two strips are exactly this, and converting them is
-  most of the gate.
-- `DesignSystem.Text(role)` / `.Icon(name)` / `.IconButton(...)`.
-- `UI.Shared/IconPaths.cs` for glyphs. Add new ones there; `IconGeometryTests` checks they
-  parse and fill the 24×24 grid.
+1. **The strips were the symptom.** The duplicated *rules* were the disease: which strips
+   are up, which chip is lit, whether "recent" is offered, and what an empty slice says
+   were derived twice from the same four lists and had already drifted. When a gate's
+   surface looks like a paint job, check whether the same decision is being made in two
+   places — that is where the value is.
+2. **The Avalonia card had never called the shared row builder**, so #198's filters and
+   provenance simply were not there. Worth assuming, on every gate, that the other lane is
+   further behind than the file list suggests.
+3. **The screenshot review earned itself for the third gate running.** The Loot breakout's
+   strips were built, selected, painted — and invisible, because the XAML host they hang in
+   was declared `Visibility="Collapsed"` and only the panel inside it was ever toggled.
+   That is trap 15 now.
 
-**Then add all four Loot files to `DesignRatchetTests.Migrated` in the same PR.** That test
-is the mechanism the whole effort rests on: it fails the build if a migrated surface grows
-a literal font size, radius or spacing value, or draws with a glyph. **The list only ever
-grows.**
-
-**There are ~14 more hand-built segmented strips** in `MainWindow.xaml` and
-`BreakoutWindow.xaml` after Loot's. They are Gate 5's problem, not Gate 4's.
-
-### Shoot it before you call it done
-
-```bash
-pwsh -NoProfile -ExecutionPolicy Bypass -File C:/Users/david/source/EQBuddy/scripts/shoot.ps1 -Shot widget-cards
-```
-
-`scripts/shoot.ps1` runs the real app against a throwaway profile seeded with the shifted
-fixture (so cards show real numbers), renders opaque (`EQBUDDY_OPAQUE`), and captures with
-`PrintWindow` so a running EQBuddy can't photograph itself over the shot. `-List` names the
-shots, `-Theme Solarized` is the only light theme and the one where a hardcoded colour
-shows up.
-
-**This is an acceptance criterion, not a nicety.** It has now found three bugs no test
-could see: the Gate 2 text clipping (trap 14), and in Gate 3 both the too-narrow progress
-bar and the column headers sitting 115px off. Look at the picture.
+Two new shots exist: `shoot.ps1 -Shot loot-card` (via `EQBUDDY_EXPAND=loot`, which now
+takes card keys as well as `1`) and `-Shot loot-breakout` (no hook needed — the window
+shows whenever the widget is minimized and its stat is starred, both plain settings).
 
 ---
+
+## THE NEXT TASK — Gate 5 of the UI/UX rework: the main widget
+
+`docs/DesignSystem.md` §11.5 is the amended order; §10, §11.6 and §11.7 are the three
+worked examples. Gate 5 is the widget itself — the card chrome, the thirteen card headers,
+and the **~14 hand-built segmented strips still in `MainWindow.xaml`**.
+
+Two things Gate 4 deliberately left for it, and the reasons matter:
+
+- **Card headers were not touched.** Thirteen cards wear the same `Section` expander and
+  the same emoji-and-count header; migrating one of them reads as a bug rather than a
+  migration. They change together or not at all.
+- **`MainWindow.xaml.cs` still cannot join the ratchet**, which is why Gate 4 lifted its
+  surface out rather than migrating in place. Gate 5's real deliverable is getting that
+  file onto the list — and `LootCardView`/`QuestChecklistView` are the pattern for how.
+
+The hotspot ratchet has room: `MainWindow*.xaml.cs` is 4,507 lines against a 4,274
+baseline (limit 4,701). Gate 4 took 86 lines out of it and did not go under the baseline,
+so the baseline is unchanged — but a gate that lifts several more surfaces will, and the
+rule is to lower it in the same commit.
 
 ## Debts and open threads
 
@@ -117,6 +124,13 @@ the progress bar is unit-tested but has never been *seen*. Seeding one named kil
   indistinguishable from honest ones. The reply says so plainly; don't promise a cleanup.
 - **Replay the reporter's actual log file.** A hand-condensed charm5.txt passed while the
   real one failed; same for charm6 and the #183 mez log.
+- **A host that hides itself is a second switch.** Gate 4's breakout strips were correct,
+  selected and never once shown, because the `ContentControl` they hang in was declared
+  collapsed in XAML. When you lift a surface into a class, its host gets no `Visibility`
+  and no `Margin` — the lifted control carries both. Trap 15.
+- **`EQBUDDY_EXPAND` takes card keys now**, not just `1`. A card's expanded state is not
+  persisted, so before this the only way to photograph one card BODY was to open all
+  thirteen and hope it fit above the fold. It didn't.
 
 ---
 

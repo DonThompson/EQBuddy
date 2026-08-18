@@ -107,6 +107,12 @@ public static class DesignTokens
     public const double ControlHeight = 26;
     public const double IconButtonSize = 24;
 
+    /// <summary>An icon that sits INSIDE a line of text — the quest badge on a loot row,
+    /// the marker beside a heading. It is not a button and must not set the row's height:
+    /// <see cref="IconButtonSize"/> would make every loot row a third taller, and on the
+    /// widget row height is window height.</summary>
+    public const double IconInline = 12;
+
     /// <summary>The state rule down a list row's leading edge — the substitute for the
     /// quest-type icon the mockups drew, which cannot be sourced (docs/DesignSystem.md
     /// §8a). Carries <c>ready</c> / <c>in progress</c> / <c>done</c>, which is real.</summary>
@@ -132,6 +138,7 @@ public static class DesignTokens
             ["RowHeight"] = RowHeight,
             ["ControlHeight"] = ControlHeight,
             ["IconButtonSize"] = IconButtonSize,
+            ["IconInline"] = IconInline,
             ["StateRuleWidth"] = StateRuleWidth,
             ["FontTitleWindow"] = 14,
             ["FontTitleSection"] = 12.5,

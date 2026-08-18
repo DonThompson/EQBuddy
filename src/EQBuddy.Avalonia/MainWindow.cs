@@ -207,12 +207,10 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private readonly ItemsControl _healerList = new();
     private readonly ItemsControl _killList = new();
     private readonly ItemsControl _partyKillList = new();
-    private readonly ItemsControl _lootList = new();
-    private readonly StackPanel _targetDropsBlock = new() { IsVisible = false, Margin = new Thickness(0, 6, 0, 0) };
-    private readonly TextBlock _targetDropsHeader = AppTheme.Heading("", AppTheme.WarnBrush);
-    private readonly ItemsControl _targetDropsList = new();
+    // The Loot card, lifted into its own class for Gate 4 (docs/DesignSystem.md §11.5) —
+    // a surface migrated INSIDE this window is guarded by no ratchet.
+    private LootCardView _loot = null!;
     private readonly StackPanel _trackedPanel = new();
-    private readonly ItemsControl _craftedList = new();
     private readonly ItemsControl _soldList = new();
     private readonly ItemsControl _skillList = new();
     private readonly TextBlock _aaAbilitiesLabel = AppTheme.Heading("AA abilities");
@@ -224,7 +222,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
     private readonly StackPanel _healSortBar = new() { Orientation = Orientation.Horizontal };
     private readonly TextBlock _healersLabel = AppTheme.Heading("Healed by", AppTheme.GoodBrush);
     private readonly TextBlock _partyKillsLabel = AppTheme.Heading("Group kills");
-    private readonly TextBlock _craftedLabel = AppTheme.Heading("Created by merging");
     private readonly TextBlock _soldLabel = AppTheme.Heading("Sold to merchants");
     private readonly TextBlock _recentFightsLabel = AppTheme.Heading("Recent fights");
     private readonly ItemsControl _recentFightsList = new();
@@ -1125,17 +1122,13 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         return panel;
     }
 
+    /// <summary>The Loot card's body. "Created by merging" is no longer a block of its
+    /// own: merges and crafts ride the one list under the "other" slice, tagged inline,
+    /// the way the Windows card has shown them since #198.</summary>
     private Control BuildLootSection()
     {
-        var panel = new StackPanel();
-        panel.Children.Add(_lootList);
-        _craftedLabel.Margin = new Thickness(0, 6, 0, 0);
-        panel.Children.Add(_craftedLabel);
-        panel.Children.Add(_craftedList);
-        _targetDropsBlock.Children.Add(_targetDropsHeader);
-        _targetDropsBlock.Children.Add(_targetDropsList);
-        panel.Children.Add(_targetDropsBlock);
-        return panel;
+        _loot = new LootCardView(this, _settings);
+        return _loot.Body;
     }
 
     private Control BuildMoneySection()
@@ -1892,7 +1885,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         _kpiLoot.Text = $"{s.LootTotal}";
         _kpiXp.Text = $"{s.XpPerHour:0.#}%";
         _killsHeader.Text = s.PartyKillCount > 0 ? $"{s.YourKillCount} (+{s.PartyKillCount})" : $"{s.YourKillCount}";
-        _lootHeader.Text = s.CraftedTotal + s.FashionedTotal > 0 ? $"{s.LootTotal} items (+{s.CraftedTotal + s.FashionedTotal} made)" : $"{s.LootTotal} item{(s.LootTotal == 1 ? "" : "s")}";
+        _lootHeader.Text = LootPresentation.Header(s.LootTotal, s.CraftedTotal + s.FashionedTotal);
         var motes = Motes.Summarize(s.Loot, s.Elapsed);
         _motesHeader.Text = motes.Total > 0 ? $"{motes.Total} · {motes.PerHour:0.#}/hr" : "0";
         // A session rollover empties the loot lists lazily, inside the same batch
@@ -2056,11 +2049,7 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         }
         if (_sections["loot"].IsExpanded)
         {
-            FillList(_lootList, s.Loot.Select(l => (l.Item, $"x{l.Count}")),
-                onNameClick: ShowItemInfo,
-                tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
-            _craftedLabel.IsVisible = s.Crafted.Count > 0;
-            FillList(_craftedList, s.Crafted.Select(c => (c.Name, $"x{c.Count}")));
+            _loot.Render(s);
             RenderTargetDrops(s);
         }
         if (_sections["motes"].IsExpanded)
@@ -2180,8 +2169,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             try
             {
                 var dump = $"dmgSrc={_damageSourceList.Children.Count} dmgTaken={_damageTakenList.Items.Count} " +
-                    $"kills={_killList.Items.Count} party={_partyKillList.Items.Count} loot={_lootList.Items.Count} " +
-                    $"crafted={_craftedList.Items.Count} skills={_skillList.Items.Count} faction={_factionList.Items.Count} " +
+                    $"kills={_killList.Items.Count} party={_partyKillList.Items.Count} loot={_loot.RowCount} " +
+                    $"skills={_skillList.Items.Count} faction={_factionList.Items.Count} " +
                     $"zones={_zoneList.Items.Count} deaths={_deathList.Items.Count} " +
                     $"actualH={Bounds.Height:0} actualW={Bounds.Width:0}";
                 File.WriteAllText(AppPaths.File("debug.txt"), dump);
@@ -2198,7 +2187,6 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         _invocationLabel.IsVisible = s.Invocations.Count > 0;
         _farmingLabel.IsVisible = s.Mobs.Any(m => m.Kills > 0);
         _partyKillsLabel.IsVisible = s.PartyKillsByKiller.Count > 0;
-        _craftedLabel.IsVisible = s.Crafted.Count > 0;
         _soldLabel.IsVisible = s.SoldItems.Count > 0;
         _healSpellsLabel.IsVisible = s.HealsBySpell.Count > 0;
         _healSortBar.IsVisible = s.HealsBySpell.Count > 0;
@@ -4901,7 +4889,8 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         RefreshUi();
     }
 
-    private static readonly FontFamily MonoFamily = new("monospace");
+    // Internal: the lifted Loot card formats the same stat-block tooltips.
+    internal static readonly FontFamily MonoFamily = new("monospace");
 
     private void FillList(ItemsControl list, IEnumerable<(string Name, string Value)> rows,
         Func<string, IBrush>? valueBrush = null, Action<string>? onNameClick = null,
@@ -4981,6 +4970,14 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         }).ToList();
     }
 
+    /// <summary>Repaint the Loot card alone, from the snapshot we already have. Its two
+    /// filter chips call this: a full refresh recomputes nothing new and repaints every
+    /// card and the whole mobile projection.</summary>
+    internal void RepaintLootCard()
+    {
+        if (_sections["loot"].IsExpanded) _loot.Render(CurrentSnapshot());
+    }
+
     internal void ShowItemInfo(string itemName)
     {
         if (_itemInfoWindow is null)
@@ -4998,10 +4995,9 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
         var targets = _settings.ShowTargetDrops ? snapshot.CurrentTargets : [];
         if (targets.Count == 0)
         {
-            _targetDropsBlock.IsVisible = false;
+            _loot.HideTargetDrops();
             return;
         }
-        _targetDropsBlock.IsVisible = true;
         foreach (var target in targets)
         {
             if (_targetResults.ContainsKey(target)) continue;
@@ -5055,11 +5051,12 @@ public sealed class MainWindow : Window, IZoneHost, IQuestsHost, IDropsHost, IBu
             }
             : targets.Any(target => _targetResults.GetValueOrDefault(target) is null)
                 ? "looking up…" : "merged pull";
-        _targetDropsHeader.Text = $"🎯 Fighting: {names}" +
-            (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
+        // The names and everything ABOUT them, apart — the card composes the sentence
+        // through LootPresentation and draws the marker beside it as an icon, so the
+        // heading is one string in one place for every surface that shows it.
+        var detail = (kills > 0 ? $" — {kills} kill{(kills == 1 ? "" : "s")} this session" : "") +
             $" · drops (eqlwiki · {state}{(extra > 0 ? $" · +{extra} more" : "")})";
-        FillList(_targetDropsList, rows.Take(14), onNameClick: ShowItemInfo,
-            tooltip: n => QuestAwareTooltip(n, ItemHoverStats(n)), questBadges: true);
+        _loot.ShowTargetDrops(names, detail, rows.Take(14));
     }
 
     private async Task LookupTargetAsync(string target, string zone)

@@ -24,7 +24,12 @@ namespace EQBuddy.Tests;
 public class DesignRatchetTests
 {
     /// <summary>Surfaces rebuilt on the design system, and therefore held to it.
-    /// Gate 2: Quests, both UIs. Gate 3: Spawns, both UIs. And so on down §6/§11.5.</summary>
+    /// Gate 2: Quests, both UIs. Gate 3: Spawns, both UIs. Gate 4: Loot — the card, the
+    /// breakout, and the shared decisions behind both. And so on down §6/§11.5.
+    ///
+    /// A UI.Shared file earns a place here for the second check rather than the first: it
+    /// has no sizes to grow, but it is where a surface's WORDS live, and a glyph typed
+    /// into a heading there reaches every UI at once.</summary>
     private static readonly string[] Migrated =
     [
         "EQBuddy/QuestsWindow.xaml",
@@ -33,6 +38,10 @@ public class DesignRatchetTests
         "EQBuddy/SpawnsWindow.xaml",
         "EQBuddy/SpawnsWindow.xaml.cs",
         "EQBuddy.Avalonia/SpawnsWindow.cs",
+        "EQBuddy.UI.Shared/LootPresentation.cs",
+        "EQBuddy/LootCardView.cs",
+        "EQBuddy/LootBreakoutView.cs",
+        "EQBuddy.Avalonia/LootCardView.cs",
     ];
 
     public static TheoryData<string> MigratedFiles()

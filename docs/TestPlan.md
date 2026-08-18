@@ -45,6 +45,9 @@ Audited at **v1.82.0 (2026-08-14)**: 1,317 unit + 45 Avalonia + 6 E2E, all green
 | **`/pet who leader` settles ownership both ways**: naming you claims the creature, naming anyone else releases a pet we claimed. Unknown character name never releases (#177) | **Auto** — `SpellTrackingTests` |
 | Crit, miss, resist, fizzle and block counts follow the log's own words | **Auto** — `LogParserTests`, `StackingTests` |
 | **The Loot card's recent view agrees with the count view about what counts as loot**: every kept acquisition — corpse loot, auto-stored, forage, parcel, crafts, merges — lands on the arrival timeline, newest first | **Auto** — `SessionStatsTests.RecentLootCarriesEveryKeptAcquisitionKindInArrivalOrder`, `LootRowsTests` |
+| **Every Loot surface answers the same four questions the same way**: which slice is shown, which order, whether "recent" is offered at all, and what an empty slice says. Four surfaces read one decision — the widget card and its breakout on Windows, the card on Linux/macOS | **Auto** — `LootPresentationTests`, `LootRowsTests` |
+| **A stored view or sort EQBuddy no longer recognises falls back to showing everything**, never to a blank card — including `"made"`, the pre-#198 spelling still sitting in profiles | **Auto** — `LootPresentationTests` |
+| **The Loot card header and the breakout's subheader report the same two numbers** (drops, and merges+crafts as "+N made") because one function composes both (#131) | **Auto** — `LootPresentationTests` |
 | **An auto-sold pickup ("looted … and sold it for …") is not session loot**: dismissed at the corpse, it appears in no loot view and never touches the inventory overlay — it is vendor income, and the per-creature drop ledger (wiki packs, Target drops) still credits the mob. Watch rules still count it: a watched pattern is explicit interest | **Auto** — `SessionStatsTests`, `InventoryFileTests`, `JournalTests` |
 | **Every one of the sixteen classes can produce class evidence**, so an inference can always be argued back down (#120) | **Auto** — `ClassInferenceTests` |
 | Class evidence decays with a 10-minute half-life: a swap converges on what is being played now, and silence alone never flips a reading | **Auto** — `ClassInferenceTests` |
@@ -153,6 +156,7 @@ guards below are the deliverable and not a nicety.
 | A weapon's SKILL outranks its slot, so a 2H Blunt is never drawn as a sword | **Auto** — `DesignSystemTests` |
 | Screenshot capture makes only the window GROUND opaque, never a tint, and is off unless asked | **Auto** — `DesignSystemTests` (`EQBUDDY_OPAQUE`) |
 | A captured surface is reviewed as a real render, on a seeded session, over a plain backdrop | **Manual** — `pwsh scripts/shoot.ps1` |
+| A single card BODY can be photographed without opening every card: `EQBUDDY_EXPAND` takes card keys (`EQBUDDY_EXPAND=loot`) as well as `1` | **Manual** — `pwsh scripts/shoot.ps1 -Shot loot-card` |
 
 ## 4d. Settings, and who is allowed to write them
 

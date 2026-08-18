@@ -73,6 +73,12 @@ public static class IconPaths
         ["Bell"] = "M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6v-5a6 6 0 0 0-5-5.91V4a1 1 0 1 0-2 0v1.09A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2Z",
         ["BellOff"] = "M20.5 19.1 4.9 3.5 3.5 4.9l2 2A6 6 0 0 0 6 11v5l-2 2v1h13.2l1.9 1.9 1.4-1.4ZM12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2Zm6-6.3V11a6 6 0 0 0-5-5.91V4a1 1 0 1 0-2 0v1.09c-.42.06-.83.16-1.22.31L18 15.7Z",
         ["Trash"] = "M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z",
+
+        // Gate 4 (Loot). Replaces the 🎯 that led the target-drops heading — and
+        // which was baked into the HEADER STRING itself, so the breakout had to
+        // string-replace it back out to render a shorter version of the same line. The
+        // glyph is a control, so it is a vector; the sentence is text, so it is text.
+        ["Target"] = "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06ZM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7Z",
     };
 
     // ---- reward slot silhouettes ----
