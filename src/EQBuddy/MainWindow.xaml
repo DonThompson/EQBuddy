@@ -11,7 +11,7 @@
          SizeToContent="WidthAndHeight" then grows or shrinks the window to fit the
          rescaled content, the same way the Options "Widget size" slider already does. -->
     <Grid>
-    <Border x:Name="RootBorderElement" Background="{DynamicResource BgBrush}" CornerRadius="10"
+    <Border x:Name="RootBorderElement" Background="{DynamicResource BgBrush}" CornerRadius="{DynamicResource CornerPanel}"
             BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
             MouseLeftButtonDown="OnDrag">
         <Border.ContextMenu>
@@ -63,7 +63,7 @@
                 </MenuItem>
             </ContextMenu>
         </Border.ContextMenu>
-        <StackPanel Margin="10">
+        <StackPanel Margin="{DynamicResource PadWidget}">
 
             <!-- ============ MINI DASHBOARD MODE ============ -->
             <Grid x:Name="MiniRoot" Visibility="Collapsed">
@@ -74,12 +74,12 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Ellipse x:Name="MiniDot" Width="9" Height="9" Fill="{DynamicResource BadBrush}"
-                         VerticalAlignment="Center" Margin="2,0,8,0"
+                         VerticalAlignment="Center" Margin="{DynamicResource TitleGap}"
                          ToolTip="Log status"/>
                 <StackPanel x:Name="MiniChips" Grid.Column="1" Orientation="Horizontal"
                             VerticalAlignment="Center"/>
                 <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#x2922;"
-                        ToolTip="Expand (or double-click)" Click="OnRestore" Margin="8,0,0,0"/>
+                        ToolTip="Expand (or double-click)" Click="OnRestore" Margin="{DynamicResource IndentM}"/>
                 <Button Grid.Column="3" Style="{StaticResource IconButton}" Content="&#x2715;"
                         ToolTip="Close" Click="OnClose"/>
             </Grid>
@@ -102,12 +102,12 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Ellipse x:Name="StatusDot" Width="9" Height="9" Fill="{DynamicResource BadBrush}"
-                             VerticalAlignment="Center" Margin="2,0,7,0"/>
-                    <TextBlock Text="EQBuddy" FontWeight="Bold" FontSize="14"
+                             VerticalAlignment="Center" Margin="{DynamicResource TitleGap}"/>
+                    <TextBlock Text="EQBuddy" FontWeight="Bold" FontSize="{DynamicResource FontTitleWindow}"
                                Foreground="{DynamicResource AccentBrush}"/>
                 </StackPanel>
-                <TextBlock x:Name="CharLabel" Grid.Column="1" Margin="10,0,6,0" VerticalAlignment="Center"
-                           FontSize="12" Foreground="{DynamicResource DimBrush}"
+                <TextBlock x:Name="CharLabel" Grid.Column="1" Margin="{DynamicResource CharGap}" VerticalAlignment="Center"
+                           FontSize="{DynamicResource FontBody}" Foreground="{DynamicResource DimBrush}"
                            TextTrimming="CharacterEllipsis" Text="looking for a character…"
                            ToolTip="Follows whoever is actively playing (log file growth)"
                            MouseLeftButtonDown="OnCharLabelClick"/>
@@ -119,7 +119,7 @@
                      9→10% used to resize the window every three seconds (#173). -->
                 <TextBlock x:Name="PerfLabel" Grid.Column="2" Width="100"
                            TextAlignment="Right" TextTrimming="CharacterEllipsis"
-                           Margin="0,0,6,0" VerticalAlignment="Center" FontSize="10"
+                           Margin="{DynamicResource GapS}" VerticalAlignment="Center" FontSize="{DynamicResource FontMetadata}"
                            Foreground="{DynamicResource DimBrush}" Visibility="Collapsed"
                            ToolTip="EQBuddy's own CPU (all cores) and memory — enable/disable under Options → Behavior"/>
                 <!-- Feedback sits IN the title bar, not buried in the menu, and wears the
@@ -129,9 +129,9 @@
                 <Button Grid.Column="3" Style="{StaticResource IconButton}"
                         ToolTip="Send feedback — feature ideas and bug reports shape the beta features"
                         Click="OnFeedback">
-                    <Border Background="{DynamicResource GoodWashBrush}" CornerRadius="6"
-                            Padding="4,0,4,1">
-                        <TextBlock Text="&#x2709;&#xFE0E;" FontSize="13"
+                    <Border Background="{DynamicResource GoodWashBrush}" CornerRadius="{DynamicResource CornerCard}"
+                            Padding="{DynamicResource BadgePad}">
+                        <TextBlock Text="&#x2709;&#xFE0E;" FontSize="{DynamicResource FontTitleSection}"
                                    Foreground="{DynamicResource GoodBrush}"/>
                     </Border>
                 </Button>
@@ -159,9 +159,9 @@
             </Grid>
 
             <!-- Logging-off reminder -->
-            <Border x:Name="LogBanner" Background="{DynamicResource WarnWashBrush}" CornerRadius="6" Padding="8,6"
-                    Margin="0,8,0,0" Visibility="Collapsed">
-                <TextBlock TextWrapping="Wrap" FontSize="12">
+            <Border x:Name="LogBanner" Background="{DynamicResource WarnWashBrush}" CornerRadius="{DynamicResource CornerCard}" Padding="{DynamicResource PadRow}"
+                    Margin="{DynamicResource LeadM}" Visibility="Collapsed">
+                <TextBlock TextWrapping="Wrap" FontSize="{DynamicResource FontBody}">
                     <Run Foreground="{DynamicResource WarnBrush}" FontWeight="SemiBold" Text="Logging looks off."/>
                     <Run Text=" Type "/><Run FontFamily="Consolas" Foreground="{DynamicResource AccentBrush}" Text="/log"/>
                     <Run Text=" in the game's chat window. (EQBuddy enables it automatically for future game launches.)"/>
@@ -169,15 +169,15 @@
             </Border>
 
             <!-- Update available -->
-            <Border x:Name="UpdateBanner" Background="{DynamicResource GoodWashBrush}" CornerRadius="6" Padding="8,6"
-                    Margin="0,8,0,0" Visibility="Collapsed" Cursor="Hand"
+            <Border x:Name="UpdateBanner" Background="{DynamicResource GoodWashBrush}" CornerRadius="{DynamicResource CornerCard}" Padding="{DynamicResource PadRow}"
+                    Margin="{DynamicResource LeadM}" Visibility="Collapsed" Cursor="Hand"
                     MouseLeftButtonDown="OnUpdateBannerClick">
-                <TextBlock x:Name="UpdateText" TextWrapping="Wrap" FontSize="12"
+                <TextBlock x:Name="UpdateText" TextWrapping="Wrap" FontSize="{DynamicResource FontBody}"
                            Foreground="{DynamicResource GoodBrush}" FontWeight="SemiBold"/>
             </Border>
 
             <!-- Session line -->
-            <Grid Margin="2,8,2,4">
+            <Grid Margin="{DynamicResource KpiRow}">
                 <TextBlock x:Name="ZoneText" Style="{StaticResource Dim}" Text="—"/>
                 <TextBlock x:Name="SessionText" Style="{StaticResource Dim}" HorizontalAlignment="Right" Text="session 0:00"/>
             </Grid>
@@ -185,31 +185,31 @@
             <!-- KPI strip (2026-08-11 modernization): the headline numbers before any
                  card — always visible, one glance. Values are tabular semibold; DPS
                  wears the accent. Hairline separators, not boxes. -->
-            <Border Margin="0,0,0,7" CornerRadius="10"
+            <Border Margin="{DynamicResource StackS}" CornerRadius="{DynamicResource CornerPanel}"
                     BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1"
                     Background="{DynamicResource PanelBrush}">
                 <UniformGrid Columns="4">
-                    <StackPanel Margin="11,6,4,7">
+                    <StackPanel Margin="{DynamicResource PadKpi}">
                         <TextBlock Text="dps" Style="{StaticResource SectionLabel}" Margin="0"/>
-                        <TextBlock x:Name="KpiDps" Text="0" FontSize="17" FontWeight="SemiBold"
+                        <TextBlock x:Name="KpiDps" Text="0" FontSize="{DynamicResource FontMetric}" FontWeight="SemiBold"
                                    Foreground="{DynamicResource AccentBrush}"/>
                     </StackPanel>
                     <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
-                        <StackPanel Margin="11,6,4,7">
+                        <StackPanel Margin="{DynamicResource PadKpi}">
                             <TextBlock Text="kills" Style="{StaticResource SectionLabel}" Margin="0"/>
-                            <TextBlock x:Name="KpiKills" Text="0" FontSize="17" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="KpiKills" Text="0" FontSize="{DynamicResource FontMetric}" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
                     <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
-                        <StackPanel Margin="11,6,4,7">
+                        <StackPanel Margin="{DynamicResource PadKpi}">
                             <TextBlock Text="loot" Style="{StaticResource SectionLabel}" Margin="0"/>
-                            <TextBlock x:Name="KpiLoot" Text="0" FontSize="17" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="KpiLoot" Text="0" FontSize="{DynamicResource FontMetric}" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
                     <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0">
-                        <StackPanel Margin="11,6,4,7">
+                        <StackPanel Margin="{DynamicResource PadKpi}">
                             <TextBlock Text="xp/hr" Style="{StaticResource SectionLabel}" Margin="0"/>
-                            <TextBlock x:Name="KpiXp" Text="0" FontSize="17" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="KpiXp" Text="0" FontSize="{DynamicResource FontMetric}" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
                 </UniformGrid>
@@ -266,7 +266,7 @@
                     <!-- Session-pace sparkline (2026-08-11): damage per minute over the
                          last half hour, area-filled, hottest minute marked. The data
                          always existed (_damageTimeline feeds History) — now it's drawn. -->
-                    <Grid x:Name="CombatSparkHost" Height="34" Margin="0,2,0,4" Visibility="Collapsed"
+                    <Grid x:Name="CombatSparkHost" Height="34" Margin="{DynamicResource ListBlock}" Visibility="Collapsed"
                           ToolTip="Damage per minute, last 30 minutes — the dot marks your hottest minute">
                         <Polygon x:Name="CombatSparkFill"/>
                         <Polyline x:Name="CombatSpark" StrokeThickness="1.8"
@@ -281,7 +281,7 @@
                          that's the number you're reacting to, and a session average tells you
                          nothing about whether this pull is going badly. -->
                     <StackPanel Orientation="Horizontal">
-                        <Button x:Name="CombatFightLabel" Style="{StaticResource IconButton}" FontSize="11"
+                        <Button x:Name="CombatFightLabel" Style="{StaticResource IconButton}" FontSize="{DynamicResource FontCaption}"
                                 HorizontalAlignment="Left" Visibility="Collapsed"
                                 Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatFight">
                             <local:EqFoldLabel Text="Last fight" Ink="AccentBrush"/>
@@ -301,23 +301,23 @@
                     </StackPanel>
                     <StackPanel x:Name="CombatFightBody" Visibility="Collapsed">
                         <TextBlock x:Name="CombatFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
-                                   Margin="0,1,0,2"/>
+                                   Margin="{DynamicResource RowTight}"/>
                         <TextBlock x:Name="CombatFightSplit" Style="{StaticResource Dim}" TextWrapping="Wrap"
-                                   Margin="0,0,0,2" Visibility="Collapsed"/>
+                                   Margin="{DynamicResource StackXxs}" Visibility="Collapsed"/>
                         <TextBlock x:Name="CombatFightOutLabel" Text="Your damage"
                                    Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                        <ItemsControl x:Name="CombatFightList" Margin="0,0,0,4"/>
+                        <ItemsControl x:Name="CombatFightList" Margin="{DynamicResource StackXs}"/>
                         <TextBlock x:Name="CombatFightInLabel" Text="Damage you took"
                                    Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                        <ItemsControl x:Name="CombatFightInList" Margin="0,2,0,4"/>
+                        <ItemsControl x:Name="CombatFightInList" Margin="{DynamicResource ListBlock}"/>
                     </StackPanel>
-                    <Button x:Name="CombatSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
+                    <Button x:Name="CombatSessionLabel" Style="{StaticResource IconButton}" FontSize="{DynamicResource FontCaption}"
                             HorizontalAlignment="Left"
                             Foreground="{DynamicResource AccentBrush}" Click="OnToggleCombatSession">
                         <local:EqFoldLabel Text="Session so far" Ink="AccentBrush"/>
                     </Button>
                     <StackPanel x:Name="CombatSessionBody">
-                    <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="CombatSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="{DynamicResource ListBlock}"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -328,12 +328,12 @@
                                    ToolTip="Damage by attack"/>
                         <StackPanel Grid.Column="1" x:Name="DmgOutSortBar" Orientation="Horizontal"/>
                     </Grid>
-                    <ItemsControl x:Name="DamageSourceList" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="DamageSourceList" Margin="{DynamicResource ListBlock}"/>
                     <local:EqFoldLabel x:Name="PetAbilityLabel" Text="Pet abilities" Open="False"
-                               Section="True" Margin="0,6,0,2" Visibility="Collapsed"
+                               Section="True" Margin="{DynamicResource SectionLead}" Visibility="Collapsed"
                                Cursor="Hand" MouseLeftButtonDown="OnPetAbilitiesToggled"
                                ToolTip="What your pet is using, split out of its Pet row above — click to expand"/>
-                    <ItemsControl x:Name="PetAbilityList" Margin="0,2,0,4" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="PetAbilityList" Margin="{DynamicResource ListBlock}" Visibility="Collapsed"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -344,18 +344,18 @@
                                    ToolTip="Damage taken from"/>
                         <StackPanel Grid.Column="1" x:Name="DmgInSortBar" Orientation="Horizontal"/>
                     </Grid>
-                    <ItemsControl x:Name="DamageTakenList" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="DamageTakenList" Margin="{DynamicResource ListBlock}"/>
                     <TextBlock x:Name="RecentFightsLabel" Text="Recent fights" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="RecentFightsList" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="RecentFightsList" Margin="{DynamicResource ListBlock}"/>
                     <TextBlock x:Name="AreaSpellLabel" Text="Area spells (per cast)" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="AreaSpellList" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="AreaSpellList" Margin="{DynamicResource ListBlock}"/>
                     <local:EqCardTitle x:Name="ProcLabel" Icon="Bolt" Text="Procs" Visibility="Collapsed"
                                ToolTip="Spell damage that fired without a cast — weapon procs, poisons, item effects. Rate is per minute of combat, the same denominator as DPS."/>
-                    <ItemsControl x:Name="ProcList" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="ProcList" Margin="{DynamicResource ListBlock}"/>
                     <TextBlock x:Name="StanceLabel" Text="By stance" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="StanceList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="StanceList" Margin="{DynamicResource LeadXxs}"/>
                     <TextBlock x:Name="InvocationLabel" Text="By invocation" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="InvocationList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="InvocationList" Margin="{DynamicResource LeadXxs}"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>
@@ -375,37 +375,37 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
-                    <Button x:Name="HealFightLabel" Style="{StaticResource IconButton}" FontSize="11"
+                    <Button x:Name="HealFightLabel" Style="{StaticResource IconButton}" FontSize="{DynamicResource FontCaption}"
                             HorizontalAlignment="Left" Visibility="Collapsed"
                             Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealFight">
                         <local:EqFoldLabel Text="Last fight" Ink="AccentBrush"/>
                     </Button>
                     <StackPanel x:Name="HealFightBody" Visibility="Collapsed">
                         <TextBlock x:Name="HealFightText" Style="{StaticResource Dim}" TextWrapping="Wrap"
-                                   Margin="0,1,0,2"/>
-                        <ItemsControl x:Name="HealFightList" Margin="0,0,0,4"/>
+                                   Margin="{DynamicResource RowTight}"/>
+                        <ItemsControl x:Name="HealFightList" Margin="{DynamicResource StackXs}"/>
                     </StackPanel>
-                    <Button x:Name="HealSessionLabel" Style="{StaticResource IconButton}" FontSize="11"
+                    <Button x:Name="HealSessionLabel" Style="{StaticResource IconButton}" FontSize="{DynamicResource FontCaption}"
                             HorizontalAlignment="Left"
                             Foreground="{DynamicResource AccentBrush}" Click="OnToggleHealSession">
                         <local:EqFoldLabel Text="Session so far" Ink="AccentBrush"/>
                     </Button>
                     <StackPanel x:Name="HealSessionBody">
-                    <TextBlock x:Name="HealingSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="HealingSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="{DynamicResource ListBlock}"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="HealSpellsLabel" Text="Heals cast" FontSize="11" FontWeight="SemiBold"
+                        <TextBlock x:Name="HealSpellsLabel" Text="Heals cast" FontSize="{DynamicResource FontCaption}" FontWeight="SemiBold"
                                    TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
                                    Foreground="{DynamicResource GoodBrush}" Visibility="Collapsed"/>
                         <StackPanel Grid.Column="1" x:Name="HealSortBar" Orientation="Horizontal" Visibility="Collapsed"/>
                     </Grid>
-                    <ItemsControl x:Name="HealSpellList" Margin="0,2,0,4"/>
-                    <TextBlock x:Name="HealersLabel" Text="Healed by" FontSize="11" FontWeight="SemiBold"
+                    <ItemsControl x:Name="HealSpellList" Margin="{DynamicResource ListBlock}"/>
+                    <TextBlock x:Name="HealersLabel" Text="Healed by" FontSize="{DynamicResource FontCaption}" FontWeight="SemiBold"
                                Foreground="{DynamicResource GoodBrush}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="HealerList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="HealerList" Margin="{DynamicResource LeadXxs}"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>
@@ -441,8 +441,8 @@
                         </Grid.ColumnDefinitions>
                         <local:EqCardTitle Icon="Bag" Text="Loot"/>
                         <TextBlock x:Name="LootHeader" Grid.Column="1" Style="{StaticResource StatValue}" Text="0 items"/>
-                        <TextBlock Grid.Column="2" Text="&#x1F5FA;" FontSize="12" Cursor="Hand"
-                                   Margin="8,0,0,0" VerticalAlignment="Center"
+                        <TextBlock Grid.Column="2" Text="&#x1F5FA;" FontSize="{DynamicResource FontBody}" Cursor="Hand"
+                                   Margin="{DynamicResource IndentM}" VerticalAlignment="Center"
                                    Foreground="{DynamicResource DimBrush}"
                                    ToolTip="Open the Quest Tracker"
                                    MouseLeftButtonUp="OnLootQuestMap"/>
@@ -510,19 +510,19 @@
                 </Expander.Header>
                 <StackPanel>
                     <CheckBox x:Name="GearByZoneCheck"
-                              Margin="0,2,0,4"
+                              Margin="{DynamicResource ListBlock}"
                               Checked="OnGearByZoneToggled"
                               Unchecked="OnGearByZoneToggled"
                               Content="Group by farm zone"
-                              FontSize="10"
+                              FontSize="{DynamicResource FontMetadata}"
                               Foreground="{DynamicResource DimBrush}"/>
                     <TextBlock x:Name="GearListName" Style="{StaticResource Dim}"
-                               TextWrapping="Wrap" Margin="0,2,0,4"/>
+                               TextWrapping="Wrap" Margin="{DynamicResource ListBlock}"/>
                     <ScrollViewer MaxHeight="320"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
                                   PanningMode="VerticalOnly"
-                                  Padding="0,0,4,0">
+                                  Padding="{DynamicResource GapXs}">
                         <ItemsControl x:Name="GearChecklistList"/>
                     </ScrollViewer>
                 </StackPanel>
@@ -608,33 +608,33 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
-                    <TextBlock x:Name="ProgressSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="0,2,0,4"/>
+                    <TextBlock x:Name="ProgressSummary" Style="{StaticResource Dim}" TextWrapping="Wrap" Margin="{DynamicResource ListBlock}"/>
                     <!-- The ding's answer: AAs and spells that just became available,
                          always shown while the session holds the level-up — a card
                          line, never a popup. AA tooltips carry the wiki effect text;
                          spell tooltips the classes that get the spell and when. -->
                     <TextBlock x:Name="LevelUnlocksLabel" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="LevelUnlocksList" Margin="0,2,0,4" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="LevelUnlocksList" Margin="{DynamicResource ListBlock}" Visibility="Collapsed"/>
                     <TextBlock Text="Skill-ups" Style="{StaticResource SectionLabel}"/>
-                    <ItemsControl x:Name="SkillList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="SkillList" Margin="{DynamicResource LeadXxs}"/>
                     <!-- Session-new AAs lead (Reddit, 2026-08-11); the full character
                          ledger folds behind the ▸ label, Pet-abilities style. -->
-                    <TextBlock x:Name="AaNewLabel" Text="AA learned this session" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
+                    <TextBlock x:Name="AaNewLabel" Text="AA learned this session" Style="{StaticResource SectionLabel}" Margin="{DynamicResource LeadXs}"
                                Visibility="Collapsed"/>
-                    <ItemsControl x:Name="AaNewList" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="AaNewList" Margin="{DynamicResource LeadXxs}" Visibility="Collapsed"/>
                     <local:EqFoldLabel x:Name="AaAbilitiesLabel" Text="All AA abilities" Open="False"
-                               Section="True" Margin="0,4,0,0"
+                               Section="True" Margin="{DynamicResource LeadXs}"
                                Visibility="Collapsed" Cursor="Hand" MouseLeftButtonDown="OnAaAllToggled"
                                ToolTip="Everything the log's history (plus the durable ledger) says this character owns — click to expand or fold"/>
-                    <ItemsControl x:Name="AaAbilityList" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="AaAbilityList" Margin="{DynamicResource LeadXxs}" Visibility="Collapsed"/>
                     <!-- "What do I get at N?" any time — the next milestone with new
                          AAs or spells, folded behind the ▸ label, All-AA-abilities
                          style. Hidden until the log has ever announced a level for
                          this character. -->
-                    <TextBlock x:Name="NextUnlocksLabel" Style="{StaticResource SectionLabel}" Margin="0,4,0,0"
+                    <TextBlock x:Name="NextUnlocksLabel" Style="{StaticResource SectionLabel}" Margin="{DynamicResource LeadXs}"
                                Visibility="Collapsed" Cursor="Hand" MouseLeftButtonDown="OnNextUnlocksToggled"
                                ToolTip="Spells and AA abilities that open up at your next milestone level — click to expand or fold"/>
-                    <ItemsControl x:Name="NextUnlocksList" Margin="0,2,0,0" Visibility="Collapsed"/>
+                    <ItemsControl x:Name="NextUnlocksList" Margin="{DynamicResource LeadXxs}" Visibility="Collapsed"/>
                 </StackPanel>
             </Expander>
 
@@ -667,12 +667,12 @@
                     </Grid>
                 </Expander.Header>
                 <StackPanel>
-                    <TextBlock Text="Deaths" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BadBrush}"/>
-                    <ItemsControl x:Name="DeathList" Margin="0,2,0,4"/>
+                    <TextBlock Text="Deaths" FontSize="{DynamicResource FontCaption}" FontWeight="SemiBold" Foreground="{DynamicResource BadBrush}"/>
+                    <ItemsControl x:Name="DeathList" Margin="{DynamicResource ListBlock}"/>
                     <TextBlock Text="Zones visited" Style="{StaticResource SectionLabel}"/>
-                    <ItemsControl x:Name="ZoneList" Margin="0,2,0,4"/>
+                    <ItemsControl x:Name="ZoneList" Margin="{DynamicResource ListBlock}"/>
                     <TextBlock x:Name="MarkersLabel" Text="Camp markers" Style="{StaticResource SectionLabel}" Visibility="Collapsed"/>
-                    <ItemsControl x:Name="MarkerList" Margin="0,2,0,0"/>
+                    <ItemsControl x:Name="MarkerList" Margin="{DynamicResource LeadXxs}"/>
                 </StackPanel>
             </Expander>
             </StackPanel>
@@ -684,7 +684,7 @@
 
     <!-- Bottom-right resize grip. Only visible in full mode — the mini dashboard has its
          own compact width and isn't meant to be stretched. -->
-    <Thumb x:Name="ResizeGrip" Width="14" Height="14" Margin="0,0,2,2"
+    <Thumb x:Name="ResizeGrip" Width="14" Height="14" Margin="{DynamicResource GripInset}"
            HorizontalAlignment="Right" VerticalAlignment="Bottom"
            Cursor="SizeNWSE" ToolTip="Drag to resize (scales text and everything else with it)"
            DragStarted="OnResizeGripStarted" DragDelta="OnResizeGripDelta">
@@ -696,7 +696,7 @@
     <!-- Bottom-edge height grip (Reddit ask, 2026-08-09): drag to show more or fewer
          cards before the list scrolls — TEXT size stays put, that's the corner grip's
          job. The corner keeps its own 20px so the two grips never fight. -->
-    <Thumb x:Name="HeightGrip" Height="12" Margin="12,0,20,0"
+    <Thumb x:Name="HeightGrip" Height="12" Margin="{DynamicResource GripBar}"
            HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
            Cursor="SizeNS" MouseEnter="OnHeightGripEnter"
            DragStarted="OnHeightGripStarted" DragDelta="OnHeightGripDelta"
@@ -708,7 +708,7 @@
             <ControlTemplate TargetType="Thumb">
                 <Grid Background="Transparent">
                     <Rectangle x:Name="HintLine" Height="2.5" VerticalAlignment="Bottom"
-                               Margin="18,0,18,2" RadiusX="1.25" RadiusY="1.25"
+                               Margin="{DynamicResource GripLine}" RadiusX="1.25" RadiusY="1.25"
                                Fill="{DynamicResource AccentBrush}" Opacity="0"/>
                 </Grid>
                 <ControlTemplate.Triggers>

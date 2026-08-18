@@ -57,6 +57,40 @@ internal static class DesignSystem
         d["StackS"] = new Thickness(0, 0, 0, DesignTokens.SpaceS);
         d["StackM"] = new Thickness(0, 0, 0, DesignTokens.SpaceM);
         d["StackL"] = new Thickness(0, 0, 0, DesignTokens.SpaceL);
+
+        // The widget's own rhythms, named because they were typed inline 30+ times
+        // between them and are the reason MainWindow.xaml could not join the ratchet.
+        // "A list block" is a row of content with a hairline of air above and a little
+        // more below — the single most repeated tuple in the file (17 of them).
+        d["ListBlock"] = new Thickness(0, DesignTokens.SpaceXxs, 0, DesignTokens.SpaceXs);
+        d["StackXxs"] = new Thickness(0, 0, 0, DesignTokens.SpaceXxs);
+        d["LeadXxs"] = new Thickness(0, DesignTokens.SpaceXxs, 0, 0);
+        d["LeadXs"] = new Thickness(0, DesignTokens.SpaceXs, 0, 0);
+        d["LeadM"] = new Thickness(0, DesignTokens.SpaceM, 0, 0);
+        d["IndentM"] = new Thickness(DesignTokens.SpaceM, 0, 0, 0);
+        // The four KPI tiles at the top of the widget. Was 11,6,4,7 — hand-nudged, on no
+        // scale, and repeated four times; the asymmetry is real (the tiles butt against
+        // their dividers) so it is kept, snapped to the scale.
+        d["PadKpi"] = new Thickness(DesignTokens.SpaceL, DesignTokens.SpaceS,
+            DesignTokens.SpaceXs, DesignTokens.SpaceS);
+        d["PadWidget"] = new Thickness(DesignTokens.SpaceM);
+        d["KpiRow"] = new Thickness(DesignTokens.SpaceXxs, DesignTokens.SpaceM,
+            DesignTokens.SpaceXxs, DesignTokens.SpaceXs);
+        // The title bar's little inline gaps. Three near-identical tuples (2,0,8,0 /
+        // 2,0,7,0 / 10,0,6,0) became one: a 1px difference between two icons on the same
+        // row is drift, not a decision.
+        d["TitleGap"] = new Thickness(DesignTokens.SpaceXxs, 0, DesignTokens.SpaceS, 0);
+        d["CharGap"] = new Thickness(DesignTokens.SpaceM, 0, DesignTokens.SpaceS, 0);
+        // 1px verticals are rendering facts, not rhythm — the ratchet allows 0 and 1 for
+        // exactly this, and they stay.
+        d["RowTight"] = new Thickness(0, 1, 0, DesignTokens.SpaceXxs);
+        d["BadgePad"] = new Thickness(DesignTokens.SpaceXs, 0, DesignTokens.SpaceXs, 1);
+        d["SectionLead"] = new Thickness(0, DesignTokens.SpaceS, 0, DesignTokens.SpaceXxs);
+        // The two resize grips and the grip's hairline.
+        d["GripInset"] = new Thickness(0, 0, DesignTokens.SpaceXxs, DesignTokens.SpaceXxs);
+        d["GripBar"] = new Thickness(DesignTokens.SpaceL, 0, DesignTokens.Indent, 0);
+        d["GripLine"] = new Thickness(DesignTokens.SpaceXl, 0, DesignTokens.SpaceXl,
+            DesignTokens.SpaceXxs);
         return d;
     }
 
