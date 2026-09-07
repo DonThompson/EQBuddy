@@ -1,10 +1,10 @@
 # Quest harvest report
 
-- Quest Items category members: 4013
-- Pages enumerated: 926
-- Parsed: 1176 (empty pages: 0)
-- With turn-in items: 853
-- Unique turn-in item names: 2418
+- Quest Items category members: 4027
+- Pages enumerated: 929
+- Parsed: 1179 (empty pages: 0)
+- With turn-in items: 858
+- Unique turn-in item names: 2423
 - Missing quest giver: 27
 - Collection pages split: 57 (250 step quests)
 - Backoff events: 0
@@ -397,7 +397,6 @@
 - Crustacean Shell Armor Quest
 - Cures
 - Custom Plate Helms - Kael Drakkel
-- Death of Lyda Nasin
 - Deck of Spontaneous Generation Quest
 - Demise of Blizzent
 - Deputy Tagil's Debt
@@ -429,6 +428,7 @@
 - Going Postal
 - Greenblood Tunics
 - Groflah Steadirt's Death
+- Grub Locker
 - Guard Shilster's Stout
 - Guild Summons
 - Guild Summons - Abbey of Deep Musing Cleric
@@ -526,11 +526,11 @@
 - Kevlin Diggs' Debt
 - Key to Sleeper's Tomb
 - Kilij's Plans
-- Kobold Shaman Paws
 - Kwinn's Quest
 - Kwint's Kwest
 - Legion Lager Quest
 - Library Book
+- Lion Meat Shipment Quest
 - Lionskin Gloves Quest
 - Living Dragons
 - Lizard Dolls
@@ -541,7 +541,6 @@
 - Lydl Mastat
 - Lynuga's Gem Collection
 - Madame Serena Quest
-- Magic Elixir for the Warriors
 - Magician Spells (Evil Version)
 - Magician Spells (Evil)
 - Magician Spells (Good)
@@ -609,7 +608,6 @@
 - Soil of Underfoot
 - Soldier's Brooch Quest
 - Solusek's Flower
-- Something is Wrrrong
 - Steel Warrior Initiation
 - Strife to the Coldain
 - Supplies for the New Sebilisian Expedition
@@ -641,6 +639,7 @@
 - The Painting
 - The Power of the Gatecallers
 - The Realm of Heroes -- Felwithe
+- The Rogue Take
 - The Seax
 - The Second Arcane Test
 - The Tattered Pouch
@@ -650,7 +649,6 @@
 - The Vengeful Musicians
 - The Waylaid Courier
 - The Worldly Path
-- This Means Warrr
 - Tinmizer's Fabulous Compactor (Quest)
 - Tiny Savages
 - Tome of Ages
