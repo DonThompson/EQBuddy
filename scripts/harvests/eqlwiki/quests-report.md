@@ -1,12 +1,12 @@
 # Quest harvest report
 
-- Quest Items category members: 4013
-- Pages enumerated: 926
-- Parsed: 1176 (empty pages: 0)
-- With turn-in items: 853
-- Unique turn-in item names: 2418
+- Quest Items category members: 4037
+- Pages enumerated: 930
+- Parsed: 1173 (empty pages: 0)
+- With turn-in items: 852
+- Unique turn-in item names: 2428
 - Missing quest giver: 27
-- Collection pages split: 57 (250 step quests)
+- Collection pages split: 56 (243 step quests)
 - Backoff events: 0
 
 ## Collection page splits
@@ -86,14 +86,6 @@
   - note: 'Ring of Dain Frostreaver IV' delegated to standalone page ['10th Coldain Ring Quest']
 - **Crusader's Tests** -> not split
   - note: not split: 1 usable steps
-- **Darkforge Armor Quests** -> 7 steps
-  - Darkforge Boots (3 items)
-  - Darkforge Bracer (3 items)
-  - Darkforge Breastplate (3 items)
-  - Darkforge Gauntlets (3 items)
-  - Darkforge Greaves (3 items)
-  - Darkforge Helm (3 items)
-  - Darkforge Vambraces (3 items)
 - **Dreadscale Armor** -> 7 steps
   - Dreadscale Boots (4 items)
   - Dreadscale Bracer (3 items)
@@ -217,7 +209,7 @@
 - **Quellious Symbol Quests** -> 3 steps
   - Disciple Symbol of Quellious (4 items)
   - Initiate Symbol of Quellious (2 items)
-  - Regent Symbol of Quellious (4 items)
+  - Regent Symbol of Quellious (5 items)
 - **Rallos Zek Symbol Quests** -> not split
   - note: not split: 1 usable steps
 - **Ranger Kael Armor Quests** -> 4 steps
@@ -397,7 +389,6 @@
 - Crustacean Shell Armor Quest
 - Cures
 - Custom Plate Helms - Kael Drakkel
-- Death of Lyda Nasin
 - Deck of Spontaneous Generation Quest
 - Demise of Blizzent
 - Deputy Tagil's Debt
@@ -413,6 +404,8 @@
 - Errand for Tonmerk
 - Erud's Tonic Quest
 - Erudin Cures
+- Escort the Cargo Clockwork
+- Fabian's Strings
 - Faction Quests
 - Faerie Dragon Wings
 - Fang Tooth (quest)
@@ -429,6 +422,7 @@
 - Going Postal
 - Greenblood Tunics
 - Groflah Steadirt's Death
+- Grub Locker
 - Guard Shilster's Stout
 - Guild Summons
 - Guild Summons - Abbey of Deep Musing Cleric
@@ -526,22 +520,19 @@
 - Kevlin Diggs' Debt
 - Key to Sleeper's Tomb
 - Kilij's Plans
-- Kobold Shaman Paws
 - Kwinn's Quest
 - Kwint's Kwest
 - Legion Lager Quest
 - Library Book
+- Lion Meat Shipment Quest
 - Lionskin Gloves Quest
 - Living Dragons
 - Lizard Dolls
-- Lizard Meat No 2
-- Lizard Tails
 - Lord Grimlot's Love
 - Lupine Claw Gauntlets Quest
 - Lydl Mastat
 - Lynuga's Gem Collection
 - Madame Serena Quest
-- Magic Elixir for the Warriors
 - Magician Spells (Evil Version)
 - Magician Spells (Evil)
 - Magician Spells (Good)
@@ -609,7 +600,6 @@
 - Soil of Underfoot
 - Soldier's Brooch Quest
 - Solusek's Flower
-- Something is Wrrrong
 - Steel Warrior Initiation
 - Strife to the Coldain
 - Supplies for the New Sebilisian Expedition
@@ -641,6 +631,7 @@
 - The Painting
 - The Power of the Gatecallers
 - The Realm of Heroes -- Felwithe
+- The Rogue Take
 - The Seax
 - The Second Arcane Test
 - The Tattered Pouch
@@ -650,7 +641,6 @@
 - The Vengeful Musicians
 - The Waylaid Courier
 - The Worldly Path
-- This Means Warrr
 - Tinmizer's Fabulous Compactor (Quest)
 - Tiny Savages
 - Tome of Ages

@@ -44,8 +44,8 @@ Keyword scan (case-insensitive) of effect text for: duration, extend, mesmeri, c
 *Requirements: Level 1.*
 
 - Keywords `regen`:
-  > This passive ability increases your health regeneration by 1/1/1/2/3/5/5 point(s).
-  - Per-rank numbers: 1/1/1/2/3/5/5
+  > This passive ability increases your health regeneration by 1/1/1/1/1/1/1 point(s).
+  - Per-rank numbers: 1/1/1/1/1/1/1
 
 ### Permanent Illusion (General; 1 rank(s), cost 5)
 *Requirements: Level 1.*
@@ -99,18 +99,19 @@ Keyword scan (case-insensitive) of effect text for: duration, extend, mesmeri, c
   > This passive ability increases the duration of beneficial spells that you cast by 5/15/30/50%.
   - Per-rank numbers: 5/15/30/50%
 
-### Thief's Intuition (Archetype; 4 rank(s), cost 3/?/?/?)
+### Thief's Intuition (Archetype; 4 rank(s), cost 3/6/9/15)
 *Requirements: Level 1.*
 
 - Keywords `reuse`:
-  > This passive ability reduces the reuse time of your Sense Traps and Disarm Traps skills by 1/?/?/?
-  - Per-rank numbers: 1/?/?/?
+  > This passive ability reduces the reuse time of your Sense Traps and Disarm Traps skills by 1/3/5/5 seconds.<br><br>Final rank: grants a chance to innately sense traps when near them.
+  - Per-rank numbers: 1/3/5/5
 
-### Reaching Notes (Bard; 6 rank(s), cost 2/4/6/?/?/?)
+### Reaching Notes (Bard; 3 rank(s), cost 2/4/6)
 *Requirements: Level 1.*
 
 - Keywords `extend`:
-  > When enabled, this passive ability extends the radius of your beneficial area songs by 10%.
+  > This toggleable ability extends the radius of your beneficial area songs by 10/15/25%.
+  - Per-rank numbers: 10/15/25%
 
 ### Hobble of Spirits (Beastlord; 1 rank(s), cost 5)
 *Requirements: Level 30.*
@@ -188,7 +189,7 @@ Keyword scan (case-insensitive) of effect text for: duration, extend, mesmeri, c
 *Requirements: Level 30.*
 
 - Keywords `regen`:
-  > This passive ability increases your hit point regeneration by 1% per 6 seconds.
+  > This passive ability increases your hit point regeneration rate by 1% of your maximum health per 6 seconds.
 
 ### Improved Familiar (Wizard; 1 rank(s), cost 6)
 *Requirements: Level 45.*
